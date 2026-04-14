@@ -12,11 +12,10 @@ from app.models import teacher, student  # noqa: F401
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # On startup — create tables if they don't exist (dev convenience)
-    # In production, use Alembic migrations instead
-    Base.metadata.create_all(bind=engine)
+    # Create tables on startup (dev convenience — use Alembic in production)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
     yield
-    # On shutdown — nothing needed for now
 
 
 app = FastAPI(
@@ -45,5 +44,5 @@ app.include_router(api_router)
 
 
 @app.get("/", tags=["Health"])
-def health_check():
+async def health_check():
     return {"status": "ok", "app": settings.APP_NAME}

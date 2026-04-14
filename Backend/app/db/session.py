@@ -1,28 +1,34 @@
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from sqlalchemy.orm import declarative_base
 
 from app.core.config import settings
 
-engine = create_engine(
+# asyncpg requires the postgresql+asyncpg:// scheme in DATABASE_URL
+engine = create_async_engine(
     settings.DATABASE_URL,
-    # psycopg2 requires this for connection pooling with multiple threads
     pool_pre_ping=True,
+    echo=settings.DEBUG,
 )
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+AsyncSessionLocal = async_sessionmaker(
+    bind=engine,
+    class_=AsyncSession,
+    autocommit=False,
+    autoflush=False,
+    expire_on_commit=False,
+)
 
 # All SQLAlchemy models inherit from this base
 Base = declarative_base()
 
 
 # --------------------------------------------------------------------------- #
-#  Dependency — yields a DB session, closes it after the request               #
+#  Dependency — yields an async DB session, closes it after the request        #
 # --------------------------------------------------------------------------- #
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+async def get_db() -> AsyncSession:
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        finally:
+            await session.close()

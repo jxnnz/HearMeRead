@@ -1,24 +1,19 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from app.core.security import decode_access_token
 from app.db.session import get_db
 from app.models.teacher import Teacher
 
-# Tells FastAPI where clients send their token (used in /docs Authorize)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 
-def get_current_teacher(
+async def get_current_teacher(
     token: str = Depends(oauth2_scheme),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> Teacher:
-    """
-    FastAPI dependency — resolves the JWT in the Authorization header
-    to a Teacher DB object.  Raises 401 if token is missing/invalid,
-    or 403 if the account is inactive.
-    """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -29,7 +24,9 @@ def get_current_teacher(
     if email is None:
         raise credentials_exception
 
-    teacher = db.query(Teacher).filter(Teacher.email == email).first()
+    result = await db.execute(select(Teacher).where(Teacher.email == email))
+    teacher = result.scalar_one_or_none()
+
     if teacher is None:
         raise credentials_exception
 
