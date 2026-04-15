@@ -1,8 +1,13 @@
 import React, { useState } from 'react';
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const LoginForm = ({ onSubmit }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  
+  const navigate = useNavigate();
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -12,7 +17,6 @@ const LoginForm = ({ onSubmit }) => {
   return (
     <form onSubmit={handleSubmit}>
       <div className="mb-3">
-        <label htmlFor="email" className="form-label">Email Address</label>
         <input
           type="email"
           className="form-control"
@@ -21,14 +25,13 @@ const LoginForm = ({ onSubmit }) => {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-        />
+        /> 
       </div>
 
       <div className="mb-3">
-        <label htmlFor="password" className="form-label">Password</label>
         <input
-          type="password"
-          className="form-control"
+          type={showPassword ? 'text' : 'password'}
+          className="form-control border-eng-0"
           id="password"
           placeholder="Enter your password"
           value={password}
@@ -36,6 +39,7 @@ const LoginForm = ({ onSubmit }) => {
           required
         />
       </div>
+
 
       <div className="mb-3 form-check">
         <input type="checkbox" className="form-check-input" id="rememberMe" />
