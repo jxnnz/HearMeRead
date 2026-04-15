@@ -31,3 +31,4 @@ class Student(Base):
     # Relationships
     teacher = relationship("Teacher", back_populates="students")
     assessment_sessions = relationship("AssessmentSession", back_populates="student")
+    assessment_sessions = relationship("AssessmentSession", back_populates="student")

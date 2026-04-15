@@ -18,3 +18,5 @@ class Teacher(Base):
 
     # Relationships
     students = relationship("Student", back_populates="teacher")
+    passages = relationship("Passage", back_populates="teacher")
+    assessment_sessions = relationship("AssessmentSession", back_populates="teacher")

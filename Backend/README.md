@@ -17,7 +17,7 @@ FastAPI backend for the HearMeRead oral reading assessment PWA.
 ### 1. Create a virtual environment
 ```bash
 python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
+Windows: venv\Scripts\activate
 ```
 
 ### 2. Install dependencies

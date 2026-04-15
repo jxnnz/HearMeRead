@@ -7,7 +7,7 @@ from app.api.v1.router import api_router
 from app.db.session import engine, Base
 
 # Import all models so Alembic and Base.metadata.create_all can find them
-from app.models import teacher, student  # noqa: F401
+from app.models import teacher, student, passage, question, assessment_session  # noqa: F401
 
 
 @asynccontextmanager

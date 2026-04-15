@@ -6,8 +6,14 @@ from app.core.config import settings
 # asyncpg requires the postgresql+asyncpg:// scheme in DATABASE_URL
 engine = create_async_engine(
     settings.DATABASE_URL,
-    pool_pre_ping=True,
+    pool_pre_ping=False,      # not supported with transaction pooler
+    pool_size=5,
+    max_overflow=10,
     echo=settings.DEBUG,
+    connect_args={
+        "ssl": "require",
+        "statement_cache_size": 0,   # required for pgBouncer/transaction pooler
+    },
 )
 
 AsyncSessionLocal = async_sessionmaker(
@@ -26,9 +32,8 @@ Base = declarative_base()
 #  Dependency — yields an async DB session, closes it after the request        #
 # --------------------------------------------------------------------------- #
 
-async def get_db() -> AsyncSession:
+from typing import AsyncGenerator
+
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
-        try:
-            yield session
-        finally:
-            await session.close()
+        yield session
