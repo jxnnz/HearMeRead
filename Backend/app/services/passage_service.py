@@ -3,9 +3,9 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 
-from app.models.passage import Passage, Language
-from app.models.student import GradeLevel
-from app.schemas.passage import PassageCreate, PassageUpdate
+from app.models import Passage, Language
+from app.models import GradeLevel
+from app.schema import PassageCreate, PassageUpdate
 
 
 def _compute_word_count(text: str) -> int:

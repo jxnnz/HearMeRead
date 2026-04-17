@@ -3,10 +3,10 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 
-from app.models.assessment_session import AssessmentSession, AssessmentPeriod
-from app.models.student import Student
-from app.models.passage import Passage
-from app.schemas.session import SessionCreate, SessionComplete, SessionUpdate
+from app.models import AssessmentSession, AssessmentPeriod
+from app.models import Student
+from app.models import Passage
+from app.schema import SessionCreate, SessionComplete, SessionUpdate
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -111,7 +111,7 @@ async def get_session_by_id(
 ) -> AssessmentSession:
     result = await db.execute(
         select(AssessmentSession).where(
-            AssessmentSession.id == teacher_id,
+            AssessmentSession.id == session_id,
             AssessmentSession.teacher_id == teacher_id,
         )
     )

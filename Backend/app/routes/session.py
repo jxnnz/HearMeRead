@@ -3,11 +3,11 @@ from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.dependencies import get_current_teacher
-from app.db.session import get_db
-from app.models.teacher import Teacher
-from app.models.assessment_session import AssessmentPeriod
-from app.schemas.session import (
+from app.dependencies import get_current_teacher
+from app.db import get_db
+from app.models import Teacher
+from app.models import AssessmentPeriod
+from app.schema import (
     SessionCreate,
     SessionComplete,
     SessionUpdate,

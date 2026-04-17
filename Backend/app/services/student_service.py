@@ -3,8 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_
 from fastapi import HTTPException, status
 
-from app.models.student import Student
-from app.schemas.student import StudentCreate, StudentUpdate
+from app.models import Student
+from app.schema import StudentCreate, StudentUpdate
 
 
 async def get_students(

@@ -3,9 +3,9 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from app.models.question import Question
-from app.models.passage import Passage
-from app.schemas.passage import QuestionCreate, QuestionUpdate
+from app.models import Question
+from app.models import Passage
+from app.schema import QuestionCreate, QuestionUpdate
 
 
 async def _verify_passage_ownership(db: AsyncSession, passage_id: int, teacher_id: int) -> Passage:

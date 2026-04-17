@@ -3,11 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.core.config import settings
-from app.api.v1.router import api_router
-from app.db.session import engine, Base
+from app.router import api_router
+from app.db import engine, Base
 
-# Import all models so Alembic and Base.metadata.create_all can find them
-from app.models import teacher, student, passage, question, assessment_session  # noqa: F401
+# Import consolidated model file so Alembic and Base.metadata.create_all can find all models
+from app import models  # noqa: F401
 
 
 @asynccontextmanager

@@ -7,8 +7,8 @@ from datetime import timedelta
 
 from app.core.config import settings
 from app.core.security import verify_password, get_password_hash, create_access_token
-from app.db.session import get_db
-from app.models.teacher import Teacher
+from app.db import get_db
+from app.models import Teacher
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 

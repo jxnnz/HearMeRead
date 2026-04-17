@@ -3,12 +3,12 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query, UploadFile, File, Form, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.dependencies import get_current_teacher
-from app.db.session import get_db
-from app.models.teacher import Teacher
-from app.models.passage import Language
-from app.models.student import GradeLevel
-from app.schemas.passage import (
+from app.dependencies import get_current_teacher
+from app.db import get_db
+from app.models import Teacher
+from app.models import Language
+from app.models import GradeLevel
+from app.schema import (
     PassageCreate,
     PassageUpdate,
     PassageResponse,

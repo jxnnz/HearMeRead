@@ -2,11 +2,11 @@ from fastapi import APIRouter, Depends, Query, UploadFile, File, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
-from app.api.v1.dependencies import get_current_teacher
-from app.api.v1.routes.passages import _validate_docx, _MAX_FILE_SIZE
-from app.db.session import get_db
-from app.models.teacher import Teacher
-from app.schemas.passage import QuestionCreate, QuestionUpdate, QuestionResponse
+from app.dependencies import get_current_teacher
+from app.routes.passages import _validate_docx, _MAX_FILE_SIZE
+from app.db import get_db
+from app.models import Teacher
+from app.schema import QuestionCreate, QuestionUpdate, QuestionResponse
 from app.services import question_service
 from app.utils.docx_parser import parse_questions_docx
 from fastapi import HTTPException
