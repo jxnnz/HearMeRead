@@ -1,20 +1,18 @@
-from fastapi import APIRouter, Depends, Query, UploadFile, File, status
+from fastapi import APIRouter, Depends, Query, UploadFile, File, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
 from app.dependencies import get_current_teacher
-from app.routes.passages import _validate_docx, _MAX_FILE_SIZE
 from app.db import get_db
 from app.models import Teacher
 from app.schema import QuestionCreate, QuestionUpdate, QuestionResponse
 from app.services import question_service
-from app.utils.docx_parser import parse_questions_docx
-from fastapi import HTTPException
+from app.utils.docx_parser import validate_upload, parse_questions_only
 
 router = APIRouter(tags=["Questions"])
 
 
-# ── List questions for a passage ─────────────────────────────────────────────
+# ── List questions for a passage ──────────────────────────────────────────────
 
 @router.get(
     "/passages/{passage_id}/questions",
@@ -60,7 +58,7 @@ async def create_question(
     "/passages/{passage_id}/questions/upload",
     response_model=List[QuestionResponse],
     status_code=status.HTTP_201_CREATED,
-    summary="Upload a .docx file to bulk-add questions",
+    summary="Upload a .docx or .txt file to bulk-add questions",
     description=(
         "Each non-empty paragraph in the document becomes one question. "
         "Numbering prefixes like '1.', '2)', 'Q1:' are stripped automatically."
@@ -68,20 +66,16 @@ async def create_question(
 )
 async def upload_questions(
     passage_id: int,
-    file: UploadFile = File(..., description="A .docx file where each paragraph is a question"),
+    file: UploadFile = File(..., description="A .docx or .txt file where each paragraph is a question"),
     db: AsyncSession = Depends(get_db),
     current_teacher: Teacher = Depends(get_current_teacher),
 ):
-    _validate_docx(file)
-
     file_bytes = await file.read()
-    if len(file_bytes) > _MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail="File exceeds the 5 MB size limit.",
-        )
 
-    question_texts = parse_questions_docx(file_bytes)
+    # validate_upload checks both size (5 MB) and file type (.docx / .txt)
+    validate_upload(file_bytes, file.filename)
+
+    question_texts = parse_questions_only(file_bytes, file.filename)
 
     return await question_service.bulk_create_questions(
         db=db,

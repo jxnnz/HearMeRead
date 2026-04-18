@@ -123,6 +123,37 @@ class StudentListResponse(BaseModel):
     students:  List[StudentResponse]
 
 
+# ── Reading Result ────────────────────────────────────────────────────────────
+
+class ReadingResultResponse(BaseModel):
+    session_id:           int
+    reading_time_seconds: Optional[float]
+    total_words:          Optional[int]
+    miscue_count:         Optional[int]
+    cwpm:                 Optional[float]
+    created_at:           datetime
+    updated_at:           Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+# ── Session Observation ───────────────────────────────────────────────────────
+
+class SessionObservationResponse(BaseModel):
+    session_id:            int
+    comprehension_correct: Optional[int]
+    comprehension_total:   Optional[int]
+    fluency_level:         Optional[int]
+    learner_experience:    Optional[int]
+    teacher_remarks:       Optional[str]
+    created_at:            datetime
+    updated_at:            Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
 # ── Assessment Session ────────────────────────────────────────────────────────
 
 def _validate_school_year(v: Optional[str]) -> Optional[str]:
@@ -139,19 +170,25 @@ def _validate_school_year(v: Optional[str]) -> Optional[str]:
 class SessionCreate(BaseModel):
     student_id:  int
     passage_id:  int
-    school_year: str = Field(..., examples=["2024-2025"])
+    school_year: str      = Field(..., examples=["2024-2025"])
     period:      AssessmentPeriod
-
-    @field_validator("school_year")
-    @classmethod
-    def validate_school_year(cls, v: str) -> str:
-        return _validate_school_year(v)
+    language:    Language = Field(..., examples=[Language.english])
 
 
 class SessionComplete(BaseModel):
-    reading_time_seconds:  float         = Field(..., gt=0)
-    total_words:           int           = Field(..., gt=0)
-    miscue_count:          int           = Field(0, ge=0)
+    """
+    Submitted in two logical parts — both sent together when the teacher
+    finishes the full assessment flow.
+
+    reading_result  → persisted to reading_results table
+    observation     → persisted to session_observations table
+    """
+    # reading_results
+    reading_time_seconds:  float = Field(..., gt=0)
+    total_words:           int   = Field(..., gt=0)
+    miscue_count:          int   = Field(0, ge=0)
+
+    # session_observations
     comprehension_correct: int           = Field(..., ge=0)
     comprehension_total:   int           = Field(..., gt=0)
     fluency_level:         int           = Field(..., ge=1, le=4)
@@ -160,16 +197,9 @@ class SessionComplete(BaseModel):
 
 
 class SessionUpdate(BaseModel):
-    school_year:           Optional[str]              = Field(None, examples=["2024-2025"])
-    period:                Optional[AssessmentPeriod] = None
-    reading_time_seconds:  Optional[float]            = Field(None, gt=0)
-    total_words:           Optional[int]              = Field(None, gt=0)
-    miscue_count:          Optional[int]              = Field(None, ge=0)
-    comprehension_correct: Optional[int]              = Field(None, ge=0)
-    comprehension_total:   Optional[int]              = Field(None, gt=0)
-    fluency_level:         Optional[int]              = Field(None, ge=1, le=4)
-    learner_experience:    Optional[int]              = Field(None, ge=1, le=5)
-    teacher_remarks:       Optional[str]              = Field(None, max_length=1000)
+    school_year: Optional[str]              = Field(None, examples=["2024-2025"])
+    period:      Optional[AssessmentPeriod] = None
+    language:    Optional[Language]         = None
 
     @field_validator("school_year")
     @classmethod
@@ -178,25 +208,21 @@ class SessionUpdate(BaseModel):
 
 
 class SessionResponse(BaseModel):
-    id:                    int
-    teacher_id:            int
-    student_id:            int
-    passage_id:            int
-    school_year:           str
-    period:                AssessmentPeriod
-    reading_time_seconds:  Optional[float]
-    total_words:           Optional[int]
-    miscue_count:          Optional[int]
-    cwpm:                  Optional[float]
-    comprehension_correct: Optional[int]
-    comprehension_total:   Optional[int]
-    fluency_level:         Optional[int]
-    learner_experience:    Optional[int]
-    teacher_remarks:       Optional[str]
-    is_completed:          bool
-    is_archived:           bool
-    created_at:            datetime
-    updated_at:            datetime
+    id:          int
+    teacher_id:  int
+    student_id:  int
+    passage_id:  int
+    school_year: str
+    period:      AssessmentPeriod
+    language:    Language
+    is_completed: bool
+    is_archived:  bool
+    created_at:   datetime
+    updated_at:   datetime
+
+    # Nested child tables — None until the teacher completes those steps
+    reading_result: Optional[ReadingResultResponse]      = None
+    observation:    Optional[SessionObservationResponse] = None
 
     class Config:
         from_attributes = True

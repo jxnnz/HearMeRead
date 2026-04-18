@@ -1,21 +1,23 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+from sqlalchemy import text
 
 from app.core.config import settings
 from app.router import api_router
-from app.db import engine, Base
+from app.db import engine
+from app.routes.asr import router as asr_router
 
-# Import consolidated model file so Alembic and Base.metadata.create_all can find all models
 from app import models  # noqa: F401
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create tables on startup (dev convenience — use Alembic in production)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # Verify DB connectivity only — schema is managed by Alembic
+    async with engine.connect() as conn:
+        await conn.execute(text("SELECT 1"))
     yield
+    await engine.dispose()
 
 
 app = FastAPI(
@@ -27,7 +29,6 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS — allow the React PWA frontend to call the API
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -39,8 +40,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount all API routes
 app.include_router(api_router)
+app.include_router(asr_router)
 
 
 @app.get("/", tags=["Health"])

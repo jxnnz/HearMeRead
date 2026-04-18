@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 from fastapi import APIRouter, Depends, Query, UploadFile, File, Form, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,38 +13,25 @@ from app.schema import (
     PassageUpdate,
     PassageResponse,
     PassageListResponse,
+    QuestionResponse,
 )
-from app.services import passage_service
-from app.utils.docx_parser import parse_passage_docx
+from app.services import passage_service, question_service
+from app.utils.docx_parser import validate_upload, parse_combined, parse_passage_only
 
 router = APIRouter(prefix="/passages", tags=["Passages"])
 
-_ALLOWED_MIME = {
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "application/octet-stream",  # some browsers send this for .docx
-}
-_MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
 
-
-def _validate_docx(file: UploadFile) -> None:
-    if not file.filename.endswith(".docx"):
-        raise HTTPException(
-            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail="Only .docx files are accepted.",
-        )
-
-
-# ── List ─────────────────────────────────────────────────────────────────────
+# ── List ──────────────────────────────────────────────────────────────────────
 
 @router.get("", response_model=PassageListResponse, summary="List passages")
 async def list_passages(
-    page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
-    language: Optional[Language] = Query(None),
-    grade_level: Optional[GradeLevel] = Query(None),
-    include_archived: bool = Query(False, description="Include archived passages"),
-    db: AsyncSession = Depends(get_db),
-    current_teacher: Teacher = Depends(get_current_teacher),
+    page:             int                    = Query(1, ge=1),
+    page_size:        int                    = Query(20, ge=1, le=100),
+    language:         Optional[Language]     = Query(None),
+    grade_level:      Optional[GradeLevel]   = Query(None),
+    include_archived: bool                   = Query(False),
+    db:               AsyncSession           = Depends(get_db),
+    current_teacher:  Teacher                = Depends(get_current_teacher),
 ):
     total, passages = await passage_service.get_passages(
         db=db,
@@ -58,43 +45,99 @@ async def list_passages(
     return PassageListResponse(total=total, page=page, page_size=page_size, passages=passages)
 
 
-# ── Create (manual) ──────────────────────────────────────────────────────────
+# ── Create manually ───────────────────────────────────────────────────────────
 
-@router.post("", response_model=PassageResponse, status_code=status.HTTP_201_CREATED, summary="Create a passage")
+@router.post(
+    "",
+    response_model=PassageResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a passage manually",
+)
 async def create_passage(
-    data: PassageCreate,
-    db: AsyncSession = Depends(get_db),
-    current_teacher: Teacher = Depends(get_current_teacher),
+    data:            PassageCreate,
+    db:              AsyncSession = Depends(get_db),
+    current_teacher: Teacher      = Depends(get_current_teacher),
 ):
     return await passage_service.create_passage(db=db, data=data, teacher_id=current_teacher.id)
 
 
-# ── Create (upload .docx) ────────────────────────────────────────────────────
+# ── Upload: combined passage + questions in one file ─────────────────────────
+
+class CombinedUploadResponse(PassageResponse):
+    imported_questions: List[QuestionResponse] = []
+
 
 @router.post(
     "/upload",
+    response_model=CombinedUploadResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Upload a .docx or .txt file containing both passage and questions",
+    description=(
+        "The file must follow the template format with **[PASSAGE]** and **[QUESTIONS]** "
+        "section markers. Both the passage and all questions are created in one request. "
+        "Numbering prefixes (1. / Q1: / etc.) on questions are stripped automatically."
+    ),
+)
+async def upload_combined(
+    file:            UploadFile  = File(...),
+    title:           str         = Form(..., min_length=1, max_length=255),
+    language:        Language    = Form(...),
+    grade_level:     GradeLevel  = Form(...),
+    db:              AsyncSession = Depends(get_db),
+    current_teacher: Teacher      = Depends(get_current_teacher),
+):
+    file_bytes = await file.read()
+    validate_upload(file_bytes, file.filename)
+
+    parsed = parse_combined(file_bytes, file.filename)
+
+    # Create the passage first
+    passage = await passage_service.create_passage_from_docx(
+        db=db,
+        title=title,
+        language=language,
+        grade_level=grade_level,
+        content=parsed.passage_content,
+        teacher_id=current_teacher.id,
+    )
+
+    # Bulk create all parsed questions
+    questions = await question_service.bulk_create_questions(
+        db=db,
+        passage_id=passage.id,
+        texts=parsed.questions,
+        teacher_id=current_teacher.id,
+    )
+
+    # Build combined response
+    response = CombinedUploadResponse(
+        **PassageResponse.model_validate(passage).model_dump(),
+        imported_questions=questions,
+    )
+    return response
+
+
+# ── Upload: passage text only (no questions) ──────────────────────────────────
+
+@router.post(
+    "/upload/passage-only",
     response_model=PassageResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Upload a .docx file to create a passage",
+    summary="Upload a .docx or .txt file containing only the passage text",
+    description="No section markers needed — every paragraph becomes part of the passage content.",
 )
-async def upload_passage(
-    file: UploadFile = File(..., description="A .docx file containing the passage text"),
-    title: str = Form(..., min_length=1, max_length=255),
-    language: Language = Form(...),
-    grade_level: GradeLevel = Form(...),
-    db: AsyncSession = Depends(get_db),
-    current_teacher: Teacher = Depends(get_current_teacher),
+async def upload_passage_only(
+    file:            UploadFile  = File(...),
+    title:           str         = Form(..., min_length=1, max_length=255),
+    language:        Language    = Form(...),
+    grade_level:     GradeLevel  = Form(...),
+    db:              AsyncSession = Depends(get_db),
+    current_teacher: Teacher      = Depends(get_current_teacher),
 ):
-    _validate_docx(file)
-
     file_bytes = await file.read()
-    if len(file_bytes) > _MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail="File exceeds the 5 MB size limit.",
-        )
+    validate_upload(file_bytes, file.filename)
 
-    content = parse_passage_docx(file_bytes)
+    content = parse_passage_only(file_bytes, file.filename)
 
     return await passage_service.create_passage_from_docx(
         db=db,
@@ -106,34 +149,34 @@ async def upload_passage(
     )
 
 
-# ── Get one ──────────────────────────────────────────────────────────────────
+# ── Get one ───────────────────────────────────────────────────────────────────
 
 @router.get("/{passage_id}", response_model=PassageResponse, summary="Get a passage")
 async def get_passage(
-    passage_id: int,
-    db: AsyncSession = Depends(get_db),
-    current_teacher: Teacher = Depends(get_current_teacher),
+    passage_id:      int,
+    db:              AsyncSession = Depends(get_db),
+    current_teacher: Teacher      = Depends(get_current_teacher),
 ):
     return await passage_service.get_passage_by_id(
         db=db, passage_id=passage_id, teacher_id=current_teacher.id
     )
 
 
-# ── Update ───────────────────────────────────────────────────────────────────
+# ── Update ────────────────────────────────────────────────────────────────────
 
 @router.patch("/{passage_id}", response_model=PassageResponse, summary="Update a passage")
 async def update_passage(
-    passage_id: int,
-    data: PassageUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_teacher: Teacher = Depends(get_current_teacher),
+    passage_id:      int,
+    data:            PassageUpdate,
+    db:              AsyncSession  = Depends(get_db),
+    current_teacher: Teacher       = Depends(get_current_teacher),
 ):
     return await passage_service.update_passage(
         db=db, passage_id=passage_id, data=data, teacher_id=current_teacher.id
     )
 
 
-# ── Archive (soft delete) ────────────────────────────────────────────────────
+# ── Archive ───────────────────────────────────────────────────────────────────
 
 @router.delete(
     "/{passage_id}",
@@ -141,9 +184,9 @@ async def update_passage(
     summary="Archive a passage (soft delete)",
 )
 async def archive_passage(
-    passage_id: int,
-    db: AsyncSession = Depends(get_db),
-    current_teacher: Teacher = Depends(get_current_teacher),
+    passage_id:      int,
+    db:              AsyncSession = Depends(get_db),
+    current_teacher: Teacher      = Depends(get_current_teacher),
 ):
     await passage_service.archive_passage(
         db=db, passage_id=passage_id, teacher_id=current_teacher.id

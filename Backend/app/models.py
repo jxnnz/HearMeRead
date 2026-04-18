@@ -23,14 +23,14 @@ class GradeLevel(str, enum.Enum):
 
 
 class Language(str, enum.Enum):
-    english = "en"
+    english  = "en"
     filipino = "fil"
 
 
 class AssessmentPeriod(str, enum.Enum):
     beginning = "beginning"
-    middle = "middle"
-    end = "end"
+    middle    = "middle"
+    end       = "end"
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -65,7 +65,7 @@ class Student(Base):
     last_name   = Column(String(100), nullable=False)
     grade_level = Column(SAEnum(GradeLevel), nullable=False)
     section     = Column(String(100), nullable=True)
-    lrn         = Column(String(12), unique=True, nullable=True)  # Learner Reference Number
+    lrn         = Column(String(12), unique=True, nullable=True)
     teacher_id  = Column(Integer, ForeignKey("teachers.id"), nullable=False)
     created_at  = Column(DateTime(timezone=True), server_default=func.now())
     updated_at  = Column(DateTime(timezone=True), onupdate=func.now())
@@ -98,10 +98,10 @@ class Passage(Base):
 class Question(Base):
     __tablename__ = "questions"
 
-    id         = Column(Integer, primary_key=True, index=True)
-    passage_id = Column(Integer, ForeignKey("passages.id", ondelete="CASCADE"), nullable=False, index=True)
-    text       = Column(String(500), nullable=False)
-    order      = Column(Integer, nullable=False, default=0)  # display order within the passage
+    id          = Column(Integer, primary_key=True, index=True)
+    passage_id  = Column(Integer, ForeignKey("passages.id", ondelete="CASCADE"), nullable=False, index=True)
+    text        = Column(String(500), nullable=False)
+    order       = Column(Integer, nullable=False, default=0)
     is_archived = Column(Boolean, nullable=False, default=False)
     created_at  = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at  = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
@@ -121,23 +121,11 @@ class AssessmentSession(Base):
     passage_id = Column(Integer, ForeignKey("passages.id", ondelete="CASCADE"), nullable=False, index=True)
 
     # ── When ──────────────────────────────────────────────────────────────────
-    school_year = Column(String(9),            nullable=False)          # e.g. "2024-2025"
-    period      = Column(SAEnum(AssessmentPeriod), nullable=False)      # beginning | middle | end
+    school_year = Column(String(9),               nullable=False)   # e.g. "2024-2025"
+    period      = Column(SAEnum(AssessmentPeriod), nullable=False)   # beginning | middle | end
 
-    # ── Reading metrics ───────────────────────────────────────────────────────
-    reading_time_seconds = Column(Float,   nullable=True)
-    total_words          = Column(Integer, nullable=True)
-    miscue_count         = Column(Integer, nullable=True, default=0)
-    cwpm                 = Column(Float,   nullable=True)   # computed: (total_words - miscues) / (secs / 60)
-
-    # ── Comprehension ─────────────────────────────────────────────────────────
-    comprehension_correct = Column(Integer, nullable=True)
-    comprehension_total   = Column(Integer, nullable=True)
-
-    # ── Teacher observations ──────────────────────────────────────────────────
-    fluency_level      = Column(Integer, nullable=True)   # 1–4
-    learner_experience = Column(Integer, nullable=True)   # 1–5
-    teacher_remarks    = Column(Text,    nullable=True)
+    # ── Language (drives Whisper model + passage filter) ──────────────────────
+    language = Column(SAEnum(Language), nullable=False, default=Language.english)
 
     # ── Status ────────────────────────────────────────────────────────────────
     is_completed = Column(Boolean, nullable=False, default=False)
@@ -146,10 +134,12 @@ class AssessmentSession(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
-    # Relationships
-    teacher = relationship("Teacher", back_populates="assessment_sessions")
-    student = relationship("Student", back_populates="assessment_sessions")
-    passage = relationship("Passage", back_populates="assessment_sessions")
+    # ── Relationships ─────────────────────────────────────────────────────────
+    teacher     = relationship("Teacher", back_populates="assessment_sessions")
+    student     = relationship("Student", back_populates="assessment_sessions")
+    passage     = relationship("Passage", back_populates="assessment_sessions")
+    reading_result  = relationship("ReadingResult",      back_populates="session", uselist=False)
+    observation     = relationship("SessionObservation", back_populates="session", uselist=False)
 
     # ── Validators ────────────────────────────────────────────────────────────
     @validates("school_year")
@@ -161,6 +151,60 @@ class AssessmentSession(Base):
             raise ValueError("school_year end must be exactly one year after start (e.g. 2024-2025)")
         return value
 
+
+class ReadingResult(Base):
+    """
+    CWPM fluency metrics — created when the teacher submits the recording step.
+    CWPM = (total_words - miscue_count) / (reading_time_seconds / 60)
+    """
+    __tablename__ = "reading_results"
+
+    session_id = Column(
+        Integer,
+        ForeignKey("assessment_sessions.id", ondelete="CASCADE"),
+        primary_key=True,
+        index=True,
+    )
+
+    reading_time_seconds = Column(Float,   nullable=True)
+    total_words          = Column(Integer, nullable=True)
+    miscue_count         = Column(Integer, nullable=True, default=0)
+    cwpm                 = Column(Float,   nullable=True)   # auto-computed on save
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
+
+    session = relationship("AssessmentSession", back_populates="reading_result")
+
+
+class SessionObservation(Base):
+    """
+    Comprehension scores + teacher ratings — created after the observation step.
+    """
+    __tablename__ = "session_observations"
+
+    session_id = Column(
+        Integer,
+        ForeignKey("assessment_sessions.id", ondelete="CASCADE"),
+        primary_key=True,
+        index=True,
+    )
+
+    # Comprehension
+    comprehension_correct = Column(Integer, nullable=True)
+    comprehension_total   = Column(Integer, nullable=True)
+
+    # Teacher ratings
+    fluency_level      = Column(Integer, nullable=True)   # 1–4
+    learner_experience = Column(Integer, nullable=True)   # 1–5
+    teacher_remarks    = Column(Text,    nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
+
+    session = relationship("AssessmentSession", back_populates="observation")
+
+    # ── Validators ────────────────────────────────────────────────────────────
     @validates("fluency_level")
     def validate_fluency_level(self, key, value):
         if value is not None and value not in range(1, 5):
