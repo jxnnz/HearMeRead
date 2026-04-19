@@ -1,0 +1,160 @@
+/* ============================================================
+   HearMeRead — DetailDrawer CSS
+   ============================================================ */
+
+/* ── Overlay ─────────────────────────────────────────── */
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 15, 35, 0.3);
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-end;
+  z-index: 200;
+  animation: drawerFadeIn 0.15s ease;
+}
+
+@keyframes drawerFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Drawer panel ────────────────────────────────────── */
+.drawer {
+  background: #fff;
+  width: 420px;
+  max-width: 92vw;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.12);
+  animation: slideInRight 0.2s ease;
+  overflow-y: auto;
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(24px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+/* ── Header ──────────────────────────────────────────── */
+.drawer__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 24px 0;
+  flex-shrink: 0;
+}
+
+.drawer__header-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #8a94b2;
+  font-weight: 500;
+}
+
+.drawer__grade { font-weight: 600; }
+
+.drawer__dot { color: #c8d0ec; }
+
+.drawer__lang { text-transform: capitalize; }
+
+.drawer__archived-badge {
+  background: #f3e8e8;
+  color: #9b3a3a;
+  font-size: 10.5px;
+  font-weight: 700;
+  border-radius: 20px;
+  padding: 2px 9px;
+  margin-left: 4px;
+}
+
+.drawer__close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #8a94b2;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.drawer__close:hover {
+  color: #1a2340;
+  background: #f0f1f5;
+}
+
+/* ── Title ───────────────────────────────────────────── */
+.drawer__title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a2340;
+  font-family: "Georgia", serif;
+  padding: 14px 24px 2px;
+  margin: 0;
+  line-height: 1.3;
+}
+
+/* ── Word count ──────────────────────────────────────── */
+.drawer__meta {
+  font-size: 12px;
+  color: #8a94b2;
+  padding: 0 24px 16px;
+  margin: 0;
+  border-bottom: 1.5px solid #eef0f8;
+}
+
+/* ── Content ─────────────────────────────────────────── */
+.drawer__content {
+  padding: 20px 24px;
+  flex: 1;
+  font-size: 14.5px;
+  color: #2a3452;
+  line-height: 1.85;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ── Footer ──────────────────────────────────────────── */
+.drawer__footer {
+  display: flex;
+  gap: 10px;
+  padding: 16px 24px 24px;
+  justify-content: flex-end;
+  border-top: 1.5px solid #eef0f8;
+  flex-shrink: 0;
+}
+
+.drawer__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 9px 18px;
+  border: 1.5px solid transparent;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.drawer__btn--primary {
+  background: #2c3e6b;
+  color: #fff;
+}
+
+.drawer__btn--primary:hover { background: #1e2d52; }
+
+.drawer__btn--ghost {
+  background: transparent;
+  border-color: #ccd1e4;
+  color: #1a2340;
+}
+
+.drawer__btn--ghost:hover { background: #f0f1f5; }

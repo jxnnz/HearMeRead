@@ -1,0 +1,291 @@
+/* ============================================================
+   HearMeRead — PassagesPage CSS
+   Page-level styles only.
+   Card styles  → PassageCard.css
+   Modal styles → PassageModal.css
+   Drawer styles→ DetailDrawer.css
+   ============================================================ */
+
+/* ── Page shell ─────────────────────────────────────── */
+.passages {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+/* ── Header ──────────────────────────────────────────── */
+.passages__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.passages__title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a2340;
+  margin: 0;
+  font-family: "Georgia", serif;
+}
+
+.passages__add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f0f1f5;
+  border: 1.5px solid #ccd1e4;
+  border-radius: 8px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a2340;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.passages__add-btn:hover {
+  background: #f8f9fd;
+  border-color: #2c3e6b;
+}
+
+.passages__add-btn--sm {
+  font-size: 12px;
+  padding: 7px 14px;
+}
+
+/* ── Toolbar (search + filter) ───────────────────────── */
+.passages__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  position: relative;
+}
+
+/* Search box */
+.search-box {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border: 1.5px solid #dde2f0;
+  border-radius: 8px;
+  padding: 0 12px;
+  gap: 8px;
+  width: 230px;
+  transition: border-color 0.15s;
+}
+
+.search-box:focus-within {
+  border-color: #2c3e6b;
+}
+
+.search-box__icon {
+  color: #8a94b2;
+  flex-shrink: 0;
+}
+
+.search-box__input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  color: #1a2340;
+  padding: 9px 0;
+  width: 100%;
+  font-family: inherit;
+}
+
+.search-box__input::placeholder {
+  color: #aab0c8;
+}
+
+.search-box__clear {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #8a94b2;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+}
+
+.search-box__clear:hover { color: #1a2340; }
+
+/* ── Filter dropdown ─────────────────────────────────── */
+.filter-wrap {
+  position: relative;
+}
+
+.filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  border: 1.5px solid #dde2f0;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1a2340;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+
+.filter-btn:hover,
+.filter-btn--active {
+  border-color: #2c3e6b;
+}
+
+.chevron--up {
+  transform: rotate(180deg);
+  transition: transform 0.2s;
+}
+
+.filter-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  background: #fff;
+  border: 1.5px solid #dde2f0;
+  border-radius: 10px;
+  padding: 16px;
+  min-width: 220px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.filter-panel__row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filter-panel__row label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #8a94b2;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.filter-panel__row select {
+  border: 1.5px solid #dde2f0;
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 13px;
+  color: #1a2340;
+  outline: none;
+  background: #f8f9fd;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.filter-panel__clear {
+  background: none;
+  border: none;
+  color: #2c3e6b;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0 0;
+  text-align: left;
+  text-decoration: underline;
+  font-family: inherit;
+}
+
+/* ── Active filter pills ─────────────────────────────── */
+.passages__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #e8ecf7;
+  color: #2c3e6b;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 20px;
+  padding: 4px 10px 4px 12px;
+}
+
+.pill button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #2c3e6b;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+
+.pill button:hover { opacity: 1; }
+
+/* ── Passage card grid ───────────────────────────────── */
+.passages__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 820px) {
+  .passages__grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 540px) {
+  .passages__grid { grid-template-columns: 1fr; }
+}
+
+/* ── Empty / loading / error states ─────────────────── */
+.passages__state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 72px 20px;
+  color: #8a94b2;
+  text-align: center;
+  font-size: 14px;
+}
+
+.passages__state--error { color: #c0392b; }
+
+.passages__retry-btn {
+  background: #f0f1f5;
+  border: 1.5px solid #ccd1e4;
+  border-radius: 8px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a2340;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.passages__retry-btn:hover { background: #e4e7f5; }
+
+/* ── Spinner ─────────────────────────────────────────── */
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e0e4f0;
+  border-top-color: #2c3e6b;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
