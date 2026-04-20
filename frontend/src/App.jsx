@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from './pages/LoginPage';
 import PassagesPage from "./pages/PassagesPage";
+import AddPassagePage from "./pages/AddPassagePage";
+import StudentRecordPage from "./pages/StudentRecordPage";
 
 function RequireAuth({ children }) {
   const token = localStorage.getItem("token");
@@ -21,7 +23,8 @@ export default function App() {
         <Route path="/assessment" element={<RequireAuth><Placeholder label="Assessment" /></RequireAuth>} />
 
         <Route path="/passages" element={<PassagesPage />} />
-        <Route path="/students" element={<RequireAuth><Placeholder label="Student Records" /></RequireAuth>} />
+        <Route path="/passages/add" element={<AddPassagePage />} />
+        <Route path="/students" element={<StudentRecordPage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>

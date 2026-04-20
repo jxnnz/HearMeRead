@@ -1,0 +1,127 @@
+/* ============================================================
+   HearMeRead — FilterButton CSS
+   ============================================================ */
+
+.filter-btn-wrap {
+  position: relative;
+}
+
+/* ── Trigger ─────────────────────────────────────────── */
+.filter-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  border: 1.5px solid #c8d0e4;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a2340;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  transition: border-color 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+
+.filter-trigger:hover,
+.filter-trigger--open {
+  border-color: #2c3e6b;
+  background: #f4f6fb;
+}
+
+.filter-trigger--active {
+  border-color: #2c3e6b;
+  color: #2c3e6b;
+}
+
+/* Active count badge */
+.filter-trigger__badge {
+  background: #2c3e6b;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 20px;
+  padding: 1px 7px;
+  line-height: 1.4;
+}
+
+.filter-chevron {
+  transition: transform 0.2s;
+}
+
+.filter-chevron--up {
+  transform: rotate(180deg);
+  transition: transform 0.2s;
+}
+
+/* ── Dropdown ────────────────────────────────────────── */
+.filter-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  background: #fff;
+  border: 1.5px solid #dde2f0;
+  border-radius: 12px;
+  padding: 16px;
+  min-width: 230px;
+  box-shadow: 0 8px 28px rgba(44, 62, 107, 0.12);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: dropdownIn 0.15s ease;
+}
+
+@keyframes dropdownIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.filter-dropdown__row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.filter-dropdown__label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8a94b2;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-family: "Poppins", sans-serif;
+}
+
+.filter-dropdown__select {
+  border: 1.5px solid #dde2f0;
+  border-radius: 7px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #1a2340;
+  outline: none;
+  background: #f8f9fd;
+  font-family: "Poppins", sans-serif;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.filter-dropdown__select:focus {
+  border-color: #2c3e6b;
+}
+
+.filter-dropdown__clear {
+  background: none;
+  border: none;
+  color: #c0392b;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0 0;
+  text-align: left;
+  font-family: "Poppins", sans-serif;
+  text-decoration: underline;
+  transition: opacity 0.15s;
+}
+
+.filter-dropdown__clear:hover { opacity: 0.7; }

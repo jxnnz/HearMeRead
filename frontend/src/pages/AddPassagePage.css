@@ -1,0 +1,380 @@
+/* ============================================================
+   HearMeRead — Add Passage Page CSS
+   Combined styles for:
+     - AddPassagePage (page shell, topbar, save button)
+     - PassageDetailsForm (ap-card, ap-field, ap-input, etc.)
+     - PassageQuestionsForm (pq-block, pq-option, etc.)
+   Font: Poppins (loaded via index.html or index.css)
+   ============================================================ */
+
+/* ── Page shell ─────────────────────────────────────────── */
+.ap-page {
+  max-width: 680px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  font-family: "Poppins", sans-serif;
+}
+
+/* ── Top bar ─────────────────────────────────────────────── */
+.ap-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ap-topbar__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Back button — circle with chevron */
+.ap-back-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid #c8d0e4;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #1a2340;
+  transition: background 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+
+.ap-back-btn:hover {
+  background: #eef0fb;
+  border-color: #2c3e6b;
+}
+
+.ap-page__title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a2340;
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+}
+
+/* Save Passage button */
+.ap-save-btn {
+  background: #f0f1f5;
+  border: 1.5px solid #c8d0e4;
+  border-radius: 8px;
+  padding: 9px 22px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a2340;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+  white-space: nowrap;
+}
+
+.ap-save-btn:hover:not(:disabled) {
+  background: #e4e7f5;
+  border-color: #2c3e6b;
+}
+
+.ap-save-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ── Error banner ─────────────────────────────────────────── */
+.ap-error {
+  background: #fdecea;
+  color: #c0392b;
+  border-radius: 8px;
+  padding: 11px 16px;
+  font-size: 13px;
+  font-family: "Poppins", sans-serif;
+}
+
+/* ============================================================
+   SHARED CARD SHELL
+   Used by both PassageDetailsForm and PassageQuestionsForm
+   ============================================================ */
+.ap-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 2px 12px rgba(44, 62, 107, 0.07);
+}
+
+.ap-card__title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a2340;
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+}
+
+.ap-card__subtitle {
+  font-size: 12.5px;
+  color: #8a94b2;
+  margin: -10px 0 0;
+  font-family: "Poppins", sans-serif;
+}
+
+/* ============================================================
+   SHARED FIELD STYLES
+   ap-field, ap-label, ap-input, ap-textarea
+   ============================================================ */
+.ap-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Two-column row for Grade Level + Difficulty */
+.ap-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 480px) {
+  .ap-row { grid-template-columns: 1fr; }
+}
+
+/* Half-width field (Language) */
+.ap-field--half {
+  max-width: 48%;
+}
+
+@media (max-width: 480px) {
+  .ap-field--half { max-width: 100%; }
+}
+
+/* Label */
+.ap-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #3a4566;
+  font-family: "Poppins", sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Word count badge next to content label */
+.ap-word-count {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 400;
+  color: #aab0c8;
+}
+
+/* Text input + select */
+.ap-input {
+  border: 1.5px solid #dde2f0;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 13px;
+  color: #1a2340;
+  background: #f4f6fb;
+  outline: none;
+  font-family: "Poppins", sans-serif;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.15s, background 0.15s;
+  appearance: none;
+}
+
+.ap-input:focus {
+  border-color: #2c3e6b;
+  background: #fff;
+}
+
+.ap-input::placeholder {
+  color: #bcc3d8;
+}
+
+/* Textarea */
+.ap-textarea {
+  border: 1.5px solid #dde2f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #1a2340;
+  background: #f4f6fb;
+  outline: none;
+  font-family: "Poppins", sans-serif;
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  line-height: 1.65;
+  min-height: 140px;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.ap-textarea--sm {
+  min-height: 80px;
+}
+
+.ap-textarea:focus {
+  border-color: #2c3e6b;
+  background: #fff;
+}
+
+.ap-textarea::placeholder {
+  color: #bcc3d8;
+}
+
+/* ============================================================
+   PASSAGE QUESTIONS FORM
+   pq-block, pq-options, pq-option, pq-add-option,
+   pq-add-question
+   ============================================================ */
+
+/* ── Individual question block ───────────────────────────── */
+.pq-block {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  background: #f8f9fd;
+  border-radius: 10px;
+  border: 1.5px solid #eaecf8;
+}
+
+/* Question block header row */
+.pq-block__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pq-block__num {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #2c3e6b;
+  font-family: "Poppins", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Remove question button */
+.pq-block__remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #b0b8cc;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.pq-block__remove:hover {
+  color: #c0392b;
+  background: #fdecea;
+}
+
+/* ── Options list ─────────────────────────────────────────── */
+.pq-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: #eef0fb;
+  border-radius: 8px;
+}
+
+/* Single option row */
+.pq-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1.5px solid #dde2f0;
+  border-radius: 8px;
+  padding: 6px 10px 6px 14px;
+}
+
+/* Option input — borderless inside the row */
+.pq-option__input {
+  border: none !important;
+  background: transparent !important;
+  padding: 4px 0 !important;
+  font-size: 13px;
+  font-weight: 500;
+  flex: 1;
+}
+
+.pq-option__input:focus {
+  outline: none;
+  border: none !important;
+  background: transparent !important;
+}
+
+/* Remove option × button */
+.pq-option__remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #b0b8cc;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.pq-option__remove:hover {
+  color: #c0392b;
+}
+
+/* ── Add option link ──────────────────────────────────────── */
+.pq-add-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #2c3e6b;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: "Poppins", sans-serif;
+  padding: 2px 4px;
+  transition: opacity 0.15s;
+}
+
+.pq-add-option:hover {
+  opacity: 0.7;
+}
+
+/* ── Add Question button (full width, dashed) ─────────────── */
+.pq-add-question {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: 1.5px dashed #b0bce0;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #2c3e6b;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  transition: background 0.15s, border-color 0.15s;
+  margin-top: 4px;
+}
+
+.pq-add-question:hover {
+  background: #f0f3fc;
+  border-color: #2c3e6b;
+}

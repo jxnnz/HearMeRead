@@ -1,0 +1,83 @@
+/* ============================================================
+   HearMeRead — AppButton CSS
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+.app-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 8px;
+  font-family: "Poppins", sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: background 0.15s, border-color 0.15s, opacity 0.15s, color 0.15s;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.app-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Sizes ───────────────────────────────────────────── */
+.app-btn--sm  { font-size: 12px; padding: 7px 14px; }
+.app-btn--md  { font-size: 13px; padding: 9px 20px; }
+.app-btn--lg  { font-size: 15px; padding: 12px 28px; }
+.app-btn--full { width: 100%; }
+
+/* ── Primary (dark navy, filled) ─────────────────────── */
+.app-btn--primary {
+  background: #2c3e6b;
+  color: #fff;
+  border-color: #2c3e6b;
+}
+.app-btn--primary:hover:not(:disabled) {
+  background: #1e2d52;
+  border-color: #1e2d52;
+}
+
+/* ── Teal / Add Student (matches the UI's teal-blue) ─── */
+.app-btn--teal {
+  background: #1a7fc1;
+  color: #fff;
+  border-color: #1a7fc1;
+}
+.app-btn--teal:hover:not(:disabled) {
+  background: #1568a3;
+  border-color: #1568a3;
+}
+
+/* ── Outline (white bg, grey border) ─────────────────── */
+.app-btn--outline {
+  background: #fff;
+  color: #1a2340;
+  border-color: #c8d0e4;
+}
+.app-btn--outline:hover:not(:disabled) {
+  background: #f4f6fb;
+  border-color: #2c3e6b;
+}
+
+/* ── Ghost (transparent) ─────────────────────────────── */
+.app-btn--ghost {
+  background: transparent;
+  color: #2c3e6b;
+  border-color: transparent;
+}
+.app-btn--ghost:hover:not(:disabled) {
+  background: #f0f3fc;
+}
+
+/* ── Danger ──────────────────────────────────────────── */
+.app-btn--danger {
+  background: transparent;
+  color: #c0392b;
+  border-color: #e8c8c5;
+}
+.app-btn--danger:hover:not(:disabled) {
+  background: #fdecea;
+}

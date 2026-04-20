@@ -1,71 +1,98 @@
 // ============================================================
 // HearMeRead — Reading Passages Page
-// Clean version: all sub-components live in /components/
-// Connects to: GET /passages, POST /passages,
-//              PUT /passages/:id, PATCH /passages/:id/archive
+// Layout mirrors StudentRecordPage:
+//   - "All Passages" subtitle + count on the left
+//   - Search + FilterButton + AppButton on the right
+//
+// API calls:
+//   GET   /passages
+//   PUT   /passages/:id
+//   PATCH /passages/:id/archive
 // ============================================================
 import { useState, useEffect, useCallback } from "react";
-import { Search, Plus, X, ChevronDown, FileText } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Search, Plus, X, FileText } from "lucide-react";
 
-import Layout from "../components/Layout";
-import PassageCard from "../components/PassageCard";
-import PassageModal from "../components/PassageModal";
-import DetailDrawer from "../components/DetailDrawer";
+import Layout        from "../components/Layout";
+import PassageCard   from "../components/PassageCard";
+import PassageModal  from "../components/PassageModal";
+import DetailDrawer  from "../components/DetailDrawer";
+import AppButton     from "../components/AppButton";
+import FilterButton  from "../components/FilterButton";
 import { passagesApi } from "../services/api";
 
 import "./PassagesPage.css";
 
-// ── Constants ────────────────────────────────────────────────
-const LANGUAGE_OPTIONS = [
-  { value: "",         label: "All Languages" },
-  { value: "filipino", label: "Filipino" },
-  { value: "english",  label: "English" },
+// ── Filter config for FilterButton ──────────────────────────
+const FILTER_CONFIG = [
+  {
+    key: "language",
+    label: "Language",
+    options: [
+      { value: "filipino", label: "Filipino" },
+      { value: "english",  label: "English" },
+    ],
+  },
+  {
+    key: "grade_level",
+    label: "Grade Level",
+    options: ["1", "2", "3", "4", "5", "6"].map((g) => ({
+      value: g,
+      label: `Grade ${g}`,
+    })),
+  },
+  {
+    key: "status",
+    label: "Status",
+    options: [
+      { value: "active",   label: "Active" },
+      { value: "archived", label: "Archived" },
+    ],
+  },
 ];
 
-const GRADE_OPTIONS = ["", "1", "2", "3", "4", "5", "6"];
+const EMPTY_FILTERS = { language: "", grade_level: "", status: "" };
 
 const EMPTY_FORM = {
-  title: "",
-  content: "",
-  language: "filipino",
+  title:       "",
+  content:     "",
+  language:    "filipino",
   grade_level: "2",
 };
 
 // ============================================================
-// PassagesPage
+// Page Component
 // ============================================================
 export default function PassagesPage() {
-  // ── Data state ───────────────────────────────────────────
+  const navigate = useNavigate();
+
+  // ── Data ─────────────────────────────────────────────────
   const [passages, setPassages] = useState([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(null);
 
-  // ── Search & filter state ────────────────────────────────
-  const [search, setSearch]           = useState("");
-  const [filterOpen, setFilterOpen]   = useState(false);
-  const [langFilter, setLangFilter]   = useState("");
-  const [gradeFilter, setGradeFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState(""); // "" | "active" | "archived"
+  // ── Search & filter ──────────────────────────────────────
+  const [search, setSearch]   = useState("");
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
 
-  // ── Modal state ──────────────────────────────────────────
-  const [modalMode, setModalMode]   = useState(null); // null | "add" | "edit"
+  // ── Edit modal state ─────────────────────────────────────
   const [editTarget, setEditTarget] = useState(null);
   const [form, setForm]             = useState(EMPTY_FORM);
   const [saving, setSaving]         = useState(false);
   const [formError, setFormError]   = useState(null);
 
-  // ── Detail drawer state ──────────────────────────────────
+  // ── Detail drawer ─────────────────────────────────────────
   const [detailPassage, setDetailPassage] = useState(null);
 
-  // ── Fetch passages from backend ──────────────────────────
+  // ── Fetch ─────────────────────────────────────────────────
   const fetchPassages = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const params = {};
-      if (langFilter)  params.language    = langFilter;
-      if (gradeFilter) params.grade_level = gradeFilter;
-      if (statusFilter) params.is_archived = statusFilter === "archived";
+      if (filters.language)    params.language    = filters.language;
+      if (filters.grade_level) params.grade_level = filters.grade_level;
+      if (filters.status)      params.is_archived = filters.status === "archived";
       const data = await passagesApi.list(params);
       setPassages(data);
     } catch (e) {
@@ -73,11 +100,11 @@ export default function PassagesPage() {
     } finally {
       setLoading(false);
     }
-  }, [langFilter, gradeFilter, statusFilter]);
+  }, [filters]);
 
   useEffect(() => { fetchPassages(); }, [fetchPassages]);
 
-  // ── Client-side search filter ────────────────────────────
+  // ── Client-side search ────────────────────────────────────
   const displayed = passages.filter((p) => {
     if (!search) return true;
     const q = search.toLowerCase();
@@ -87,14 +114,24 @@ export default function PassagesPage() {
     );
   });
 
-  // ── Modal helpers ────────────────────────────────────────
-  function openAdd() {
-    setForm(EMPTY_FORM);
-    setFormError(null);
-    setEditTarget(null);
-    setModalMode("add");
+  // ── Filter handlers ───────────────────────────────────────
+  function handleFilterChange(key, value) {
+    setFilters((prev) => ({ ...prev, [key]: value }));
   }
 
+  function clearFilters() {
+    setFilters(EMPTY_FILTERS);
+  }
+
+  // ── Active filter pills ───────────────────────────────────
+  const activePills = FILTER_CONFIG
+    .filter((f) => filters[f.key])
+    .map((f) => ({
+      key:   f.key,
+      label: f.options.find((o) => o.value === filters[f.key])?.label ?? filters[f.key],
+    }));
+
+  // ── Edit modal handlers ───────────────────────────────────
   function openEdit(passage, e) {
     e.stopPropagation();
     setForm({
@@ -105,32 +142,26 @@ export default function PassagesPage() {
     });
     setFormError(null);
     setEditTarget(passage);
-    setModalMode("edit");
   }
 
-  function closeModal() {
-    setModalMode(null);
+  function closeEdit() {
     setEditTarget(null);
     setForm(EMPTY_FORM);
     setFormError(null);
   }
 
-  // ── Submit add / edit ────────────────────────────────────
-  async function handleSubmit(e) {
+  async function handleEditSubmit(e) {
     e.preventDefault();
-    if (!form.title.trim())   { setFormError("Title is required.");            return; }
-    if (!form.content.trim()) { setFormError("Passage content is required.");  return; }
-
+    if (!form.title.trim())   { setFormError("Title is required.");           return; }
+    if (!form.content.trim()) { setFormError("Passage content is required."); return; }
     setSaving(true);
     setFormError(null);
     try {
-      const payload = { ...form, grade_level: parseInt(form.grade_level, 10) };
-      if (modalMode === "add") {
-        await passagesApi.create(payload);
-      } else {
-        await passagesApi.update(editTarget.id, payload);
-      }
-      closeModal();
+      await passagesApi.update(editTarget.id, {
+        ...form,
+        grade_level: parseInt(form.grade_level, 10),
+      });
+      closeEdit();
       fetchPassages();
     } catch (err) {
       setFormError(err.message);
@@ -139,7 +170,7 @@ export default function PassagesPage() {
     }
   }
 
-  // ── Archive ──────────────────────────────────────────────
+  // ── Archive ───────────────────────────────────────────────
   async function handleArchive(passage, e) {
     e.stopPropagation();
     if (!confirm(`Archive "${passage.title}"?\nIt will no longer appear in active assessment lists.`)) return;
@@ -151,16 +182,6 @@ export default function PassagesPage() {
     }
   }
 
-  // ── Clear all filters ────────────────────────────────────
-  function clearFilters() {
-    setLangFilter("");
-    setGradeFilter("");
-    setStatusFilter("");
-    setFilterOpen(false);
-  }
-
-  const hasActiveFilters = langFilter || gradeFilter || statusFilter;
-
   // ============================================================
   // RENDER
   // ============================================================
@@ -168,134 +189,108 @@ export default function PassagesPage() {
     <Layout>
       <div className="passages">
 
-        {/* ── Page header ── */}
-        <div className="passages__header">
-          <h1 className="passages__title">Reading Passages</h1>
-          <button className="passages__add-btn" onClick={openAdd}>
-            <Plus size={16} />
-            Add Passage
-          </button>
-        </div>
+        {/* ── Page title ── */}
+        <h1 className="passages__title">Reading Passages</h1>
 
-        {/* ── Search + Filter toolbar ── */}
+        {/* ── Toolbar: subtitle+count LEFT / search+filter+add RIGHT ── */}
         <div className="passages__toolbar">
-          {/* Search */}
-          <div className="search-box">
-            <Search size={15} className="search-box__icon" />
-            <input
-              className="search-box__input"
-              type="text"
-              placeholder="Search Passage"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            {search && (
-              <button className="search-box__clear" onClick={() => setSearch("")} aria-label="Clear search">
-                <X size={13} />
-              </button>
-            )}
+          <div className="passages__toolbar-left">
+            <h2 className="passages__subtitle">All Passages</h2>
+            <span className="passages__count">{displayed.length} passages</span>
           </div>
 
-          {/* Filter dropdown trigger */}
-          <div className="filter-wrap">
-            <button
-              className={`filter-btn${filterOpen ? " filter-btn--active" : ""}`}
-              onClick={() => setFilterOpen((o) => !o)}
-            >
-              Filter
-              <ChevronDown size={14} className={filterOpen ? "chevron--up" : ""} />
-            </button>
-
-            {filterOpen && (
-              <div className="filter-panel">
-                <div className="filter-panel__row">
-                  <label>Language</label>
-                  <select value={langFilter} onChange={(e) => setLangFilter(e.target.value)}>
-                    {LANGUAGE_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="filter-panel__row">
-                  <label>Grade</label>
-                  <select value={gradeFilter} onChange={(e) => setGradeFilter(e.target.value)}>
-                    {GRADE_OPTIONS.map((g) => (
-                      <option key={g} value={g}>
-                        {g === "" ? "All Grades" : `Grade ${g}`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="filter-panel__row">
-                  <label>Status</label>
-                  <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                    <option value="">All</option>
-                    <option value="active">Active</option>
-                    <option value="archived">Archived</option>
-                  </select>
-                </div>
-
-                <button className="filter-panel__clear" onClick={clearFilters}>
-                  Clear filters
+          <div className="passages__toolbar-right">
+            {/* Search */}
+            <div className="passages__search">
+              <Search size={14} className="passages__search-icon" />
+              <input
+                type="text"
+                className="passages__search-input"
+                placeholder="Search Passage"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              {search && (
+                <button
+                  className="passages__search-clear"
+                  onClick={() => setSearch("")}
+                  aria-label="Clear search"
+                >
+                  <X size={13} />
                 </button>
-              </div>
-            )}
+              )}
+            </div>
+
+            {/* Filter */}
+            <FilterButton
+              filters={FILTER_CONFIG}
+              values={filters}
+              onChange={handleFilterChange}
+              onClear={clearFilters}
+            />
+
+            {/* Add Passage */}
+            <AppButton
+              variant="teal"
+              onClick={() => navigate("/passages/add")}
+            >
+              <Plus size={15} />
+              Add Passage
+            </AppButton>
           </div>
         </div>
 
         {/* ── Active filter pills ── */}
-        {hasActiveFilters && (
+        {activePills.length > 0 && (
           <div className="passages__pills">
-            {langFilter && (
-              <span className="pill">
-                {LANGUAGE_OPTIONS.find((o) => o.value === langFilter)?.label}
-                <button onClick={() => setLangFilter("")} aria-label="Remove language filter"><X size={11} /></button>
+            {activePills.map((p) => (
+              <span key={p.key} className="passages__pill">
+                {p.label}
+                <button
+                  onClick={() => handleFilterChange(p.key, "")}
+                  aria-label={`Remove ${p.label} filter`}
+                >
+                  <X size={11} />
+                </button>
               </span>
-            )}
-            {gradeFilter && (
-              <span className="pill">
-                Grade {gradeFilter}
-                <button onClick={() => setGradeFilter("")} aria-label="Remove grade filter"><X size={11} /></button>
-              </span>
-            )}
-            {statusFilter && (
-              <span className="pill">
-                {statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}
-                <button onClick={() => setStatusFilter("")} aria-label="Remove status filter"><X size={11} /></button>
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* ── Loading state ── */}
-        {loading && (
-          <div className="passages__state">
-            <div className="spinner" />
-            <p>Loading passages…</p>
-          </div>
-        )}
-
-        {/* ── Error state ── */}
-        {error && !loading && (
-          <div className="passages__state passages__state--error">
-            <p>⚠ {error}</p>
-            <button className="passages__retry-btn" onClick={fetchPassages}>
-              Retry
+            ))}
+            <button className="passages__pill-clear" onClick={clearFilters}>
+              Clear all
             </button>
           </div>
         )}
 
-        {/* ── Empty state ── */}
+        {/* ── Loading ── */}
+        {loading && (
+          <div className="passages__state">
+            <div className="passages__spinner" />
+            <p>Loading passages…</p>
+          </div>
+        )}
+
+        {/* ── Error ── */}
+        {error && !loading && (
+          <div className="passages__state passages__state--error">
+            <p>⚠ {error}</p>
+            <AppButton variant="outline" size="sm" onClick={fetchPassages}>
+              Retry
+            </AppButton>
+          </div>
+        )}
+
+        {/* ── Empty ── */}
         {!loading && !error && displayed.length === 0 && (
           <div className="passages__state">
-            <FileText size={40} strokeWidth={1.2} />
-            <p>{search || hasActiveFilters ? "No passages match your search." : "No passages yet."}</p>
-            {!search && !hasActiveFilters && (
-              <button className="passages__add-btn passages__add-btn--sm" onClick={openAdd}>
-                Add your first passage
-              </button>
+            <FileText size={42} strokeWidth={1.2} />
+            <p>
+              {search || activePills.length > 0
+                ? "No passages match your search."
+                : "No passages yet."}
+            </p>
+            {!search && activePills.length === 0 && (
+              <AppButton variant="teal" onClick={() => navigate("/passages/add")}>
+                <Plus size={15} /> Add your first passage
+              </AppButton>
             )}
           </div>
         )}
@@ -316,14 +311,14 @@ export default function PassagesPage() {
         )}
       </div>
 
-      {/* ── Add / Edit Modal ── */}
-      {modalMode && (
+      {/* ── Edit Modal ── */}
+      {editTarget && (
         <PassageModal
-          mode={modalMode}
+          mode="edit"
           form={form}
           setForm={setForm}
-          onSubmit={handleSubmit}
-          onClose={closeModal}
+          onSubmit={handleEditSubmit}
+          onClose={closeEdit}
           saving={saving}
           formError={formError}
         />
