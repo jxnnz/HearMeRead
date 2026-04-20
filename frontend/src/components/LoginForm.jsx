@@ -1,56 +1,81 @@
-import React, { useState } from 'react';
-import axios from "axios";
+import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
-const LoginForm = ({ onSubmit }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  
+import "./Auth.css";
+ 
+export default function LoginForm({ onSubmit, loading }) {
   const navigate = useNavigate();
-
-  const handleSubmit = (e) => {
+  const [email, setEmail]               = useState("");
+  const [password, setPassword]         = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+ 
+  function handleSubmit(e) {
     e.preventDefault();
     onSubmit({ email, password });
-  };
-
+  }
+ 
   return (
-    <form onSubmit={handleSubmit}>
-      <div className="mb-3">
+    <form className="auth-form" onSubmit={handleSubmit}>
+ 
+      {/* ── Email ── */}
+      <div className="auth-field">
+        <label className="auth-label" htmlFor="login-email">Email:</label>
         <input
+          id="login-email"
           type="email"
-          className="form-control"
-          id="email"
-          placeholder="Enter your email"
+          className="auth-input"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          placeholder="Enter your email"
           required
-        /> 
-      </div>
-
-      <div className="mb-3">
-        <input
-          type={showPassword ? 'text' : 'password'}
-          className="form-control border-eng-0"
-          id="password"
-          placeholder="Enter your password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
+          autoComplete="email"
         />
       </div>
-
-
-      <div className="mb-3 form-check">
-        <input type="checkbox" className="form-check-input" id="rememberMe" />
-        <label className="form-check-label" htmlFor="rememberMe">Remember me</label>
+ 
+      {/* ── Password ── */}
+      <div className="auth-field">
+        <label className="auth-label" htmlFor="login-password">Password:</label>
+        <div className="auth-password-wrap">
+          <input
+            id="login-password"
+            type={showPassword ? "text" : "password"}
+            className="auth-input"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Enter your password"
+            required
+            autoComplete="current-password"
+          />
+          <button
+            type="button"
+            className="auth-password-toggle"
+            onClick={() => setShowPassword((v) => !v)}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+          >
+            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+        </div>
       </div>
-
-      <button type="submit" className="btn btn-primary w-100">
-        Login
+ 
+      {/* ── Forgot password ── */}
+      <div className="auth-forgot">
+        <button type="button" onClick={() => navigate("/forgot-password")}>
+          Forgot password?
+        </button>
+      </div>
+ 
+      {/* ── Submit ── */}
+      <button type="submit" className="auth-submit" disabled={loading}>
+        {loading ? "Logging in…" : "Log in"}
       </button>
+ 
+      {/* ── Switch to signup ── */}
+      <p className="auth-switch">
+        Don't have an account?{" "}
+        <button type="button" onClick={() => navigate("/signup")}>
+          Sign up
+        </button>
+      </p>
     </form>
   );
-};
-
-export default LoginForm;
+}

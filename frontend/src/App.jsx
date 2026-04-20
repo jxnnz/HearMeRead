@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from './pages/LoginPage';
+import SignupPage from "./pages/SignupPage";
 import PassagesPage from "./pages/PassagesPage";
 import AddPassagePage from "./pages/AddPassagePage";
 import StudentRecordPage from "./pages/StudentRecordPage";
@@ -19,6 +20,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
         <Route path="/dashboard" element={<RequireAuth><Placeholder label="Dashboard" /></RequireAuth>} />
         <Route path="/assessment" element={<RequireAuth><Placeholder label="Assessment" /></RequireAuth>} />
 

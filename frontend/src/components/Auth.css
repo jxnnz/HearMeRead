@@ -1,0 +1,268 @@
+/* ============================================================
+   HearMeRead — Auth Pages CSS
+   Combined styles for:
+     AuthLayout, LoginPage, SignupPage,
+     LoginForm, SignupForm
+   Font: Poppins
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+
+/* ── Full-screen background ──────────────────────────── */
+.auth-bg {
+  min-height: 100vh;
+  background: #9099b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  font-family: "Poppins", sans-serif;
+}
+
+/* ── White card — has padding so navy box floats inside ─ */
+.auth-card {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  max-width: 780px;
+  min-height: 460px;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 8px 40px rgba(44, 62, 107, 0.18);
+  /* KEY: padding creates space between card edge and navy box */
+  padding: 20px;
+  box-sizing: border-box;
+  gap: 0;
+}
+
+/* ── Navy box — sits inside the card with its own radius ─ */
+.auth-card__left {
+  width: 38%;
+  flex-shrink: 0;
+  background: #1e2d52;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 360px;
+}
+
+.auth-card__left-inner {
+  width: 100%;
+  height: 100%;
+  /* Logo / illustration goes here in a future sprint */
+}
+
+/* ── Right panel — form area ─────────────────────────── */
+.auth-card__right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 16px 44px;
+  overflow-y: auto;
+}
+
+/* ── Page heading ────────────────────────────────────── */
+.auth-heading {
+  font-size: 26px;
+  font-weight: 800;
+  color: #1a2340;
+  margin: 0 0 4px;
+  font-family: "Poppins", sans-serif;
+}
+
+.auth-subheading {
+  font-size: 13px;
+  color: #8a94b2;
+  margin: 0 0 22px;
+  font-weight: 400;
+}
+
+/* ── Error banner ────────────────────────────────────── */
+.auth-error {
+  background: #fdecea;
+  color: #c0392b;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  margin-bottom: 14px;
+}
+
+/* ── Form ────────────────────────────────────────────── */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+/* Two-column row — First Name / Last Name */
+.auth-form__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Field */
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.auth-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #3a4566;
+  font-family: "Poppins", sans-serif;
+}
+
+/* Text / email input */
+.auth-input {
+  border: 1.5px solid #dde2f0;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 13px;
+  color: #1a2340;
+  background: #e8eaf2;
+  outline: none;
+  font-family: "Poppins", sans-serif;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.auth-input:focus {
+  border-color: #2c3e6b;
+  background: #fff;
+}
+
+.auth-input::placeholder {
+  color: #b0b8d0;
+}
+
+/* Error input state */
+.auth-input--error {
+  border-color: #c0392b;
+  background: #fff8f8;
+}
+
+/* Inline field error */
+.auth-field-error {
+  font-size: 11.5px;
+  color: #c0392b;
+  font-family: "Poppins", sans-serif;
+}
+
+/* ── Password wrapper (input + eye toggle) ───────────── */
+.auth-password-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.auth-password-wrap .auth-input {
+  padding-right: 42px;
+}
+
+.auth-password-toggle {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #8a94b2;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  transition: color 0.15s;
+}
+
+.auth-password-toggle:hover { color: #2c3e6b; }
+
+/* ── Forgot password ─────────────────────────────────── */
+.auth-forgot {
+  text-align: right;
+  margin-top: -4px;
+}
+
+.auth-forgot button {
+  font-size: 12px;
+  color: #4a6fa5;
+  font-weight: 500;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  padding: 0;
+  transition: color 0.15s;
+}
+
+.auth-forgot button:hover {
+  color: #2c3e6b;
+  text-decoration: underline;
+}
+
+/* ── Submit button ───────────────────────────────────── */
+.auth-submit {
+  width: 100%;
+  padding: 11px;
+  background: #2c7fc1;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  margin-top: 2px;
+  transition: background 0.15s, opacity 0.15s;
+  letter-spacing: 0.01em;
+}
+
+.auth-submit:hover:not(:disabled) { background: #1f6aad; }
+.auth-submit:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* ── Switch page link (Login ↔ Signup) ───────────────── */
+.auth-switch {
+  text-align: center;
+  font-size: 12.5px;
+  color: #8a94b2;
+  margin-top: 4px;
+}
+
+.auth-switch button {
+  color: #2c7fc1;
+  font-weight: 600;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  padding: 0;
+  transition: color 0.15s;
+}
+
+.auth-switch button:hover {
+  color: #1a5f9a;
+  text-decoration: underline;
+}
+
+/* ── Responsive ──────────────────────────────────────── */
+@media (max-width: 580px) {
+  .auth-card {
+    flex-direction: column;
+    min-height: unset;
+    padding: 16px;
+    gap: 16px;
+  }
+  .auth-card__left {
+    width: 100%;
+    min-height: 110px;
+    border-radius: 12px;
+  }
+  .auth-card__right {
+    padding: 8px 12px 20px;
+  }
+  .auth-form__row {
+    grid-template-columns: 1fr;
+  }
+}
