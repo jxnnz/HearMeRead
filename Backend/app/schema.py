@@ -2,12 +2,67 @@ import re
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from app.models import AssessmentPeriod, GradeLevel, Language
 
 
 _SCHOOL_YEAR_RE = re.compile(r"^\d{4}-\d{4}$")
+
+
+# ── Teacher / Auth ────────────────────────────────────────────────────────────
+
+class TeacherRegister(BaseModel):
+    first_name: str      = Field(..., min_length=1, max_length=75)
+    last_name:  str      = Field(..., min_length=1, max_length=75)
+    email:      EmailStr
+    password:   str      = Field(..., min_length=9, max_length=128)
+
+    @field_validator("first_name", "last_name")
+    @classmethod
+    def no_special_chars(cls, v: str) -> str:
+        if not re.match(r"^[A-Za-zÀ-ÖØ-öø-ÿ\s'\-]+$", v.strip()):
+            raise ValueError("Name contains invalid characters")
+        return v.strip()
+
+    @field_validator("password")
+    @classmethod
+    def password_strength(cls, v: str) -> str:
+        if len(v) < 9:
+            raise ValueError("Password must be at least 9 characters long")
+        if not re.search(r"[A-Z]", v):
+            raise ValueError("Password must contain at least one uppercase letter")
+        if not re.search(r"[a-z]", v):
+            raise ValueError("Password must contain at least one lowercase letter")
+        if not re.search(r"\d", v):
+            raise ValueError("Password must contain at least one number")
+        if not re.search(r"[!@#$%^&*()_+\-=\[\]{};':\"\\|,.<>\/?`~]", v):
+            raise ValueError("Password must contain at least one symbol (e.g. !@#$%)")
+        return v
+
+
+class LoginRequest(BaseModel):
+    email:    EmailStr
+    password: str = Field(..., min_length=1, max_length=128)
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type:   str = "bearer"
+
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
+
+
+class TeacherResponse(BaseModel):
+    id:         int
+    first_name: str
+    last_name:  str
+    email:      str
+
+    class Config:
+        from_attributes = True
 
 
 # ── Question ──────────────────────────────────────────────────────────────────
@@ -172,7 +227,12 @@ class SessionCreate(BaseModel):
     passage_id:  int
     school_year: str      = Field(..., examples=["2024-2025"])
     period:      AssessmentPeriod
-    language:    Language = Field(..., examples=[Language.english])
+    language:    Language = Field(Language.filipino, examples=[Language.filipino])
+
+    @field_validator("school_year")
+    @classmethod
+    def validate_school_year(cls, v: str) -> str:
+        return _validate_school_year(v)
 
 
 class SessionComplete(BaseModel):

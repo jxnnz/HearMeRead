@@ -23,8 +23,8 @@ class GradeLevel(str, enum.Enum):
 
 
 class Language(str, enum.Enum):
-    english  = "en"
-    filipino = "fil"
+    english  = "english"
+    filipino = "filipino"
 
 
 class AssessmentPeriod(str, enum.Enum):
@@ -44,17 +44,39 @@ class Teacher(Base):
     __tablename__ = "teachers"
 
     id              = Column(Integer, primary_key=True, index=True)
-    full_name       = Column(String(150), nullable=False)
+    first_name      = Column(String(75),  nullable=False)
+    last_name       = Column(String(75),  nullable=False)
     email           = Column(String(255), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
-    is_active       = Column(Boolean, default=True)
+    is_active       = Column(Boolean, default=True,  nullable=False)
+    is_verified     = Column(Boolean, default=False, nullable=False)
     created_at      = Column(DateTime(timezone=True), server_default=func.now())
     updated_at      = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Relationships
-    students            = relationship("Student",           back_populates="teacher")
-    passages            = relationship("Passage",           back_populates="teacher")
-    assessment_sessions = relationship("AssessmentSession", back_populates="teacher")
+    students            = relationship("Student",                back_populates="teacher")
+    passages            = relationship("Passage",                back_populates="teacher")
+    assessment_sessions = relationship("AssessmentSession",      back_populates="teacher")
+    verification_tokens = relationship("EmailVerificationToken", back_populates="teacher",
+                                       cascade="all, delete-orphan")
+
+
+class EmailVerificationToken(Base):
+    """
+    Single-use token emailed to a teacher after registration.
+    Expires after 24 hours. Once used, used_at is stamped and cannot be reused.
+    """
+    __tablename__ = "email_verification_tokens"
+
+    id         = Column(Integer,  primary_key=True, index=True)
+    teacher_id = Column(Integer,  ForeignKey("teachers.id", ondelete="CASCADE"),
+                        nullable=False, index=True)
+    token      = Column(String(64), unique=True, index=True, nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    used_at    = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    teacher = relationship("Teacher", back_populates="verification_tokens")
 
 
 class Student(Base):
@@ -125,7 +147,7 @@ class AssessmentSession(Base):
     period      = Column(SAEnum(AssessmentPeriod), nullable=False)   # beginning | middle | end
 
     # ── Language (drives Whisper model + passage filter) ──────────────────────
-    language = Column(SAEnum(Language), nullable=False, default=Language.english)
+    language = Column(SAEnum(Language), nullable=False, default=Language.filipino)
 
     # ── Status ────────────────────────────────────────────────────────────────
     is_completed = Column(Boolean, nullable=False, default=False)

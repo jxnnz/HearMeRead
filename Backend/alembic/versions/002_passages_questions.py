@@ -1,19 +1,28 @@
 """create passages and questions tables
 
 Revision ID: 002_passages_questions
-Revises: 001_initial  (update this to match your actual previous revision ID)
+Revises: 001_initial
 Create Date: 2025-01-01 00:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
 
 revision = "002_passages_questions"
-down_revision = "001_initial"  # ← replace with your actual previous revision ID
+down_revision = "001_initial"
 branch_labels = None
 depends_on = None
 
 
 def upgrade() -> None:
+    # Create enum safely — no-op if it already exists
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE language AS ENUM ('english', 'filipino');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+    """)
+
     op.create_table(
         "passages",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -22,7 +31,7 @@ def upgrade() -> None:
         sa.Column("content", sa.Text(), nullable=False),
         sa.Column(
             "language",
-            sa.Enum("en", "fil", name="language"),
+            sa.Enum("english", "filipino", name="language", create_type=False),
             nullable=False,
         ),
         sa.Column(
@@ -31,7 +40,7 @@ def upgrade() -> None:
                 "kindergarten", "grade_1", "grade_2", "grade_3",
                 "grade_4", "grade_5", "grade_6",
                 name="gradelevel",
-                create_type=False,  # reuse enum already created by students table
+                create_type=False,
             ),
             nullable=False,
         ),
@@ -62,6 +71,10 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    op.drop_index("ix_questions_passage_id", table_name="questions")
+    op.drop_index("ix_questions_id", table_name="questions")
     op.drop_table("questions")
+    op.drop_index("ix_passages_teacher_id", table_name="passages")
+    op.drop_index("ix_passages_id", table_name="passages")
     op.drop_table("passages")
     op.execute("DROP TYPE IF EXISTS language")

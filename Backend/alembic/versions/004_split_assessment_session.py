@@ -30,9 +30,9 @@ def upgrade() -> None:
         "assessment_sessions",
         sa.Column(
             "language",
-            sa.Enum("en", "fil", name="language", create_type=False),
+            sa.Enum("english", "filipino", name="language", create_type=False),
             nullable=False,
-            server_default="en",
+            server_default="filipino",
         ),
     )
 
