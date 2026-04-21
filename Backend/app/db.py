@@ -20,6 +20,7 @@ engine = create_async_engine(
     connect_args={
         "statement_cache_size": 0,
         "prepared_statement_cache_size": 0,
+        "server_settings": {"asyncpg::prepared_statement_cache_size": "0"}
     },
     pool_pre_ping=False,
 )

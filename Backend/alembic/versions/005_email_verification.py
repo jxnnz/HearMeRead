@@ -1,7 +1,7 @@
-"""004_email_verification
+"""005_email_verification
 
-Revision ID: 004
-Revises: 003
+Revision ID: 005_email_verification
+Revises: 004_split_assessment_sessions
 Create Date: 2026-04-21
 
 Changes:
@@ -14,8 +14,8 @@ from alembic import op
 import sqlalchemy as sa
 
 
-revision = "004"
-down_revision = "003"
+revision = "005_email_verification"
+down_revision = "004_split_assessment_sessions"
 branch_labels = None
 depends_on = None
 
