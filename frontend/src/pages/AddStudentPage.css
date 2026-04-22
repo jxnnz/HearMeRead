@@ -1,0 +1,229 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+/* ── Page shell ─────────────────────────────────────── */
+.as-page {
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  font-family: "Poppins", sans-serif;
+}
+
+/* ── Top bar: back button + title ───────────────────── */
+.as-topbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* Circle back button matching the mockup */
+.as-back-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1.5px solid #c8d0e4;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #1a2340;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.as-back-btn:hover {
+  background: #eef0fb;
+  border-color: #2c3e6b;
+}
+
+.as-page__title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a2340;
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+}
+
+/* ── Error banner ────────────────────────────────────── */
+.as-error {
+  background: #fdecea;
+  color: #c0392b;
+  border-radius: 8px;
+  padding: 11px 16px;
+  font-size: 13px;
+  font-family: "Poppins", sans-serif;
+}
+
+/* ============================================================
+   FORM CARD  (StudentDetailsForm)
+   ============================================================ */
+.as-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  box-shadow: 0 2px 12px rgba(44, 62, 107, 0.07);
+}
+
+.as-card__title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a2340;
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+}
+
+.as-card__subtitle {
+  font-size: 12.5px;
+  color: #8a94b2;
+  margin: -12px 0 0;
+  font-family: "Poppins", sans-serif;
+}
+
+/* ── Two-column row ──────────────────────────────────── */
+.as-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+/* LRN + Sex row — LRN takes ~55%, Sex takes remaining */
+.as-row--lrn-sex {
+  grid-template-columns: 55% 1fr;
+}
+
+@media (max-width: 480px) {
+  .as-row,
+  .as-row--lrn-sex {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Field ───────────────────────────────────────────── */
+.as-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Full-width field (Teacher) */
+.as-field--full {
+  grid-column: 1 / -1;
+}
+
+/* ── Label ───────────────────────────────────────────── */
+.as-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #3a4566;
+  font-family: "Poppins", sans-serif;
+}
+
+/* ── Input & Select ──────────────────────────────────── */
+.as-input {
+  border: 1.5px solid #dde2f0;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 13px;
+  color: #1a2340;
+  background: #e8eaf2;
+  outline: none;
+  font-family: "Poppins", sans-serif;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.15s, background 0.15s;
+  appearance: none;
+}
+
+.as-input:focus {
+  border-color: #2c3e6b;
+  background: #fff;
+}
+
+.as-input::placeholder {
+  color: #b8bdd4;
+}
+
+/* ── Sex radio buttons ───────────────────────────────── */
+.as-field--sex .as-label {
+  margin-bottom: 2px;
+}
+
+.as-radio-group {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 9px 0;          /* aligns vertically with the LRN input */
+}
+
+.as-radio-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #1a2340;
+  font-family: "Poppins", sans-serif;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.as-radio {
+  width: 15px;
+  height: 15px;
+  accent-color: #2c3e6b;
+  cursor: pointer;
+}
+
+/* ============================================================
+   FOOTER BUTTONS  (outside the card, matching mockup)
+   ============================================================ */
+.as-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.as-btn {
+  padding: 10px 28px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  border: 1.5px solid transparent;
+  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+}
+
+.as-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Cancel — light grey outlined */
+.as-btn--cancel {
+  background: #f0f1f5;
+  border-color: #c8d0e4;
+  color: #1a2340;
+}
+
+.as-btn--cancel:hover:not(:disabled) {
+  background: #e4e7f5;
+  border-color: #2c3e6b;
+}
+
+/* Save Student — dark navy filled */
+.as-btn--save {
+  background: #2c3e6b;
+  color: #fff;
+  border-color: #2c3e6b;
+}
+
+.as-btn--save:hover:not(:disabled) {
+  background: #1e2d52;
+}
