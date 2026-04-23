@@ -23,6 +23,9 @@ engine = create_async_engine(
         "ssl": "require",
         "statement_cache_size": 0,
         "prepared_statement_cache_size": 0,
+        # Route all queries to the schema for this environment.
+        # dev and test share the same Supabase project but different schemas.
+        "server_settings": {"search_path": settings.DB_SCHEMA},
     },
 )
 

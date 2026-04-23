@@ -1,3 +1,4 @@
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
@@ -13,6 +14,16 @@ from app import models  # noqa: F401
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    import logging
+    logger = logging.getLogger("uvicorn.error")
+    logger.info("=" * 50)
+    logger.info(f"  APP        : {settings.APP_NAME}")
+    logger.info(f"  ENVIRONMENT: {settings.ENVIRONMENT}")
+    logger.info(f"  DB_SCHEMA  : {settings.DB_SCHEMA}")
+    logger.info(f"  DEBUG      : {settings.DEBUG}")
+    logger.info(f"  BACKEND    : {settings.BACKEND_URL}")
+    logger.info(f"  FRONTEND   : {settings.FRONTEND_URL}")
+    logger.info("=" * 50)
     yield
     await engine.dispose()
 
@@ -26,12 +37,14 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+_cors_origins = [settings.FRONTEND_URL]
+if not settings.is_production:
+    # Allow common local ports during development and testing
+    _cors_origins += ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",  # Vite dev server
-        "http://localhost:3000",
-    ],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

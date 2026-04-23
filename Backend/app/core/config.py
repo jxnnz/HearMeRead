@@ -1,7 +1,25 @@
-from pydantic_settings import BaseSettings
+import os
+from typing import Literal
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        # ENV_FILE lets you point at .env.dev / .env.test / .env.prod from
+        # outside the process (e.g. ENV_FILE=.env.dev uvicorn ...).
+        # Docker injects vars directly, so ENV_FILE is only needed locally.
+        env_file=os.getenv("ENV_FILE", ".env"),
+        case_sensitive=True,
+    )
+
     APP_NAME: str = "HearMeRead"
+    ENVIRONMENT: Literal["development", "test", "production"] = "development"
+
+    # DB_SCHEMA controls which PostgreSQL schema the app reads/writes.
+    # dev + test share Supabase Project 1 via different schemas.
+    # prod uses the default 'public' schema on Supabase Project 2.
+    DB_SCHEMA: str = "dev"
+
     DEBUG: bool = True
     DATABASE_URL: str
     SECRET_KEY: str
@@ -13,8 +31,9 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "http://localhost:5173"
     BACKEND_URL: str = "http://localhost:8000"
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    @property
+    def is_production(self) -> bool:
+        return self.ENVIRONMENT == "production"
+
 
 settings = Settings()

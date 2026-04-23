@@ -1,0 +1,151 @@
+# .github/workflows/deploy.yml
+#
+# Triggered on push to:
+#   dev   → builds & tags :dev images, runs pytest
+#   test  → builds & tags :test images, runs pytest, optionally deploys to staging
+#   main  → builds & tags :prod images, pushes to GHCR, deploys to production
+#
+# ── Secrets you must add in GitHub → Settings → Secrets & Variables → Actions ──
+#   GHCR_TOKEN        Personal access token with write:packages scope
+#   SSH_HOST          Your production server IP or hostname
+#   SSH_USER          SSH user on that server
+#   SSH_PRIVATE_KEY   Private key whose public key is in ~/.ssh/authorized_keys on server
+
+name: CI / CD
+
+on:
+  push:
+    branches: [dev, test, main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/hearmeread
+
+# ──────────────────────────────────────────────────────────────────────────────
+jobs:
+
+  # ── DEV: push to 'dev' branch ───────────────────────────────────────────────
+  deploy-dev:
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build dev images
+        run: |
+          docker build --target dev \
+            -t myapp-backend:dev \
+            ./Backend
+
+          docker build --target dev \
+            -t myapp-frontend:dev \
+            ./frontend
+
+      - name: Run backend tests (dev)
+        run: |
+          docker run --rm \
+            --env-file ./Backend/.env.dev \
+            myapp-backend:dev \
+            python -m pytest -v --tb=short
+
+      # Optionally add a step here to push to a dev server via SSH
+      # - name: Deploy to dev server
+      #   run: |
+      #     ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+      #       "cd /opt/hearmeread && \
+      #        git pull origin dev && \
+      #        docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build"
+
+  # ── TEST: push to 'test' branch ─────────────────────────────────────────────
+  deploy-test:
+    if: github.ref == 'refs/heads/test'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build test images
+        run: |
+          docker build --target dev \
+            -t myapp-backend:test \
+            ./Backend
+
+          docker build --target builder \
+            --build-arg VITE_API_URL=http://localhost:8001 \
+            -t myapp-frontend:test \
+            ./frontend
+
+      - name: Run backend tests (test env)
+        run: |
+          docker run --rm \
+            --env-file ./Backend/.env.test \
+            myapp-backend:test \
+            python -m pytest -v --tb=short
+
+      # Uncomment to deploy to a staging server after tests pass:
+      # - name: Deploy to staging server
+      #   uses: appleboy/ssh-action@v1
+      #   with:
+      #     host: ${{ secrets.SSH_HOST }}
+      #     username: ${{ secrets.SSH_USER }}
+      #     key: ${{ secrets.SSH_PRIVATE_KEY }}
+      #     script: |
+      #       cd /opt/hearmeread-staging
+      #       git pull origin test
+      #       docker compose -f docker-compose.yml -f docker-compose.test.yml up -d --build
+
+  # ── PROD: push to 'main' branch ─────────────────────────────────────────────
+  deploy-prod:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Build and push backend (prod)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./Backend
+          file: ./Backend/Dockerfile
+          target: prod
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-backend:prod
+            ${{ env.IMAGE_PREFIX }}-backend:${{ github.sha }}
+
+      - name: Build and push frontend (prod)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          target: prod
+          push: true
+          build-args: |
+            VITE_API_URL=/api
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-frontend:prod
+            ${{ env.IMAGE_PREFIX }}-frontend:${{ github.sha }}
+
+      # Uncomment to SSH into your production server and pull the new images:
+      # - name: Deploy to production server
+      #   uses: appleboy/ssh-action@v1
+      #   with:
+      #     host: ${{ secrets.SSH_HOST }}
+      #     username: ${{ secrets.SSH_USER }}
+      #     key: ${{ secrets.SSH_PRIVATE_KEY }}
+      #     script: |
+      #       cd /opt/hearmeread
+      #       docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
+      #       docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+      #       docker image prune -f

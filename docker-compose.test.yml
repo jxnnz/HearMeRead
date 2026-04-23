@@ -1,0 +1,24 @@
+# docker-compose.test.yml — Test / Staging overrides
+# Usage: docker compose -f docker-compose.yml -f docker-compose.test.yml up --build --exit-code-from backend
+
+services:
+
+  backend:
+    build:
+      target: dev                     # dev stage has pytest installed
+    image: myapp-backend:test
+    ports:
+      - "8001:8000"                   # offset port so it won't conflict with a running dev stack
+    env_file:
+      - ./Backend/.env.test
+    # Override the default CMD to run the test suite instead of the server
+    command: ["python", "-m", "pytest", "-v", "--tb=short"]
+
+  frontend:
+    build:
+      target: builder                 # only compile; no server needed for test
+      args:
+        VITE_API_URL: http://localhost:8001
+    image: myapp-frontend:test
+    # No ports needed — we just verify the build succeeds
+    entrypoint: ["echo", "Frontend build OK"]

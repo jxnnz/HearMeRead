@@ -1,0 +1,27 @@
+# docker-compose.yml — BASE config shared by all environments
+# Never run this file alone. Always combine with an environment override:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+
+  backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    networks:
+      - hearmeread-net
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    networks:
+      - hearmeread-net
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+networks:
+  hearmeread-net:
+    driver: bridge
