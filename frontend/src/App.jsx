@@ -5,6 +5,7 @@ import PassagesPage from "./pages/PassagesPage";
 import AddPassagePage from "./pages/AddPassagePage";
 import StudentRecordPage from "./pages/StudentRecordPage";
 import AddStudentPage from "./pages/AddStudentPage";
+import AssessmentPage from "./pages/AssessmentPage";
 
 function RequireAuth({ children }) {
   const token = localStorage.getItem("token");
@@ -23,7 +24,7 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/dashboard" element={<RequireAuth><Placeholder label="Dashboard" /></RequireAuth>} />
-        <Route path="/assessment" element={<RequireAuth><Placeholder label="Assessment" /></RequireAuth>} />
+        <Route path="/assessment" element={<AssessmentPage />}/>
 
         <Route path="/passages" element={<PassagesPage />} />
         <Route path="/passages/add" element={<AddPassagePage />} />
