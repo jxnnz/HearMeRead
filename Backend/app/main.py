@@ -13,9 +13,6 @@ from app import models  # noqa: F401
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Verify DB connectivity only — schema is managed by Alembic
-    async with engine.connect() as conn:
-        await conn.exec_driver_sql("SELECT 1")
     yield
     await engine.dispose()
 

@@ -2,6 +2,7 @@ from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from sqlalchemy.pool import NullPool
 
 from app.core.config import settings
 
@@ -17,12 +18,12 @@ class Base(DeclarativeBase):
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.DEBUG,
+    poolclass=NullPool,
     connect_args={
+        "ssl": "require",
         "statement_cache_size": 0,
         "prepared_statement_cache_size": 0,
-        "server_settings": {"asyncpg::prepared_statement_cache_size": "0"}
     },
-    pool_pre_ping=False,
 )
 
 # ── Session factory ───────────────────────────────────────────────────────────
