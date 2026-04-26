@@ -1,14 +1,5 @@
-// ============================================================
-// HearMeRead — Reading Passages Page
-// Layout mirrors StudentRecordPage:
-//   - "All Passages" subtitle + count on the left
-//   - Search + FilterButton + AppButton on the right
-//
-// API calls:
-//   GET   /passages
-//   PUT   /passages/:id
-//   PATCH /passages/:id/archive
-// ============================================================
+import { MOCK_PASSAGES } from "../data/mockData";
+
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Plus, X, FileText } from "lucide-react";
@@ -84,8 +75,8 @@ export default function PassagesPage() {
   // ── Detail drawer ─────────────────────────────────────────
   const [detailPassage, setDetailPassage] = useState(null);
 
-  // ── Fetch ─────────────────────────────────────────────────
-  const fetchPassages = useCallback(async () => {
+  // ── Fetch ───────────────────────────────────────────────── MAIN CODE DO NOT DELETE
+  /*const fetchPassages = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -103,6 +94,27 @@ export default function PassagesPage() {
   }, [filters]);
 
   useEffect(() => { fetchPassages(); }, [fetchPassages]);
+*/
+// ── MOCK UP DATA ───────────────────────────────────────────────── DELETE IF NOT USING
+// ── AFTER (mock data) ──
+const fetchPassages = useCallback(() => {
+  setLoading(true);
+  setError(null);
+
+  let data = [...MOCK_PASSAGES];
+
+  if (filters.language)
+    data = data.filter((p) => p.language === filters.language);
+  if (filters.grade_level)
+    data = data.filter((p) => String(p.grade_level) === filters.grade_level);
+  if (filters.status === "active")
+    data = data.filter((p) => !p.is_archived);
+  if (filters.status === "archived")
+    data = data.filter((p) => p.is_archived);
+
+  setPassages(data);
+  setLoading(false);
+}, [filters]);
 
   // ── Client-side search ────────────────────────────────────
   const displayed = passages.filter((p) => {

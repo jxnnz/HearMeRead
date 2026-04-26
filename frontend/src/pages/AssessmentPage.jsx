@@ -1,20 +1,23 @@
 import { useState, useEffect } from "react";
-import { ChevronRight, ChevronLeft, Mic } from "lucide-react";
+import { ChevronRight, ChevronLeft, Mic, Type } from "lucide-react";
 
-import Layout          from "../components/Layout";
-import StudentInfoForm from "../components/StudentInfoForm";
+import Layout               from "../components/Layout";
+import StudentInfoForm      from "../components/StudentInfoForm";
+import RecordingChoiceModal from "../modals/RecordingChoiceModal";
 import { studentsApi, passagesApi, sessionsApi } from "../services/api";
+
+// For mock data
+import { MOCK_STUDENTS, MOCK_PASSAGES } from "../data/mockData";
 
 import "./AssessmentPage.css";
 
 // ── Default form state ───────────────────────────────────────
 function initForm() {
-  const now   = new Date();
-  const year  = now.getFullYear();
-  const month = now.getMonth() + 1;
+  const now        = new Date();
+  const year       = now.getFullYear();
+  const month      = now.getMonth() + 1;
   const schoolYear =
     month >= 6 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
-
   return {
     school_year:     schoolYear,
     assessment_type: "BoSY",
@@ -23,36 +26,56 @@ function initForm() {
     last_name:       "",
     grade_level:     "",
     section:         "",
-    teacher:         "",
     language:        "filipino",
     passage_id:      null,
     passage_title:   "",
+    passage_content: "",
+    word_count:      0,
   };
 }
 
+const ASSESSMENT_LABELS = {
+  BoSY: "Beginning of School Year",
+  MoSY: "Middle of School Year",
+  EoSY: "End of School Year",
+};
+
+// Font size steps for the Aa button
+const FONT_SIZES = [15, 18, 22, 26];
+
 // ============================================================
 export default function AssessmentPage() {
-  const [step, setStep]       = useState(1); // 1 = form, 2 = recording
+  const [step, setStep]       = useState(1);
   const [form, setForm]       = useState(initForm());
   const [session, setSession] = useState(null);
 
   // ── Remote data ──────────────────────────────────────────
-  const [students, setStudents]           = useState([]);
-  const [passages, setPassages]           = useState([]);
+  const [students, setStudents]               = useState([]);
+  const [passages, setPassages]               = useState([]);
   const [loadingStudents, setLoadingStudents] = useState(true);
   const [loadingPassages, setLoadingPassages] = useState(false);
-  const [fetchError, setFetchError]       = useState(null);
+  const [fetchError, setFetchError]           = useState(null);
 
-  // ── Session create state ─────────────────────────────────
-  const [creating, setCreating]   = useState(false);
+  // ── Session state ────────────────────────────────────────
+  const [creating, setCreating]       = useState(false);
   const [createError, setCreateError] = useState(null);
 
-  // ── Load students once ───────────────────────────────────
+  // ── Recording modal & mode ───────────────────────────────
+  const [showChoiceModal, setShowChoiceModal] = useState(false);
+  const [recordingMode, setRecordingMode]     = useState(null);
+
+  // ── Reading screen controls ──────────────────────────────
+  const [fontSizeIdx, setFontSizeIdx] = useState(1); // default 18px
+  const fontSize = FONT_SIZES[fontSizeIdx];
+
+  // ── Load students on mount ─────────────────────────────── FINAL CODE DO NOT DELETE!!
+  /*
   useEffect(() => {
+    setLoadingStudents(true);
     studentsApi
       .list()
       .then(setStudents)
-      .catch((e) => setFetchError(e.message))
+      .catch((e) => setFetchError(e.response?.data?.detail || e.message))
       .finally(() => setLoadingStudents(false));
   }, []);
 
@@ -62,19 +85,36 @@ export default function AssessmentPage() {
     passagesApi
       .list({ language: form.language })
       .then((data) => setPassages(data.filter((p) => !p.is_archived)))
-      .catch((e) => setFetchError(e.message))
+      .catch((e) => setFetchError(e.response?.data?.detail || e.message))
       .finally(() => setLoadingPassages(false));
+  }, [form.language]);
+  */
+
+  // ── Mock data (temporary) — DELETE AFTER backend is ready ──
+  useEffect(() => {
+    setStudents(MOCK_STUDENTS);
+    setLoadingStudents(false);
+  }, []);
+
+  useEffect(() => {
+    setLoadingPassages(true);
+    const timer = setTimeout(() => {
+      setPassages(
+        MOCK_PASSAGES.filter((p) => p.language === form.language)
+      );
+      setLoadingPassages(false);
+    }, 300);
+    return () => clearTimeout(timer);
   }, [form.language]);
 
   // ── Validation ───────────────────────────────────────────
   function validate() {
-    if (!form.student_id)  { setCreateError("Please select a student."); return false; }
-    if (!form.passage_id)  { setCreateError("Please select a reading passage."); return false; }
-    if (!form.school_year) { setCreateError("School year is required."); return false; }
+    if (!form.student_id) { setCreateError("Please select a student.");         return false; }
     return true;
   }
 
-  // ── Continue → create session ────────────────────────────
+  // ── Continue → create session ──────────────────────────── FINAL CODE DO NOT DELETE!!
+  /*
   async function handleContinue() {
     setCreateError(null);
     if (!validate()) return;
@@ -97,28 +137,46 @@ export default function AssessmentPage() {
       setCreating(false);
     }
   }
+  */
 
-  // ── Summary labels for step 2 ────────────────────────────
-  const ASSESSMENT_LABELS = {
-    BoSY: "Beginning of School Year",
-    MoSY: "Middle of School Year",
-    EoSY: "End of School Year",
-  };
+  // ── Mock session — DELETE AFTER backend is ready ──
+  async function handleContinue() {
+    setCreateError(null);
+    if (!validate()) return;
+    setCreating(true);
+    await new Promise((res) => setTimeout(res, 400));
+    setSession({ id: `MOCK-SESSION-${Date.now()}` });
+    setCreating(false);
+    setStep(2);
+  }
+
+  function handleBack() {
+    setStep(1);
+    setRecordingMode(null);
+    setSession(null);
+  }
+
+  function cycleFontSize() {
+    setFontSizeIdx((i) => (i + 1) % FONT_SIZES.length);
+  }
+
+  // ── Word count from content ──────────────────────────────
+  const wordCount =
+    form.word_count ||
+    form.passage_content.trim().split(/\s+/).filter(Boolean).length ||
+    0;
 
   // ============================================================
-  // STEP 1 — Student Information Form
+  // STEP 1 — Student Information (compact)
   // ============================================================
   if (step === 1) {
     return (
       <Layout>
-        <div className="asp-page">
+        <div className="asp-page asp-page--step1">
           <h1 className="asp-title">Assessment Session</h1>
 
-          {fetchError && (
-            <div className="asp-error">{fetchError}</div>
-          )}
+          {fetchError && <div className="asp-error">⚠ {fetchError}</div>}
 
-          {/* ── Student Information card (component) ── */}
           <StudentInfoForm
             form={form}
             setForm={setForm}
@@ -128,18 +186,14 @@ export default function AssessmentPage() {
             loadingPassages={loadingPassages}
           />
 
-          {/* ── Session create error ── */}
-          {createError && (
-            <div className="asp-error">{createError}</div>
-          )}
+          {createError && <div className="asp-error">{createError}</div>}
 
-          {/* ── Continue button ── */}
           <button
             className="asp-continue-btn"
             onClick={handleContinue}
-            disabled={creating || !form.student_id || !form.passage_id}
+            disabled={creating || !form.student_id}
           >
-            {creating ? "Creating session…" : "Continue -->"}
+            {creating ? "Creating session…" : "Continue"}
             {!creating && <ChevronRight size={16} />}
           </button>
         </div>
@@ -148,77 +202,134 @@ export default function AssessmentPage() {
   }
 
   // ============================================================
-  // STEP 2 — Recording screen (stub for Whisper sprint)
+  // STEP 2 — Reading Screen (full width, matches mockup)
   // ============================================================
   return (
     <Layout>
-      <div className="asp-page">
-        {/* ── Back button ── */}
-        <div className="asp-breadcrumb">
-          <button
-            className="asp-back-btn"
-            onClick={() => setStep(1)}
-          >
-            <ChevronLeft size={15} /> Back
-          </button>
-          <span className="asp-step-label">Recording Session</span>
+      <div className="asp-reading-screen">
+
+        {/* ── Header bar ── */}
+        <div className="asp-reading-header">
+          <div className="asp-reading-header__left">
+            <button
+              className="asp-reading-back"
+              onClick={handleBack}
+              aria-label="Go back"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <div className="asp-reading-header__info">
+              <h2 className="asp-reading-title">
+                {form.passage_title}
+                <span className="asp-reading-wordcount">
+                  ({wordCount} words)
+                </span>
+              </h2>
+              <p className="asp-reading-meta">
+                {form.first_name} {form.last_name} ·{" "}
+                Grade {form.grade_level} ·{" "}
+                {ASSESSMENT_LABELS[form.assessment_type]} ·{" "}
+                {form.school_year}
+              </p>
+            </div>
+          </div>
+
+          <div className="asp-reading-header__right">
+            {/* Font size toggle */}
+            <button
+              className="asp-reading-ctrl"
+              onClick={cycleFontSize}
+              title={`Font size: ${fontSize}px (click to change)`}
+              aria-label="Change font size"
+            >
+              <Type size={15} />
+              <span>Aa</span>
+            </button>
+
+            {/* Record / mode button */}
+            <button
+              className={`asp-reading-ctrl asp-reading-ctrl--mic${
+                recordingMode ? " asp-reading-ctrl--active" : ""
+              }`}
+              onClick={() =>
+                recordingMode
+                  ? setRecordingMode(null)
+                  : setShowChoiceModal(true)
+              }
+              aria-label={recordingMode ? "Stop recording" : "Start recording"}
+            >
+              <Mic size={16} />
+            </button>
+          </div>
         </div>
 
-        <h1 className="asp-title">Assessment Session</h1>
-
-        {/* ── Session summary bar ── */}
-        <div className="asp-summary">
-          <div className="asp-summary__item">
-            <span className="asp-summary__key">Student</span>
-            <span className="asp-summary__val">
-              {form.first_name} {form.last_name}
-            </span>
-          </div>
-          <div className="asp-summary__sep" />
-          <div className="asp-summary__item">
-            <span className="asp-summary__key">School Year</span>
-            <span className="asp-summary__val">{form.school_year}</span>
-          </div>
-          <div className="asp-summary__sep" />
-          <div className="asp-summary__item">
-            <span className="asp-summary__key">Period</span>
-            <span className="asp-summary__val">
-              {ASSESSMENT_LABELS[form.assessment_type]}
-            </span>
-          </div>
-          <div className="asp-summary__sep" />
-          <div className="asp-summary__item">
-            <span className="asp-summary__key">Language</span>
-            <span className="asp-summary__val" style={{ textTransform: "capitalize" }}>
-              {form.language}
-            </span>
-          </div>
+        {/* ── Passage content (large, scrollable) ── */}
+        <div className="asp-reading-body">
+          {form.passage_content ? (
+            <p
+              className="asp-reading-text"
+              style={{ fontSize: `${fontSize}px` }}
+            >
+              {form.passage_content}
+            </p>
+          ) : (
+            <p className="asp-reading-empty">No passage content available.</p>
+          )}
         </div>
 
-        {/* ── Passage display ── */}
-        <div className="asp-passage-card">
-          <h3 className="asp-passage-card__title">{form.passage_title}</h3>
-          <p className="asp-passage-card__meta">
-            Grade {form.grade_level} · {form.language}
-          </p>
-        </div>
+        {/* ── Bottom mic button ── */}
+        <div className="asp-reading-footer">
+          {!recordingMode ? (
+            <button
+              className="asp-mic-btn"
+              onClick={() => setShowChoiceModal(true)}
+              aria-label="Start assessment"
+            >
+              <Mic size={24} />
+            </button>
+          ) : (
+            <div className="asp-recording-active">
+              <div
+                className="asp-mic-btn asp-mic-btn--recording"
+                aria-label="Recording active"
+              >
+                <Mic size={24} />
+              </div>
+              <p className="asp-recording-mode-label">
+                {recordingMode === "live"
+                  ? "Live recording active…"
+                  : "Upload mode selected"}
+              </p>
+              <button
+                className="asp-recording-cancel"
+                onClick={() => setRecordingMode(null)}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
 
-        {/* ── Recording panel stub ── */}
-        <div className="asp-recording">
-          <div className="asp-recording__icon">
-            <Mic size={32} />
-          </div>
-          <p className="asp-recording__label">Recording Interface</p>
-          <p className="asp-recording__hint">
-            Whisper ASR integration — coming in the next sprint.
-          </p>
           {session?.id && (
-            <p className="asp-recording__session">
-              Session ID: <code>{session.id}</code>
+            <p className="asp-session-id">
+              Session: <code>{session.id}</code>
             </p>
           )}
         </div>
       </div>
+
+      {/* ── Recording Choice Modal ── */}
+      <RecordingChoiceModal
+        isOpen={showChoiceModal}
+        onClose={() => setShowChoiceModal(false)}
+        onUpload={() => {
+          setRecordingMode("upload");
+          setShowChoiceModal(false);
+        }}
+        onLive={() => {
+          setRecordingMode("live");
+          setShowChoiceModal(false);
+        }}
+      />
     </Layout>
   );
 }

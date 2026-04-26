@@ -1,0 +1,124 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+
+/* ── Overlay ─────────────────────────────────────────── */
+.tlm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 15, 40, 0.50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 400;
+  padding: 24px;
+  animation: tlmFadeIn 0.2s ease;
+  backdrop-filter: blur(4px);
+}
+
+@keyframes tlmFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Modal box ───────────────────────────────────────── */
+.tlm-modal {
+  background: #fff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 440px;
+  padding: 40px 36px 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+  box-shadow: 0 24px 64px rgba(10, 15, 40, 0.20);
+  animation: tlmSlideUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  font-family: "Poppins", sans-serif;
+}
+
+@keyframes tlmSlideUp {
+  from { transform: translateY(28px) scale(0.96); opacity: 0; }
+  to   { transform: translateY(0)    scale(1);    opacity: 1; }
+}
+
+/* ── Bell icon ───────────────────────────────────────── */
+.tlm-icon {
+  font-size: 72px;
+  line-height: 1;
+  animation: tlmRing 0.6s ease 0.2s both;
+  transform-origin: top center;
+}
+
+@keyframes tlmRing {
+  0%   { transform: rotate(0deg);    }
+  15%  { transform: rotate(12deg);   }
+  30%  { transform: rotate(-10deg);  }
+  45%  { transform: rotate(8deg);    }
+  60%  { transform: rotate(-6deg);   }
+  75%  { transform: rotate(4deg);    }
+  100% { transform: rotate(0deg);    }
+}
+
+/* ── Title ───────────────────────────────────────────── */
+.tlm-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #e63b2e;
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+  line-height: 1.2;
+}
+
+/* ── Description ─────────────────────────────────────── */
+.tlm-desc {
+  font-size: 14px;
+  color: #5a6382;
+  line-height: 1.65;
+  margin: 0;
+  font-weight: 400;
+  font-family: "Poppins", sans-serif;
+  max-width: 340px;
+}
+
+/* ── Button group ────────────────────────────────────── */
+.tlm-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.tlm-btn {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  letter-spacing: 0.01em;
+  transition: opacity 0.15s, transform 0.15s, filter 0.15s;
+}
+
+.tlm-btn:hover {
+  opacity: 0.92;
+  filter: brightness(1.06);
+}
+
+.tlm-btn:active {
+  transform: scale(0.98);
+}
+
+/* Continue Recording — dark blue matching mockup */
+.tlm-btn--continue {
+  background: #2c5282;
+  color: #fff;
+}
+
+/* Submit Recording Now — red matching mockup */
+.tlm-btn--submit {
+  background: #e63b2e;
+  color: #fff;
+}

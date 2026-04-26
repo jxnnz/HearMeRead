@@ -40,21 +40,17 @@ export default function StudentInfoForm({
   form,
   setForm,
   students        = [],
-  passages        = [],
   loadingStudents = false,
-  loadingPassages = false,
 }) {
-  const [studentSearch,    setStudentSearch]    = useState("");
-  const [showStudentDrop,  setShowStudentDrop]  = useState(false);
-  const [passageSearch,    setPassageSearch]    = useState("");
-  const [showPassageDrop,  setShowPassageDrop]  = useState(false);
+  const [studentSearch,   setStudentSearch]   = useState("");
+  const [showStudentDrop, setShowStudentDrop] = useState(false);
 
   // ── Generic field updater ────────────────────────────────
   function update(field, val) {
     setForm((prev) => ({ ...prev, [field]: val }));
   }
 
-  // ── Select a student — auto-fills Grade, Section, Teacher ─
+  // ── Select a student — auto-fills Last Name, Grade, Section ─
   function selectStudent(student) {
     setForm((prev) => ({
       ...prev,
@@ -62,8 +58,7 @@ export default function StudentInfoForm({
       first_name:  student.first_name,
       last_name:   student.last_name,
       grade_level: String(student.grade_level ?? ""),
-      section:     student.section  ?? "",
-      teacher:     student.teacher  ?? "",
+      section:     student.section ?? "",
     }));
     setStudentSearch("");
     setShowStudentDrop(false);
@@ -77,26 +72,10 @@ export default function StudentInfoForm({
       last_name:   "",
       grade_level: "",
       section:     "",
-      teacher:     "",
     }));
   }
 
-  // ── Select a passage ──────────────────────────────────────
-  function selectPassage(passage) {
-    setForm((prev) => ({
-      ...prev,
-      passage_id:    passage.id,
-      passage_title: passage.title,
-    }));
-    setPassageSearch("");
-    setShowPassageDrop(false);
-  }
-
-  function clearPassage() {
-    setForm((prev) => ({ ...prev, passage_id: null, passage_title: "" }));
-  }
-
-  // ── Filtered dropdown lists ───────────────────────────────
+  // ── Filtered student dropdown ─────────────────────────────
   const filteredStudents = students.filter((s) => {
     const q = studentSearch.toLowerCase();
     return (
@@ -106,12 +85,7 @@ export default function StudentInfoForm({
     );
   });
 
-  const filteredPassages = passages.filter((p) =>
-    p.title.toLowerCase().includes(passageSearch.toLowerCase())
-  );
-
   const hasStudent = !!form.student_id;
-  const hasPassage = !!form.passage_id;
 
   // ============================================================
   return (
@@ -156,7 +130,7 @@ export default function StudentInfoForm({
         </div>
       </div>
 
-      {/* ── Row 2: First Name (searchable) + Last Name (auto) ── */}
+      {/* ── Row 2: First Name (searchable) + Last Name (auto-filled) ── */}
       <div className="si-row">
         <div className="si-field">
           <label className="si-label" htmlFor="si-firstname">
@@ -261,18 +235,6 @@ export default function StudentInfoForm({
         </div>
       </div>
 
-      {/* ── Teacher (full width, auto-filled) ── */}
-      <div className="si-field si-field--full">
-        <label className="si-label">Teacher:</label>
-        <input
-          type="text"
-          className="si-input si-input--readonly"
-          value={form.teacher}
-          placeholder="Auto-filled from student record"
-          readOnly
-        />
-      </div>
-
       {/* ── Language tab toggle ── */}
       <div className="si-field si-field--full">
         <label className="si-label">Reading Profile (Language):</label>
@@ -284,10 +246,7 @@ export default function StudentInfoForm({
               className={`si-lang-tab${
                 form.language === lang.value ? " si-lang-tab--active" : ""
               }`}
-              onClick={() => {
-                update("language", lang.value);
-                clearPassage(); // reset passage when language changes
-              }}
+              onClick={() => update("language", lang.value)}
             >
               {lang.label}
             </button>
@@ -295,78 +254,6 @@ export default function StudentInfoForm({
         </div>
       </div>
 
-      {/* ── Reading Passage (searchable, filtered by language) ── */}
-      <div className="si-field si-field--full">
-        <label className="si-label">Reading Passage:</label>
-
-        {hasPassage ? (
-          /* Selected state */
-          <div className="si-selected-wrap">
-            <span className="si-input si-input--filled">
-              {form.passage_title}
-            </span>
-            <button
-              type="button"
-              className="si-clear-btn"
-              onClick={clearPassage}
-              aria-label="Clear passage"
-            >
-              <X size={14} />
-            </button>
-          </div>
-        ) : (
-          /* Search state */
-          <div className="si-combo">
-            <Search size={13} className="si-combo__icon" />
-            <input
-              type="text"
-              className="si-input si-input--search"
-              placeholder={
-                loadingPassages
-                  ? "Loading passages…"
-                  : `Search ${form.language} passages`
-              }
-              value={passageSearch}
-              onChange={(e) => {
-                setPassageSearch(e.target.value);
-                setShowPassageDrop(true);
-              }}
-              onFocus={() => setShowPassageDrop(true)}
-              autoComplete="off"
-            />
-            {showPassageDrop && (
-              <div className="si-dropdown">
-                {filteredPassages.length === 0 ? (
-                  <div className="si-dropdown__empty">
-                    No {form.language} passages found.
-                  </div>
-                ) : (
-                  filteredPassages.map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      className="si-dropdown__item"
-                      onClick={() => selectPassage(p)}
-                    >
-                      <span className="si-dropdown__name">{p.title}</span>
-                      <span className="si-dropdown__sub">
-                        Grade {p.grade_level} ·{" "}
-                        {p.word_count ??
-                          p.content
-                            ?.trim()
-                            .split(/\s+/)
-                            .filter(Boolean).length ??
-                          "?"}{" "}
-                        words
-                      </span>
-                    </button>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
     </div>
   );
 }

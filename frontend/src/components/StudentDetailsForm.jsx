@@ -89,7 +89,7 @@ export default function StudentDetailsForm({ form, setForm }) {
             onChange={(e) => update("grade_level", e.target.value)}
           >
             <option value="">Select grade</option>
-            {["1", "2", "3", "4", "5", "6"].map((g) => (
+            {["1", "2", "3"].map((g) => (
               <option key={g} value={g}>Grade {g}</option>
             ))}
           </select>

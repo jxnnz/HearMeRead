@@ -1,9 +1,5 @@
-// ============================================================
-// HearMeRead — Student Record Page
-// Displays all students in a card grid with search + filter
-// Route: /students
-// API:   GET /students
-// ============================================================
+// Add this import at the top
+import { MOCK_STUDENTS } from "../data/mockData";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Plus, X, UserRound } from "lucide-react";
@@ -21,19 +17,20 @@ const FILTER_CONFIG = [
   {
     key: "grade_level",
     label: "Grade Level",
-    options: ["1", "2", "3", "4", "5", "6"].map((g) => ({
+    options: ["1", "2", "3"].map((g) => ({
       value: g,
       label: `Grade ${g}`,
     })),
   },
   {
-    key: "reading_level",
-    label: "Reading Level",
+    key: "reading_profile",
+    label: "Reading Profile",
     options: [
-      { value: "Beginning Reader",      label: "Beginning Reader" },
-      { value: "Developing Reader",     label: "Developing Reader" },
-      { value: "Transitioning Reader",  label: "Transitioning Reader" },
-      { value: "Independent Reader",    label: "Independent Reader" },
+      { value: "Reading at Grade Level",      label: "Reading at Grade Level" },
+      { value: "Transitioning Reader",     label: "Transitioning Reader" },
+      { value: "Developing Reader",  label: "Developing Reader" },
+      { value: "High Emerging Reader",    label: "High Emerging Reader" },
+      { value: "Low Emerging Reader",    label: "Low Emerging Reader" },
     ],
   },
 ];
@@ -53,15 +50,21 @@ export default function StudentRecordPage() {
   const [search, setSearch]       = useState("");
   const [filters, setFilters]     = useState(EMPTY_FILTERS);
 
-  // ── Fetch students ───────────────────────────────────────
-  useEffect(() => {
+  // ── Fetch students ─────────────────────────────────────── FOR CONNECTION TO BACKEND:
+ /* useEffect(() => {
     setLoading(true);
     studentsApi
       .list()
       .then(setStudents)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, []); */
+
+// ── USING MOCK DATA: ─────────────────────────────────────── 
+  useEffect(() => {
+  setStudents(MOCK_STUDENTS);
+  setLoading(false);
+}, []);
 
   // ── Client-side search + filter ─────────────────────────
   const displayed = students.filter((s) => {
