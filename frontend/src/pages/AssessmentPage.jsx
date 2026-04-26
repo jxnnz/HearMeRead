@@ -128,7 +128,7 @@ export default function AssessmentPage() {
         school_year: form.school_year,
       });
       setSession(res.session ?? res);
-      setStep(2);
+      setShowChoiceModal(true);
     } catch (err) {
       setCreateError(
         err.response?.data?.detail || err.message || "Failed to create session."
@@ -147,7 +147,7 @@ export default function AssessmentPage() {
     await new Promise((res) => setTimeout(res, 400));
     setSession({ id: `MOCK-SESSION-${Date.now()}` });
     setCreating(false);
-    setStep(2);
+    setShowChoiceModal(true);
   }
 
   function handleBack() {
@@ -197,6 +197,21 @@ export default function AssessmentPage() {
             {!creating && <ChevronRight size={16} />}
           </button>
         </div>
+
+        <RecordingChoiceModal
+          isOpen={showChoiceModal}
+          onClose={() => setShowChoiceModal(false)}
+          onUpload={() => {
+            setRecordingMode("upload");
+            setShowChoiceModal(false);
+            setStep(2);
+          }}
+          onLive={() => {
+            setRecordingMode("live");
+            setShowChoiceModal(false);
+            setStep(2);
+          }}
+        />
       </Layout>
     );
   }
@@ -239,11 +254,11 @@ export default function AssessmentPage() {
             <button
               className="asp-reading-ctrl"
               onClick={cycleFontSize}
-              title={`Font size: ${fontSize}px (click to change)`}
               aria-label="Change font size"
             >
               <Type size={15} />
               <span>Aa</span>
+              <span className="asp-ctrl-size">{fontSize}px</span>
             </button>
 
             {/* Record / mode button */}
@@ -324,10 +339,12 @@ export default function AssessmentPage() {
         onUpload={() => {
           setRecordingMode("upload");
           setShowChoiceModal(false);
+          setStep(2);
         }}
         onLive={() => {
           setRecordingMode("live");
           setShowChoiceModal(false);
+          setStep(2);
         }}
       />
     </Layout>

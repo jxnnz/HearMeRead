@@ -44,7 +44,7 @@ export default function PassageDetailsForm({ form, setForm }) {
             value={form.grade_level}
             onChange={(e) => update("grade_level", e.target.value)}
           >
-            {["1", "2", "3", "4", "5", "6"].map((g) => (
+            {["1", "2", "3"].map((g) => (
               <option key={g} value={g}>
                 Grade {g}
               </option>

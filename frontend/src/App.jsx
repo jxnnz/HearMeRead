@@ -8,6 +8,7 @@ import AddStudentPage from "./pages/AddStudentPage";
 import AssessmentPage from "./pages/AssessmentPage";
 import StudentInfoPage from "./pages/StudentInfoPage";
 
+
 function RequireAuth({ children }) {
   const token = localStorage.getItem("token");
   if (!token) return <Navigate to="/login" replace />;
@@ -32,6 +33,7 @@ export default function App() {
         <Route path="/students" element={<StudentRecordPage />} />
         <Route path="/students/add" element={<AddStudentPage />} />
         <Route path="/students/:id" element={<StudentInfoPage />} />
+
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>

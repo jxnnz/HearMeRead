@@ -1,65 +1,72 @@
 // ============================================================
-// StudentProfileCard Component
-// student full name, reading level
-// badge, LRN, sex, and grade + section
+// HearMeRead — StudentProfileCard Component
+// Shows student avatar, name, reading level badge, and meta info.
+//
+// Props:
+//   student — student object
 // ============================================================
+import "../pages/StudentInfoPage.css";
 
-import "./StudentInfoPage.css";
-
-// ── Reading profile badge colors ───────────────────────────────
 const LEVEL_COLORS = {
-    "Reading at Grade Level": "#639922",
-    "Transitioning Reader":   "#378ADD",
-    "Developing Reader":      "#EF9F27",
-    "High Emerging Reader":   "#D4537E",
-    "Low Emerging Reader":    "#E24B4A",
+  "Reading at Grade Level": { background: "#639922", color: "#ffffff" },
+  "Transitioning Reader": { background: "#378ADD", color: "#ffffff" },
+  "Developing Reader":    { background: "#EF9F27", color: "#ffffff" },
+  "High Emerging Reader": { background: "#D4537E", color: "#ffffff" },
+  "Low Emerging Reader": { background: "#E24B4A", color: "#ffffff"},
 };
+
+function getInitials(first = "", last = "") {
+  return `${first[0] ?? ""}${last[0] ?? ""}`.toUpperCase();
+}
 
 export default function StudentProfileCard({ student }) {
   if (!student) return null;
 
-  const initials = `${student.first_name?.[0] ?? ""}${student.last_name?.[0] ?? ""}`.toUpperCase();
-  const fullName = `${student.first_name} ${student.last_name}`;
-  const levelStyle = LEVEL_COLORS[student.reading_profile] ?? { bg: "#eef0f8", color: "#5a6382" };
+  const {
+    first_name,
+    last_name,
+    lrn,
+    sex,
+    grade_level,
+    section,
+    teacher,
+    reading_profile,
+  } = student;
+
+  const badgeStyle = LEVEL_COLORS[reading_profile] ?? { background: "#f4f6fb", color: "#5a6382" };
 
   return (
-    <div className="sip-profile-card">
-      {/* ── Avatar ── */}
-      <div className="sip-avatar">
-        <span className="sip-avatar__initials">{initials}</span>
-      </div>
+    <div className="spc-card">
+      {/* ── Profile row ── */}
+      <div className="spc-profile">
+        <div className="spc-avatar">{getInitials(first_name, last_name)}</div>
 
-      {/* ── Info ── */}
-      <div className="sip-profile-info">
-        <div className="sip-profile-name-row">
-          <h2 className="sip-profile-name">{fullName}</h2>
-          {student.reading_level && (
-            <span
-              className="sip-level-badge"
-              style={{ background: levelStyle.bg, color: levelStyle.color }}
-            >
-              {student.reading_profile}
-            </span>
-          )}
-        </div>
+        <div className="spc-info">
+          <div className="spc-info__top">
+            <h2 className="spc-name">{first_name} {last_name}</h2>
+            {reading_profile && (
+              <span className="spc-level-badge" style={badgeStyle}>
+                {reading_profile}
+              </span>
+            )}
+          </div>
 
-        <div className="sip-profile-meta">
-          <span>
-            <span className="sip-meta-icon">🪪</span>
-            LRN: {student.lrn ?? "—"}
-          </span>
-          <span>
-            <span className="sip-meta-icon">⚥</span>
-            {student.sex
-              ? student.sex.charAt(0).toUpperCase() + student.sex.slice(1)
-              : "—"}
-          </span>
-          <span>
-            <span className="sip-meta-icon">📚</span>
-            Grade {student.grade_level} – {student.section ?? "—"}
-          </span>
+          <div className="spc-info__meta">
+            <span>LRN: {lrn ?? "—"}</span>
+            <span>·</span>
+            <span style={{ textTransform: "capitalize" }}>{sex ?? "—"}</span>
+            <span>·</span>
+            <span>Grade {grade_level} — {section}</span>
+            {teacher && (
+              <>
+                <span>·</span>
+                <span>{teacher}</span>
+              </>
+            )}
+          </div>
         </div>
       </div>
+
     </div>
   );
 }

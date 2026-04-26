@@ -27,7 +27,7 @@ const FILTER_CONFIG = [
   {
     key: "grade_level",
     label: "Grade Level",
-    options: ["1", "2", "3", "4", "5", "6"].map((g) => ({
+    options: ["1", "2", "3"].map((g) => ({
       value: g,
       label: `Grade ${g}`,
     })),
