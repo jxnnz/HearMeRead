@@ -1,12 +1,24 @@
+import json
+from datetime import datetime, timezone
 from typing import Optional, Tuple, List
+
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, update, func, and_
 
-from app.models import AssessmentSession, AssessmentPeriod
-from app.models import Student
-from app.models import Passage
+from app.models import (
+    AssessmentSession, AssessmentPeriod,
+    Student, Passage,
+    ReadingResult, SessionObservation,
+    ReadingProfile as ReadingProfileModel,
+    Part1Classification as Part1ClassificationModel,
+)
 from app.schema import SessionCreate, SessionComplete, SessionUpdate
+from app.schemas.session_schemas import (
+    CompleteSessionIn, CompleteSessionOut,
+    Part1ResultOut, Part2ResultOut, WordAlignmentOut,
+)
+from app.services.levenshtein_service import score_part1, score_part2
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -154,37 +166,182 @@ async def create_session(
     return session, duplicate
 
 
+# ── complete_session helpers ──────────────────────────────────────────────────
+
+def _now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _alignments_to_schema(alignments) -> list[WordAlignmentOut]:
+    return [
+        WordAlignmentOut(
+            reference=a.reference_word,
+            transcribed=a.transcribed_word,
+            miscue_type=a.miscue_type.value,
+        )
+        for a in alignments
+    ]
+
+
+def _alignments_to_json(alignments) -> str:
+    return json.dumps([
+        {
+            "reference": a.reference_word,
+            "transcribed": a.transcribed_word,
+            "miscue_type": a.miscue_type.value,
+        }
+        for a in alignments
+    ])
+
+
+def _safe_enum(enum_cls, value):
+    if value is None:
+        return None
+    try:
+        return enum_cls(value)
+    except ValueError:
+        return None
+
+
 async def complete_session(
-    db: AsyncSession,
     session_id: int,
-    data: SessionComplete,
     teacher_id: int,
-) -> AssessmentSession:
-    """Fills in all assessment results and marks the session as completed."""
-    session = await get_session_by_id(db, session_id, teacher_id)
+    payload: CompleteSessionIn,
+    db: AsyncSession,
+) -> CompleteSessionOut:
+    """
+    Complete an assessment session by running Levenshtein scoring for Part 1
+    (and Part 2 if provided), persisting results, and marking session complete.
+
+    Raises:
+      ValueError  — session not found or not owned by this teacher
+      RuntimeError — session already completed
+    """
+    # ── 1. Fetch and validate session ────────────────────────────────────
+    result = await db.execute(
+        select(AssessmentSession).where(
+            AssessmentSession.id == session_id,
+            AssessmentSession.teacher_id == teacher_id,
+        )
+    )
+    session: Optional[AssessmentSession] = result.scalar_one_or_none()
+
+    if session is None:
+        raise ValueError(f"Session {session_id} not found or access denied.")
 
     if session.is_completed:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="This session has already been completed.",
+        raise RuntimeError(f"Session {session_id} is already completed.")
+
+    # ── 2. Score Part 1 ──────────────────────────────────────────────────
+    p1_input = payload.part1
+    p1 = score_part1(
+        task1_reference_text=p1_input.task1_reference_text,
+        task1_transcribed_text=p1_input.task1_transcribed_text,
+        task2_reference_text=p1_input.task2_reference_text,
+        task2_transcribed_text=p1_input.task2_transcribed_text,
+    )
+
+    part1_out = Part1ResultOut(
+        task1_correct=p1.task1_correct,
+        task1_miscues=p1.task1_miscues,
+        route=p1.route.value if p1.route else "",
+        task2_type=p1.task2_type or "",
+        task2_correct=p1.task2_correct,
+        task2_miscues=p1.task2_miscues,
+        total_score=p1.total_score,
+        classification=p1.classification.value if p1.classification else "",
+        task1_alignments=_alignments_to_schema(p1.task1_alignments),
+        task2_alignments=_alignments_to_schema(p1.task2_alignments),
+    )
+
+    # ── 3. Score Part 2 (optional) ───────────────────────────────────────
+    part2_out: Optional[Part2ResultOut] = None
+    p2 = None
+
+    if payload.part2 is not None:
+        p2_input = payload.part2
+        p2 = score_part2(
+            reference_text=p2_input.reference_text,
+            transcribed_text=p2_input.transcribed_text,
+            reading_time_sec=p2_input.reading_time_sec,
+            grade_level=p2_input.grade_level,
+            comprehension_correct=p2_input.comprehension_correct,
+            part1_total_score=p1.total_score,
+            whisper_word_timestamps=p2_input.whisper_word_timestamps,
+            observation_level=p2_input.fluency_level,
+            learner_experience=p2_input.learner_experience,
         )
 
-    session.reading_time_seconds  = data.reading_time_seconds
-    session.total_words           = data.total_words
-    session.miscue_count          = data.miscue_count
-    session.comprehension_correct = data.comprehension_correct
-    session.comprehension_total   = data.comprehension_total
-    session.fluency_level         = data.fluency_level
-    session.learner_experience    = data.learner_experience
-    session.teacher_remarks       = data.teacher_remarks
-    session.cwpm                  = _compute_cwpm(
-        data.total_words, data.miscue_count, data.reading_time_seconds
+        part2_out = Part2ResultOut(
+            total_words_in_passage=p2.total_words_in_passage,
+            total_words_spoken=p2.total_words_spoken,
+            words_read_within_time=p2.words_read_within_time,
+            substitutions=p2.substitutions,
+            insertions=p2.insertions,
+            deletions=p2.deletions,
+            total_miscues=p2.total_miscues,
+            reading_time_sec=p2.reading_time_sec,
+            grade_time_limit_sec=p2.grade_time_limit_sec,
+            cwpm=p2.cwpm,
+            accuracy_pct=p2.accuracy_pct,
+            comprehension_correct=p2.comprehension_correct,
+            reading_profile=p2.reading_profile.value if p2.reading_profile else "",
+            observation_level=p2.observation_level,
+            learner_experience=p2.learner_experience,
+            alignments=_alignments_to_schema(p2.alignments),
+        )
+
+    # ── 4. Persist to reading_results ────────────────────────────────────
+    reading_result = ReadingResult(
+        session_id=session_id,
+        # Part 1 scoring
+        part1_task1_correct=p1.task1_correct,
+        part1_task2_correct=p1.task2_correct,
+        part1_total_score=p1.total_score,
+        part1_classification=_safe_enum(Part1ClassificationModel, p1.classification.value if p1.classification else None),
+        part1_route=p1.route.value if p1.route else None,
+        part1_task1_alignments_json=_alignments_to_json(p1.task1_alignments),
+        part1_task2_alignments_json=_alignments_to_json(p1.task2_alignments),
+        # Part 2 scoring (mapped to existing column names; None if Part 2 skipped)
+        reading_time_seconds=p2.reading_time_sec if p2 else None,
+        total_words=p2.total_words_in_passage if p2 else None,
+        miscue_count=p2.total_miscues if p2 else None,
+        cwpm=p2.cwpm if p2 else None,
+        reading_profile=_safe_enum(ReadingProfileModel, p2.reading_profile.value if p2 and p2.reading_profile else None),
+        part2_alignments_json=_alignments_to_json(p2.alignments) if p2 else None,
+        updated_at=_now(),
     )
-    session.is_completed = True
+    db.add(reading_result)
+
+    # ── 5. Persist to session_observations (only if Part 2 provided) ─────
+    if payload.part2 is not None and p2 is not None:
+        p2_input = payload.part2
+        observation = SessionObservation(
+            session_id=session_id,
+            comprehension_correct=p2_input.comprehension_correct,
+            comprehension_total=p2_input.comprehension_total,
+            fluency_level=p2_input.fluency_level,
+            learner_experience=p2_input.learner_experience,
+            teacher_remarks=p2_input.teacher_remarks,
+            updated_at=_now(),
+        )
+        db.add(observation)
+
+    # ── 6. Mark session completed ─────────────────────────────────────────
+    await db.execute(
+        update(AssessmentSession)
+        .where(AssessmentSession.id == session_id)
+        .values(is_completed=True, updated_at=_now())
+    )
 
     await db.commit()
-    await db.refresh(session)
-    return session
+
+    return CompleteSessionOut(
+        session_id=session_id,
+        status="completed",
+        part1=part1_out,
+        part2=part2_out,
+    )
 
 
 async def update_session(

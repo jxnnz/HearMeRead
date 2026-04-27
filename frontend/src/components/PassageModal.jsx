@@ -1,5 +1,5 @@
 import { X } from "lucide-react";
-import "./PassageModal.css";
+import "./component css/PassageModal.css";
 
 export default function PassageModal({
   mode, //  "add", "edit"

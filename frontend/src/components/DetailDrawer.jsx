@@ -7,7 +7,7 @@
 //   onEdit   — open edit modal for this passage
 // ============================================================
 import { X, Pencil } from "lucide-react";
-import "./DetailDrawer.css";
+import "./component css/DetailDrawer.css";
 
 export default function DetailDrawer({ passage, onClose, onEdit }) {
   const isArchived = passage.is_archived;

@@ -14,11 +14,14 @@ export default function LoginPage() {
 
   // ── Handle redirect flags from /auth/verify ──────────────────────────────
   useEffect(() => {
-    const verified = searchParams.get("verified");
-    const errFlag  = searchParams.get("error");
+    const verified    = searchParams.get("verified");
+    const registered  = searchParams.get("registered");
+    const errFlag     = searchParams.get("error");
 
     if (verified === "true") {
       setSuccess("Email verified! You can now log in.");
+    } else if (registered === "true") {
+      setSuccess("Account created! Check your email and click the verification link before logging in.");
     } else if (errFlag === "invalid_token") {
       setError(
         "This verification link is invalid or has already expired. " +
@@ -35,8 +38,7 @@ export default function LoginPage() {
     try {
       const res = await authApi.login(email, password);
       localStorage.setItem("token", res.access_token);
-      //navigate("/assessment");
-      navigate("/asr-test");
+      navigate("/assessment");
     } catch (err) {
       const detail = err.response?.data?.detail;
 

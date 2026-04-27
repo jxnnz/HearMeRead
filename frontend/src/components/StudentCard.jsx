@@ -1,5 +1,5 @@
 
-import "./StudentCard.css";
+import "./component css/StudentCard.css";
 
 // ── Reading profile → badge color mapping ─────────────────────
 const LEVEL_COLORS = {

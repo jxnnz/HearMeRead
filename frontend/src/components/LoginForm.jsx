@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import "./Auth.css";
+import "./component css/Auth.css";
  
 export default function LoginForm({ onSubmit, loading }) {
   const navigate = useNavigate();

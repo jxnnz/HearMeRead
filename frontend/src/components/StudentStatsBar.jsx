@@ -6,7 +6,7 @@
 //   stats — { totalAssessments, accuracy, avgWpm, observationLevel }
 // ============================================================
 import { ClipboardList, Target, Gauge, Star } from "lucide-react";
-import "../pages/StudentInfoPage.css";
+import "../pages/pages css/StudentInfoPage.css";
 
 const STATS_CONFIG = [
   {

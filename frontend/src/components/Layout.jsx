@@ -1,5 +1,5 @@
 import Sidebar from "./Sidebar";
-import "./Layout.css";
+import "./component css/Layout.css";
  
 export default function Layout({ children }) {
   return (

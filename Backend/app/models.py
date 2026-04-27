@@ -33,6 +33,21 @@ class AssessmentPeriod(str, enum.Enum):
     end       = "end"
 
 
+class ReadingProfile(str, enum.Enum):
+    low_emerging  = "Low Emerging Reader"
+    high_emerging = "High Emerging Reader"
+    developing    = "Developing Reader"
+    transitioning = "Transitioning Reader"
+    grade_level   = "Reading at Grade Level"
+
+
+class Part1Classification(str, enum.Enum):
+    full_refresher     = "Full Refresher"
+    moderate_refresher = "Moderate Refresher"
+    light_refresher    = "Light Refresher"
+    grade_ready        = "Grade Ready"
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 _SCHOOL_YEAR_RE = re.compile(r"^\d{4}-\d{4}$")
@@ -195,6 +210,19 @@ class ReadingResult(Base):
 
     audio_path       = Column(String(500), nullable=True)
     audio_expires_at = Column(DateTime(timezone=True), nullable=True)
+
+    # Part 1 scoring results
+    part1_task1_correct          = Column(Integer, nullable=True)
+    part1_task2_correct          = Column(Integer, nullable=True)
+    part1_total_score            = Column(Integer, nullable=True)
+    part1_classification         = Column(SAEnum(Part1Classification), nullable=True)
+    part1_route                  = Column(String(10), nullable=True)
+    part1_task1_alignments_json  = Column(Text, nullable=True)
+    part1_task2_alignments_json  = Column(Text, nullable=True)
+
+    # Part 2 scoring results
+    part2_alignments_json = Column(Text, nullable=True)
+    reading_profile       = Column(SAEnum(ReadingProfile), nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), nullable=True)

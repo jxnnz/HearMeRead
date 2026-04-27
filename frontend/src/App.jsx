@@ -5,6 +5,9 @@ import PassagesPage from "./pages/PassagesPage";
 import AddPassagePage from "./pages/AddPassagePage";
 import StudentRecordPage from "./pages/StudentRecordPage";
 import AddStudentPage from "./pages/AddStudentPage";
+import ASRTestPage from "./pages/ASRTestPage";
+import AssessmentPage from "./pages/AssessmentPage";
+import StudentInfoPage from "./pages/StudentInfoPage";
 
 function RequireAuth({ children }) {
   const token = localStorage.getItem("token");
@@ -12,23 +15,27 @@ function RequireAuth({ children }) {
   return children;
 }
 
-function Placeholder({ label }) {
-  return <div style={{ padding: 40 }}><h2>{label}</h2><p>Coming soon.</p></div>;
+function RequireGuest({ children }) {
+  const token = localStorage.getItem("token");
+  if (token) return <Navigate to="/assessment" replace />;
+  return children;
 }
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
-        <Route path="/dashboard" element={<RequireAuth><Placeholder label="Dashboard" /></RequireAuth>} />
-        <Route path="/assessment" element={<AssessmentPage />}/>
+        <Route path="/login"    element={<RequireGuest><LoginPage /></RequireGuest>} />
+        <Route path="/signup"   element={<RequireGuest><SignupPage /></RequireGuest>} />
 
-        <Route path="/passages" element={<PassagesPage />} />
-        <Route path="/passages/add" element={<AddPassagePage />} />
-        <Route path="/students" element={<StudentRecordPage />} />
-        <Route path="/students/add" element={<AddStudentPage />} />
+        <Route path="/assessment"   element={<RequireAuth><AssessmentPage /></RequireAuth>} />
+        <Route path="/passages"     element={<RequireAuth><PassagesPage /></RequireAuth>} />
+        <Route path="/passages/add" element={<RequireAuth><AddPassagePage /></RequireAuth>} />
+        <Route path="/students"     element={<RequireAuth><StudentRecordPage /></RequireAuth>} />
+        <Route path="/students/add" element={<RequireAuth><AddStudentPage /></RequireAuth>} />
+        <Route path="/students/:id" element={<RequireAuth><StudentInfoPage /></RequireAuth>} />
+        <Route path="/asr-test"     element={<RequireAuth><ASRTestPage /></RequireAuth>} />
+
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>

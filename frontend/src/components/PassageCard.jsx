@@ -8,7 +8,7 @@
 //   onArchive  — archive the passage
 // ============================================================
 import { Pencil, Archive } from "lucide-react";
-import "./PassageCard.css";
+import "./component css/PassageCard.css";
 
 export default function PassageCard({ passage, onClick, onEdit, onArchive }) {
   const isArchived = passage.is_archived;

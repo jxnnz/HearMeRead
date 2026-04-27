@@ -10,7 +10,7 @@ import AppButton from "../components/AppButton";
 import FilterButton from "../components/FilterButton";
 import { studentsApi } from "../services/api";
 
-import "./StudentRecordPage.css";
+import "./pages css/StudentRecordPage.css";
 
 // ── Reading profile sort order ───────────────────────────────
 const PROFILE_ORDER = {

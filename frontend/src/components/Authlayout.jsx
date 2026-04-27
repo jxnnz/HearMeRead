@@ -1,4 +1,4 @@
-import "./Auth.css";
+import "./component css/Auth.css";
 
 export default function AuthLayout({ children }) {
   return (

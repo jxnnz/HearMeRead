@@ -19,7 +19,7 @@ import AssessmentHistoryTable  from "../components/AssessmentHistoryTable";
 // ── Mock data ─────────────────────────────────────────────────
 import { MOCK_STUDENTS } from "../data/mockData";
 
-import "./StudentInfoPage.css";
+import "./pages css/StudentInfoPage.css";
 
 // ── Mock assessment records per student ──────────────────────
 // DELETE AFTER backend is ready

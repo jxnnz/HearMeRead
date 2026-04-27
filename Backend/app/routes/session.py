@@ -1,5 +1,5 @@
 from typing import Optional, Union
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,6 +15,7 @@ from app.schema import (
     SessionListResponse,
     DuplicateWarning,
 )
+from app.schemas.session_schemas import CompleteSessionIn, CompleteSessionOut
 from app.services import session_service
 
 router = APIRouter(prefix="/sessions", tags=["Sessions"])
@@ -106,18 +107,27 @@ async def get_session(
 
 @router.post(
     "/{session_id}/complete",
-    response_model=SessionResponse,
+    response_model=CompleteSessionOut,
+    status_code=200,
     summary="Submit assessment results and mark session as complete",
 )
 async def complete_session(
     session_id:      int,
-    data:            SessionComplete,
+    payload:         CompleteSessionIn,
     db:              AsyncSession = Depends(get_db),
     current_teacher: Teacher      = Depends(get_current_teacher),
 ):
-    return await session_service.complete_session(
-        db=db, session_id=session_id, data=data, teacher_id=current_teacher.id
-    )
+    try:
+        return await session_service.complete_session(
+            session_id=session_id,
+            teacher_id=current_teacher.id,
+            payload=payload,
+            db=db,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=409, detail=str(e))
 
 
 # ── Update ────────────────────────────────────────────────────────────────────

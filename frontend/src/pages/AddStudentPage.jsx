@@ -6,7 +6,7 @@ import Layout             from "../components/Layout";
 import StudentDetailsForm from "../components/StudentDetailsForm";
 import { studentsApi }    from "../services/api";
 
-import "./AddStudentPage.css";
+import "./pages css/AddStudentPage.css";
 
 const EMPTY_FORM = {
   lrn:         "",

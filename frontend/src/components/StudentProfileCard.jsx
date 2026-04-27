@@ -5,7 +5,7 @@
 // Props:
 //   student — student object
 // ============================================================
-import "../pages/StudentInfoPage.css";
+import "../pages/pages css/StudentInfoPage.css";
 
 const LEVEL_COLORS = {
   "Reading at Grade Level": { background: "#639922", color: "#ffffff" },

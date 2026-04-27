@@ -13,7 +13,7 @@ import PassageDetailsForm from "../components/PassageDetailsForm";
 import PassageQuestionsForm from "../components/PassageQuestionForm";
 import { passagesApi } from "../services/api";
 
-import "./AddPassagePage.css";
+import "./pages css/AddPassagePage.css";
 
 // ── Default form state ───────────────────────────────────────
 const EMPTY_DETAILS = {

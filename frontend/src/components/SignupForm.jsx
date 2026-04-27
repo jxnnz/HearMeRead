@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Eye, EyeOff, Check, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import "./Auth.css";
+import "./component css/Auth.css";
 
 // ── Password rules — must mirror the backend TeacherRegister validator ────────
 const RULES = [

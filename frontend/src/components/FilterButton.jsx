@@ -11,7 +11,7 @@
 // ============================================================
 import { useState, useRef, useEffect } from "react";
 import { SlidersHorizontal, ChevronDown } from "lucide-react";
-import "./FilterButton.css";
+import "./component css/FilterButton.css";
 
 export default function FilterButton({ filters = [], values = {}, onChange, onClear }) {
   const [open, setOpen] = useState(false);

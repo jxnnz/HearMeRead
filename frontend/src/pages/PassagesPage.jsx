@@ -12,7 +12,7 @@ import AppButton     from "../components/AppButton";
 import FilterButton  from "../components/FilterButton";
 import { passagesApi } from "../services/api";
 
-import "./PassagesPage.css";
+import "./pages css/PassagesPage.css";
 
 // ── Filter config for FilterButton ──────────────────────────
 const FILTER_CONFIG = [

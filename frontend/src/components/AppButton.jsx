@@ -8,7 +8,7 @@
 //   <AppButton variant="primary" onClick={...}>+ Add Student</AppButton>
 //   <AppButton variant="outline" size="sm" onClick={...}>Cancel</AppButton>
 // ============================================================
-import "./AppButton.css";
+import "./component css/AppButton.css";
 
 export default function AppButton({
   children,

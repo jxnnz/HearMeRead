@@ -9,7 +9,7 @@ import { studentsApi, passagesApi, sessionsApi } from "../services/api";
 // For mock data
 import { MOCK_STUDENTS, MOCK_PASSAGES } from "../data/mockData";
 
-import "./AssessmentPage.css";
+import "./pages css/AssessmentPage.css";
 
 // ── Default form state ───────────────────────────────────────
 function initForm() {

@@ -7,7 +7,7 @@ import {
   LogOut,
   FlaskConical,
 } from "lucide-react";
-import "./Sidebar.css";
+import "./component css/Sidebar.css";
 
 const NAV_ITEMS = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
