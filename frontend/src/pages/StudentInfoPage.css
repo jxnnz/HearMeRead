@@ -332,12 +332,36 @@ StudentInfoPage, StudentProfileCard, AssessmentHistoryTable
 
 .aht-btn--filter:hover { background: #e8ecf7; }
 
-.aht-btn--export {
-  background: #1a2340;
-  color: #fff;
+/* Filter selects */
+.aht-filter-select {
+  border: 1.5px solid #dde2f0;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 13px;
+  font-family: "Poppins", sans-serif;
+  color: #1a2340;
+  background: #f4f6fb;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+.aht-filter-select:focus { border-color: #2c3e6b; background: #fff; }
+
+.aht-btn--print {
+  background: #f4f6fb;
+  border-color: #c8d0e4;
+  color: #1a2340;
 }
 
-.aht-btn--export:hover { background: #2c3e6b; }
+.aht-btn--print:hover { background: #e8ecf7; }
+
+.aht-btn--export {
+  background: #1a7a4a;
+  color: #fff;
+  border-color: #1a7a4a;
+}
+
+.aht-btn--export:hover { background: #156040; }
 
 /* ── Table wrapper ───────────────────────────────────── */
 .aht-table-wrap {

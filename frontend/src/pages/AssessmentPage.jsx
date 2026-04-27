@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { ChevronRight, ChevronLeft, Mic, Type } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { ChevronRight, ChevronLeft, Mic, Type, Play, Square } from "lucide-react";
 
 import Layout               from "../components/Layout";
 import StudentInfoForm      from "../components/StudentInfoForm";
@@ -40,7 +40,6 @@ const ASSESSMENT_LABELS = {
   EoSY: "End of School Year",
 };
 
-// Font size steps for the Aa button
 const FONT_SIZES = [15, 18, 22, 26];
 
 // ============================================================
@@ -62,10 +61,16 @@ export default function AssessmentPage() {
 
   // ── Recording modal & mode ───────────────────────────────
   const [showChoiceModal, setShowChoiceModal] = useState(false);
-  const [recordingMode, setRecordingMode]     = useState(null);
+  const [recordingMode, setRecordingMode]     = useState(null); // "live" | "upload" | null
+  const [isRecording, setIsRecording]         = useState(false);
+  const [audioFile, setAudioFile]             = useState(null);
+  const [showPart2Modal, setShowPart2Modal]   = useState(false);
+
+  // ── Hidden file input for audio upload ───────────────────
+  const fileInputRef = useRef(null);
 
   // ── Reading screen controls ──────────────────────────────
-  const [fontSizeIdx, setFontSizeIdx] = useState(1); // default 18px
+  const [fontSizeIdx, setFontSizeIdx] = useState(1);
   const fontSize = FONT_SIZES[fontSizeIdx];
 
   // ── Load students on mount ─────────────────────────────── FINAL CODE DO NOT DELETE!!
@@ -79,7 +84,6 @@ export default function AssessmentPage() {
       .finally(() => setLoadingStudents(false));
   }, []);
 
-  // ── Reload passages when language changes ────────────────
   useEffect(() => {
     setLoadingPassages(true);
     passagesApi
@@ -99,9 +103,7 @@ export default function AssessmentPage() {
   useEffect(() => {
     setLoadingPassages(true);
     const timer = setTimeout(() => {
-      setPassages(
-        MOCK_PASSAGES.filter((p) => p.language === form.language)
-      );
+      setPassages(MOCK_PASSAGES.filter((p) => p.language === form.language));
       setLoadingPassages(false);
     }, 300);
     return () => clearTimeout(timer);
@@ -109,7 +111,7 @@ export default function AssessmentPage() {
 
   // ── Validation ───────────────────────────────────────────
   function validate() {
-    if (!form.student_id) { setCreateError("Please select a student.");         return false; }
+    if (!form.student_id) { setCreateError("Please select a student."); return false; }
     return true;
   }
 
@@ -130,9 +132,7 @@ export default function AssessmentPage() {
       setSession(res.session ?? res);
       setShowChoiceModal(true);
     } catch (err) {
-      setCreateError(
-        err.response?.data?.detail || err.message || "Failed to create session."
-      );
+      setCreateError(err.response?.data?.detail || err.message || "Failed to create session.");
     } finally {
       setCreating(false);
     }
@@ -150,28 +150,74 @@ export default function AssessmentPage() {
     setShowChoiceModal(true);
   }
 
+  // ── File selected from picker ────────────────────────────
+  function handleFileSelect(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAudioFile(file);
+    setRecordingMode("upload");
+    setStep(2);
+    e.target.value = "";           // reset so same file can be re-picked
+  }
+
+  // ── Stop live recording → show Part 2 modal ──────────────
+  function handleStopRecording() {
+    setIsRecording(false);
+    setShowPart2Modal(true);
+  }
+
   function handleBack() {
     setStep(1);
     setRecordingMode(null);
+    setIsRecording(false);
+    setAudioFile(null);
     setSession(null);
+    setShowPart2Modal(false);
   }
 
   function cycleFontSize() {
     setFontSizeIdx((i) => (i + 1) % FONT_SIZES.length);
   }
 
-  // ── Word count from content ──────────────────────────────
   const wordCount =
     form.word_count ||
     form.passage_content.trim().split(/\s+/).filter(Boolean).length ||
     0;
 
+  // ── Shared modal callbacks ────────────────────────────────
+  const choiceModalProps = {
+    isOpen:  showChoiceModal,
+    onClose: () => setShowChoiceModal(false),
+    onUpload: () => {
+      setShowChoiceModal(false);
+      fileInputRef.current?.click();
+    },
+    onLive: () => {
+      setRecordingMode("live");
+      setIsRecording(true);
+      setShowChoiceModal(false);
+      setStep(2);
+    },
+  };
+
+  // ── Hidden file input (always mounted) ───────────────────
+  const fileInput = (
+    <input
+      ref={fileInputRef}
+      type="file"
+      accept="audio/*"
+      style={{ display: "none" }}
+      onChange={handleFileSelect}
+    />
+  );
+
   // ============================================================
-  // STEP 1 — Student Information (compact)
+  // STEP 1 — Student Information
   // ============================================================
   if (step === 1) {
     return (
       <Layout>
+        {fileInput}
         <div className="asp-page asp-page--step1">
           <h1 className="asp-title">Assessment Session</h1>
 
@@ -198,93 +244,61 @@ export default function AssessmentPage() {
           </button>
         </div>
 
-        <RecordingChoiceModal
-          isOpen={showChoiceModal}
-          onClose={() => setShowChoiceModal(false)}
-          onUpload={() => {
-            setRecordingMode("upload");
-            setShowChoiceModal(false);
-            setStep(2);
-          }}
-          onLive={() => {
-            setRecordingMode("live");
-            setShowChoiceModal(false);
-            setStep(2);
-          }}
-        />
+        <RecordingChoiceModal {...choiceModalProps} />
       </Layout>
     );
   }
 
   // ============================================================
-  // STEP 2 — Reading Screen (full width, matches mockup)
+  // STEP 2 — Reading Screen
   // ============================================================
   return (
     <Layout>
+      {fileInput}
+
       <div className="asp-reading-screen">
 
         {/* ── Header bar ── */}
         <div className="asp-reading-header">
           <div className="asp-reading-header__left">
-            <button
-              className="asp-reading-back"
-              onClick={handleBack}
-              aria-label="Go back"
-            >
+            <button className="asp-reading-back" onClick={handleBack} aria-label="Go back">
               <ChevronLeft size={18} />
             </button>
             <div className="asp-reading-header__info">
               <h2 className="asp-reading-title">
                 {form.passage_title}
-                <span className="asp-reading-wordcount">
-                  ({wordCount} words)
-                </span>
+                <span className="asp-reading-wordcount">({wordCount} words)</span>
               </h2>
               <p className="asp-reading-meta">
-                {form.first_name} {form.last_name} ·{" "}
-                Grade {form.grade_level} ·{" "}
-                {ASSESSMENT_LABELS[form.assessment_type]} ·{" "}
-                {form.school_year}
+                {form.first_name} {form.last_name} · Grade {form.grade_level} ·{" "}
+                {ASSESSMENT_LABELS[form.assessment_type]} · {form.school_year}
               </p>
             </div>
           </div>
 
           <div className="asp-reading-header__right">
             {/* Font size toggle */}
-            <button
-              className="asp-reading-ctrl"
-              onClick={cycleFontSize}
-              aria-label="Change font size"
-            >
+            <button className="asp-reading-ctrl" onClick={cycleFontSize} aria-label="Change font size">
               <Type size={15} />
               <span>Aa</span>
               <span className="asp-ctrl-size">{fontSize}px</span>
             </button>
 
-            {/* Record / mode button */}
+            {/* Mic / recording indicator */}
             <button
-              className={`asp-reading-ctrl asp-reading-ctrl--mic${
-                recordingMode ? " asp-reading-ctrl--active" : ""
-              }`}
-              onClick={() =>
-                recordingMode
-                  ? setRecordingMode(null)
-                  : setShowChoiceModal(true)
-              }
-              aria-label={recordingMode ? "Stop recording" : "Start recording"}
+              className={`asp-reading-ctrl asp-reading-ctrl--mic${isRecording ? " asp-reading-ctrl--active" : ""}`}
+              onClick={() => isRecording ? handleStopRecording() : setShowChoiceModal(true)}
+              aria-label={isRecording ? "Stop recording" : "Start recording"}
             >
-              <Mic size={16} />
+              {isRecording ? <Play size={16} /> : <Mic size={16} />}
             </button>
           </div>
         </div>
 
-        {/* ── Passage content (large, scrollable) ── */}
+        {/* ── Passage content ── */}
         <div className="asp-reading-body">
           {form.passage_content ? (
-            <p
-              className="asp-reading-text"
-              style={{ fontSize: `${fontSize}px` }}
-            >
+            <p className="asp-reading-text" style={{ fontSize: `${fontSize}px` }}>
               {form.passage_content}
             </p>
           ) : (
@@ -292,61 +306,79 @@ export default function AssessmentPage() {
           )}
         </div>
 
-        {/* ── Bottom mic button ── */}
+        {/* ── Footer ── */}
         <div className="asp-reading-footer">
-          {!recordingMode ? (
-            <button
-              className="asp-mic-btn"
-              onClick={() => setShowChoiceModal(true)}
-              aria-label="Start assessment"
-            >
+          {!recordingMode && (
+            <button className="asp-mic-btn" onClick={() => setShowChoiceModal(true)} aria-label="Start assessment">
               <Mic size={24} />
             </button>
-          ) : (
+          )}
+
+          {recordingMode === "live" && (
             <div className="asp-recording-active">
-              <div
-                className="asp-mic-btn asp-mic-btn--recording"
-                aria-label="Recording active"
-              >
+              <div className="asp-mic-btn asp-mic-btn--recording" aria-label="Recording active">
+                <Play size={24} />
+              </div>
+              <p className="asp-recording-mode-label">Live recording active…</p>
+              <button className="asp-recording-stop" onClick={handleStopRecording}>
+                <Square size={11} />
+                Stop
+              </button>
+            </div>
+          )}
+
+          {recordingMode === "upload" && (
+            <div className="asp-recording-active">
+              <div className="asp-mic-btn asp-mic-btn--upload" aria-label="Upload selected">
                 <Mic size={24} />
               </div>
               <p className="asp-recording-mode-label">
-                {recordingMode === "live"
-                  ? "Live recording active…"
-                  : "Upload mode selected"}
+                {audioFile ? audioFile.name : "Audio file selected"}
               </p>
-              <button
-                className="asp-recording-cancel"
-                onClick={() => setRecordingMode(null)}
-              >
-                Cancel
+              <button className="asp-recording-cancel" onClick={() => { setRecordingMode(null); setAudioFile(null); }}>
+                Remove
               </button>
             </div>
           )}
 
           {session?.id && (
-            <p className="asp-session-id">
-              Session: <code>{session.id}</code>
-            </p>
+            <p className="asp-session-id">Session: <code>{session.id}</code></p>
           )}
         </div>
       </div>
 
       {/* ── Recording Choice Modal ── */}
-      <RecordingChoiceModal
-        isOpen={showChoiceModal}
-        onClose={() => setShowChoiceModal(false)}
-        onUpload={() => {
-          setRecordingMode("upload");
-          setShowChoiceModal(false);
-          setStep(2);
-        }}
-        onLive={() => {
-          setRecordingMode("live");
-          setShowChoiceModal(false);
-          setStep(2);
-        }}
-      />
+      <RecordingChoiceModal {...choiceModalProps} />
+
+      {/* ── Part 2 Modal ── */}
+      {showPart2Modal && (
+        <div className="asp-overlay" onClick={() => setShowPart2Modal(false)}>
+          <div className="asp-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="asp-modal__icon">✓</div>
+            <h3 className="asp-modal__title">Recording Complete</h3>
+            <p className="asp-modal__body">
+              The reading session has been recorded. Ready to proceed to Part 2 of the assessment?
+            </p>
+            <div className="asp-modal__actions">
+              <button
+                className="asp-modal__btn asp-modal__btn--secondary"
+                onClick={() => setShowPart2Modal(false)}
+              >
+                Stay Here
+              </button>
+              <button
+                className="asp-modal__btn asp-modal__btn--primary"
+                onClick={() => {
+                  setShowPart2Modal(false);
+                  // TODO: navigate to Part 2
+                }}
+              >
+                Proceed to Part 2
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }

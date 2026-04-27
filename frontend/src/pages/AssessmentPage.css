@@ -463,6 +463,116 @@
 }
 .asp-recording-cancel:hover { color: #c0392b; }
 
+/* Stop button */
+.asp-recording-stop {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #fdecea;
+  border: 1.5px solid #e63b2e;
+  color: #e63b2e;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: "Poppins", sans-serif;
+  border-radius: 8px;
+  padding: 6px 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.asp-recording-stop:hover { background: #fbd5d3; }
+
+/* Upload mode mic button */
+.asp-mic-btn--upload {
+  background: #e8f0fe;
+  color: #2c7fc1;
+}
+
+/* ── Part 2 overlay + modal ──────────────────────────────── */
+.asp-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 35, 64, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.asp-modal {
+  background: #fff;
+  border-radius: 16px;
+  padding: 36px 32px 28px;
+  max-width: 400px;
+  width: 90%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 12px 40px rgba(44, 62, 107, 0.18);
+  animation: dropdownIn 0.2s ease;
+}
+
+.asp-modal__icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #e8f5e9;
+  color: #27ae60;
+  font-size: 24px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.asp-modal__title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a2340;
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+}
+
+.asp-modal__body {
+  font-size: 13.5px;
+  color: #5a6382;
+  text-align: center;
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+  line-height: 1.6;
+}
+
+.asp-modal__actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+  width: 100%;
+}
+
+.asp-modal__btn {
+  flex: 1;
+  padding: 11px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: "Poppins", sans-serif;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.asp-modal__btn--secondary {
+  background: #eef0f8;
+  color: #5a6382;
+}
+.asp-modal__btn--secondary:hover { background: #dde2f0; }
+
+.asp-modal__btn--primary {
+  background: #2c3e6b;
+  color: #fff;
+}
+.asp-modal__btn--primary:hover { background: #1e2d52; }
+
 .asp-session-id {
   font-size: 11px;
   color: #b0b8cc;
