@@ -16,13 +16,11 @@ import StudentProfileCard      from "../components/StudentProfileCard";
 import StudentStatsBar         from "../components/StudentStatsBar";
 import AssessmentHistoryTable  from "../components/AssessmentHistoryTable";
 
-// ── Mock data ─────────────────────────────────────────────────
-import { MOCK_STUDENTS } from "../data/mockData";
-
 import "./StudentInfoPage.css";
 
 // ── Mock assessment records per student ──────────────────────
 // DELETE AFTER backend is ready
+/*import { MOCK_STUDENTS } from "../data/mockData";
 const MOCK_RECORDS = {
   1: [
     { id: 1, assessment_date: "2025-08-15", period: "BoSY", language: "filipino", task1: 18, task2l_word: 14, task2h_sentences: 10, total_score: 42, part1_reading_level: "Instructional", story_number: 1, num_miscues: 8,  words_read: 90,  total_time: "1:55", wpm: 82,  pct_correct_words: 89, total_correct: 37, learner_experience: 3, observation_level: 3, reading_profile: "Developing Reader",    remarks: "" },
@@ -50,7 +48,7 @@ const MOCK_RECORDS = {
     { id: 1, assessment_date: "2025-08-13", period: "BoSY", language: "filipino", task1: 16, task2l_word: 12, task2h_sentences:  9, total_score: 37, part1_reading_level: "Instructional", story_number: 1, num_miscues: 11, words_read: 87,  total_time: "1:58", wpm: 76,  pct_correct_words: 86, total_correct: 33, learner_experience: 3, observation_level: 3, reading_profile: "Developing Reader",    remarks: "" },
     { id: 2, assessment_date: "2025-11-19", period: "MoSY", language: "filipino", task1: 17, task2l_word: 13, task2h_sentences: 10, total_score: 40, part1_reading_level: "Instructional", story_number: 2, num_miscues: 9,  words_read: 91,  total_time: "1:50", wpm: 82,  pct_correct_words: 90, total_correct: 37, learner_experience: 3, observation_level: 3, reading_profile: "Developing Reader",    remarks: "" },
   ],
-};
+}; */
 
 // ── Compute stats from records ───────────────────────────────
 function computeStats(records = []) {
@@ -82,7 +80,6 @@ export default function StudentInfoPage() {
 
   // ── Load student + records ───────────────────────────────
   // FINAL CODE — DO NOT DELETE:
-  /*
   useEffect(() => {
     setLoading(true);
     Promise.all([
@@ -96,9 +93,9 @@ export default function StudentInfoPage() {
       .catch((e) => setError(e.response?.data?.detail || e.message))
       .finally(() => setLoading(false));
   }, [id]);
-  */
+  
 
-  // ── Mock data (temporary) — DELETE AFTER backend is ready ──
+  /* ── Mock data (temporary) — DELETE AFTER backend is ready ──
   useEffect(() => {
     setLoading(true);
     const studentId = parseInt(id, 10);
@@ -110,7 +107,7 @@ export default function StudentInfoPage() {
       setRecords(MOCK_RECORDS[studentId] ?? []);
     }
     setLoading(false);
-  }, [id]);
+  }, [id]); */
 
   // ── Handlers ─────────────────────────────────────────────
   function handleEdit(record) {

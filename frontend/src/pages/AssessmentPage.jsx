@@ -7,7 +7,7 @@ import RecordingChoiceModal from "../modals/RecordingChoiceModal";
 import { studentsApi, passagesApi, sessionsApi } from "../services/api";
 
 // For mock data
-import { MOCK_STUDENTS, MOCK_PASSAGES } from "../data/mockData";
+//import { MOCK_STUDENTS, MOCK_PASSAGES } from "../data/mockData";
 
 import "./AssessmentPage.css";
 
@@ -74,7 +74,7 @@ export default function AssessmentPage() {
   const fontSize = FONT_SIZES[fontSizeIdx];
 
   // ── Load students on mount ─────────────────────────────── FINAL CODE DO NOT DELETE!!
-  /*
+  
   useEffect(() => {
     setLoadingStudents(true);
     studentsApi
@@ -92,9 +92,9 @@ export default function AssessmentPage() {
       .catch((e) => setFetchError(e.response?.data?.detail || e.message))
       .finally(() => setLoadingPassages(false));
   }, [form.language]);
-  */
+  
 
-  // ── Mock data (temporary) — DELETE AFTER backend is ready ──
+  /* ── Mock data (temporary) — DELETE AFTER backend is ready ──
   useEffect(() => {
     setStudents(MOCK_STUDENTS);
     setLoadingStudents(false);
@@ -107,7 +107,7 @@ export default function AssessmentPage() {
       setLoadingPassages(false);
     }, 300);
     return () => clearTimeout(timer);
-  }, [form.language]);
+  }, [form.language]); */
 
   // ── Validation ───────────────────────────────────────────
   function validate() {
@@ -116,7 +116,7 @@ export default function AssessmentPage() {
   }
 
   // ── Continue → create session ──────────────────────────── FINAL CODE DO NOT DELETE!!
-  /*
+  
   async function handleContinue() {
     setCreateError(null);
     if (!validate()) return;
@@ -137,9 +137,9 @@ export default function AssessmentPage() {
       setCreating(false);
     }
   }
-  */
+  
 
-  // ── Mock session — DELETE AFTER backend is ready ──
+  /* ── Mock session — DELETE AFTER backend is ready ──
   async function handleContinue() {
     setCreateError(null);
     if (!validate()) return;
@@ -148,7 +148,7 @@ export default function AssessmentPage() {
     setSession({ id: `MOCK-SESSION-${Date.now()}` });
     setCreating(false);
     setShowChoiceModal(true);
-  }
+  } */
 
   // ── File selected from picker ────────────────────────────
   function handleFileSelect(e) {
