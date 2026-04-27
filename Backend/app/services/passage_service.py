@@ -22,6 +22,7 @@ async def get_passages(
     language: Optional[Language],
     grade_level: Optional[GradeLevel],
     include_archived: bool,
+    assessment_type: Optional[int] = None,
 ) -> Tuple[int, List[Passage]]:
     filters = [Passage.teacher_id == teacher_id]
 
@@ -31,6 +32,8 @@ async def get_passages(
         filters.append(Passage.language == language)
     if grade_level:
         filters.append(Passage.grade_level == grade_level)
+    if assessment_type is not None:
+        filters.append(Passage.assessment_type == assessment_type)
 
     count_result = await db.execute(
         select(func.count()).select_from(Passage).where(and_(*filters))
@@ -68,7 +71,11 @@ async def create_passage(db: AsyncSession, data: PassageCreate, teacher_id: int)
         content=data.content,
         language=data.language,
         grade_level=data.grade_level,
-        word_count=_compute_word_count(data.content),
+        word_count=_compute_word_count(data.content or ""),
+        assessment_type=data.assessment_type,
+        task1_content=data.task1_content,
+        task2_words=data.task2_words,
+        task2_sentences=data.task2_sentences,
     )
     db.add(passage)
     await db.commit()
@@ -112,6 +119,14 @@ async def update_passage(
         passage.language = data.language
     if data.grade_level is not None:
         passage.grade_level = data.grade_level
+    if data.assessment_type is not None:
+        passage.assessment_type = data.assessment_type
+    if data.task1_content is not None:
+        passage.task1_content = data.task1_content
+    if data.task2_words is not None:
+        passage.task2_words = data.task2_words
+    if data.task2_sentences is not None:
+        passage.task2_sentences = data.task2_sentences
 
     await db.commit()
     await db.refresh(passage)

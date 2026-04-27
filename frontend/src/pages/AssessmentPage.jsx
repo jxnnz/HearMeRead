@@ -6,9 +6,6 @@ import StudentInfoForm      from "../components/StudentInfoForm";
 import RecordingChoiceModal from "../modals/RecordingChoiceModal";
 import { studentsApi, passagesApi, sessionsApi } from "../services/api";
 
-// For mock data
-import { MOCK_STUDENTS, MOCK_PASSAGES } from "../data/mockData";
-
 import "./pages css/AssessmentPage.css";
 
 // ── Default form state ───────────────────────────────────────
@@ -73,13 +70,11 @@ export default function AssessmentPage() {
   const [fontSizeIdx, setFontSizeIdx] = useState(1);
   const fontSize = FONT_SIZES[fontSizeIdx];
 
-  // ── Load students on mount ─────────────────────────────── FINAL CODE DO NOT DELETE!!
-  /*
   useEffect(() => {
     setLoadingStudents(true);
     studentsApi
-      .list()
-      .then(setStudents)
+      .list({ page_size: 200 })
+      .then((data) => setStudents(data.students))
       .catch((e) => setFetchError(e.response?.data?.detail || e.message))
       .finally(() => setLoadingStudents(false));
   }, []);
@@ -87,46 +82,25 @@ export default function AssessmentPage() {
   useEffect(() => {
     setLoadingPassages(true);
     passagesApi
-      .list({ language: form.language })
-      .then((data) => setPassages(data.filter((p) => !p.is_archived)))
+      .list({ language: form.language, page_size: 100 })
+      .then((data) => setPassages(data.passages))
       .catch((e) => setFetchError(e.response?.data?.detail || e.message))
       .finally(() => setLoadingPassages(false));
   }, [form.language]);
-  */
 
-  // ── Mock data (temporary) — DELETE AFTER backend is ready ──
-  useEffect(() => {
-    setStudents(MOCK_STUDENTS);
-    setLoadingStudents(false);
-  }, []);
+  const PERIOD_MAP = { BoSY: "beginning", MoSY: "middle", EoSY: "end" };
 
-  useEffect(() => {
-    setLoadingPassages(true);
-    const timer = setTimeout(() => {
-      setPassages(MOCK_PASSAGES.filter((p) => p.language === form.language));
-      setLoadingPassages(false);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [form.language]);
-
-  // ── Validation ───────────────────────────────────────────
-  function validate() {
-    if (!form.student_id) { setCreateError("Please select a student."); return false; }
-    return true;
-  }
-
-  // ── Continue → create session ──────────────────────────── FINAL CODE DO NOT DELETE!!
-  /*
   async function handleContinue() {
     setCreateError(null);
-    if (!validate()) return;
+    if (!form.student_id) { setCreateError("Please select a student."); return; }
+    if (!form.passage_id) { setCreateError("Please select a passage."); return; }
     setCreating(true);
     try {
       const res = await sessionsApi.create({
         student_id:  form.student_id,
         passage_id:  form.passage_id,
         language:    form.language,
-        period:      form.assessment_type.toLowerCase(),
+        period:      PERIOD_MAP[form.assessment_type] ?? "beginning",
         school_year: form.school_year,
       });
       setSession(res.session ?? res);
@@ -136,18 +110,6 @@ export default function AssessmentPage() {
     } finally {
       setCreating(false);
     }
-  }
-  */
-
-  // ── Mock session — DELETE AFTER backend is ready ──
-  async function handleContinue() {
-    setCreateError(null);
-    if (!validate()) return;
-    setCreating(true);
-    await new Promise((res) => setTimeout(res, 400));
-    setSession({ id: `MOCK-SESSION-${Date.now()}` });
-    setCreating(false);
-    setShowChoiceModal(true);
   }
 
   // ── File selected from picker ────────────────────────────

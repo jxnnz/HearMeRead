@@ -29,6 +29,7 @@ async def list_passages(
     page_size:        int                    = Query(20, ge=1, le=100),
     language:         Optional[Language]     = Query(None),
     grade_level:      Optional[GradeLevel]   = Query(None),
+    assessment_type:  Optional[int]          = Query(None, ge=1, le=2),
     include_archived: bool                   = Query(False),
     db:               AsyncSession           = Depends(get_db),
     current_teacher:  Teacher                = Depends(get_current_teacher),
@@ -41,6 +42,7 @@ async def list_passages(
         language=language,
         grade_level=grade_level,
         include_archived=include_archived,
+        assessment_type=assessment_type,
     )
     return PassageListResponse(total=total, page=page, page_size=page_size, passages=passages)
 

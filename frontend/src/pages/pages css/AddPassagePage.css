@@ -378,3 +378,16 @@
   background: #f0f3fc;
   border-color: #2c3e6b;
 }
+
+/* ── Assessment 1 instruction note ───────────────────────── */
+.a1-note {
+  font-size: 12.5px;
+  color: #8a94b2;
+  margin: 0;
+  line-height: 1.6;
+  font-family: "Poppins", sans-serif;
+}
+
+.a1-note strong {
+  color: #2c3e6b;
+}

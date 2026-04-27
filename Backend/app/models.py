@@ -115,16 +115,20 @@ class Student(Base):
 class Passage(Base):
     __tablename__ = "passages"
 
-    id          = Column(Integer, primary_key=True, index=True)
-    teacher_id  = Column(Integer, ForeignKey("teachers.id", ondelete="CASCADE"), nullable=False, index=True)
-    title       = Column(String(255), nullable=False)
-    content     = Column(Text, nullable=False)
-    language    = Column(SAEnum(Language), nullable=False)
-    grade_level = Column(SAEnum(GradeLevel), nullable=False)
-    word_count  = Column(Integer, nullable=False, default=0)
-    is_archived = Column(Boolean, nullable=False, default=False)
-    created_at  = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at  = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    id              = Column(Integer, primary_key=True, index=True)
+    teacher_id      = Column(Integer, ForeignKey("teachers.id", ondelete="CASCADE"), nullable=False, index=True)
+    title           = Column(String(255), nullable=True)   # nullable: Assessment 1 has no title
+    content         = Column(Text, nullable=True)          # nullable: Assessment 1 uses task fields instead
+    language        = Column(SAEnum(Language), nullable=False)
+    grade_level     = Column(SAEnum(GradeLevel), nullable=True)  # nullable: Assessment 1 has no grade level
+    word_count      = Column(Integer, nullable=False, default=0)
+    is_archived     = Column(Boolean, nullable=False, default=False)
+    assessment_type = Column(Integer, nullable=True)   # 1 = Assessment 1, 2 = Assessment 2
+    task1_content   = Column(Text, nullable=True)      # Assessment 1: Task 1 reading passage
+    task2_words     = Column(Text, nullable=True)      # Assessment 1: comma-separated word list
+    task2_sentences = Column(Text, nullable=True)      # Assessment 1: period-separated sentences
+    created_at      = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at      = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     # Relationships
     teacher             = relationship("Teacher",           back_populates="passages")

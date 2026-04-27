@@ -7,14 +7,13 @@
 //   onEdit     — open edit modal
 //   onArchive  — archive the passage
 // ============================================================
-import { Pencil, Archive } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import "./component css/PassageCard.css";
 
-export default function PassageCard({ passage, onClick, onEdit, onArchive }) {
+export default function PassageCard({ passage, onClick, onEdit, onRemove }) {
   const isArchived = passage.is_archived;
   const lang = passage.language === "filipino" ? "Filipino" : "English";
 
-  // Word count derived from content (backend may also supply word_count)
   const words =
     passage.word_count ??
     passage.content?.trim().split(/\s+/).filter(Boolean).length ??
@@ -36,14 +35,6 @@ export default function PassageCard({ passage, onClick, onEdit, onArchive }) {
         <span className="p-card__words">{words} words</span>
         <span className="p-card__dot">·</span>
         <span className="p-card__lang">{lang}</span>
-
-        <span
-          className={`p-card__badge ${
-            isArchived ? "p-card__badge--archived" : "p-card__badge--active"
-          }`}
-        >
-          {isArchived ? "Archived" : "Active"}
-        </span>
       </div>
 
       {/* ── Title ── */}
@@ -56,10 +47,7 @@ export default function PassageCard({ passage, onClick, onEdit, onArchive }) {
       </p>
 
       {/* ── Action buttons (visible on hover) ── */}
-      <div
-        className="p-card__actions"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="p-card__actions" onClick={(e) => e.stopPropagation()}>
         <button
           className="p-card__btn"
           title="Edit passage"
@@ -70,17 +58,15 @@ export default function PassageCard({ passage, onClick, onEdit, onArchive }) {
           Edit
         </button>
 
-        {!isArchived && (
-          <button
-            className="p-card__btn p-card__btn--danger"
-            title="Archive passage"
-            onClick={(e) => onArchive(passage, e)}
-            aria-label="Archive passage"
-          >
-            <Archive size={13} />
-            Archive
-          </button>
-        )}
+        <button
+          className="p-card__btn p-card__btn--danger"
+          title="Remove passage"
+          onClick={(e) => onRemove(passage, e)}
+          aria-label="Remove passage"
+        >
+          <Trash2 size={13} />
+          Remove
+        </button>
       </div>
     </div>
   );

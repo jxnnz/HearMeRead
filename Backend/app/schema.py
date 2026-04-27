@@ -94,32 +94,47 @@ class QuestionResponse(QuestionBase):
 
 # ── Passage ───────────────────────────────────────────────────────────────────
 
-class PassageBase(BaseModel):
-    title:       str = Field(..., min_length=1, max_length=255)
-    content:     str = Field(..., min_length=1)
-    language:    Language
-    grade_level: GradeLevel
-
-
-class PassageCreate(PassageBase):
-    pass
+class PassageCreate(BaseModel):
+    language:        Language
+    # Assessment 2 fields (required when assessment_type = 2)
+    title:           Optional[str]        = Field(None, max_length=255)
+    content:         Optional[str]        = None
+    grade_level:     Optional[GradeLevel] = None
+    # Assessment 1 fields (required when assessment_type = 1)
+    task1_content:   Optional[str]        = None
+    task2_words:     Optional[str]        = None
+    task2_sentences: Optional[str]        = None
+    # Shared
+    assessment_type: Optional[int]        = Field(None, ge=1, le=2)
 
 
 class PassageUpdate(BaseModel):
-    title:       Optional[str]        = Field(None, min_length=1, max_length=255)
-    content:     Optional[str]        = Field(None, min_length=1)
-    language:    Optional[Language]   = None
-    grade_level: Optional[GradeLevel] = None
+    title:           Optional[str]        = Field(None, max_length=255)
+    content:         Optional[str]        = None
+    language:        Optional[Language]   = None
+    grade_level:     Optional[GradeLevel] = None
+    assessment_type: Optional[int]        = Field(None, ge=1, le=2)
+    task1_content:   Optional[str]        = None
+    task2_words:     Optional[str]        = None
+    task2_sentences: Optional[str]        = None
 
 
-class PassageResponse(PassageBase):
-    id:          int
-    teacher_id:  int
-    word_count:  int
-    is_archived: bool
-    created_at:  datetime
-    updated_at:  datetime
-    questions:   List[QuestionResponse] = []
+class PassageResponse(BaseModel):
+    id:              int
+    teacher_id:      int
+    language:        Language
+    word_count:      int
+    is_archived:     bool
+    assessment_type: Optional[int]        = None
+    title:           Optional[str]        = None
+    content:         Optional[str]        = None
+    grade_level:     Optional[GradeLevel] = None
+    task1_content:   Optional[str]        = None
+    task2_words:     Optional[str]        = None
+    task2_sentences: Optional[str]        = None
+    created_at:      datetime
+    updated_at:      datetime
+    questions:       List[QuestionResponse] = []
 
     class Config:
         from_attributes = True

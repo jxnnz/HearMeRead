@@ -59,7 +59,7 @@ export default function StudentCard({ student, onClick }) {
       {/* ── Badges: Grade + Reading Level ── */}
       <div className="sc-badges">
         <span className="sc-badge sc-badge--grade">
-          Grade {student.grade_level}
+          {student.grade_level}
         </span>
         <LevelBadge level={student.reading_profile} />
       </div>

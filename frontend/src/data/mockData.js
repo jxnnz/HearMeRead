@@ -88,6 +88,7 @@ export const MOCK_PASSAGES = [
     grade_level: 2,
     word_count: 120,
     is_archived: false,
+    assessment_type: 1,
     content:
       "Noong unang panahon, may isang pagong at isang matsing na magkaibigan. " +
       "Isang araw, nagpasya silang magtanim ng saging. Nagtrabaho nang husto ang pagong, " +
@@ -104,6 +105,7 @@ export const MOCK_PASSAGES = [
     grade_level: 2,
     word_count: 110,
     is_archived: false,
+    assessment_type: 1,
     content:
       "Si Pedro ay isang masipag na batang nakatira sa isang maliit na nayon. " +
       "Isang umaga, habang nagtatrabaho siya sa bukid, nakahanap siya ng isang " +
@@ -120,6 +122,7 @@ export const MOCK_PASSAGES = [
     grade_level: 2,
     word_count: 115,
     is_archived: false,
+    assessment_type: 2,
     content:
       "Once upon a time, there was a little star who lived high up in the sky. " +
       "Every night, the star would shine as brightly as it could to help travelers " +
@@ -136,6 +139,7 @@ export const MOCK_PASSAGES = [
     grade_level: 2,
     word_count: 108,
     is_archived: false,
+    assessment_type: 2,
     content:
       "In a small village, there was a big mango tree that gave shade to everyone. " +
       "Children played under it every afternoon after school. Birds built their nests " +
@@ -152,6 +156,7 @@ export const MOCK_PASSAGES = [
     grade_level: 2,
     word_count: 95,
     is_archived: false,
+    assessment_type: 2,
     content:
       "Mahal ko ang aking paaralan. Dito ako natututo ng maraming bagay kasama " +
       "ang aking mga kaibigan at guro. Tuwing umaga, pumupunta ako sa klase nang " +
