@@ -246,7 +246,8 @@ export const sessionsApi = {
   /**
    * Upload an audio recording for transcription via Whisper ASR.
    * formData must include: audio (Blob/File)
-   * Returns: { session_id, transcript, words, language, model_used, word_count }
+   * Returns: { session_id, transcript, words, language, model_used, word_count,
+   *            audio_stored, audio_expires_at }
    *
    * NOTE: This does NOT complete the session — the teacher reviews the
    * transcript first before calling sessionsApi.complete().

@@ -35,7 +35,8 @@ export default function LoginPage() {
     try {
       const res = await authApi.login(email, password);
       localStorage.setItem("token", res.access_token);
-      navigate("/assessment");
+      //navigate("/assessment");
+      navigate("/asr-test");
     } catch (err) {
       const detail = err.response?.data?.detail;
 

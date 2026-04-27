@@ -44,11 +44,16 @@ def run_migrations_online() -> None:
         connect_args={"options": f"-c search_path={schema}"},
     )
 
-    with connectable.connect() as connection:
-        # One-time schema bootstrap: safe to run on every migration pass.
-        with connection.execution_options(isolation_level="AUTOCOMMIT"):
-            connection.execute(text(f"CREATE SCHEMA IF NOT EXISTS {schema}"))
+    # One-time schema bootstrap in its own connection. Keeping this separate
+    # from the migration connection is required because switching isolation
+    # level to AUTOCOMMIT and back invalidates the connection in SQLAlchemy
+    # 2.x, which would cause "This Connection is closed" on begin_transaction.
+    with connectable.connect() as bootstrap:
+        bootstrap.execution_options(isolation_level="AUTOCOMMIT").execute(
+            text(f"CREATE SCHEMA IF NOT EXISTS {schema}")
+        )
 
+    with connectable.connect() as connection:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,

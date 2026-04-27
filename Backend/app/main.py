@@ -24,7 +24,16 @@ async def lifespan(app: FastAPI):
     logger.info(f"  BACKEND    : {settings.BACKEND_URL}")
     logger.info(f"  FRONTEND   : {settings.FRONTEND_URL}")
     logger.info("=" * 50)
+
+    from app.services.audio_storage import ensure_audio_dir
+    from app.services.cleanup import create_scheduler
+    ensure_audio_dir()
+    scheduler = create_scheduler()
+    scheduler.start()
+
     yield
+
+    scheduler.shutdown(wait=False)
     await engine.dispose()
 
 

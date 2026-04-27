@@ -193,6 +193,9 @@ class ReadingResult(Base):
     miscue_count         = Column(Integer, nullable=True, default=0)
     cwpm                 = Column(Float,   nullable=True)   # auto-computed on save
 
+    audio_path       = Column(String(500), nullable=True)
+    audio_expires_at = Column(DateTime(timezone=True), nullable=True)
+
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
 

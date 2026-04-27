@@ -5,6 +5,7 @@ import {
   BookOpen,
   UserRound,
   LogOut,
+  FlaskConical,
 } from "lucide-react";
 import "./Sidebar.css";
 
@@ -12,7 +13,8 @@ const NAV_ITEMS = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/assessment", label: "Assessment", icon: ClipboardList },
   { to: "/passages", label: "Passages", icon: BookOpen },
-  { to: "/students", label: "Student Record", icon: UserRound },
+  { to: "/students",  label: "Student Record", icon: UserRound     },
+  { to: "/asr-test", label: "ASR Tester",     icon: FlaskConical  },
 ];
 
 export default function Sidebar() {
