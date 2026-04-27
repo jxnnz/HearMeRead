@@ -4,10 +4,13 @@ import { ChevronRight, ChevronLeft, Mic, Type, Play, Square } from "lucide-react
 import Layout               from "../components/Layout";
 import StudentInfoForm      from "../components/StudentInfoForm";
 import RecordingChoiceModal from "../modals/RecordingChoiceModal";
+import RetakeModal from "../modals/RetakeModal";
+import TimeLimitModal from "../modals/TimeLimitModal";
+import RecordingTimer from "../components/RecordingTimer";
 import { studentsApi, passagesApi, sessionsApi } from "../services/api";
 
 // For mock data
-//import { MOCK_STUDENTS, MOCK_PASSAGES } from "../data/mockData";
+import { MOCK_STUDENTS, MOCK_PASSAGES } from "../data/mockData";
 
 import "./AssessmentPage.css";
 
@@ -43,7 +46,7 @@ const ASSESSMENT_LABELS = {
 const FONT_SIZES = [15, 18, 22, 26];
 
 // ============================================================
-export default function AssessmentPage() {
+export default function AssessmentPage({ assessmentLabel = "Assessment 1 Gawain 1" }) {
   const [step, setStep]       = useState(1);
   const [form, setForm]       = useState(initForm());
   const [session, setSession] = useState(null);
@@ -65,6 +68,9 @@ export default function AssessmentPage() {
   const [isRecording, setIsRecording]         = useState(false);
   const [audioFile, setAudioFile]             = useState(null);
   const [showPart2Modal, setShowPart2Modal]   = useState(false);
+  const [showRetakeModal, setShowRetakeModal] = useState(false);
+  const [showTimeLimitModal, setShowTimeLimitModal] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
 
   // ── Hidden file input for audio upload ───────────────────
   const fileInputRef = useRef(null);
@@ -74,7 +80,7 @@ export default function AssessmentPage() {
   const fontSize = FONT_SIZES[fontSizeIdx];
 
   // ── Load students on mount ─────────────────────────────── FINAL CODE DO NOT DELETE!!
-  
+  /*
   useEffect(() => {
     setLoadingStudents(true);
     studentsApi
@@ -93,8 +99,8 @@ export default function AssessmentPage() {
       .finally(() => setLoadingPassages(false));
   }, [form.language]);
   
-
-  /* ── Mock data (temporary) — DELETE AFTER backend is ready ──
+*/
+  // ── Mock data (temporary) — DELETE AFTER backend is ready ──
   useEffect(() => {
     setStudents(MOCK_STUDENTS);
     setLoadingStudents(false);
@@ -107,7 +113,33 @@ export default function AssessmentPage() {
       setLoadingPassages(false);
     }, 300);
     return () => clearTimeout(timer);
-  }, [form.language]); */
+  }, [form.language]);
+
+  // ── Recording timer ──────────────────────────────────────
+  useEffect(() => {
+    if (!isRecording) return;
+    
+    const interval = setInterval(() => {
+      setRecordingTime((prev) => {
+        const newTime = prev + 1;
+        // Show time limit modal at 2 minutes (120 seconds)
+        if (newTime === 120) {
+          setIsRecording(false);
+          setShowTimeLimitModal(true);
+        }
+        return newTime;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isRecording]);
+
+  // Reset timer when recording stops
+  useEffect(() => {
+    if (!isRecording && recordingTime > 0) {
+      setRecordingTime(0);
+    }
+  }, [isRecording]);
 
   // ── Validation ───────────────────────────────────────────
   function validate() {
@@ -115,7 +147,7 @@ export default function AssessmentPage() {
     return true;
   }
 
-  // ── Continue → create session ──────────────────────────── FINAL CODE DO NOT DELETE!!
+  /*── Continue → create session ──────────────────────────── FINAL CODE DO NOT DELETE!!
   
   async function handleContinue() {
     setCreateError(null);
@@ -137,9 +169,9 @@ export default function AssessmentPage() {
       setCreating(false);
     }
   }
-  
+  */
 
-  /* ── Mock session — DELETE AFTER backend is ready ──
+  // ── Mock session — DELETE AFTER backend is ready ──
   async function handleContinue() {
     setCreateError(null);
     if (!validate()) return;
@@ -148,7 +180,7 @@ export default function AssessmentPage() {
     setSession({ id: `MOCK-SESSION-${Date.now()}` });
     setCreating(false);
     setShowChoiceModal(true);
-  } */
+  } 
 
   // ── File selected from picker ────────────────────────────
   function handleFileSelect(e) {
@@ -160,10 +192,10 @@ export default function AssessmentPage() {
     e.target.value = "";           // reset so same file can be re-picked
   }
 
-  // ── Stop live recording → show Part 2 modal ──────────────
+  // ── Stop live recording → show retake modal ──────────────
   function handleStopRecording() {
     setIsRecording(false);
-    setShowPart2Modal(true);
+    setShowRetakeModal(true);
   }
 
   function handleBack() {
@@ -194,7 +226,7 @@ export default function AssessmentPage() {
     },
     onLive: () => {
       setRecordingMode("live");
-      setIsRecording(true);
+      setIsRecording(false); // Don't auto-start - user must click record button
       setShowChoiceModal(false);
       setStep(2);
     },
@@ -270,7 +302,7 @@ export default function AssessmentPage() {
                 <span className="asp-reading-wordcount">({wordCount} words)</span>
               </h2>
               <p className="asp-reading-meta">
-                {form.first_name} {form.last_name} · Grade {form.grade_level} ·{" "}
+                {assessmentLabel} · {form.first_name} {form.last_name} · Grade {form.grade_level} ·{" "}
                 {ASSESSMENT_LABELS[form.assessment_type]} · {form.school_year}
               </p>
             </div>
@@ -314,17 +346,25 @@ export default function AssessmentPage() {
             </button>
           )}
 
-          {recordingMode === "live" && (
+          {recordingMode === "live" && !isRecording && (
             <div className="asp-recording-active">
-              <div className="asp-mic-btn asp-mic-btn--recording" aria-label="Recording active">
-                <Play size={24} />
+              <div className="asp-mic-btn asp-mic-btn--ready" aria-label="Ready to record">
+                <Mic size={24} />
               </div>
-              <p className="asp-recording-mode-label">Live recording active…</p>
-              <button className="asp-recording-stop" onClick={handleStopRecording}>
-                <Square size={11} />
-                Stop
+              <p className="asp-recording-mode-label">Ready to record</p>
+              <button className="asp-recording-start" onClick={() => setIsRecording(true)}>
+                <Mic size={11} />
+                Start
               </button>
             </div>
+          )}
+
+          {recordingMode === "live" && isRecording && (
+            <RecordingTimer
+              recordingTime={recordingTime}
+              isRecording={isRecording}
+              onStop={handleStopRecording}
+            />
           )}
 
           {recordingMode === "upload" && (
@@ -349,6 +389,34 @@ export default function AssessmentPage() {
 
       {/* ── Recording Choice Modal ── */}
       <RecordingChoiceModal {...choiceModalProps} />
+
+      {/* ── Retake Modal ── */}
+      <RetakeModal
+        isOpen={showRetakeModal}
+        onClose={() => setShowRetakeModal(false)}
+        onRetake={() => {
+          setShowRetakeModal(false);
+          setRecordingMode(null);
+          setIsRecording(false);
+        }}
+        onKeep={() => {
+          setShowRetakeModal(false);
+          setShowPart2Modal(true);
+        }}
+      />
+
+      {/* ── Time Limit Modal ── */}
+      <TimeLimitModal
+        isOpen={showTimeLimitModal}
+        onContinue={() => {
+          setShowTimeLimitModal(false);
+          setIsRecording(true);
+        }}
+        onSubmit={() => {
+          setShowTimeLimitModal(false);
+          setShowRetakeModal(true);
+        }}
+      />
 
       {/* ── Part 2 Modal ── */}
       {showPart2Modal && (

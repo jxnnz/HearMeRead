@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import heroImg from "../assets/hero.png";
+import teachImg from "../assets/teach.png";
 import "./LandingPage.css";
 
 export default function LandingPage() {
@@ -21,18 +21,18 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* ── Hero ── */}
-      <main className="lp-hero">
-        <div className="lp-hero__text">
-          <h1 className="lp-hero__title">
+      {/* ── teach ── */}
+      <main className="lp-teach">
+        <div className="lp-teach__text">
+          <h1 className="lp-teach__title">
             Empowering<br />
-            <span className="lp-hero__title--accent">Early Readers</span>
+            <span className="lp-teach__title--accent">Early Readers</span>
           </h1>
-          <p className="lp-hero__sub">
+          <p className="lp-teach__sub">
             HearMeRead is a reading assessment tool designed to help teachers track
             fluency, comprehension, and reading growth — one student at a time.
           </p>
-          <div className="lp-hero__cta">
+          <div className="lp-teach__cta">
             <button className="lp-btn lp-btn--primary lp-btn--lg" onClick={() => navigate("/signup")}>
               Get Started
             </button>
@@ -42,9 +42,9 @@ export default function LandingPage() {
           </div>
         </div>
 
-{/*        <div className="lp-hero__image">
-          <img src={heroImg} alt="HearMeRead illustration" />
-        </div> */}
+        <div className="lp-teach__image">
+          <img src={teachImg} alt="HearMeRead illustration" />
+        </div> 
       </main>
 
     </div>

@@ -481,6 +481,38 @@
 }
 .asp-recording-stop:hover { background: #fbd5d3; }
 
+/* Start button */
+.asp-recording-start {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #e8f5e9;
+  border: 1.5px solid #2e7d32;
+  color: #2e7d32;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: "Poppins", sans-serif;
+  border-radius: 8px;
+  padding: 6px 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.asp-recording-start:hover { background: #c8e6c9; }
+
+/* Recording timer display */
+.asp-recording-timer {
+  margin-left: 8px;
+  font-weight: 600;
+  color: #e63b2e;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Ready state mic button */
+.asp-mic-btn--ready {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
 /* Upload mode mic button */
 .asp-mic-btn--upload {
   background: #e8f0fe;
