@@ -1,9 +1,5 @@
-// ============================================================
-// HearMeRead — Student Record Page
-// Displays all students in a card grid with search + filter
-// Route: /students
-// API:   GET /students
-// ============================================================
+// Add this import at the top
+import { MOCK_STUDENTS } from "../data/mockData";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Plus, X, UserRound } from "lucide-react";
@@ -16,29 +12,46 @@ import { studentsApi } from "../services/api";
 
 import "./StudentRecordPage.css";
 
-// ── Filter config passed to FilterButton ────────────────────
+// ── Reading profile sort order ───────────────────────────────
+const PROFILE_ORDER = {
+  "Reading at Grade Level": 1,
+  "High Emerging Reader":   2,
+  "Developing Reader":      3,
+  "Transitioning Reader":   4,
+  "Low Emerging Reader":    5,
+};
+
+// ── Filter + Sort config passed to FilterButton ──────────────
 const FILTER_CONFIG = [
   {
-    key: "grade_level",
-    label: "Grade Level",
-    options: ["1", "2", "3", "4", "5", "6"].map((g) => ({
-      value: g,
-      label: `Grade ${g}`,
-    })),
+    key:     "grade_level",
+    label:   "Grade Level",
+    section: "Filter",
+    options: ["1", "2", "3"].map((g) => ({ value: g, label: `Grade ${g}` })),
   },
   {
-    key: "reading_level",
-    label: "Reading Level",
+    key:   "reading_profile",
+    label: "Reading Profile",
     options: [
-      { value: "Beginning Reader",      label: "Beginning Reader" },
-      { value: "Developing Reader",     label: "Developing Reader" },
-      { value: "Transitioning Reader",  label: "Transitioning Reader" },
-      { value: "Independent Reader",    label: "Independent Reader" },
+      { value: "Reading at Grade Level", label: "Reading at Grade Level" },
+      { value: "High Emerging Reader",   label: "High Emerging Reader"   },
+      { value: "Developing Reader",      label: "Developing Reader"      },
+      { value: "Transitioning Reader",   label: "Transitioning Reader"   },
+      { value: "Low Emerging Reader",    label: "Low Emerging Reader"    },
+    ],
+  },
+  {
+    key:      "sort_by",
+    label:    "Sort By",
+    section:  "Sort",
+    allLabel: "Default",
+    options: [
+      { value: "name_az", label: "Name (A – Z)" },
     ],
   },
 ];
 
-const EMPTY_FILTERS = { grade_level: "", reading_level: "" };
+const EMPTY_FILTERS = { grade_level: "", reading_profile: "", sort_by: "" };
 
 // ============================================================
 // Page
@@ -53,27 +66,45 @@ export default function StudentRecordPage() {
   const [search, setSearch]       = useState("");
   const [filters, setFilters]     = useState(EMPTY_FILTERS);
 
-  // ── Fetch students ───────────────────────────────────────
-  useEffect(() => {
+  // ── Fetch students ─────────────────────────────────────── FOR CONNECTION TO BACKEND:
+ /* useEffect(() => {
     setLoading(true);
     studentsApi
       .list()
       .then(setStudents)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, []); */
 
-  // ── Client-side search + filter ─────────────────────────
-  const displayed = students.filter((s) => {
+// ── USING MOCK DATA: ─────────────────────────────────────── 
+  useEffect(() => {
+  setStudents(MOCK_STUDENTS);
+  setLoading(false);
+}, []);
+
+  // ── Client-side search + filter + sort ──────────────────
+  const filtered = students.filter((s) => {
     const fullName = `${s.first_name} ${s.last_name}`.toLowerCase();
     const lrn      = String(s.lrn ?? s.id ?? "").toLowerCase();
     const q        = search.toLowerCase();
 
-    const matchSearch = !q || fullName.includes(q) || lrn.includes(q);
-    const matchGrade  = !filters.grade_level  || String(s.grade_level) === filters.grade_level;
-    const matchLevel  = !filters.reading_level || s.reading_level === filters.reading_level;
+    if (q && !fullName.includes(q) && !lrn.includes(q))          return false;
+    if (filters.grade_level   && String(s.grade_level) !== filters.grade_level) return false;
+    if (filters.reading_profile && s.reading_profile !== filters.reading_profile) return false;
+    return true;
+  });
 
-    return matchSearch && matchGrade && matchLevel;
+  const displayed = [...filtered].sort((a, b) => {
+    if (filters.sort_by === "name_az") {
+      return `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`);
+    }
+    if (filters.sort_by === "grade_level") {
+      return (a.grade_level ?? 0) - (b.grade_level ?? 0);
+    }
+    if (filters.sort_by === "reading_profile") {
+      return (PROFILE_ORDER[a.reading_profile] ?? 99) - (PROFILE_ORDER[b.reading_profile] ?? 99);
+    }
+    return 0;
   });
 
   // ── Filter handlers ──────────────────────────────────────
@@ -88,10 +119,13 @@ export default function StudentRecordPage() {
   // ── Active filter pills ──────────────────────────────────
   const activePills = FILTER_CONFIG
     .filter((f) => filters[f.key])
-    .map((f) => ({
-      key:   f.key,
-      label: f.options.find((o) => o.value === filters[f.key])?.label ?? filters[f.key],
-    }));
+    .map((f) => {
+      const optionLabel = f.options.find((o) => o.value === filters[f.key])?.label ?? filters[f.key];
+      return {
+        key:   f.key,
+        label: f.section === "Sort" ? `Sort: ${optionLabel}` : optionLabel,
+      };
+    });
 
   // ============================================================
   // RENDER

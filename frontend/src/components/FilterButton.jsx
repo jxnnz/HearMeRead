@@ -49,21 +49,30 @@ export default function FilterButton({ filters = [], values = {}, onChange, onCl
       {/* ── Dropdown panel ── */}
       {open && (
         <div className="filter-dropdown">
-          {filters.map((f) => (
-            <div key={f.key} className="filter-dropdown__row">
-              <label className="filter-dropdown__label">{f.label}</label>
-              <select
-                className="filter-dropdown__select"
-                value={values[f.key] || ""}
-                onChange={(e) => onChange(f.key, e.target.value)}
-              >
-                <option value="">All</option>
-                {f.options.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
+          {filters.map((f, i) => (
+            <div key={f.key}>
+              {/* Section divider */}
+              {f.section && (
+                <div className={`filter-dropdown__section${i > 0 ? " filter-dropdown__section--divider" : ""}`}>
+                  {f.section}
+                </div>
+              )}
+
+              <div className="filter-dropdown__row">
+                <label className="filter-dropdown__label">{f.label}</label>
+                <select
+                  className="filter-dropdown__select"
+                  value={values[f.key] || ""}
+                  onChange={(e) => onChange(f.key, e.target.value)}
+                >
+                  <option value="">{f.allLabel ?? "All"}</option>
+                  {f.options.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           ))}
 
@@ -73,7 +82,7 @@ export default function FilterButton({ filters = [], values = {}, onChange, onCl
               className="filter-dropdown__clear"
               onClick={() => { onClear(); setOpen(false); }}
             >
-              Clear all filters
+              Clear all
             </button>
           )}
         </div>

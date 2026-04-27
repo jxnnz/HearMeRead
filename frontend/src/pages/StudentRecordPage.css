@@ -1,16 +1,9 @@
-/* ============================================================
-   HearMeRead — Student Record Page CSS
-   Combined styles for StudentRecordPage layout.
-   Component styles live in their own CSS files:
-     StudentCard.css / AppButton.css / FilterButton.css
-   Font: Poppins
-   ============================================================ */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
 /* ── Page shell ─────────────────────────────────────── */
 .sr-page {
-  max-width: 960px;
-  margin: 0 auto;
+  
+  
   display: flex;
   flex-direction: column;
   gap: 20px;

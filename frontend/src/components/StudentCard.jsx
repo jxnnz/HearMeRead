@@ -1,20 +1,13 @@
-// ============================================================
-// HearMeRead — StudentCard Component
-// Displays a student's name, LRN, grade, reading level,
-// and a 2x2 stats grid (Accuracy, WPM, Sessions, Trend)
-//
-// Props:
-//   student  — student object from API
-//   onClick  — navigate to student detail page
-// ============================================================
+
 import "./StudentCard.css";
 
-// ── Reading level → badge color mapping ─────────────────────
+// ── Reading profile → badge color mapping ─────────────────────
 const LEVEL_COLORS = {
-  "Transitioning Reader": "#f9c74f",
-  "Developing Reader":    "#90be6d",
-  "Beginning Reader":     "#f94144",
-  "Independent Reader":   "#43aa8b",
+  "Reading at Grade Level": "#639922",
+  "Transitioning Reader":    "#378ADD",
+  "Developing Reader":     "#EF9F27",
+  "High Emerging Reader":   "#D4537E",
+  "Low Emerging Reader":   "#E24B4A",
 };
 
 function LevelBadge({ level }) {
@@ -68,7 +61,7 @@ export default function StudentCard({ student, onClick }) {
         <span className="sc-badge sc-badge--grade">
           Grade {student.grade_level}
         </span>
-        <LevelBadge level={student.reading_level} />
+        <LevelBadge level={student.reading_profile} />
       </div>
 
       {/* ── 2×2 Stats grid ── */}

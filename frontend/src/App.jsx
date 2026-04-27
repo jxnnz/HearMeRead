@@ -5,7 +5,6 @@ import PassagesPage from "./pages/PassagesPage";
 import AddPassagePage from "./pages/AddPassagePage";
 import StudentRecordPage from "./pages/StudentRecordPage";
 import AddStudentPage from "./pages/AddStudentPage";
-import ASRTestPage from "./pages/ASRTestPage";
 
 function RequireAuth({ children }) {
   const token = localStorage.getItem("token");
@@ -24,13 +23,12 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/dashboard" element={<RequireAuth><Placeholder label="Dashboard" /></RequireAuth>} />
-        <Route path="/assessment" element={<RequireAuth><Placeholder label="Assessment" /></RequireAuth>} />
+        <Route path="/assessment" element={<AssessmentPage />}/>
 
         <Route path="/passages" element={<PassagesPage />} />
         <Route path="/passages/add" element={<AddPassagePage />} />
         <Route path="/students" element={<StudentRecordPage />} />
         <Route path="/students/add" element={<AddStudentPage />} />
-        <Route path="/asr-test" element={<RequireAuth><ASRTestPage /></RequireAuth>} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>

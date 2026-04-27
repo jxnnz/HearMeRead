@@ -1,28 +1,20 @@
-// ============================================================
-// HearMeRead — PassageQuestionsForm Component
-// Renders the "Passage Questions" card section
-// Each question has: question text, answer text, and options[]
-// Props:
-//   questions   — array of question objects
-//   setQuestions — state setter
-// ============================================================
 import { Plus, X } from "lucide-react";
+
+// ── Fixed options — always Yes, No, N/A ─────────────────────
+const FIXED_OPTIONS = ["Yes", "No", "N/A"];
 
 // ── Blank question template ──────────────────────────────────
 function blankQuestion() {
   return {
-    id: crypto.randomUUID(),
+    id:       crypto.randomUUID(),
     question: "",
-    answer: "",
-    options: [
-      { id: crypto.randomUUID(), label: "Correct" },
-      { id: crypto.randomUUID(), label: "Wrong" },
-      { id: crypto.randomUUID(), label: "N/A" },
-    ],
+    answer:   "",
   };
 }
 
+// ============================================================
 export default function PassageQuestionsForm({ questions, setQuestions }) {
+
   // ── Add a new blank question ─────────────────────────────
   function addQuestion() {
     setQuestions((prev) => [...prev, blankQuestion()]);
@@ -40,59 +32,17 @@ export default function PassageQuestionsForm({ questions, setQuestions }) {
     );
   }
 
-  // ── Add an option to a question ─────────────────────────
-  function addOption(qIndex) {
-    setQuestions((prev) =>
-      prev.map((q, i) =>
-        i === qIndex
-          ? {
-              ...q,
-              options: [
-                ...q.options,
-                { id: crypto.randomUUID(), label: "" },
-              ],
-            }
-          : q
-      )
-    );
-  }
-
-  // ── Update an option label ───────────────────────────────
-  function updateOption(qIndex, oIndex, val) {
-    setQuestions((prev) =>
-      prev.map((q, i) =>
-        i === qIndex
-          ? {
-              ...q,
-              options: q.options.map((o, j) =>
-                j === oIndex ? { ...o, label: val } : o
-              ),
-            }
-          : q
-      )
-    );
-  }
-
-  // ── Remove an option ─────────────────────────────────────
-  function removeOption(qIndex, oIndex) {
-    setQuestions((prev) =>
-      prev.map((q, i) =>
-        i === qIndex
-          ? { ...q, options: q.options.filter((_, j) => j !== oIndex) }
-          : q
-      )
-    );
-  }
-
+  // ============================================================
   return (
     <div className="ap-card">
       <h2 className="ap-card__title">Passage Questions</h2>
-      <p className="ap-card__subtitle">Enter the passage questions.</p>
+      <p className="ap-card__subtitle">Enter the comprehension questions.</p>
 
-      {/* ── Question list ── */}
+      {/* ── Question blocks ── */}
       {questions.map((q, qIndex) => (
         <div key={q.id} className="pq-block">
-          {/* Question header with remove button */}
+
+          {/* Question header */}
           <div className="pq-block__header">
             <span className="pq-block__num">Question {qIndex + 1}</span>
             {questions.length > 1 && (
@@ -117,8 +67,10 @@ export default function PassageQuestionsForm({ questions, setQuestions }) {
               type="text"
               className="ap-input"
               value={q.question}
-              onChange={(e) => updateQuestion(qIndex, "question", e.target.value)}
-              placeholder="e.g. Sino ang pangunahing tauhan?"
+              onChange={(e) =>
+                updateQuestion(qIndex, "question", e.target.value)
+              }
+              placeholder="e.g. Sino ang pangunahing tauhan sa kwento?"
             />
           </div>
 
@@ -131,47 +83,26 @@ export default function PassageQuestionsForm({ questions, setQuestions }) {
               id={`answer-${q.id}`}
               className="ap-textarea ap-textarea--sm"
               value={q.answer}
-              onChange={(e) => updateQuestion(qIndex, "answer", e.target.value)}
+              onChange={(e) =>
+                updateQuestion(qIndex, "answer", e.target.value)
+              }
               placeholder="Enter the correct answer…"
               rows={3}
             />
           </div>
 
-          {/* Options */}
+          {/* Fixed options — Yes, No, N/A (display only, not editable) */}
           <div className="ap-field">
-            <label className="ap-label">Option:</label>
+            <label className="ap-label">Options:</label>
             <div className="pq-options">
-              {q.options.map((opt, oIndex) => (
-                <div key={opt.id} className="pq-option">
-                  <input
-                    type="text"
-                    className="ap-input pq-option__input"
-                    value={opt.label}
-                    onChange={(e) => updateOption(qIndex, oIndex, e.target.value)}
-                    placeholder="Option text"
-                  />
-                  <button
-                    type="button"
-                    className="pq-option__remove"
-                    onClick={() => removeOption(qIndex, oIndex)}
-                    aria-label="Remove option"
-                  >
-                    <X size={15} />
-                  </button>
+              {FIXED_OPTIONS.map((opt) => (
+                <div key={opt} className="pq-option pq-option--fixed">
+                  <span className="pq-option__label">{opt}</span>
                 </div>
               ))}
-
-              {/* Add option */}
-              <button
-                type="button"
-                className="pq-add-option"
-                onClick={() => addOption(qIndex)}
-              >
-                <Plus size={13} />
-                Add option
-              </button>
             </div>
           </div>
+
         </div>
       ))}
 

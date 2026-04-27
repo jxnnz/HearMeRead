@@ -1,0 +1,588 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+/* ============================================================
+   STEP 1 — Student Information (compact layout)
+   ============================================================ */
+
+.asp-page {
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  font-family: "Poppins", sans-serif;
+}
+
+/* Extra compact for step 1 */
+.asp-page--step1 {
+  
+}
+
+.asp-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a2340;
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+}
+
+.asp-error {
+  background: #fdecea;
+  color: #c0392b;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-family: "Poppins", sans-serif;
+}
+
+/* Continue button */
+.asp-continue-btn {
+  width: 100%;
+  padding: 13px;
+  background: #2c3e6b;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.asp-continue-btn:hover:not(:disabled) { background: #1e2d52; }
+.asp-continue-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ============================================================
+   STUDENT INFO FORM CARD
+   ============================================================ */
+.si-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 22px 28px;       /* tighter padding */
+  display: flex;
+  flex-direction: column;
+  gap: 14px;                /* tighter gap */
+  box-shadow: 0 2px 14px rgba(44, 62, 107, 0.08);
+}
+
+.si-card__title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1a2340;
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+}
+
+.si-card__subtitle {
+  font-size: 12px;
+  color: #8a94b2;
+  margin: -10px 0 0;
+  font-family: "Poppins", sans-serif;
+}
+
+.si-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+@media (max-width: 500px) {
+  .si-row { grid-template-columns: 1fr; }
+}
+
+.si-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+}
+
+.si-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #3a4566;
+  font-family: "Poppins", sans-serif;
+}
+
+.si-input {
+  border: 1.5px solid #dde2f0;
+  border-radius: 8px;
+  padding: 8px 11px;         /* slightly tighter */
+  font-size: 13px;
+  color: #1a2340;
+  background: #e8eaf2;
+  outline: none;
+  font-family: "Poppins", sans-serif;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.15s, background 0.15s;
+  appearance: none;
+}
+
+.si-input:focus { border-color: #2c3e6b; background: #fff; }
+.si-input::placeholder { color: #b8bdd4; }
+
+.si-input--readonly { background: #f0f2fa; color: #8a94b2; cursor: default; }
+
+.si-input--filled {
+  display: block;
+  background: #eef1fc;
+  color: #1a2340;
+  font-weight: 600;
+  border-color: #2c3e6b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.si-combo { position: relative; display: flex; align-items: center; }
+
+.si-combo__icon {
+  position: absolute;
+  left: 10px;
+  color: #8a94b2;
+  pointer-events: none;
+}
+
+.si-input--search { padding-left: 30px; }
+
+.si-selected-wrap { display: flex; align-items: center; gap: 6px; }
+.si-selected-wrap .si-input--filled { flex: 1; }
+
+.si-clear-btn {
+  background: none; border: none; cursor: pointer;
+  color: #8a94b2; display: flex; align-items: center;
+  padding: 4px; border-radius: 6px; flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+}
+.si-clear-btn:hover { color: #c0392b; background: #fdecea; }
+
+.si-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0; right: 0;
+  background: #fff;
+  border: 1.5px solid #dde2f0;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(44, 62, 107, 0.12);
+  z-index: 50;
+  max-height: 190px;
+  overflow-y: auto;
+}
+
+.si-dropdown__item {
+  display: flex; flex-direction: column; gap: 2px;
+  width: 100%; padding: 9px 13px;
+  background: none; border: none;
+  border-bottom: 1px solid #f0f2fa;
+  text-align: left; cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  transition: background 0.12s;
+}
+.si-dropdown__item:last-child { border-bottom: none; }
+.si-dropdown__item:hover { background: #f4f6fd; }
+
+.si-dropdown__name { font-size: 13px; font-weight: 600; color: #1a2340; }
+.si-dropdown__sub  { font-size: 11px; color: #8a94b2; }
+
+.si-dropdown__empty {
+  padding: 13px; font-size: 13px;
+  color: #aab0c8; text-align: center;
+  font-family: "Poppins", sans-serif;
+}
+
+.si-lang-tabs { display: flex; gap: 8px; }
+
+.si-lang-tab {
+  flex: 1; padding: 8px 12px;
+  border: 1.5px solid #dde2f0;
+  border-radius: 8px; background: #e8eaf2;
+  font-size: 13px; font-weight: 600; color: #5a6382;
+  cursor: pointer; font-family: "Poppins", sans-serif;
+  transition: all 0.15s;
+}
+.si-lang-tab:hover { border-color: #2c3e6b; color: #2c3e6b; }
+.si-lang-tab--active { background: #2c3e6b; border-color: #2c3e6b; color: #fff; }
+
+/* ============================================================
+   STEP 2 — Reading Screen (full-width, matches mockup)
+   ============================================================ */
+
+/* Outer container — fills the layout__main area completely */
+.asp-reading-screen {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 64px);  /* full height minus layout padding */
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 20px rgba(44, 62, 107, 0.09);
+  overflow: hidden;
+  font-family: "Poppins", sans-serif;
+  /* Remove max-width constraint — use full available space */
+  margin: -8px;                 /* pull slightly into the layout padding */
+}
+
+/* ── Header bar ──────────────────────────────────────── */
+.asp-reading-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1.5px solid #eef0f8;
+  flex-shrink: 0;
+  gap: 12px;
+}
+
+.asp-reading-header__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Back button — circle style matching mockup */
+.asp-reading-back {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid #c8d0e4;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #1a2340;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+.asp-reading-back:hover { background: #f0f3fc; border-color: #2c3e6b; }
+
+.asp-reading-header__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.asp-reading-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a2340;
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.asp-reading-wordcount {
+  font-size: 14px;
+  font-weight: 500;
+  color: #8a94b2;
+  margin-left: 6px;
+}
+
+.asp-reading-meta {
+  font-size: 11.5px;
+  color: #8a94b2;
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.asp-reading-header__right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* Aa / control buttons — matching the grey pill in mockup */
+.asp-reading-ctrl {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #eef0f8;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #3a4566;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  transition: background 0.15s, color 0.15s;
+}
+.asp-reading-ctrl:hover { background: #dde2f0; }
+
+.asp-ctrl-size {
+  font-size: 10px;
+  font-weight: 700;
+  color: #8a94b2;
+  background: #dde2f0;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: "Poppins", sans-serif;
+  transition: color 0.15s;
+}
+.asp-reading-ctrl:hover .asp-ctrl-size { color: #2c3e6b; }
+
+/* Mic control — circular grey button */
+.asp-reading-ctrl--mic {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border-radius: 50%;
+  justify-content: center;
+}
+
+.asp-reading-ctrl--active {
+  background: #e8f5e9;
+  color: #27ae60;
+  animation: pulse-ring 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-ring {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(39, 174, 96, 0.3); }
+  50%       { box-shadow: 0 0 0 8px rgba(39, 174, 96, 0); }
+}
+
+/* ── Passage body — large, centered, scrollable ──────── */
+.asp-reading-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px 60px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+@media (max-width: 600px) {
+  .asp-reading-body { padding: 20px 24px; }
+}
+
+/* The large passage text */
+.asp-reading-text {
+  font-size: 18px;          /* default, overridden by inline style */
+  line-height: 2;
+  color: #1a2340;
+  font-family: "Poppins", sans-serif;
+  font-weight: 400;
+  margin: 0;
+  max-width: 640px;
+  width: 100%;
+  white-space: pre-wrap;
+  word-break: break-word;
+  transition: font-size 0.2s ease;
+}
+
+.asp-reading-empty {
+  color: #8a94b2;
+  font-size: 14px;
+  font-family: "Poppins", sans-serif;
+  text-align: center;
+  margin-top: 40px;
+}
+
+/* ── Footer — mic button centered at bottom ──────────── */
+.asp-reading-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 24px 24px;
+  border-top: 1.5px solid #eef0f8;
+  flex-shrink: 0;
+}
+
+/* Mic button — large circle, matching mockup */
+.asp-mic-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #eef0f8;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #1a2340;
+  transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 2px 10px rgba(44, 62, 107, 0.12);
+}
+
+.asp-mic-btn:hover {
+  background: #dde2f0;
+  transform: scale(1.06);
+  box-shadow: 0 4px 18px rgba(44, 62, 107, 0.18);
+}
+
+/* Recording state — pulsing green */
+.asp-mic-btn--recording {
+  background: #27ae60;
+  color: #fff;
+  animation: pulse-ring 1.2s ease-in-out infinite;
+  cursor: default;
+}
+
+/* Active recording indicator */
+.asp-recording-active {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.asp-recording-mode-label {
+  font-size: 12.5px;
+  color: #27ae60;
+  font-weight: 600;
+  font-family: "Poppins", sans-serif;
+  margin: 0;
+}
+
+.asp-recording-cancel {
+  background: none;
+  border: none;
+  color: #8a94b2;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  text-decoration: underline;
+  padding: 0;
+  transition: color 0.15s;
+}
+.asp-recording-cancel:hover { color: #c0392b; }
+
+/* Stop button */
+.asp-recording-stop {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #fdecea;
+  border: 1.5px solid #e63b2e;
+  color: #e63b2e;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: "Poppins", sans-serif;
+  border-radius: 8px;
+  padding: 6px 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.asp-recording-stop:hover { background: #fbd5d3; }
+
+/* Upload mode mic button */
+.asp-mic-btn--upload {
+  background: #e8f0fe;
+  color: #2c7fc1;
+}
+
+/* ── Part 2 overlay + modal ──────────────────────────────── */
+.asp-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 35, 64, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.asp-modal {
+  background: #fff;
+  border-radius: 16px;
+  padding: 36px 32px 28px;
+  max-width: 400px;
+  width: 90%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 12px 40px rgba(44, 62, 107, 0.18);
+  animation: dropdownIn 0.2s ease;
+}
+
+.asp-modal__icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #e8f5e9;
+  color: #27ae60;
+  font-size: 24px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.asp-modal__title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a2340;
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+}
+
+.asp-modal__body {
+  font-size: 13.5px;
+  color: #5a6382;
+  text-align: center;
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+  line-height: 1.6;
+}
+
+.asp-modal__actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+  width: 100%;
+}
+
+.asp-modal__btn {
+  flex: 1;
+  padding: 11px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: "Poppins", sans-serif;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.asp-modal__btn--secondary {
+  background: #eef0f8;
+  color: #5a6382;
+}
+.asp-modal__btn--secondary:hover { background: #dde2f0; }
+
+.asp-modal__btn--primary {
+  background: #2c3e6b;
+  color: #fff;
+}
+.asp-modal__btn--primary:hover { background: #1e2d52; }
+
+.asp-session-id {
+  font-size: 11px;
+  color: #b0b8cc;
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+}
+
+.asp-session-id code {
+  background: #f0f2fa;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: "Courier New", monospace;
+}

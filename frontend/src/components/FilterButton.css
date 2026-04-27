@@ -78,6 +78,22 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
+.filter-dropdown__section {
+  font-size: 10px;
+  font-weight: 700;
+  color: #2c3e6b;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-family: "Poppins", sans-serif;
+  padding-bottom: 4px;
+}
+
+.filter-dropdown__section--divider {
+  border-top: 1.5px solid #eef0f8;
+  margin-top: 4px;
+  padding-top: 12px;
+}
+
 .filter-dropdown__row {
   display: flex;
   flex-direction: column;
