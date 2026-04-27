@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import LandingPage      from "./pages/LandingPage";
 import LoginPage        from "./pages/LoginPage";
 import SignupPage       from "./pages/SignupPage";
 import DashboardPage    from "./pages/DashboardPage";
@@ -25,7 +26,7 @@ function RequireGuest({ children }) {
 
 function CatchAll() {
   const token = localStorage.getItem("token");
-  return <Navigate to={token ? "/dashboard" : "/login"} replace />;
+  return <Navigate to={token ? "/dashboard" : "/"} replace />;
 }
 
 export default function App() {
@@ -33,6 +34,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         {/* ── Public ── */}
+        <Route path="/"       element={<LandingPage />} />
         <Route path="/login"  element={<RequireGuest><LoginPage /></RequireGuest>} />
         <Route path="/signup" element={<RequireGuest><SignupPage /></RequireGuest>} />
 
