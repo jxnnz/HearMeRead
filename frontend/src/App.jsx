@@ -6,11 +6,11 @@ import DashboardPage    from "./pages/DashboardPage";
 import PassagePage      from "./pages/passages/PassagePage";
 import AddAssessment1Page from "./pages/passages/AddAssessment1Page";
 import AddAssessment2Page from "./pages/passages/AddAssessment2Page";
-import StudentRecordPage from "./pages/StudentRecordPage";
-import AddStudentPage   from "./pages/AddStudentPage";
+import StudentRecordPage from "./pages/Student/StudentRecordPage";
+import AddStudentPage   from "./pages/Student/AddStudentPage";
 import ASRTestPage      from "./pages/ASRTestPage";
 import AssessmentPage   from "./pages/Assessment/AssessmentPage";
-import StudentInfoPage  from "./pages/StudentInfoPage";
+import StudentInfoPage  from "./pages/Student/StudentInfoPage";
 
 
 function RequireAuth({ children }) {

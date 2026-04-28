@@ -1,6 +1,6 @@
 import { ChevronRight } from "lucide-react";
-import StudentInfoForm from "../../../components/StudentInfoForm";
-import RecordingChoiceModal from "../../../modals/RecordingChoiceModal";
+import StudentInfoForm from "../../components/StudentInfoForm";
+import RecordingChoiceModal from "../../modals/RecordingChoiceModal";
 
 export default function InfoStep({
   form, setForm,

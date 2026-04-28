@@ -1,8 +1,8 @@
 import { ChevronLeft, Mic, Type } from "lucide-react";
-import RecordingChoiceModal from "../../../modals/RecordingChoiceModal";
-import RetakeModal from "../../../modals/RetakeModal";
-import TimeLimitModal from "../../../modals/TimeLimitModal";
-import RecordingTimer from "../../../components/RecordingTimer";
+import RecordingChoiceModal from "../../modals/RecordingChoiceModal";
+import RetakeModal from "../../modals/RetakeModal";
+import TimeLimitModal from "../../modals/TimeLimitModal";
+import RecordingTimer from "../../components/RecordingTimer";
 
 export default function ReadingStep({
   stepLabel,

@@ -2,11 +2,11 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 
-import Layout             from "../components/Layout";
-import StudentDetailsForm from "../components/StudentDetailsForm";
-import { studentsApi }    from "../services/api";
+import Layout             from "../../components/Layout";
+import StudentDetailsForm from "../../components/StudentDetailsForm";
+import { studentsApi }    from "../../services/api";
 
-import "./pages css/AddStudentPage.css";
+import "../pages css/AddStudentPage.css";
 
 const EMPTY_FORM = {
   lrn:         "",
@@ -15,7 +15,6 @@ const EMPTY_FORM = {
   last_name:   "",
   grade_level: "",
   section:     "",
-  teacher:     "",
 };
 
 export default function AddStudentPage() {
@@ -41,17 +40,20 @@ export default function AddStudentPage() {
     setSaving(true);
     try {
       await studentsApi.create({
-        lrn:         form.lrn.trim() || null,
-        sex:         form.sex,
         first_name:  form.first_name.trim(),
         last_name:   form.last_name.trim(),
-        grade_level: parseInt(form.grade_level, 10),
+        grade_level: form.grade_level,
         section:     form.section.trim() || null,
-        teacher:     form.teacher.trim() || null,
+        sex:         form.sex || null,
+        lrn:         form.lrn.trim() || null,
       });
       navigate("/students");
     } catch (err) {
-      setError(err.response?.data?.detail || err.message || "Failed to save student.");
+      const detail = err.response?.data?.detail;
+      const msg = Array.isArray(detail)
+        ? detail.map((d) => d.msg).join("; ")
+        : (typeof detail === "string" ? detail : null);
+      setError(msg || err.message || "Failed to save student.");
     } finally {
       setSaving(false);
     }

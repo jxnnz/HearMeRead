@@ -17,9 +17,11 @@ class GradeLevel(str, enum.Enum):
     GRADE_1 = "Grade 1"
     GRADE_2 = "Grade 2"
     GRADE_3 = "Grade 3"
-    GRADE_4 = "Grade 4"
-    GRADE_5 = "Grade 5"
-    GRADE_6 = "Grade 6"
+
+
+class Sex(str, enum.Enum):
+    female = "female"
+    male   = "male"
 
 
 class Language(str, enum.Enum):
@@ -103,6 +105,7 @@ class Student(Base):
     grade_level = Column(SAEnum(GradeLevel), nullable=False)
     section     = Column(String(100), nullable=True)
     lrn         = Column(String(12), unique=True, nullable=True)
+    sex         = Column(SAEnum(Sex), nullable=True)
     teacher_id  = Column(Integer, ForeignKey("teachers.id"), nullable=False)
     created_at  = Column(DateTime(timezone=True), server_default=func.now())
     updated_at  = Column(DateTime(timezone=True), onupdate=func.now())

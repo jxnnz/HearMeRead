@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
-from app.models import AssessmentPeriod, GradeLevel, Language
+from app.models import AssessmentPeriod, GradeLevel, Language, Sex
 
 
 _SCHOOL_YEAR_RE = re.compile(r"^\d{4}-\d{4}$")
@@ -154,6 +154,7 @@ class StudentBase(BaseModel):
     last_name:   str           = Field(..., min_length=1, max_length=100, examples=["Santos"])
     grade_level: GradeLevel    = Field(..., examples=[GradeLevel.GRADE_3])
     section:     Optional[str] = Field(None, max_length=100, examples=["Sampaguita"])
+    sex:         Optional[Sex] = Field(None, examples=[Sex.female])
     lrn:         Optional[str] = Field(
         None,
         max_length=12,
@@ -180,6 +181,7 @@ class StudentUpdate(BaseModel):
     last_name:   Optional[str]        = Field(None, min_length=1, max_length=100)
     grade_level: Optional[GradeLevel] = None
     section:     Optional[str]        = Field(None, max_length=100)
+    sex:         Optional[Sex]        = None
     lrn:         Optional[str]        = Field(None, min_length=12, max_length=12, pattern=r"^\d{12}$")
 
 

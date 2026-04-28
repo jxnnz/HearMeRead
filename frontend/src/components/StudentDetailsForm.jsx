@@ -89,8 +89,8 @@ export default function StudentDetailsForm({ form, setForm }) {
             onChange={(e) => update("grade_level", e.target.value)}
           >
             <option value="">Select grade</option>
-            {["1", "2", "3"].map((g) => (
-              <option key={g} value={g}>Grade {g}</option>
+            {["Grade 1", "Grade 2", "Grade 3"].map((g) => (
+              <option key={g} value={g}>{g}</option>
             ))}
           </select>
         </div>
@@ -108,21 +108,6 @@ export default function StudentDetailsForm({ form, setForm }) {
             placeholder="e.g. Sampaguita"
           />
         </div>
-      </div>
-
-      {/* ── Row 4: Teacher (full width) ── */}
-      <div className="as-field as-field--full">
-        <label className="as-label" htmlFor="student-teacher">
-          Teacher:
-        </label>
-        <input
-          id="student-teacher"
-          type="text"
-          className="as-input"
-          value={form.teacher}
-          onChange={(e) => update("teacher", e.target.value)}
-          placeholder="Teacher's name"
-        />
       </div>
     </div>
   );

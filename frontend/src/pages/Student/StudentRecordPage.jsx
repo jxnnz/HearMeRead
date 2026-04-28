@@ -2,13 +2,13 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Plus, X, UserRound } from "lucide-react";
 
-import Layout from "../components/Layout";
-import StudentCard from "../components/StudentCard";
-import AppButton from "../components/AppButton";
-import FilterButton from "../components/FilterButton";
-import { studentsApi } from "../services/api";
+import Layout from "../../components/Layout";
+import StudentCard from "../../components/StudentCard";
+import AppButton from "../../components/AppButton";
+import FilterButton from "../../components/FilterButton";
+import { studentsApi } from "../../services/api";
 
-import "./pages css/StudentRecordPage.css";
+import "../pages css/StudentRecordPage.css";
 
 // ── Reading profile sort order ───────────────────────────────
 const PROFILE_ORDER = {

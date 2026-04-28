@@ -14,10 +14,10 @@ import {
   EXPERIENCE_OPTIONS,
 } from "../../data/assessmentConstants";
 
-import InfoStep        from "./steps/InfoStep";
-import ReadingStep     from "./steps/ReadingStep";
-import ScoreReviewStep from "./steps/ScoreReviewStep";
-import A2SelectStep    from "./steps/A2SelectStep";
+import InfoStep        from "./InfoStep";
+import ReadingStep     from "./ReadingStep";
+import ScoreReviewStep from "./ScoreReviewStep";
+import A2SelectStep    from "./A2SelectStep";
 
 import "../pages css/AssessmentPage.css";
 
