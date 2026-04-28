@@ -1,13 +1,3 @@
-// ============================================================
-// HearMeRead — FluencyComprehensionChart Component
-// Grouped bar chart: Reading Fluency % vs Reading Comprehension %
-// Grouped by: All / Female / Male
-//
-// Props:
-//   data — [{ group, fluency, comprehension }]
-//   title — chart title string
-//   yLabel — y-axis unit label (default "%" )
-// ============================================================
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, Legend,
   ResponsiveContainer, CartesianGrid,

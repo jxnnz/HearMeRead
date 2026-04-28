@@ -1,5 +1,5 @@
 import { Play, Square } from "lucide-react";
-import "./RecordingTimer.css";
+import "../components/component css/RecordingTimer.css";
 
 export default function RecordingTimer({
   recordingTime,

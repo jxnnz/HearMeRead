@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 
-/* ── Animated gradient keyframes ───────────────────────── */
+/* ── Animated gradient keyframes ────────────────────────── */
 @keyframes gradientShift {
   0%   { background-position: 0% 50%; }
   50%  { background-position: 100% 50%; }
@@ -19,7 +19,7 @@
   overflow: hidden;
 }
 
-/* ── Navbar ─────────────────────────────────────────────── */
+/* ── Navbar ──────────────────────────────────────────────── */
 .lp-nav {
   display: flex;
   align-items: center;
@@ -88,7 +88,7 @@
   border-radius: 12px;
 }
 
-/* ── Hero ────────────────────────────────────────────────── */
+/* ── teach ────────────────────────────────────────────────── */
 .lp-teach {
   flex: 1;
   display: flex;
@@ -98,6 +98,7 @@
   padding: 24px 70px 48px;
 }
 
+/* Left: text block */
 .lp-teach__text {
   flex: 1;
   max-width: 520px;
@@ -135,6 +136,7 @@
   flex-wrap: wrap;
 }
 
+/* Right: image */
 .lp-teach__image {
   flex: 1;
   display: flex;
@@ -154,8 +156,8 @@
 
 /* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 860px) {
-  .lp-nav { padding: 18px 28px; }
-  .lp-teach {
+  .lp-nav  { padding: 18px 28px; }
+  .lp-hero {
     flex-direction: column;
     text-align: center;
     padding: 32px 28px 48px;
@@ -169,7 +171,7 @@
 }
 
 @media (max-width: 480px) {
-  .lp-nav__brand  { font-size: 18px; }
-  .lp-teach__title { font-size: 30px; }
-  .lp-btn--lg     { padding: 11px 26px; font-size: 14px; }
+  .lp-nav__brand      { font-size: 18px; }
+  .lp-teach__title     { font-size: 30px; }
+  .lp-btn--lg         { padding: 11px 26px; font-size: 14px; }
 }
