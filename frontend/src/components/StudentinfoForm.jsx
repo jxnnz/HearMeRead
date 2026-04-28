@@ -40,7 +40,9 @@ export default function StudentInfoForm({
   form,
   setForm,
   students        = [],
+  passages        = [],
   loadingStudents = false,
+  loadingPassages = false,
 }) {
   const [studentSearch,   setStudentSearch]   = useState("");
   const [showStudentDrop, setShowStudentDrop] = useState(false);
@@ -246,12 +248,60 @@ export default function StudentInfoForm({
               className={`si-lang-tab${
                 form.language === lang.value ? " si-lang-tab--active" : ""
               }`}
-              onClick={() => update("language", lang.value)}
+              onClick={() => {
+                update("language", lang.value);
+                // Clear selected passage when language changes
+                setForm((prev) => ({
+                  ...prev,
+                  language:        lang.value,
+                  passage_id:      null,
+                  passage_title:   "",
+                  passage_content: "",
+                  word_count:      0,
+                }));
+              }}
             >
               {lang.label}
             </button>
           ))}
         </div>
+      </div>
+
+      {/* ── Passage selector — shows only Assessment 1 Gawain 1 (sentences) passages ── */}
+      <div className="si-field si-field--full">
+        <label className="si-label" htmlFor="si-passage">
+          Passage <span style={{ color: "#8a94b2", fontWeight: 400 }}>(Assessment 1 — Gawain 1)</span>
+        </label>
+        <select
+          id="si-passage"
+          className="si-input"
+          value={form.passage_id ?? ""}
+          disabled={loadingPassages}
+          onChange={(e) => {
+            const selected = passages.find(
+              (p) => String(p.id) === e.target.value && p.passage_type === "a1_g1"
+            );
+            if (!selected) return;
+            setForm((prev) => ({
+              ...prev,
+              passage_id:      selected.id,
+              passage_title:   selected.title,
+              passage_content: selected.content ?? "",
+              word_count:      selected.word_count ?? 0,
+            }));
+          }}
+        >
+          <option value="">
+            {loadingPassages ? "Loading passages…" : "— Select a passage —"}
+          </option>
+          {passages
+            .filter((p) => p.passage_type === "a1_g1")
+            .map((p) => (
+              <option key={p.id} value={String(p.id)}>
+                {p.title} ({p.word_count} items)
+              </option>
+            ))}
+        </select>
       </div>
 
     </div>
