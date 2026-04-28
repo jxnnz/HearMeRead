@@ -64,13 +64,17 @@ export default function StudentRecordPage() {
   const [search, setSearch]       = useState("");
   const [filters, setFilters]     = useState(EMPTY_FILTERS);
 
-  // ── Fetch students ─────────────────────────────────────── FOR CONNECTION TO BACKEND:
- useEffect(() => {
+  // ── Fetch students ───────────────────────────────────────
+  useEffect(() => {
     setLoading(true);
     studentsApi
       .list({ page_size: 200 })
       .then((data) => setStudents(data.students))
-      .catch((e) => setError(e.response?.data?.detail || e.message))
+      .catch((e) => {
+        // Log full error details so you can see exactly which field fails validation
+        console.error("studentsApi.list error:", e.response?.data || e.message);
+        setError(e.response?.data?.detail || e.message);
+      })
       .finally(() => setLoading(false));
   }, []);
 

@@ -156,12 +156,19 @@ class StudentBase(BaseModel):
     section:     Optional[str] = Field(None, max_length=100, examples=["Sampaguita"])
     lrn:         Optional[str] = Field(
         None,
-        min_length=12,
         max_length=12,
-        pattern=r"^\d{12}$",
         examples=["123456789012"],
         description="12-digit Learner Reference Number",
     )
+
+    @field_validator("lrn")
+    @classmethod
+    def validate_lrn(cls, v: Optional[str]) -> Optional[str]:
+        if v == "" or v is None:
+            return None
+        if len(v) != 12 or not v.isdigit():
+            raise ValueError("LRN must be exactly 12 digits")
+        return v
 
 
 class StudentCreate(StudentBase):

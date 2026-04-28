@@ -1,7 +1,3 @@
-/* ============================================================
-Combined styles for:
-StudentInfoPage, StudentProfileCard, AssessmentHistoryTable
-   ============================================================ */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 
 /* ── Page shell ─────────────────────────────────────── */
@@ -60,9 +56,7 @@ StudentInfoPage, StudentProfileCard, AssessmentHistoryTable
 
 @keyframes sipSpin { to { transform: rotate(360deg); } }
 
-/* ============================================================
-   STUDENT PROFILE CARD  (StudentProfileCard)
-   ============================================================ */
+/*   STUDENT PROFILE CARD  (StudentProfileCard) */
 .spc-card {
   background: #fff;
   border-radius: 14px;
