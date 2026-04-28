@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import AuthLayout from "../components/AuthLayout";
 import LoginForm  from "../components/LoginForm";
+import Toast       from "../modals/Toast";
+import useToast    from "../hooks/useToast";
 import { authApi } from "../services/api";
 
 export default function LoginPage() {
@@ -12,20 +14,39 @@ export default function LoginPage() {
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  const {
+    toasts,
+    removeToast,
+    showLoginSuccess,
+    showSessionExpired,
+  } = useToast();
+
   // ── Handle redirect flags from /auth/verify ──────────────────────────────
   useEffect(() => {
-    const verified = searchParams.get("verified");
-    const errFlag  = searchParams.get("error");
+    const verified    = searchParams.get("verified");
+    const registered  = searchParams.get("registered");
+    const errFlag     = searchParams.get("error");
+    const expired    = searchParams.get("session");
 
     if (verified === "true") {
       setSuccess("Email verified! You can now log in.");
+    } else if (registered === "true") {
+      setSuccess("Account created! Check your email and click the verification link before logging in.");
     } else if (errFlag === "invalid_token") {
       setError(
         "This verification link is invalid or has already expired. " +
         "Please request a new one below."
       );
     }
-  }, [searchParams]);
+
+    // ── Session-expired toast ─────────────────────────────────────────────
+    // Navigate to /login?session=expired when the access token expires
+    if (expired === "expired") {
+      showSessionExpired();
+      // Clean the query param without a re-render loop
+      navigate("/login", { replace: true });
+    }
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Login submit ──────────────────────────────────────────────────────────
   async function handleLogin({ email, password }) {
@@ -35,7 +56,15 @@ export default function LoginPage() {
     try {
       const res = await authApi.login(email, password);
       localStorage.setItem("token", res.access_token);
-      navigate("/assessment");
+
+      // ── Show success toast BEFORE navigating ──────────────────────────
+      // Extract first name from the response if the API returns user info;
+      // fall back to the email prefix if it doesn't.
+      const name = res.user?.first_name ?? email.split("@")[0];
+      showLoginSuccess(name);
+ 
+      // Small delay so the toast is visible before the page changes
+      setTimeout(() => navigate("/dashboard"), 1200);
     } catch (err) {
       const detail = err.response?.data?.detail;
 
@@ -75,64 +104,69 @@ export default function LoginPage() {
                         error?.includes("invalid or has already expired");
 
   return (
-    <AuthLayout>
-      <h1 className="auth-heading">Welcome Back!</h1>
-      <p className="auth-subheading">Login to access your account</p>
+    <>
+      {/* ── Toast portal (top-right, outside the card) ── */}
+      <Toast toasts={toasts} onRemove={removeToast} />
 
-      {/* Success banner (after verification) */}
-      {success && (
-        <div className="auth-success" role="status">{success}</div>
-      )}
+      <AuthLayout>
+        <h1 className="auth-heading">Welcome Back!</h1>
+        <p className="auth-subheading">Login to access your account</p>
 
-      {/* Error banner */}
-      {error && (
-        <div className="auth-error" role="alert">
-          {error}
-          {isVerifyError && !showResend && (
-            <button
-              className="auth-resend-trigger"
-              onClick={() => setShowResend(true)}
-            >
-              Resend verification email
-            </button>
-          )}
-        </div>
-      )}
+        {/* Success banner (after verification) */}
+        {success && (
+          <div className="auth-success" role="status">{success}</div>
+        )}
 
-      {/* Resend form — shown inline when needed */}
-      {showResend && !resendSent && (
-        <form className="auth-resend-form" onSubmit={handleResend}>
-          <p className="auth-subheading" style={{ marginBottom: 8 }}>
-            Enter your email to receive a new verification link:
-          </p>
-          <div className="auth-form__row" style={{ gridTemplateColumns: "1fr auto", gap: 8 }}>
-            <input
-              type="email"
-              className="auth-input"
-              placeholder="your@email.com"
-              value={resendEmail}
-              onChange={(e) => setResendEmail(e.target.value)}
-              required
-            />
-            <button
-              type="submit"
-              className="auth-submit"
-              style={{ width: "auto", padding: "9px 18px" }}
-              disabled={resendLoading}
-            >
-              {resendLoading ? "Sending…" : "Send"}
-            </button>
+        {/* Error banner */}
+        {error && (
+          <div className="auth-error" role="alert">
+            {error}
+            {isVerifyError && !showResend && (
+              <button
+                className="auth-resend-trigger"
+                onClick={() => setShowResend(true)}
+              >
+                Resend verification email
+              </button>
+            )}
           </div>
-        </form>
-      )}
+        )}
 
-      {resendSent && (
-        <div className="auth-success" role="status">
-          If that email is registered and unverified, a new link has been sent. Check your inbox.
-        </div>
-      )}
+        {/* Resend form — shown inline when needed */}
+        {showResend && !resendSent && (
+          <form className="auth-resend-form" onSubmit={handleResend}>
+            <p className="auth-subheading" style={{ marginBottom: 8 }}>
+              Enter your email to receive a new verification link:
+            </p>
+            <div className="auth-form__row" style={{ gridTemplateColumns: "1fr auto", gap: 8 }}>
+              <input
+                type="email"
+                className="auth-input"
+                placeholder="your@email.com"
+                value={resendEmail}
+                onChange={(e) => setResendEmail(e.target.value)}
+                required
+              />
+              <button
+                type="submit"
+                className="auth-submit"
+                style={{ width: "auto", padding: "9px 18px" }}
+                disabled={resendLoading}
+              >
+                {resendLoading ? "Sending…" : "Send"}
+              </button>
+            </div>
+          </form>
+        )}
 
-      <LoginForm onSubmit={handleLogin} loading={loading} />
-    </AuthLayout>
+        {resendSent && (
+          <div className="auth-success" role="status">
+            If that email is registered and unverified, a new link has been sent. Check your inbox.
+          </div>
+        )}
+
+        <LoginForm onSubmit={handleLogin} loading={loading} />
+      </AuthLayout>
+    </>
   );
 }
