@@ -249,15 +249,14 @@ export default function StudentInfoForm({
                 form.language === lang.value ? " si-lang-tab--active" : ""
               }`}
               onClick={() => {
-                update("language", lang.value);
-                // Clear selected passage when language changes
                 setForm((prev) => ({
                   ...prev,
-                  language:        lang.value,
-                  passage_id:      null,
-                  passage_title:   "",
-                  passage_content: "",
-                  word_count:      0,
+                  language:         lang.value,
+                  passage_id:       null,
+                  passage_title:    "",
+                  passage_content:  "",
+                  word_count:       0,
+                  selected_passage: null,
                 }));
               }}
             >
@@ -279,15 +278,19 @@ export default function StudentInfoForm({
           disabled={loadingPassages}
           onChange={(e) => {
             const selected = passages.find(
-              (p) => String(p.id) === e.target.value && p.passage_type === "a1_g1"
+              (p) => String(p.id) === e.target.value && p.assessment_type === 1
             );
             if (!selected) return;
+            const task1Words = selected.task1_content
+              ? selected.task1_content.trim().split(/\s+/).filter(Boolean).length
+              : (selected.word_count ?? 0);
             setForm((prev) => ({
               ...prev,
-              passage_id:      selected.id,
-              passage_title:   selected.title,
-              passage_content: selected.content ?? "",
-              word_count:      selected.word_count ?? 0,
+              passage_id:       selected.id,
+              passage_title:    selected.title ?? "Assessment 1",
+              passage_content:  selected.task1_content ?? "",
+              word_count:       task1Words,
+              selected_passage: selected,
             }));
           }}
         >
@@ -295,7 +298,7 @@ export default function StudentInfoForm({
             {loadingPassages ? "Loading passages…" : "— Select a passage —"}
           </option>
           {passages
-            .filter((p) => p.passage_type === "a1_g1")
+            .filter((p) => p.assessment_type === 1)
             .map((p) => (
               <option key={p.id} value={String(p.id)}>
                 {p.title} ({p.word_count} items)

@@ -5,6 +5,7 @@ from typing import Optional, Tuple, List
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, func, and_
+from sqlalchemy.orm import selectinload
 
 from app.models import (
     AssessmentSession, AssessmentPeriod,
@@ -110,6 +111,10 @@ async def get_sessions(
 
     result = await db.execute(
         select(AssessmentSession)
+        .options(
+            selectinload(AssessmentSession.reading_result),
+            selectinload(AssessmentSession.observation),
+        )
         .where(and_(*filters))
         .order_by(AssessmentSession.created_at.desc())
         .offset((page - 1) * page_size)
@@ -122,7 +127,12 @@ async def get_session_by_id(
     db: AsyncSession, session_id: int, teacher_id: int
 ) -> AssessmentSession:
     result = await db.execute(
-        select(AssessmentSession).where(
+        select(AssessmentSession)
+        .options(
+            selectinload(AssessmentSession.reading_result),
+            selectinload(AssessmentSession.observation),
+        )
+        .where(
             AssessmentSession.id == session_id,
             AssessmentSession.teacher_id == teacher_id,
         )
@@ -162,7 +172,16 @@ async def create_session(
     )
     db.add(session)
     await db.commit()
-    await db.refresh(session)
+
+    result = await db.execute(
+        select(AssessmentSession)
+        .options(
+            selectinload(AssessmentSession.reading_result),
+            selectinload(AssessmentSession.observation),
+        )
+        .where(AssessmentSession.id == session.id)
+    )
+    session = result.scalar_one()
     return session, duplicate
 
 

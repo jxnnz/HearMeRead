@@ -9,7 +9,7 @@ import AddAssessment2Page from "./pages/passages/AddAssessment2Page";
 import StudentRecordPage from "./pages/StudentRecordPage";
 import AddStudentPage   from "./pages/AddStudentPage";
 import ASRTestPage      from "./pages/ASRTestPage";
-import AssessmentPage   from "./pages/AssessmentPage";
+import AssessmentPage   from "./pages/Assessment/AssessmentPage";
 import StudentInfoPage  from "./pages/StudentInfoPage";
 
 

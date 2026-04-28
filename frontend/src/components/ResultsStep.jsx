@@ -37,7 +37,9 @@ export default function ResultsStep({
   observationLevel,
   teacherNotes,
   learnerExperience,
-  onReset,
+  onComplete,
+  isCompleting,
+  completeError,
 }) {
   const g1Num     = parseInt(g1Score, 10) || 0;
   const g2Num     = parseInt(g2Score, 10) || 0;
@@ -125,11 +127,10 @@ export default function ResultsStep({
       const compRows = [
         ["Comprehension Questions"],
         [],
-        ["#", "Question", "Expected Answer", "Teacher's Mark"],
+        ["#", "Question", "Teacher's Mark"],
         ...comprehensionQuestions.map((q, idx) => [
           idx + 1,
-          q.question,
-          q.answer,
+          q.text,
           answers[q.id] ?? "—",
         ]),
       ];
@@ -177,7 +178,7 @@ export default function ResultsStep({
             Assessment Complete
           </div>
           <div className="asp-res-header__actions">
-            <button className="asp-res-action-btn">🖨 Print</button>
+            <button className="asp-res-action-btn" onClick={() => window.print()}>🖨 Print</button>
             <button className="asp-res-action-btn" onClick={handleExport}>↓ Export Excel</button>
           </div>
         </div>
@@ -258,15 +259,18 @@ export default function ResultsStep({
         <p className="asp-res-footer__info">
           Assessed by teacher · Section {form.section} · {form.school_year}
         </p>
+        {completeError && (
+          <p className="asp-error" style={{ textAlign: "center", marginBottom: "0.5rem" }}>
+            ⚠ {completeError}
+          </p>
+        )}
         <div className="asp-res-footer__actions">
-          <button className="asp-res-footer__btn asp-res-footer__btn--draft">
-            Save Draft
-          </button>
           <button
             className="asp-res-footer__btn asp-res-footer__btn--submit"
-            onClick={onReset}
+            onClick={onComplete}
+            disabled={isCompleting}
           >
-            Done &amp; Submit
+            {isCompleting ? "Submitting…" : "Done & Submit"}
           </button>
         </div>
       </div>

@@ -1,6 +1,8 @@
 import { ChevronRight } from "lucide-react";
 import { OBSERVATION_LEVELS, EXPERIENCE_OPTIONS } from "../data/assessmentConstants";
 
+const ANSWER_OPTIONS = ["Correct", "Wrong", "N/A"];
+
 export default function ComprehensionStep({
   a2Passage,
   answers,
@@ -31,10 +33,9 @@ export default function ComprehensionStep({
         <div className="asp-comp-questions">
           {questions.map((q, idx) => (
             <div key={q.id} className="asp-comp-question">
-              <p className="asp-comp-question__text">{idx + 1}. {q.question}</p>
-              <p className="asp-comp-question__hint">Expected: {q.answer}</p>
+              <p className="asp-comp-question__text">{idx + 1}. {q.text}</p>
               <div className="asp-comp-choices">
-                {q.options.map((opt) => {
+                {ANSWER_OPTIONS.map((opt) => {
                   const key      = opt.toLowerCase().replace("/", "");
                   const isActive = answers[q.id] === opt;
                   return (
