@@ -1,5 +1,29 @@
+import * as XLSX from "xlsx";
 import { CheckCircle } from "lucide-react";
 import { OBSERVATION_LEVELS, EXPERIENCE_OPTIONS } from "../data/assessmentConstants";
+
+// ── Reading profile levels ────────────────────────────────────
+const PROFILE_MAP = {
+  grade_level:   { label: "Reading at Grade Level", color: "#27ae60", bg: "#e8f5e9" },
+  transitioning: { label: "Transitioning Reader",   color: "#2c7fc1", bg: "#e8f3fc" },
+  developing:    { label: "Developing Reader",      color: "#00897b", bg: "#e0f2f1" },
+  high_emerging: { label: "High Emerging Reader",   color: "#e67e22", bg: "#fff3e0" },
+  low_emerging:  { label: "Low Emerging Reader",    color: "#c0392b", bg: "#fdecea" },
+};
+
+// Map teacher observation → reading profile; fallback to accuracy thresholds
+function getReadingProfile(accuracy, obsLevelValue) {
+  if (obsLevelValue === "advanced")      return PROFILE_MAP.grade_level;
+  if (obsLevelValue === "independent")   return PROFILE_MAP.transitioning;
+  if (obsLevelValue === "instructional") return PROFILE_MAP.developing;
+  if (obsLevelValue === "frustration")   return accuracy >= 60 ? PROFILE_MAP.high_emerging : PROFILE_MAP.low_emerging;
+  // No observation set — derive from accuracy
+  if (accuracy >= 95) return PROFILE_MAP.grade_level;
+  if (accuracy >= 85) return PROFILE_MAP.transitioning;
+  if (accuracy >= 75) return PROFILE_MAP.developing;
+  if (accuracy >= 60) return PROFILE_MAP.high_emerging;
+  return PROFILE_MAP.low_emerging;
+}
 
 export default function ResultsStep({
   form,
@@ -43,6 +67,7 @@ export default function ResultsStep({
 
   const expOption = EXPERIENCE_OPTIONS.find((e) => e.value === learnerExperience);
   const obsLevel  = OBSERVATION_LEVELS.find((l) => l.value === observationLevel);
+  const profile   = getReadingProfile(accuracy, observationLevel);
 
   const statCards = [
     { label: "% Correct Words Read",   value: `${g1Num * 10}%`,                                             color: "#2c7fc1" },
@@ -53,15 +78,88 @@ export default function ResultsStep({
     { label: "Total Correct Answer",   value: totalQuestions ? `${correctAnswers}/${totalQuestions}` : "—", color: "#1a2340" },
   ];
 
+  // ── Excel export ─────────────────────────────────────────
+  function handleExport() {
+    const wb = XLSX.utils.book_new();
+
+    // Sheet 1: Summary
+    const summaryRows = [
+      ["HearMeRead — Assessment Report"],
+      [],
+      ["STUDENT INFORMATION"],
+      ["Name",             `${form.first_name} ${form.last_name}`],
+      ["Reading Profile",  profile.label],
+      ["Grade Level",      `Grade ${form.grade_level}`],
+      ["Section",          form.section],
+      ["School Year",      form.school_year],
+      ["Assessment Type",  form.assessment_type],
+      ["Language",         form.language === "filipino" ? "Filipino" : "English"],
+      ["Date",             today],
+      [],
+      ["ASSESSMENT SCORES"],
+      ["% Correct Words Read",   `${g1Num * 10}%`],
+      ["Words Per Minute (WPM)", wpm ?? "—"],
+      ["Words in 2 mins",        a2Passage?.word_count ?? "—"],
+      ["Total Reading Miscues",  totalMiscues],
+      ["Time Used",              timeStr],
+      ["Total Correct Answer",   totalQuestions ? `${correctAnswers}/${totalQuestions}` : "—"],
+      [],
+      ["PERFORMANCE SUMMARY"],
+      ["Accuracy",       `${accuracy}%`],
+      ["Comprehension",  `${compPercent}%`],
+      ["Fluency (WPM)",  `${fluencyPct}%`],
+      [],
+      ["LEARNER FEEDBACK"],
+      ["Experience Rating", expOption ? `${expOption.score}/10 (${expOption.label})` : "—"],
+      ["Total Miscues",     totalMiscues],
+      ["Observation Level", obsLevel?.label ?? "—"],
+      ["Teacher's Note",    teacherNotes || "No notes added."],
+    ];
+
+    const ws1 = XLSX.utils.aoa_to_sheet(summaryRows);
+    ws1["!cols"] = [{ wch: 26 }, { wch: 44 }];
+    XLSX.utils.book_append_sheet(wb, ws1, "Summary");
+
+    // Sheet 2: Comprehension questions (if applicable)
+    if (comprehensionQuestions.length > 0) {
+      const compRows = [
+        ["Comprehension Questions"],
+        [],
+        ["#", "Question", "Expected Answer", "Teacher's Mark"],
+        ...comprehensionQuestions.map((q, idx) => [
+          idx + 1,
+          q.question,
+          q.answer,
+          answers[q.id] ?? "—",
+        ]),
+      ];
+      const ws2 = XLSX.utils.aoa_to_sheet(compRows);
+      ws2["!cols"] = [{ wch: 4 }, { wch: 52 }, { wch: 32 }, { wch: 16 }];
+      XLSX.utils.book_append_sheet(wb, ws2, "Comprehension");
+    }
+
+    const filename = `${form.last_name}_${form.first_name}_${form.assessment_type}_${form.school_year}`
+      .replace(/\s+/g, "_") + ".xlsx";
+    XLSX.writeFile(wb, filename);
+  }
+
   return (
     <div className="asp-page asp-page--wide">
 
       {/* ── Header card ── */}
       <div className="asp-res-header">
         <div className="asp-res-header__left">
-          <h1 className="asp-res-header__name">
-            {form.first_name} {form.last_name}
-          </h1>
+          <div className="asp-res-name-row">
+            <h1 className="asp-res-header__name">
+              {form.first_name} {form.last_name}
+            </h1>
+            <span
+              className="asp-res-profile-badge"
+              style={{ background: profile.bg, color: profile.color }}
+            >
+              {profile.label}
+            </span>
+          </div>
           <div className="asp-res-header__badges">
             <span className="asp-res-badge asp-res-badge--lang">
               {form.language === "filipino" ? "🇵🇭 Filipino" : "🇬🇧 English"}
@@ -80,7 +178,7 @@ export default function ResultsStep({
           </div>
           <div className="asp-res-header__actions">
             <button className="asp-res-action-btn">🖨 Print</button>
-            <button className="asp-res-action-btn">↓ Export</button>
+            <button className="asp-res-action-btn" onClick={handleExport}>↓ Export Excel</button>
           </div>
         </div>
       </div>
