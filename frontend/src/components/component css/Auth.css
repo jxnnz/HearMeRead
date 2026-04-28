@@ -1,9 +1,18 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 
+/* ── Animated gradient keyframes ────────────────────── */
+@keyframes authGradientShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
 /* ── Full-screen background ──────────────────────────── */
 .auth-bg {
   min-height: 100vh;
-  background: #9099b8;
+  background: linear-gradient(145deg, #1a2340, #2c3e6b, #3a5490, #1f4fa8, #1a2340);
+  background-size: 300% 300%;
+  animation: authGradientShift 10s ease infinite;
   display: flex;
   align-items: center;
   justify-content: center;

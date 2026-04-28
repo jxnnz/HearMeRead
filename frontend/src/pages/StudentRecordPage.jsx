@@ -64,7 +64,8 @@ export default function StudentRecordPage() {
   const [search, setSearch]       = useState("");
   const [filters, setFilters]     = useState(EMPTY_FILTERS);
 
-  useEffect(() => {
+  // ── Fetch students ─────────────────────────────────────── FOR CONNECTION TO BACKEND:
+ useEffect(() => {
     setLoading(true);
     studentsApi
       .list({ page_size: 200 })

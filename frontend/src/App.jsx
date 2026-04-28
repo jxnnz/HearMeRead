@@ -12,6 +12,7 @@ import ASRTestPage      from "./pages/ASRTestPage";
 import AssessmentPage   from "./pages/AssessmentPage";
 import StudentInfoPage  from "./pages/StudentInfoPage";
 
+
 function RequireAuth({ children }) {
   const token = localStorage.getItem("token");
   if (!token) return <Navigate to="/login" replace />;
@@ -49,8 +50,6 @@ export default function App() {
         <Route path="/students/:id" element={<RequireAuth><StudentInfoPage /></RequireAuth>} />
         <Route path="/asr-test"     element={<RequireAuth><ASRTestPage /></RequireAuth>} />
 
-        {/* ── Catch-all ── */}
-        <Route path="*" element={<CatchAll />} />
       </Routes>
     </BrowserRouter>
   );
