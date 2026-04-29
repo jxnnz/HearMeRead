@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from './pages/LoginPage';
 import SignupPage from "./pages/SignupPage";
@@ -9,6 +10,7 @@ import AssessmentPage from "./pages/AssessmentPage";
 import StudentInfoPage from "./pages/StudentInfoPage";
 import DashboardPage from "./pages/DashboardPage";
 import LandingPage   from "./pages/LandingPage";
+import LoadingPage   from "./pages/LoadingPage";
 
 function RequireAuth({ children }) {
   const token = localStorage.getItem("token");
@@ -17,6 +19,15 @@ function RequireAuth({ children }) {
 }
 
 export default function App() {
+  const [appReady, setAppReady] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setAppReady(true), 1200);
+    return () => clearTimeout(t);
+  }, []);
+
+  if (!appReady) return <LoadingPage />;
+
   return (
     <BrowserRouter>
       <Routes>

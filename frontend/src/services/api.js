@@ -19,6 +19,18 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// ── Handle expired / invalid token globally ───────────────────────────────────
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem("token");
+      window.location.href = "/login?session=expired";
+    }
+    return Promise.reject(error);
+  }
+);
+
 // ── Auth ──────────────────────────────────────────────────────────────────────
 export const authApi = {
   /**

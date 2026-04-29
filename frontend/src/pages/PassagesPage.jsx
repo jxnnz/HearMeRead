@@ -10,6 +10,7 @@ import PassageModal  from "../components/PassageModal";
 import DetailDrawer  from "../components/DetailDrawer";
 import AppButton     from "../components/AppButton";
 import FilterButton  from "../components/FilterButton";
+import ConfirmModal  from "../modals/ConfirmModal";
 import { passagesApi } from "../services/api";
 
 import "./PassagesPage.css";
@@ -74,6 +75,9 @@ export default function PassagesPage() {
 
   // ── Detail drawer ─────────────────────────────────────────
   const [detailPassage, setDetailPassage] = useState(null);
+
+  // ── Archive confirmation ───────────────────────────────────
+  const [pendingArchive, setPendingArchive] = useState(null);
 
   // ── Fetch ───────────────────────────────────────────────── MAIN CODE DO NOT DELETE
   /*const fetchPassages = useCallback(async () => {
@@ -183,14 +187,20 @@ const fetchPassages = useCallback(() => {
   }
 
   // ── Archive ───────────────────────────────────────────────
-  async function handleArchive(passage, e) {
+  function handleArchive(passage, e) {
     e.stopPropagation();
-    if (!confirm(`Archive "${passage.title}"?\nIt will no longer appear in active assessment lists.`)) return;
+    setPendingArchive(passage);
+  }
+
+  async function confirmArchive() {
+    if (!pendingArchive) return;
     try {
-      await passagesApi.archive(passage.id);
+      await passagesApi.archive(pendingArchive.id);
       fetchPassages();
     } catch (err) {
       alert(err.message);
+    } finally {
+      setPendingArchive(null);
     }
   }
 
@@ -347,6 +357,18 @@ const fetchPassages = useCallback(() => {
           }}
         />
       )}
+
+      {/* ── Archive Confirmation ── */}
+      <ConfirmModal
+        isOpen={!!pendingArchive}
+        onClose={() => setPendingArchive(null)}
+        onConfirm={confirmArchive}
+        variant="danger"
+        title="Archive Passage?"
+        message={`"${pendingArchive?.title}" will no longer appear in active assessment lists.`}
+        confirmLabel="Archive"
+        cancelLabel="Cancel"
+      />
     </Layout>
   );
 }

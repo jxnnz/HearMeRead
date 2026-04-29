@@ -134,6 +134,81 @@ StudentInfoPage, StudentProfileCard, AssessmentHistoryTable
   font-weight: 500;
 }
 
+/* ── 3-dot kebab menu ────────────────────────────────── */
+.spc-menu-wrap {
+  position: relative;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.spc-menu-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1.5px solid #e8ecf4;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #5a6382;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.spc-menu-btn:hover {
+  background: #f4f6fb;
+  border-color: #c8d0e4;
+  color: #1a2340;
+}
+
+.spc-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: #fff;
+  border: 1.5px solid #e0e4f0;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(26, 35, 64, 0.12);
+  z-index: 100;
+  min-width: 155px;
+  overflow: hidden;
+  animation: spcDropIn 0.15s ease both;
+}
+
+@keyframes spcDropIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.spc-dropdown__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 13.5px;
+  font-family: "Poppins", sans-serif;
+  font-weight: 500;
+  color: #1a2340;
+  text-align: left;
+  transition: background 0.12s;
+}
+
+.spc-dropdown__item:hover {
+  background: #f4f6fb;
+}
+
+.spc-dropdown__item--danger {
+  color: #c0392b;
+}
+
+.spc-dropdown__item--danger:hover {
+  background: #fdecea;
+}
+
 /* ── Divider ─────────────────────────────────────────── */
 .spc-divider {
   border: none;

@@ -15,12 +15,14 @@ import Layout                  from "../components/Layout";
 import StudentProfileCard      from "../components/StudentProfileCard";
 import StudentStatsBar         from "../components/StudentStatsBar";
 import AssessmentHistoryTable  from "../components/AssessmentHistoryTable";
+import ConfirmModal            from "../modals/ConfirmModal";
+import EditStudentModal        from "../modals/EditStudentModal";
 
 import "./StudentInfoPage.css";
 
 // ── Mock assessment records per student ──────────────────────
 // DELETE AFTER backend is ready
-/*import { MOCK_STUDENTS } from "../data/mockData";
+import { MOCK_STUDENTS } from "../data/mockData";
 const MOCK_RECORDS = {
   1: [
     { id: 1, assessment_date: "2025-08-15", period: "BoSY", language: "filipino", task1: 18, task2l_word: 14, task2h_sentences: 10, total_score: 42, part1_reading_level: "Instructional", story_number: 1, num_miscues: 8,  words_read: 90,  total_time: "1:55", wpm: 82,  pct_correct_words: 89, total_correct: 37, learner_experience: 3, observation_level: 3, reading_profile: "Developing Reader",    remarks: "" },
@@ -48,7 +50,7 @@ const MOCK_RECORDS = {
     { id: 1, assessment_date: "2025-08-13", period: "BoSY", language: "filipino", task1: 16, task2l_word: 12, task2h_sentences:  9, total_score: 37, part1_reading_level: "Instructional", story_number: 1, num_miscues: 11, words_read: 87,  total_time: "1:58", wpm: 76,  pct_correct_words: 86, total_correct: 33, learner_experience: 3, observation_level: 3, reading_profile: "Developing Reader",    remarks: "" },
     { id: 2, assessment_date: "2025-11-19", period: "MoSY", language: "filipino", task1: 17, task2l_word: 13, task2h_sentences: 10, total_score: 40, part1_reading_level: "Instructional", story_number: 2, num_miscues: 9,  words_read: 91,  total_time: "1:50", wpm: 82,  pct_correct_words: 90, total_correct: 37, learner_experience: 3, observation_level: 3, reading_profile: "Developing Reader",    remarks: "" },
   ],
-}; */
+}; 
 
 // ── Compute stats from records ───────────────────────────────
 function computeStats(records = []) {
@@ -78,8 +80,14 @@ export default function StudentInfoPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
 
+  const [pendingDelete,        setPendingDelete]        = useState(null);
+  const [pendingStudentDelete, setPendingStudentDelete] = useState(false);
+  const [editStudentOpen,      setEditStudentOpen]      = useState(false);
+  const [editSaving,           setEditSaving]           = useState(false);
+  const [editError,            setEditError]            = useState(null);
+
   // ── Load student + records ───────────────────────────────
-  // FINAL CODE — DO NOT DELETE:
+  /*FINAL CODE — DO NOT DELETE:
   useEffect(() => {
     setLoading(true);
     Promise.all([
@@ -92,10 +100,10 @@ export default function StudentInfoPage() {
       })
       .catch((e) => setError(e.response?.data?.detail || e.message))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id]); */
   
 
-  /* ── Mock data (temporary) — DELETE AFTER backend is ready ──
+  // Mock data (temporary) — DELETE AFTER backend is ready ──
   useEffect(() => {
     setLoading(true);
     const studentId = parseInt(id, 10);
@@ -107,7 +115,7 @@ export default function StudentInfoPage() {
       setRecords(MOCK_RECORDS[studentId] ?? []);
     }
     setLoading(false);
-  }, [id]); */
+  }, [id]); 
 
   // ── Handlers ─────────────────────────────────────────────
   function handleEdit(record) {
@@ -116,14 +124,45 @@ export default function StudentInfoPage() {
   }
 
   function handleDelete(record) {
-    if (!confirm(`Delete assessment record #${record.id}?`)) return;
+    setPendingDelete(record);
+  }
+
+  function confirmDelete() {
+    if (!pendingDelete) return;
     // FINAL CODE — DO NOT DELETE:
-    // sessionsApi.delete(record.id).then(() =>
-    //   setRecords((prev) => prev.filter((r) => r.id !== record.id))
+    // sessionsApi.delete(pendingDelete.id).then(() =>
+    //   setRecords((prev) => prev.filter((r) => r.id !== pendingDelete.id))
     // );
 
     // Mock delete
-    setRecords((prev) => prev.filter((r) => r.id !== record.id));
+    setRecords((prev) => prev.filter((r) => r.id !== pendingDelete.id));
+    setPendingDelete(null);
+  }
+
+  async function handleSaveStudent(updatedFields) {
+    setEditSaving(true);
+    setEditError(null);
+    try {
+      // FINAL CODE — DO NOT DELETE:
+      // await studentsApi.update(student.id, updatedFields);
+      // setStudent((prev) => ({ ...prev, ...updatedFields }));
+
+      // Mock save
+      setStudent((prev) => ({ ...prev, ...updatedFields }));
+      setEditStudentOpen(false);
+    } catch (err) {
+      setEditError(err.response?.data?.detail || err.message || "Failed to save changes.");
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
+  function handleDeleteStudent() {
+    // Navigate back after student is deleted
+    // FINAL CODE — DO NOT DELETE:
+    // studentsApi.delete(student.id).then(() => navigate("/students"));
+
+    navigate("/students");
   }
 
   const stats = computeStats(records);
@@ -168,7 +207,11 @@ export default function StudentInfoPage() {
           </button>
 
           {/* Profile card */}
-          <StudentProfileCard student={student} />
+          <StudentProfileCard
+            student={student}
+            onEdit={() => { setEditError(null); setEditStudentOpen(true); }}
+            onDelete={() => setPendingStudentDelete(true)}
+          />
 
           {/* Stats bar */}
           <StudentStatsBar stats={stats} />
@@ -183,6 +226,40 @@ export default function StudentInfoPage() {
 
         </div>
       )}
+
+      {/* ── Delete assessment record ── */}
+      <ConfirmModal
+        isOpen={!!pendingDelete}
+        onClose={() => setPendingDelete(null)}
+        onConfirm={confirmDelete}
+        variant="danger"
+        title="Delete Record?"
+        message={`Assessment record #${pendingDelete?.id} will be permanently deleted and cannot be recovered.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+      />
+
+      {/* ── Delete student ── */}
+      <ConfirmModal
+        isOpen={pendingStudentDelete}
+        onClose={() => setPendingStudentDelete(false)}
+        onConfirm={() => { setPendingStudentDelete(false); handleDeleteStudent(); }}
+        variant="danger"
+        title="Delete Student?"
+        message={`${student?.first_name} ${student?.last_name} and all their assessment records will be permanently deleted.`}
+        confirmLabel="Delete Student"
+        cancelLabel="Cancel"
+      />
+
+      {/* ── Edit student ── */}
+      <EditStudentModal
+        isOpen={editStudentOpen}
+        student={student}
+        onClose={() => setEditStudentOpen(false)}
+        onSave={handleSaveStudent}
+        saving={editSaving}
+        error={editError}
+      />
     </Layout>
   );
 }

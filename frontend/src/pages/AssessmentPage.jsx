@@ -9,6 +9,8 @@ import TimeLimitModal       from "../modals/TimeLimitModal";
 import RecordingTimer       from "../components/RecordingTimer";
 import ComprehensionStep    from "../components/ComprehensionStep";
 import ResultsStep          from "../components/ResultsStep";
+import Toast                from "../modals/Toast";
+import useToast             from "../hooks/Usetoast";
 
 // Mock data (temporary) — DELETE after backend is ready
 import { MOCK_STUDENTS, MOCK_PASSAGES } from "../data/mockData";
@@ -78,6 +80,8 @@ function pickG2Passage(allPassages, language, g1Score) {
 export default function AssessmentPage() {
   const [step, setStep] = useState(STEPS.INFO);
   const [form, setForm] = useState(initForm());
+
+  const { toasts, removeToast, showSaveSuccess } = useToast();
 
   // ── Remote data ──────────────────────────────────────────
   const [students, setStudents]               = useState([]);
@@ -671,8 +675,14 @@ export default function AssessmentPage() {
       resetRecording();
     }
 
+    function handleDoneAndSubmit() {
+      showSaveSuccess("Assessment");
+      setTimeout(handleReset, 1500);
+    }
+
     return (
       <Layout>
+        <Toast toasts={toasts} onRemove={removeToast} />
         <ResultsStep
           form={form}
           g1Score={g1Score}
@@ -685,7 +695,7 @@ export default function AssessmentPage() {
           observationLevel={observationLevel}
           teacherNotes={teacherNotes}
           learnerExperience={learnerExperience}
-          onReset={handleReset}
+          onReset={handleDoneAndSubmit}
         />
       </Layout>
     );

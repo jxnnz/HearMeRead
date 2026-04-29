@@ -1,0 +1,210 @@
+/* ── Overlay ─────────────────────────────────────────────────────────────── */
+.esm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 35, 64, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  font-family: "Poppins", sans-serif;
+  padding: 16px;
+}
+
+/* ── Modal card ──────────────────────────────────────────────────────────── */
+.esm-modal {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.14);
+  overflow: hidden;
+  animation: esmFadeIn 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes esmFadeIn {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);    }
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.esm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 0;
+}
+
+.esm-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a2340;
+}
+
+.esm-close {
+  background: none;
+  border: none;
+  color: #8e95a3;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s, background 0.15s;
+}
+
+.esm-close:hover {
+  color: #1a2340;
+  background: #f5f6f8;
+}
+
+/* ── Error banner ────────────────────────────────────────────────────────── */
+.esm-error {
+  margin: 12px 24px 0;
+  padding: 10px 14px;
+  background: #fdecea;
+  border: 1px solid #f5b8b8;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #8b1a1a;
+}
+
+/* ── Form ────────────────────────────────────────────────────────────────── */
+.esm-form {
+  padding: 20px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.esm-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.esm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.esm-field--full {
+  grid-column: 1 / -1;
+}
+
+.esm-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #5a6382;
+  font-family: "Poppins", sans-serif;
+}
+
+.esm-input {
+  padding: 9px 12px;
+  border: 1.5px solid #dde2f0;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-family: "Poppins", sans-serif;
+  color: #1a2340;
+  background: #f8f9fd;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.esm-input:focus {
+  border-color: #2c3e6b;
+  background: #fff;
+}
+
+.esm-input::placeholder {
+  color: #bcc3d8;
+}
+
+/* Radio group */
+.esm-radio-group {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  padding: 9px 12px;
+  border: 1.5px solid #dde2f0;
+  border-radius: 8px;
+  background: #f8f9fd;
+}
+
+.esm-radio-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  font-family: "Poppins", sans-serif;
+  color: #1a2340;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.esm-radio-label input[type="radio"] {
+  accent-color: #2c3e6b;
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+
+/* ── Actions ─────────────────────────────────────────────────────────────── */
+.esm-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.esm-btn {
+  flex: 1;
+  padding: 11px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.esm-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.esm-btn--cancel {
+  background: #f5f6f8;
+  border: 1.5px solid #d1d5e0;
+  color: #5a6178;
+}
+
+.esm-btn--cancel:hover:not(:disabled) {
+  background: #e8eaef;
+  border-color: #b8bcc8;
+}
+
+.esm-btn--save {
+  background: #2c3e6b;
+  border: 1.5px solid #2c3e6b;
+  color: #fff;
+}
+
+.esm-btn--save:hover:not(:disabled) {
+  background: #1e2b4f;
+  border-color: #1e2b4f;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .esm-row {
+    grid-template-columns: 1fr;
+  }
+
+  .esm-actions {
+    flex-direction: column-reverse;
+  }
+}

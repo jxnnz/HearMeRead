@@ -1,5 +1,5 @@
 // Add this import at the top
-//import { MOCK_STUDENTS } from "../data/mockData";
+import { MOCK_STUDENTS } from "../data/mockData";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Plus, X, UserRound } from "lucide-react";
@@ -66,7 +66,7 @@ export default function StudentRecordPage() {
   const [search, setSearch]       = useState("");
   const [filters, setFilters]     = useState(EMPTY_FILTERS);
 
-  // ── Fetch students ─────────────────────────────────────── FOR CONNECTION TO BACKEND:
+  /*  Fetch students ─────────────────────────────────────── FOR CONNECTION TO BACKEND:
  useEffect(() => {
     setLoading(true);
     studentsApi
@@ -74,13 +74,13 @@ export default function StudentRecordPage() {
       .then(setStudents)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, []); */
 
 // ── USING MOCK DATA: ─────────────────────────────────────── 
-/*  useEffect(() => {
+  useEffect(() => {
   setStudents(MOCK_STUDENTS);
   setLoading(false);
-}, []); */
+}, []); 
 
   // ── Client-side search + filter + sort ──────────────────
   const filtered = students.filter((s) => {

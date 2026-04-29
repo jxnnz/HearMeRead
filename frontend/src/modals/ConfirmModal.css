@@ -1,0 +1,180 @@
+/* ── Overlay ─────────────────────────────────────────────────────────────── */
+.cm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 35, 64, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  font-family: "Poppins", sans-serif;
+}
+
+/* ── Modal card ──────────────────────────────────────────────────────────── */
+.cm-modal {
+  background: #fff;
+  border-radius: 16px;
+  padding: 36px 32px 28px;
+  max-width: 400px;
+  width: 90%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.14);
+  animation: cmFadeIn 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes cmFadeIn {
+  from { opacity: 0; transform: scale(0.94) translateY(8px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);   }
+}
+
+/* ── Close button ────────────────────────────────────────────────────────── */
+.cm-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: none;
+  border: none;
+  color: #8e95a3;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.cm-close:hover {
+  color: #1a2340;
+  background: #f5f6f8;
+}
+
+/* ── Icon circle ─────────────────────────────────────────────────────────── */
+.cm-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cm-icon__svg {
+  width: 26px;
+  height: 26px;
+}
+
+/* danger — red */
+.cm-icon--danger {
+  background: #fdecea;
+  color: #c0392b;
+}
+
+/* logout — amber */
+.cm-icon--logout {
+  background: #fff8e1;
+  color: #e67e22;
+}
+
+/* default — navy */
+.cm-icon--default {
+  background: #eef1fb;
+  color: #2c3e6b;
+}
+
+/* ── Text ────────────────────────────────────────────────────────────────── */
+.cm-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a2340;
+  text-align: center;
+}
+
+.cm-body {
+  margin: 0;
+  font-size: 14px;
+  color: #5a6178;
+  text-align: center;
+  line-height: 1.55;
+}
+
+/* ── Action buttons ──────────────────────────────────────────────────────── */
+.cm-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  width: 100%;
+}
+
+.cm-btn {
+  flex: 1;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  font-family: "Poppins", sans-serif;
+}
+
+/* Cancel (shared) */
+.cm-btn--cancel {
+  background: #f5f6f8;
+  border: 1.5px solid #d1d5e0;
+  color: #5a6178;
+}
+
+.cm-btn--cancel:hover {
+  background: #e8eaef;
+  border-color: #b8bcc8;
+}
+
+/* Confirm — danger (red) */
+.cm-btn--confirm-danger {
+  background: #c0392b;
+  border: 1.5px solid #c0392b;
+  color: #fff;
+}
+
+.cm-btn--confirm-danger:hover {
+  background: #a93226;
+  border-color: #a93226;
+}
+
+/* Confirm — logout (amber) */
+.cm-btn--confirm-logout {
+  background: #e67e22;
+  border: 1.5px solid #e67e22;
+  color: #fff;
+}
+
+.cm-btn--confirm-logout:hover {
+  background: #ca6f1e;
+  border-color: #ca6f1e;
+}
+
+/* Confirm — default (navy) */
+.cm-btn--confirm-default {
+  background: #2c3e6b;
+  border: 1.5px solid #2c3e6b;
+  color: #fff;
+}
+
+.cm-btn--confirm-default:hover {
+  background: #1e2b4f;
+  border-color: #1e2b4f;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .cm-modal {
+    padding: 28px 20px 22px;
+  }
+
+  .cm-actions {
+    flex-direction: column-reverse;
+  }
+}

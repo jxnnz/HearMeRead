@@ -1,0 +1,63 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap');
+
+.lp-bg {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(145deg, #1a2340, #2c3e6b, #3a5490, #1f4fa8, #1a2340);
+  background-size: 300% 300%;
+  animation: lpGradient 8s ease infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Poppins", sans-serif;
+  z-index: 9999;
+}
+
+@keyframes lpGradient {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.lp-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  animation: lpFadeIn 0.5s ease both;
+}
+
+@keyframes lpFadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.lp-title {
+  margin: 0;
+  font-size: 36px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+
+.lp-sub {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.5px;
+}
+
+.lp-spinner {
+  margin-top: 28px;
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: lpSpin 0.75s linear infinite;
+}
+
+@keyframes lpSpin {
+  to { transform: rotate(360deg); }
+}
