@@ -11,6 +11,8 @@ import DetailDrawer  from "../components/DetailDrawer";
 import AppButton     from "../components/AppButton";
 import FilterButton  from "../components/FilterButton";
 import ConfirmModal  from "../modals/ConfirmModal";
+import Toast         from "../modals/Toast";
+import useToast      from "../hooks/Usetoast";
 import { passagesApi } from "../services/api";
 
 import "./PassagesPage.css";
@@ -57,6 +59,7 @@ const EMPTY_FORM = {
 // ============================================================
 export default function PassagesPage() {
   const navigate = useNavigate();
+  const { toasts, removeToast, showSaveSuccess } = useToast();
 
   // ── Data ─────────────────────────────────────────────────
   const [passages, setPassages] = useState([]);
@@ -179,6 +182,7 @@ const fetchPassages = useCallback(() => {
       });
       closeEdit();
       fetchPassages();
+      showSaveSuccess("Passage");
     } catch (err) {
       setFormError(err.message);
     } finally {
@@ -369,6 +373,8 @@ const fetchPassages = useCallback(() => {
         confirmLabel="Archive"
         cancelLabel="Cancel"
       />
+
+      <Toast toasts={toasts} onRemove={removeToast} />
     </Layout>
   );
 }

@@ -17,6 +17,8 @@ import StudentStatsBar         from "../components/StudentStatsBar";
 import AssessmentHistoryTable  from "../components/AssessmentHistoryTable";
 import ConfirmModal            from "../modals/ConfirmModal";
 import EditStudentModal        from "../modals/EditStudentModal";
+import Toast                  from "../modals/Toast";
+import useToast               from "../hooks/Usetoast";
 
 import "./StudentInfoPage.css";
 
@@ -74,6 +76,7 @@ function computeStats(records = []) {
 export default function StudentInfoPage() {
   const { id }   = useParams();
   const navigate = useNavigate();
+  const { toasts, removeToast, showSaveSuccess } = useToast();
 
   const [student, setStudent] = useState(null);
   const [records, setRecords] = useState([]);
@@ -150,6 +153,7 @@ export default function StudentInfoPage() {
       // Mock save
       setStudent((prev) => ({ ...prev, ...updatedFields }));
       setEditStudentOpen(false);
+      showSaveSuccess("Student");
     } catch (err) {
       setEditError(err.response?.data?.detail || err.message || "Failed to save changes.");
     } finally {
@@ -260,6 +264,8 @@ export default function StudentInfoPage() {
         saving={editSaving}
         error={editError}
       />
+
+      <Toast toasts={toasts} onRemove={removeToast} />
     </Layout>
   );
 }
