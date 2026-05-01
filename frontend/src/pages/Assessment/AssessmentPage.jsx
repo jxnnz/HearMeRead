@@ -14,7 +14,6 @@ import {
 import {
   PERIOD_MAP,
   OBSERVATION_LEVELS,
-  EXPERIENCE_OPTIONS,
 } from "../../data/assessmentConstants";
 
 import InfoStep                 from "./InfoStep";
@@ -22,6 +21,7 @@ import ReadingStep              from "./ReadingStep";
 import TranscriptionPreviewStep from "./TranscriptionPreviewStep";
 import A1TaskResultStep         from "./A1TaskResultStep";
 import A2SelectStep             from "./A2SelectStep";
+import ObservationStep          from "./ObservationStep";
 
 import "../pages css/AssessmentPage.css";
 
@@ -38,12 +38,15 @@ const STEPS = {
   A1_G2_LOADING: "a1_g2_loading",
   A1_G2_PREVIEW: "a1_g2_preview",
   A1_G2_RESULT:  "a1_g2_result",
+  // Observation (standalone — after A1 Task 2 for non-A2 students, after comprehension for A2)
+  A1_G1_OBSERVE: "a1_g1_observe",
   // Assessment 2
   A2_SELECT:     "a2_select",
   A2:            "a2",
   A2_LOADING:    "a2_loading",
   A2_PREVIEW:    "a2_preview",
   COMPREHENSION: "comprehension",
+  A2_OBSERVE:    "a2_observe",
   RESULTS:       "results",
 };
 
@@ -533,10 +536,8 @@ export default function AssessmentPage() {
       ? (p?.task2_words     ?? "")
       : (p?.task2_sentences ?? "");
 
-    const reachedA2  = !!a2Passage;
+    const reachedA2   = !!a2Passage;
     const compCorrect = Object.values(answers).filter((v) => v === "Correct").length;
-    const obsLevel    = OBSERVATION_LEVELS.find((l) => l.value === observationLevel);
-    const expOpt      = EXPERIENCE_OPTIONS.find((e) => e.value === learnerExperience);
 
     const payload = {
       part1: {
@@ -552,9 +553,9 @@ export default function AssessmentPage() {
             reading_time_sec:        a2RecordingTime > 0 ? a2RecordingTime : 1,
             grade_level:             gradeNum,
             comprehension_correct:   compCorrect,
-            fluency_level:           obsLevel?.backendValue ?? null,
-            learner_experience:      expOpt?.backendValue   ?? null,
-            teacher_remarks:         teacherNotes || null,
+            fluency_level:           null,
+            learner_experience:      null,
+            teacher_remarks:         null,
             whisper_word_timestamps: a2Words.length > 0 ? a2Words : null,
           }
         : null,
@@ -563,7 +564,8 @@ export default function AssessmentPage() {
     try {
       const result = await sessionsApi.complete(session.id, payload);
       setFinalResult(result);
-      setStep(STEPS.RESULTS);
+      // A2 students record observation after completing; non-A2 go straight to results
+      setStep(reachedA2 ? STEPS.A2_OBSERVE : STEPS.RESULTS);
     } catch (err) {
       setCompleteError(
         err.response?.data?.detail || err.message || "Failed to submit session."
@@ -792,8 +794,8 @@ export default function AssessmentPage() {
           recordingTime={g2RecordingTime}
           transcript={g2Transcript}
           g1Score={task1ScoreResult?.task1_correct}
-          onContinue={reachedA2eligible ? handleProceedToA2 : handleCompleteSession}
-          continueLabel={reachedA2eligible ? "Proceed to Assessment 2" : "Finish Assessment"}
+          onContinue={reachedA2eligible ? handleProceedToA2 : () => setStep(STEPS.A1_G1_OBSERVE)}
+          continueLabel={reachedA2eligible ? "Proceed to Assessment 2" : "Record Observation"}
         />
         {completeError && <p className="asp-error" style={{ textAlign: "center" }}>⚠ {completeError}</p>}
       </Layout>
@@ -832,15 +834,45 @@ export default function AssessmentPage() {
         <ComprehensionStep
           a2Passage={a2Passage}
           answers={answers} setAnswers={setAnswers}
-          observationLevel={observationLevel} setObservationLevel={setObservationLevel}
-          teacherNotes={teacherNotes} setTeacherNotes={setTeacherNotes}
-          learnerExperience={learnerExperience} setLearnerExperience={setLearnerExperience}
           onSubmit={handleCompleteSession}
         />
         {isCompleting && <LoadingScreen message="Submitting results…" />}
         {completeError && (
           <p className="asp-error" style={{ textAlign: "center" }}>⚠ {completeError}</p>
         )}
+      </Layout>
+    );
+  }
+
+  if (step === STEPS.A1_G1_OBSERVE) {
+    return (
+      <Layout>
+        <ObservationStep
+          sessionId={session?.id}
+          onComplete={() => handleCompleteSession()}
+          onBack={() => setStep(STEPS.A1_G2_RESULT)}
+        />
+        {isCompleting && <LoadingScreen message="Submitting results…" />}
+        {completeError && (
+          <p className="asp-error" style={{ textAlign: "center" }}>⚠ {completeError}</p>
+        )}
+      </Layout>
+    );
+  }
+
+  if (step === STEPS.A2_OBSERVE) {
+    return (
+      <Layout>
+        <ObservationStep
+          sessionId={session?.id}
+          onComplete={(data) => {
+            const lvl = OBSERVATION_LEVELS.find((l) => l.backendValue === data.observation_level);
+            setObservationLevel(lvl?.value ?? "");
+            setTeacherNotes(data.teacher_remarks ?? "");
+            setStep(STEPS.RESULTS);
+          }}
+          onBack={() => setStep(STEPS.COMPREHENSION)}
+        />
       </Layout>
     );
   }

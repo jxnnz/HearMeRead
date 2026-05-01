@@ -18,7 +18,7 @@ from app.schema import (
 from app.schemas.session_schemas import (
     CompleteSessionIn, CompleteSessionOut,
     Task1ScoreIn, Task1ScoreOut,
-    Part1ScoreIn,
+    Part1ScoreIn, ObservationIn,
 )
 from app.schemas.session_schemas import Part1ResultOut, WordAlignmentOut
 from app.services import session_service
@@ -223,6 +223,33 @@ async def score_session_part1(
             for a in p1.task2_alignments
         ],
     )
+
+
+# ── Observation (intermediate — does not complete session) ────────────────────
+
+@router.post(
+    "/{session_id}/observe",
+    status_code=200,
+    summary="Save teacher observation — does not complete the session",
+)
+async def save_session_observation(
+    session_id:      int,
+    payload:         ObservationIn,
+    db:              AsyncSession = Depends(get_db),
+    current_teacher: Teacher      = Depends(get_current_teacher),
+):
+    await session_service.get_session_by_id(db, session_id, current_teacher.id)
+    obs = await session_service.save_observation(
+        db=db,
+        session_id=session_id,
+        observation_level=payload.observation_level,
+        teacher_remarks=payload.teacher_remarks,
+    )
+    return {
+        "session_id":       session_id,
+        "observation_level": obs.fluency_level,
+        "teacher_remarks":   obs.teacher_remarks,
+    }
 
 
 # ── Update ────────────────────────────────────────────────────────────────────

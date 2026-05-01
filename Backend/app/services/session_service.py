@@ -338,19 +338,31 @@ async def complete_session(
         reading_result = ReadingResult(session_id=session_id, **scoring_fields)
         db.add(reading_result)
 
-    # ── 5. Persist to session_observations (only if Part 2 provided) ─────
+    # ── 5. Upsert session_observations (only if Part 2 provided) ──────────
     if payload.part2 is not None and p2 is not None:
         p2_input = payload.part2
-        observation = SessionObservation(
-            session_id=session_id,
-            comprehension_correct=p2_input.comprehension_correct,
-            comprehension_total=p2_input.comprehension_total,
-            fluency_level=p2_input.fluency_level,
-            learner_experience=p2_input.learner_experience,
-            teacher_remarks=p2_input.teacher_remarks,
-            updated_at=_now(),
+        obs_query = await db.execute(
+            select(SessionObservation).where(SessionObservation.session_id == session_id)
         )
-        db.add(observation)
+        observation = obs_query.scalar_one_or_none()
+        if observation:
+            observation.comprehension_correct = p2_input.comprehension_correct
+            observation.comprehension_total   = p2_input.comprehension_total
+            observation.fluency_level         = p2_input.fluency_level
+            observation.learner_experience    = p2_input.learner_experience
+            observation.teacher_remarks       = p2_input.teacher_remarks
+            observation.updated_at            = _now()
+        else:
+            observation = SessionObservation(
+                session_id=session_id,
+                comprehension_correct=p2_input.comprehension_correct,
+                comprehension_total=p2_input.comprehension_total,
+                fluency_level=p2_input.fluency_level,
+                learner_experience=p2_input.learner_experience,
+                teacher_remarks=p2_input.teacher_remarks,
+                updated_at=_now(),
+            )
+            db.add(observation)
 
     # ── 6. Mark session completed ─────────────────────────────────────────
     await db.execute(
@@ -414,3 +426,28 @@ async def archive_session(
     session = await get_session_by_id(db, session_id, teacher_id)
     session.is_archived = True
     await db.commit()
+
+
+async def save_observation(
+    db:                AsyncSession,
+    session_id:        int,
+    observation_level: int,
+    teacher_remarks:   Optional[str],
+) -> SessionObservation:
+    result = await db.execute(
+        select(SessionObservation).where(SessionObservation.session_id == session_id)
+    )
+    obs = result.scalar_one_or_none()
+    if obs:
+        obs.fluency_level   = observation_level
+        obs.teacher_remarks = teacher_remarks
+    else:
+        obs = SessionObservation(
+            session_id      = session_id,
+            fluency_level   = observation_level,
+            teacher_remarks = teacher_remarks,
+        )
+        db.add(obs)
+    await db.commit()
+    await db.refresh(obs)
+    return obs

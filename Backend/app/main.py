@@ -1,6 +1,6 @@
-
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 from sqlalchemy import text
 
@@ -49,7 +49,7 @@ app = FastAPI(
 _cors_origins = [settings.FRONTEND_URL]
 if not settings.is_production:
     # Allow common local ports during development and testing
-    _cors_origins += ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"]
+    _cors_origins += ["http://localhost:5173"]
 
 app.add_middleware(
     CORSMiddleware,
@@ -60,6 +60,16 @@ app.add_middleware(
 )
 
 app.include_router(api_router)
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    import traceback, logging
+    logging.getLogger("uvicorn.error").error(
+        "Unhandled exception: %s\n%s", exc, traceback.format_exc()
+    )
+    detail = str(exc) if settings.DEBUG else "Internal server error"
+    return JSONResponse(status_code=500, content={"detail": detail})
 
 
 @app.get("/", tags=["Health"])

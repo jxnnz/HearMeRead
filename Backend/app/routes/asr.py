@@ -59,17 +59,14 @@ async def transcribe_session_audio(
     # 4. Persist audio to disk
     audio_path, expires_at = save_audio(audio_bytes, session_id, ext)
 
-    # 5. Select Whisper model and language code
-    is_filipino = session.language == Language.filipino
-    model_name = "tiny" if is_filipino else "base"
-    lang_code  = "fil"  if is_filipino else "en"
+    # 5. Determine language code
+    lang_code = "fil" if session.language == Language.filipino else "en"
 
-    # 6. Transcribe
+    # 6. Transcribe via Groq Whisper API (whisper-large-v3)
     try:
         result = await transcribe_audio(
             audio_bytes=audio_bytes,
             language=lang_code,
-            model_name=model_name,
             content_type=audio.content_type,
             filename=audio.filename,
         )

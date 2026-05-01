@@ -290,6 +290,11 @@ export const sessionsApi = {
     const res = await api.post(`/sessions/${sessionId}/score-part1`, data);
     return res.data;
   },
+
+  saveObservation: async (sessionId, data) => {
+    const res = await api.post(`/sessions/${sessionId}/observe`, data);
+    return res.data;
+  },
 };
 
 export default api;

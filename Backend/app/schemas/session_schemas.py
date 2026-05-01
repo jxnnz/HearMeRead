@@ -152,3 +152,9 @@ class Part1ScoreIn(BaseModel):
     task1_transcribed_text: str
     task2_reference_text:   str
     task2_transcribed_text: str
+
+
+class ObservationIn(BaseModel):
+    """Payload for POST /sessions/{id}/observe — saves observation without completing session."""
+    observation_level: int            = Field(..., ge=1, le=4)
+    teacher_remarks:   Optional[str]  = Field(None, max_length=1000)

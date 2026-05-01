@@ -1899,3 +1899,42 @@
   font-family: "Poppins", sans-serif;
   box-sizing: border-box;
 }
+
+/* ============================================================
+   OBSERVATION STEP (standalone)
+   ============================================================ */
+
+/* Override sticky positioning when obs panel is standalone (not in a two-column layout) */
+.asp-page > .asp-obs-panel {
+  position: static;
+  max-width: 600px;
+  margin: 0 auto 24px;
+}
+
+.asp-obs-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.asp-obs-footer__back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: 9px;
+  font-size: 13.5px;
+  font-weight: 600;
+  background: #eef0f8;
+  color: #3a4566;
+  border: 1.5px solid #dde2f0;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  transition: background 0.15s;
+}
+
+.asp-obs-footer__back:hover:not(:disabled) { background: #dde2f0; }
+.asp-obs-footer__back:disabled { opacity: 0.5; cursor: not-allowed; }
