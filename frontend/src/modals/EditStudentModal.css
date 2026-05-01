@@ -1,0 +1,182 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+/* ── Overlay ─────────────────────────────────────────── */
+.esm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 35, 64, 0.50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+  padding: 20px;
+  animation: esmFadeIn 0.15s ease both;
+}
+
+@keyframes esmFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Modal card ──────────────────────────────────────── */
+.esm-modal {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: 0 8px 40px rgba(26, 35, 64, 0.18);
+  font-family: "Poppins", sans-serif;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: esmSlideIn 0.18s ease both;
+}
+
+@keyframes esmSlideIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Header ──────────────────────────────────────────── */
+.esm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1.5px solid #eef0f8;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 1;
+}
+
+.esm-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1a2340;
+  margin: 0;
+}
+
+.esm-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #8a94b2;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  transition: background 0.15s, color 0.15s;
+}
+
+.esm-close:hover { background: #f4f6fb; color: #1a2340; }
+
+/* ── Error banner ────────────────────────────────────── */
+.esm-error {
+  background: #fdecea;
+  color: #c0392b;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin: 14px 24px 0;
+}
+
+/* ── Form ────────────────────────────────────────────── */
+.esm-form {
+  padding: 20px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.esm-row {
+  display: flex;
+  gap: 14px;
+}
+
+.esm-field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.esm-field--full { flex: none; width: 100%; }
+
+.esm-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #5a6382;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.esm-input {
+  border: 1.5px solid #dde2f0;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 14px;
+  font-family: "Poppins", sans-serif;
+  color: #1a2340;
+  outline: none;
+  background: #f8f9fd;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.esm-input:focus { border-color: #2c3e6b; background: #fff; }
+
+/* ── Radio group ─────────────────────────────────────── */
+.esm-radio-group {
+  display: flex;
+  gap: 16px;
+  padding: 6px 0;
+}
+
+.esm-radio-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13.5px;
+  color: #2a3452;
+  font-weight: 500;
+  cursor: pointer;
+  text-transform: capitalize;
+  font-family: "Poppins", sans-serif;
+}
+
+/* ── Actions ─────────────────────────────────────────── */
+.esm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.esm-btn {
+  padding: 9px 22px;
+  border-radius: 9px;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: "Poppins", sans-serif;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: background 0.15s;
+}
+
+.esm-btn--cancel {
+  background: #f4f6fb;
+  border-color: #c8d0e4;
+  color: #5a6382;
+}
+
+.esm-btn--cancel:hover:not(:disabled) { background: #e8ecf7; }
+.esm-btn--cancel:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.esm-btn--save {
+  background: #2c3e6b;
+  color: #fff;
+}
+
+.esm-btn--save:hover:not(:disabled) { background: #1a2a55; }
+.esm-btn--save:disabled { opacity: 0.6; cursor: not-allowed; }

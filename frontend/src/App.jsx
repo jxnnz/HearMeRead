@@ -1,5 +1,7 @@
+import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LandingPage      from "./pages/LandingPage";
+import LoadingPage      from "./pages/LoadingPage";
 import LoginPage        from "./pages/LoginPage";
 import SignupPage       from "./pages/SignupPage";
 import DashboardPage    from "./pages/DashboardPage";
@@ -31,6 +33,15 @@ function CatchAll() {
 }
 
 export default function App() {
+  const [appReady, setAppReady] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setAppReady(true), 1200);
+    return () => clearTimeout(t);
+  }, []);
+
+  if (!appReady) return <LoadingPage />;
+
   return (
     <BrowserRouter>
       <Routes>

@@ -4,6 +4,8 @@ import Layout               from "../../components/Layout";
 import LoadingScreen        from "../../components/LoadingScreen";
 import ComprehensionStep    from "../../components/ComprehensionStep";
 import ResultsStep          from "../../components/ResultsStep";
+import Toast               from "../../modals/Toast";
+import useToast            from "../../hooks/Usetoast";
 import {
   studentsApi,
   passagesApi,
@@ -88,6 +90,8 @@ function initForm() {
 export default function AssessmentPage() {
   const [step, setStep] = useState(STEPS.INFO);
   const [form, setForm] = useState(initForm());
+
+  const { toasts, removeToast, showSaveSuccess } = useToast();
 
   // Student & passage loading
   const [students,        setStudents]        = useState([]);
@@ -569,6 +573,11 @@ export default function AssessmentPage() {
     }
   }
 
+  function handleDoneAndSubmit() {
+    showSaveSuccess("Assessment");
+    setTimeout(handleReset, 1500);
+  }
+
   function handleReset() {
     setStep(STEPS.INFO);
     setForm(initForm());
@@ -839,6 +848,7 @@ export default function AssessmentPage() {
   if (step === STEPS.RESULTS) {
     return (
       <Layout>
+        <Toast toasts={toasts} onRemove={removeToast} />
         <ResultsStep
           form={form}
           finalResult={finalResult}
@@ -850,7 +860,7 @@ export default function AssessmentPage() {
           observationLevel={observationLevel}
           teacherNotes={teacherNotes}
           learnerExperience={learnerExperience}
-          onDone={handleReset}
+          onDone={handleDoneAndSubmit}
         />
       </Layout>
     );

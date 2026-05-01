@@ -1,10 +1,5 @@
-// ============================================================
-// HearMeRead — StudentProfileCard Component
-// Shows student avatar, name, reading level badge, and meta info.
-//
-// Props:
-//   student — student object
-// ============================================================
+import { useState, useRef, useEffect } from "react";
+import { MoreVertical, Pencil, Trash2 } from "lucide-react";
 import "../pages/pages css/StudentInfoPage.css";
 
 const LEVEL_COLORS = {
@@ -19,8 +14,22 @@ function getInitials(first = "", last = "") {
   return `${first[0] ?? ""}${last[0] ?? ""}`.toUpperCase();
 }
 
-export default function StudentProfileCard({ student }) {
+export default function StudentProfileCard({ student, onEdit, onDelete }) {
   if (!student) return null;
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleClickOutside(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [menuOpen]);
 
   const {
     first_name,
@@ -65,8 +74,37 @@ export default function StudentProfileCard({ student }) {
             )}
           </div>
         </div>
-      </div>
 
+        {/* ── 3-dot menu ── */}
+        <div className="spc-menu-wrap" ref={menuRef}>
+          <button
+            className="spc-menu-btn"
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-label="More options"
+          >
+            <MoreVertical size={17} />
+          </button>
+
+          {menuOpen && (
+            <div className="spc-dropdown">
+              <button
+                className="spc-dropdown__item"
+                onClick={() => { setMenuOpen(false); onEdit?.(); }}
+              >
+                <Pencil size={14} />
+                Edit Student
+              </button>
+              <button
+                className="spc-dropdown__item spc-dropdown__item--danger"
+                onClick={() => { setMenuOpen(false); onDelete?.(); }}
+              >
+                <Trash2 size={14} />
+                Delete Student
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
