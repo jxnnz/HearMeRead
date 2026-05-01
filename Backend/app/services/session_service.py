@@ -11,8 +11,6 @@ from app.models import (
     AssessmentSession, AssessmentPeriod,
     Student, Passage,
     ReadingResult, SessionObservation,
-    ReadingProfile as ReadingProfileModel,
-    Part1Classification as Part1ClassificationModel,
 )
 from app.schema import SessionCreate, SessionComplete, SessionUpdate
 from app.schemas.session_schemas import (
@@ -310,27 +308,35 @@ async def complete_session(
             alignments=_alignments_to_schema(p2.alignments),
         )
 
-    # ── 4. Persist to reading_results ────────────────────────────────────
-    reading_result = ReadingResult(
-        session_id=session_id,
-        # Part 1 scoring
+    # ── 4. Persist to reading_results (upsert — transcribe may have inserted a row already) ──
+    rr_query = await db.execute(
+        select(ReadingResult).where(ReadingResult.session_id == session_id)
+    )
+    reading_result = rr_query.scalar_one_or_none()
+
+    scoring_fields = dict(
         part1_task1_correct=p1.task1_correct,
         part1_task2_correct=p1.task2_correct,
         part1_total_score=p1.total_score,
-        part1_classification=_safe_enum(Part1ClassificationModel, p1.classification.value if p1.classification else None),
+        part1_classification=p1.classification.value if p1.classification else None,
         part1_route=p1.route.value if p1.route else None,
         part1_task1_alignments_json=_alignments_to_json(p1.task1_alignments),
         part1_task2_alignments_json=_alignments_to_json(p1.task2_alignments),
-        # Part 2 scoring (mapped to existing column names; None if Part 2 skipped)
         reading_time_seconds=p2.reading_time_sec if p2 else None,
         total_words=p2.total_words_in_passage if p2 else None,
         miscue_count=p2.total_miscues if p2 else None,
         cwpm=p2.cwpm if p2 else None,
-        reading_profile=_safe_enum(ReadingProfileModel, p2.reading_profile.value if p2 and p2.reading_profile else None),
+        reading_profile=p2.reading_profile.value if p2 and p2.reading_profile else None,
         part2_alignments_json=_alignments_to_json(p2.alignments) if p2 else None,
         updated_at=_now(),
     )
-    db.add(reading_result)
+
+    if reading_result:
+        for field, value in scoring_fields.items():
+            setattr(reading_result, field, value)
+    else:
+        reading_result = ReadingResult(session_id=session_id, **scoring_fields)
+        db.add(reading_result)
 
     # ── 5. Persist to session_observations (only if Part 2 provided) ─────
     if payload.part2 is not None and p2 is not None:

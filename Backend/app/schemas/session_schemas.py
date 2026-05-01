@@ -125,3 +125,30 @@ class CompleteSessionOut(BaseModel):
     part2:       Optional[Part2ResultOut] = None
 
     model_config = {"from_attributes": True}
+
+
+# ---------------------------------------------------------------------------
+# Intermediate scoring — does NOT mark session complete
+# ---------------------------------------------------------------------------
+
+class Task1ScoreIn(BaseModel):
+    """Payload for POST /sessions/{id}/score-task1."""
+    task1_reference_text:   str
+    task1_transcribed_text: str
+
+
+class Task1ScoreOut(BaseModel):
+    """Result of Task 1 Levenshtein alignment (no session state change)."""
+    task1_correct:  int
+    task1_miscues:  int
+    route:          str   # "task_2L" (score 0-6) or "task_2H" (score 7-10)
+    task2_type:     str   # "rhymes" or "sentences"
+    alignments:     list[WordAlignmentOut]
+
+
+class Part1ScoreIn(BaseModel):
+    """Payload for POST /sessions/{id}/score-part1 (both tasks)."""
+    task1_reference_text:   str
+    task1_transcribed_text: str
+    task2_reference_text:   str
+    task2_transcribed_text: str

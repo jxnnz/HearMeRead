@@ -270,6 +270,26 @@ export const sessionsApi = {
     });
     return res.data;
   },
+
+  /**
+   * Score Task 1 only using Levenshtein alignment.
+   * Does NOT mark the session as complete.
+   * Returns: { task1_correct, task1_miscues, route, task2_type, alignments }
+   */
+  scoreTask1: async (sessionId, data) => {
+    const res = await api.post(`/sessions/${sessionId}/score-task1`, data);
+    return res.data;
+  },
+
+  /**
+   * Score Part 1 (both Task 1 + Task 2) using Levenshtein alignment.
+   * Does NOT mark the session as complete.
+   * Returns: { task1_correct, task2_correct, total_score, classification, route, … }
+   */
+  scorePart1: async (sessionId, data) => {
+    const res = await api.post(`/sessions/${sessionId}/score-part1`, data);
+    return res.data;
+  },
 };
 
 export default api;

@@ -2,66 +2,42 @@ import * as XLSX from "xlsx";
 import { CheckCircle } from "lucide-react";
 import { OBSERVATION_LEVELS, EXPERIENCE_OPTIONS } from "../data/assessmentConstants";
 
-// ── Reading profile levels ────────────────────────────────────
 const PROFILE_MAP = {
-  grade_level:   { label: "Reading at Grade Level", color: "#27ae60", bg: "#e8f5e9" },
-  transitioning: { label: "Transitioning Reader",   color: "#2c7fc1", bg: "#e8f3fc" },
-  developing:    { label: "Developing Reader",      color: "#00897b", bg: "#e0f2f1" },
-  high_emerging: { label: "High Emerging Reader",   color: "#e67e22", bg: "#fff3e0" },
-  low_emerging:  { label: "Low Emerging Reader",    color: "#c0392b", bg: "#fdecea" },
+  "Reading at Grade Level": { label: "Reading at Grade Level", color: "#27ae60", bg: "#e8f5e9" },
+  "Transitioning Reader":   { label: "Transitioning Reader",   color: "#2c7fc1", bg: "#e8f3fc" },
+  "Developing Reader":      { label: "Developing Reader",      color: "#00897b", bg: "#e0f2f1" },
+  "High Emerging Reader":   { label: "High Emerging Reader",   color: "#e67e22", bg: "#fff3e0" },
+  "Low Emerging Reader":    { label: "Low Emerging Reader",    color: "#c0392b", bg: "#fdecea" },
 };
 
-// Map teacher observation → reading profile; fallback to accuracy thresholds
-function getReadingProfile(accuracy, obsLevelValue) {
-  if (obsLevelValue === "advanced")      return PROFILE_MAP.grade_level;
-  if (obsLevelValue === "independent")   return PROFILE_MAP.transitioning;
-  if (obsLevelValue === "instructional") return PROFILE_MAP.developing;
-  if (obsLevelValue === "frustration")   return accuracy >= 60 ? PROFILE_MAP.high_emerging : PROFILE_MAP.low_emerging;
-  // No observation set — derive from accuracy
-  if (accuracy >= 95) return PROFILE_MAP.grade_level;
-  if (accuracy >= 85) return PROFILE_MAP.transitioning;
-  if (accuracy >= 75) return PROFILE_MAP.developing;
-  if (accuracy >= 60) return PROFILE_MAP.high_emerging;
-  return PROFILE_MAP.low_emerging;
+function timeLimitLabel(secs) {
+  const mins = Math.round(secs / 60);
+  return mins === 1 ? "1 minute" : `${mins} minutes`;
+}
+
+function fmtTime(secs) {
+  if (!secs) return "—";
+  return `${Math.floor(secs / 60)}:${String(Math.round(secs) % 60).padStart(2, "0")}`;
 }
 
 export default function ResultsStep({
   form,
-  g1Score,
-  g2Score,
-  g2Passage,
+  finalResult,       // CompleteSessionOut from backend
   a2Passage,
   a2RecordingTime,
+  a2TimeLimit,       // grade-level time limit in seconds
   comprehensionQuestions,
   answers,
   observationLevel,
   teacherNotes,
   learnerExperience,
-  onComplete,
-  isCompleting,
-  completeError,
+  onDone,
 }) {
-  const g1Num     = parseInt(g1Score, 10) || 0;
-  const g2Num     = parseInt(g2Score, 10) || 0;
-  const reachedA2 = !isNaN(parseInt(g2Score, 10)) && parseInt(g2Score, 10) >= 7;
+  const part1 = finalResult?.part1 ?? null;
+  const part2 = finalResult?.part2 ?? null;
 
-  const correctAnswers = comprehensionQuestions.filter((q) => answers[q.id] === "Correct").length;
-  const totalQuestions = comprehensionQuestions.length;
-  const totalMiscues   = (10 - g1Num) + (reachedA2 ? 10 - g2Num : 0);
-
-  const wpm = (a2RecordingTime > 0 && a2Passage?.word_count)
-    ? Math.round((a2Passage.word_count / a2RecordingTime) * 60)
-    : null;
-
-  const timeStr = a2RecordingTime > 0
-    ? `${Math.floor(a2RecordingTime / 60)}:${String(a2RecordingTime % 60).padStart(2, "0")}`
-    : "—";
-
-  const accuracy    = reachedA2
-    ? Math.round(((g1Num + g2Num) / 20) * 100)
-    : Math.round((g1Num / 10) * 100);
-  const compPercent = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
-  const fluencyPct  = wpm ? Math.min(100, Math.round((wpm / 60) * 100)) : 0;
+  const profileKey  = part2?.reading_profile || (part1 ? "Low Emerging Reader" : null);
+  const profile     = PROFILE_MAP[profileKey] ?? PROFILE_MAP["Low Emerging Reader"];
 
   const today = new Date().toLocaleDateString("en-PH", {
     year: "numeric", month: "long", day: "numeric",
@@ -69,73 +45,84 @@ export default function ResultsStep({
 
   const expOption = EXPERIENCE_OPTIONS.find((e) => e.value === learnerExperience);
   const obsLevel  = OBSERVATION_LEVELS.find((l) => l.value === observationLevel);
-  const profile   = getReadingProfile(accuracy, observationLevel);
+
+  // ── Stat card values from backend ────────────────────────────────────────
+  const storyNumber        = a2Passage?.title ?? "—";
+  const totalMiscues       = part2?.total_miscues ?? "—";
+  const wordsWithinTime    = part2?.words_read_within_time ?? "—";
+  const totalTimeUsed      = part2 ? fmtTime(part2.reading_time_sec) : "—";
+  const wpm                = part2?.cwpm != null ? Math.round(part2.cwpm) : "—";
+  const correctAnswers     = part2?.comprehension_correct
+    ?? Object.values(answers).filter((v) => v === "Correct").length;
+  const totalQuestions     = comprehensionQuestions?.length ?? 0;
+  const learnerExp         = expOption ? `${expOption.score}/10` : (part2?.learner_experience ?? "—");
+  const obsLevelDisplay    = part2?.observation_level
+    ? `Level ${part2.observation_level}`
+    : (obsLevel?.label?.split(" ")[0] ?? "—");
 
   const statCards = [
-    { label: "% Correct Words Read",   value: `${g1Num * 10}%`,                                             color: "#2c7fc1" },
-    { label: "Words Per Minute (WPM)", value: wpm ?? "—",                                                   color: "#27ae60" },
-    { label: "Words in 2 mins",        value: a2Passage?.word_count ?? "—",                                color: "#9b59b6" },
-    { label: "Total Reading Miscues",  value: totalMiscues,                                                color: "#e67e22" },
-    { label: "Time Used",              value: timeStr,                                                      color: "#e63b2e" },
-    { label: "Total Correct Answer",   value: totalQuestions ? `${correctAnswers}/${totalQuestions}` : "—", color: "#1a2340" },
+    { label: "Story",                                           value: storyNumber,                                    color: "#1a2340" },
+    { label: "Total Reading Miscues",                          value: totalMiscues,                                   color: "#e63b2e" },
+    { label: `Words read within ${timeLimitLabel(a2TimeLimit)}`, value: wordsWithinTime,                             color: "#9b59b6" },
+    { label: "Total Time Used",                                value: totalTimeUsed,                                  color: "#e67e22" },
+    { label: "Words Per Minute (WPM)",                         value: wpm,                                           color: "#27ae60" },
+    { label: "Total Correct Answers",                          value: totalQuestions ? `${correctAnswers}/${totalQuestions}` : "—", color: "#2c7fc1" },
+    { label: "Learner Experience",                             value: learnerExp,                                    color: "#8e44ad" },
+    { label: "Observation Level",                             value: obsLevelDisplay,                               color: "#16a085" },
   ];
 
-  // ── Excel export ─────────────────────────────────────────
+  // ── Excel export ─────────────────────────────────────────────────────────
   function handleExport() {
     const wb = XLSX.utils.book_new();
 
-    // Sheet 1: Summary
     const summaryRows = [
       ["HearMeRead — Assessment Report"],
       [],
       ["STUDENT INFORMATION"],
-      ["Name",             `${form.first_name} ${form.last_name}`],
-      ["Reading Profile",  profile.label],
-      ["Grade Level",      `Grade ${form.grade_level}`],
-      ["Section",          form.section],
-      ["School Year",      form.school_year],
-      ["Assessment Type",  form.assessment_type],
-      ["Language",         form.language === "filipino" ? "Filipino" : "English"],
-      ["Date",             today],
+      ["Name",            `${form.first_name} ${form.last_name}`],
+      ["Reading Profile", profile.label],
+      ["Grade Level",     `Grade ${form.grade_level}`],
+      ["Section",         form.section],
+      ["School Year",     form.school_year],
+      ["Assessment Type", form.assessment_type],
+      ["Language",        form.language === "filipino" ? "Filipino" : "English"],
+      ["Date",            today],
       [],
-      ["ASSESSMENT SCORES"],
-      ["% Correct Words Read",   `${g1Num * 10}%`],
-      ["Words Per Minute (WPM)", wpm ?? "—"],
-      ["Words in 2 mins",        a2Passage?.word_count ?? "—"],
-      ["Total Reading Miscues",  totalMiscues],
-      ["Time Used",              timeStr],
-      ["Total Correct Answer",   totalQuestions ? `${correctAnswers}/${totalQuestions}` : "—"],
+      ["ASSESSMENT 2 RESULTS"],
+      ["Story",                         storyNumber],
+      ["Total Reading Miscues",         totalMiscues],
+      [`Words within ${timeLimitLabel(a2TimeLimit)}`, wordsWithinTime],
+      ["Total Time Used",               totalTimeUsed],
+      ["Words Per Minute (WPM)",        wpm],
+      ["Total Correct Answers",         totalQuestions ? `${correctAnswers}/${totalQuestions}` : "—"],
+      ["Learner Experience",            learnerExp],
+      ["Observation Level",             obsLevelDisplay],
       [],
-      ["PERFORMANCE SUMMARY"],
-      ["Accuracy",       `${accuracy}%`],
-      ["Comprehension",  `${compPercent}%`],
-      ["Fluency (WPM)",  `${fluencyPct}%`],
+      ["ASSESSMENT 1 SUMMARY"],
+      ["Task 1 Correct",   part1?.task1_correct  ?? "—"],
+      ["Task 2 Correct",   part1?.task2_correct  ?? "—"],
+      ["Total Part 1 Score", part1?.total_score  ?? "—"],
+      ["Classification",   part1?.classification ?? "—"],
       [],
-      ["LEARNER FEEDBACK"],
-      ["Experience Rating", expOption ? `${expOption.score}/10 (${expOption.label})` : "—"],
-      ["Total Miscues",     totalMiscues],
-      ["Observation Level", obsLevel?.label ?? "—"],
-      ["Teacher's Note",    teacherNotes || "No notes added."],
+      ["TEACHER NOTES"],
+      ["Remarks", teacherNotes || "No notes added."],
     ];
 
     const ws1 = XLSX.utils.aoa_to_sheet(summaryRows);
-    ws1["!cols"] = [{ wch: 26 }, { wch: 44 }];
+    ws1["!cols"] = [{ wch: 32 }, { wch: 44 }];
     XLSX.utils.book_append_sheet(wb, ws1, "Summary");
 
-    // Sheet 2: Comprehension questions (if applicable)
-    if (comprehensionQuestions.length > 0) {
+    if (comprehensionQuestions?.length > 0) {
       const compRows = [
         ["Comprehension Questions"],
         [],
         ["#", "Question", "Teacher's Mark"],
         ...comprehensionQuestions.map((q, idx) => [
-          idx + 1,
-          q.text,
-          answers[q.id] ?? "—",
+          idx + 1, q.text, answers[q.id] ?? "—",
         ]),
       ];
       const ws2 = XLSX.utils.aoa_to_sheet(compRows);
-      ws2["!cols"] = [{ wch: 4 }, { wch: 52 }, { wch: 32 }, { wch: 16 }];
+      ws2["!cols"] = [{ wch: 4 }, { wch: 52 }, { wch: 16 }];
       XLSX.utils.book_append_sheet(wb, ws2, "Comprehension");
     }
 
@@ -169,7 +156,7 @@ export default function ResultsStep({
             <span className="asp-res-badge asp-res-badge--period">{form.assessment_type}</span>
           </div>
           <p className="asp-res-header__sub">
-            {reachedA2 ? a2Passage?.title : (g2Passage?.title || form.passage_title)} · {today}
+            {a2Passage?.title ?? "Assessment 1 Only"} · {today}
           </p>
         </div>
         <div className="asp-res-header__right">
@@ -184,8 +171,8 @@ export default function ResultsStep({
         </div>
       </div>
 
-      {/* ── 6 stat cards ── */}
-      <div className="asp-res-stats">
+      {/* ── Stat cards ── */}
+      <div className="asp-res-stats asp-res-stats--8">
         {statCards.map((card) => (
           <div key={card.label} className="asp-res-stat-card">
             <span className="asp-res-stat-card__value" style={{ color: card.color }}>
@@ -196,61 +183,59 @@ export default function ResultsStep({
         ))}
       </div>
 
-      {/* ── Lower: Performance + Learner Feedback ── */}
+      {/* ── Reading Profile Detail ── */}
+      <div className="asp-res-profile-detail">
+        <h3 className="asp-res-section-title">Reading Profile</h3>
+        <div
+          className="asp-res-profile-block"
+          style={{ borderLeft: `4px solid ${profile.color}`, background: profile.bg }}
+        >
+          <strong style={{ color: profile.color }}>{profile.label}</strong>
+          <p className="asp-res-profile-desc">
+            {profileKey === "Low Emerging Reader" &&
+              "Learner scores 0–10 in Assessment Part 1."}
+            {profileKey === "High Emerging Reader" &&
+              "Learner reads less than 25% of the passages in the time limit and cannot answer any of the questions."}
+            {profileKey === "Developing Reader" &&
+              "Learner reads between 26% to 50% of passages accurately and answers 1 to 2 questions correctly."}
+            {profileKey === "Transitioning Reader" &&
+              "Learner reads between 51% to 75% of the passage accurately and answers 3 to 4 questions correctly."}
+            {profileKey === "Reading at Grade Level" &&
+              "Learner reads between 76% to 100% of passages accurately and answers 5 to 6 questions correctly."}
+          </p>
+        </div>
+      </div>
+
+      {/* ── Observation Level detail ── */}
       <div className="asp-res-lower">
-        {/* Performance Summary */}
         <div className="asp-res-perf">
-          <h3 className="asp-res-section-title">Performance Summary</h3>
+          <h3 className="asp-res-section-title">Observation Level</h3>
           {[
-            { label: "Accuracy",      pct: accuracy,    color: "#2c7fc1" },
-            { label: "Comprehension", pct: compPercent, color: "#27ae60" },
-            { label: "Fluency (WPM)", pct: fluencyPct,  color: "#9b59b6" },
-          ].map((bar) => (
-            <div key={bar.label} className="asp-res-perf-row">
-              <span className="asp-res-perf-label">{bar.label}</span>
-              <div className="asp-res-perf-bar-wrap">
-                <div
-                  className="asp-res-perf-bar"
-                  style={{ width: `${bar.pct}%`, background: bar.color }}
-                />
+            { n: 1, desc: "Reads word by word" },
+            { n: 2, desc: "Reads words in chunks" },
+            { n: 3, desc: "Reads fluently but not observing punctuation marks" },
+            { n: 4, desc: "Reads fluently with proper expression" },
+          ].map((lvl) => {
+            const active = (part2?.observation_level ?? null) === lvl.n
+              || obsLevel?.backendValue === lvl.n;
+            return (
+              <div
+                key={lvl.n}
+                className={`asp-obs-level-row${active ? " asp-obs-level-row--active" : ""}`}
+              >
+                <span className="asp-obs-level-num">Level {lvl.n}</span>
+                <span className="asp-obs-level-desc">{lvl.desc}</span>
               </div>
-              <span className="asp-res-perf-pct">{bar.pct}%</span>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
-        {/* Learner Feedback */}
+        {/* Teacher note */}
         <div className="asp-res-feedback">
-          <h3 className="asp-res-section-title">Learner Feedback</h3>
-          <div className="asp-res-feedback-grid">
-            <div className="asp-res-fb-item">
-              <span className="asp-res-fb-item__val">
-                {expOption ? `${expOption.score}/10` : "—"}
-              </span>
-              <span className="asp-res-fb-item__label">Experience Rating</span>
-            </div>
-            <div className="asp-res-fb-item">
-              <span className="asp-res-fb-item__val">{correctAnswers}</span>
-              <span className="asp-res-fb-item__label">Correct Answers</span>
-            </div>
-            <div className="asp-res-fb-item">
-              <span className="asp-res-fb-item__val">{totalMiscues}</span>
-              <span className="asp-res-fb-item__label">Total Miscues</span>
-            </div>
-            <div className="asp-res-fb-item">
-              <span className="asp-res-fb-item__val asp-res-fb-item__val--obs">
-                {obsLevel ? obsLevel.label.split(" ")[0] : "—"}
-              </span>
-              <span className="asp-res-fb-item__label">Observation</span>
-            </div>
-          </div>
-
-          <div className="asp-res-teacher-note">
-            <p className="asp-res-teacher-note__label">Teacher's Note</p>
-            <p className="asp-res-teacher-note__text">
-              {teacherNotes || "No notes added."}
-            </p>
-          </div>
+          <h3 className="asp-res-section-title">Teacher's Note</h3>
+          <p className="asp-res-teacher-note__text">
+            {teacherNotes || "No notes added."}
+          </p>
         </div>
       </div>
 
@@ -259,18 +244,12 @@ export default function ResultsStep({
         <p className="asp-res-footer__info">
           Assessed by teacher · Section {form.section} · {form.school_year}
         </p>
-        {completeError && (
-          <p className="asp-error" style={{ textAlign: "center", marginBottom: "0.5rem" }}>
-            ⚠ {completeError}
-          </p>
-        )}
         <div className="asp-res-footer__actions">
           <button
             className="asp-res-footer__btn asp-res-footer__btn--submit"
-            onClick={onComplete}
-            disabled={isCompleting}
+            onClick={onDone}
           >
-            {isCompleting ? "Submitting…" : "Done & Submit"}
+            Done
           </button>
         </div>
       </div>

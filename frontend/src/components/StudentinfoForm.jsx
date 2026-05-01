@@ -266,45 +266,57 @@ export default function StudentInfoForm({
         </div>
       </div>
 
-      {/* ── Passage selector — shows only Assessment 1 Gawain 1 (sentences) passages ── */}
+      {/* ── Passage selector — filtered by grade level, language, and assessment type 1 ── */}
       <div className="si-field si-field--full">
         <label className="si-label" htmlFor="si-passage">
           Passage <span style={{ color: "#8a94b2", fontWeight: 400 }}>(Assessment 1 — Gawain 1)</span>
         </label>
-        <select
-          id="si-passage"
-          className="si-input"
-          value={form.passage_id ?? ""}
-          disabled={loadingPassages}
-          onChange={(e) => {
-            const selected = passages.find(
-              (p) => String(p.id) === e.target.value && p.assessment_type === 1
-            );
-            if (!selected) return;
-            const task1Words = selected.task1_content
-              ? selected.task1_content.trim().split(/\s+/).filter(Boolean).length
-              : (selected.word_count ?? 0);
-            setForm((prev) => ({
-              ...prev,
-              passage_id:       selected.id,
-              passage_title:    selected.title ?? "Assessment 1",
-              passage_content:  selected.task1_content ?? "",
-              word_count:       task1Words,
-              selected_passage: selected,
-            }));
-          }}
-        >
-          <option value="">
-            {loadingPassages ? "Loading passages…" : "— Select a passage —"}
-          </option>
-          {passages
-            .filter((p) => p.assessment_type === 1)
-            .map((p) => (
+        {!hasStudent ? (
+          <div className="si-input si-input--readonly si-input--disabled">
+            Select a student first
+          </div>
+        ) : loadingPassages ? (
+          <div className="si-input si-input--readonly">Loading passages…</div>
+        ) : passages.length === 0 ? (
+          <div className="si-input si-input--readonly">
+            No passages found for this grade &amp; language
+          </div>
+        ) : passages.length === 1 ? (
+          <div className="si-input si-input--filled">
+            {passages[0].title ?? "Assessment 1"}{" "}
+            <span style={{ color: "#8a94b2", fontSize: "0.85em" }}>
+              ({passages[0].word_count} items) — auto-selected
+            </span>
+          </div>
+        ) : (
+          <select
+            id="si-passage"
+            className="si-input"
+            value={form.passage_id ?? ""}
+            onChange={(e) => {
+              const selected = passages.find((p) => String(p.id) === e.target.value);
+              if (!selected) return;
+              const task1Words = selected.task1_content
+                ? selected.task1_content.trim().split(/\s+/).filter(Boolean).length
+                : (selected.word_count ?? 0);
+              setForm((prev) => ({
+                ...prev,
+                passage_id:       selected.id,
+                passage_title:    selected.title ?? "Assessment 1",
+                passage_content:  selected.task1_content ?? "",
+                word_count:       task1Words,
+                selected_passage: selected,
+              }));
+            }}
+          >
+            <option value="">— Select a passage —</option>
+            {passages.map((p) => (
               <option key={p.id} value={String(p.id)}>
                 {p.title} ({p.word_count} items)
               </option>
             ))}
-        </select>
+          </select>
+        )}
       </div>
 
     </div>

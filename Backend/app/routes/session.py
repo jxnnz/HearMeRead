@@ -15,7 +15,12 @@ from app.schema import (
     SessionListResponse,
     DuplicateWarning,
 )
-from app.schemas.session_schemas import CompleteSessionIn, CompleteSessionOut
+from app.schemas.session_schemas import (
+    CompleteSessionIn, CompleteSessionOut,
+    Task1ScoreIn, Task1ScoreOut,
+    Part1ScoreIn,
+)
+from app.schemas.session_schemas import Part1ResultOut, WordAlignmentOut
 from app.services import session_service
 
 router = APIRouter(prefix="/sessions", tags=["Sessions"])
@@ -128,6 +133,96 @@ async def complete_session(
         raise HTTPException(status_code=404, detail=str(e))
     except RuntimeError as e:
         raise HTTPException(status_code=409, detail=str(e))
+
+
+# ── Intermediate scoring (no session state change) ────────────────────────────
+
+@router.post(
+    "/{session_id}/score-task1",
+    response_model=Task1ScoreOut,
+    status_code=200,
+    summary="Score Task 1 only — does not complete the session",
+)
+async def score_session_task1(
+    session_id:      int,
+    payload:         Task1ScoreIn,
+    db:              AsyncSession = Depends(get_db),
+    current_teacher: Teacher      = Depends(get_current_teacher),
+):
+    from app.services.levenshtein_service import preprocess, align_words, Part1Route
+    await session_service.get_session_by_id(db, session_id, current_teacher.id)
+
+    ref1 = preprocess(payload.task1_reference_text)
+    hyp1 = preprocess(payload.task1_transcribed_text)
+    lev1 = align_words(ref1, hyp1)
+
+    route     = Part1Route.TASK_2L if lev1.correct_words <= 6 else Part1Route.TASK_2H
+    task2_type = "rhymes" if route == Part1Route.TASK_2L else "sentences"
+
+    return Task1ScoreOut(
+        task1_correct=lev1.correct_words,
+        task1_miscues=lev1.total_miscues,
+        route=route.value,
+        task2_type=task2_type,
+        alignments=[
+            WordAlignmentOut(
+                reference=a.reference_word,
+                transcribed=a.transcribed_word,
+                miscue_type=a.miscue_type.value,
+            )
+            for a in lev1.alignments
+        ],
+    )
+
+
+@router.post(
+    "/{session_id}/score-part1",
+    response_model=Part1ResultOut,
+    status_code=200,
+    summary="Score Part 1 (both tasks) — does not complete the session",
+)
+async def score_session_part1(
+    session_id:      int,
+    payload:         Part1ScoreIn,
+    db:              AsyncSession = Depends(get_db),
+    current_teacher: Teacher      = Depends(get_current_teacher),
+):
+    from app.services.levenshtein_service import score_part1
+    await session_service.get_session_by_id(db, session_id, current_teacher.id)
+
+    p1 = score_part1(
+        task1_reference_text=payload.task1_reference_text,
+        task1_transcribed_text=payload.task1_transcribed_text,
+        task2_reference_text=payload.task2_reference_text,
+        task2_transcribed_text=payload.task2_transcribed_text,
+    )
+
+    return Part1ResultOut(
+        task1_correct=p1.task1_correct,
+        task1_miscues=p1.task1_miscues,
+        route=p1.route.value if p1.route else "",
+        task2_type=p1.task2_type or "",
+        task2_correct=p1.task2_correct,
+        task2_miscues=p1.task2_miscues,
+        total_score=p1.total_score,
+        classification=p1.classification.value if p1.classification else "",
+        task1_alignments=[
+            WordAlignmentOut(
+                reference=a.reference_word,
+                transcribed=a.transcribed_word,
+                miscue_type=a.miscue_type.value,
+            )
+            for a in p1.task1_alignments
+        ],
+        task2_alignments=[
+            WordAlignmentOut(
+                reference=a.reference_word,
+                transcribed=a.transcribed_word,
+                miscue_type=a.miscue_type.value,
+            )
+            for a in p1.task2_alignments
+        ],
+    )
 
 
 # ── Update ────────────────────────────────────────────────────────────────────

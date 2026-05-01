@@ -219,17 +219,17 @@ class ReadingResult(Base):
     audio_expires_at = Column(DateTime(timezone=True), nullable=True)
 
     # Part 1 scoring results
-    part1_task1_correct          = Column(Integer, nullable=True)
-    part1_task2_correct          = Column(Integer, nullable=True)
-    part1_total_score            = Column(Integer, nullable=True)
-    part1_classification         = Column(SAEnum(Part1Classification), nullable=True)
-    part1_route                  = Column(String(10), nullable=True)
-    part1_task1_alignments_json  = Column(Text, nullable=True)
-    part1_task2_alignments_json  = Column(Text, nullable=True)
+    part1_task1_correct          = Column(Integer,     nullable=True)
+    part1_task2_correct          = Column(Integer,     nullable=True)
+    part1_total_score            = Column(Integer,     nullable=True)
+    part1_classification         = Column(String(30),  nullable=True)
+    part1_route                  = Column(String(10),  nullable=True)
+    part1_task1_alignments_json  = Column(Text,        nullable=True)
+    part1_task2_alignments_json  = Column(Text,        nullable=True)
 
     # Part 2 scoring results
-    part2_alignments_json = Column(Text, nullable=True)
-    reading_profile       = Column(SAEnum(ReadingProfile), nullable=True)
+    part2_alignments_json = Column(Text,       nullable=True)
+    reading_profile       = Column(String(30), nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
