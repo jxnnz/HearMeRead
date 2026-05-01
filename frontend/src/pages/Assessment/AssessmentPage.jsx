@@ -753,6 +753,7 @@ export default function AssessmentPage() {
           transcript={g1Transcript}
           words={g1Words}
           timeLimitSec={null}
+          audioFile={audioFile}
           onConfirm={handleConfirmG1Preview}
         />
         {scoreError && <p className="asp-error" style={{ textAlign: "center" }}>⚠ {scoreError}</p>}
@@ -789,6 +790,7 @@ export default function AssessmentPage() {
           transcript={g2Transcript}
           words={[]}
           timeLimitSec={null}
+          audioFile={audioFile}
           onConfirm={handleConfirmG2Preview}
         />
         {scoreError && <p className="asp-error" style={{ textAlign: "center" }}>⚠ {scoreError}</p>}
@@ -837,6 +839,7 @@ export default function AssessmentPage() {
           transcript={a2Transcript}
           words={a2Words}
           timeLimitSec={a2TimeLimit}
+          audioFile={audioFile}
           onConfirm={handleConfirmA2Preview}
         />
       </Layout>

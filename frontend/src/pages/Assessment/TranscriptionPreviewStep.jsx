@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ChevronRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ChevronRight, Volume2 } from "lucide-react";
 import TranscriptionWarningBanner from "../../components/TranscriptionWarningBanner";
 
 /**
@@ -17,9 +17,18 @@ export default function TranscriptionPreviewStep({
   transcript,
   words,
   timeLimitSec,
+  audioFile,
   onConfirm,
 }) {
   const [edited, setEdited] = useState(transcript ?? "");
+  const [audioUrl, setAudioUrl] = useState(null);
+
+  useEffect(() => {
+    if (!audioFile) return;
+    const url = URL.createObjectURL(audioFile);
+    setAudioUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [audioFile]);
 
   // Find the index of the last word spoken within the time limit (A2 only)
   const cutoffIdx = timeLimitSec != null && words?.length
@@ -42,6 +51,14 @@ export default function TranscriptionPreviewStep({
         <h2 className="asp-preview-card__title">Transcription Preview</h2>
 
         <TranscriptionWarningBanner />
+
+        {/* Audio playback preview */}
+        {audioUrl && (
+          <div style={{ marginBottom: "16px", display: "flex", alignItems: "center", gap: "10px", background: "#f4f6fb", padding: "12px", borderRadius: "8px", border: "1px solid #c8d0e4" }}>
+            <Volume2 size={16} style={{ color: "#2c7fc1" }} />
+            <audio controls src={audioUrl} style={{ flex: 1, height: "32px" }} />
+          </div>
+        )}
 
         {/* Highlighted word view — A2 only, shows cutoff word in blue */}
         {showHighlight && (

@@ -64,12 +64,34 @@ export default function StudentRecordPage() {
   const [search, setSearch]       = useState("");
   const [filters, setFilters]     = useState(EMPTY_FILTERS);
 
+// ── Mock Data (Delete before deployment) ─────────────────────
+const ENABLE_MOCK_DATA = true; // Set to false or delete this block when deploying
+
+const MOCK_STUDENTS = [
+  { id: "mock-1", first_name: "Juan", last_name: "Dela Cruz", grade_level: "3", section: "Mabini", lrn: "123456789012", sex: "male", reading_profile: "Reading at Grade Level" },
+  { id: "mock-2", first_name: "Maria", last_name: "Santos", grade_level: "1", section: "Rizal", lrn: "987654321098", sex: "female", reading_profile: "Developing Reader" },
+  { id: "mock-3", first_name: "Jose", last_name: "Rizal", grade_level: "2", section: "Bonifacio", lrn: "112233445566", sex: "male", reading_profile: "High Emerging Reader" },
+  { id: "mock-4", first_name: "Ana", last_name: "Reyes", grade_level: "3", section: "Mabini", lrn: "223344556677", sex: "female", reading_profile: "Transitioning Reader" },
+  { id: "mock-5", first_name: "Pedro", last_name: "Penduko", grade_level: "1", section: "Rizal", lrn: "334455667788", sex: "male", reading_profile: "Low Emerging Reader" },
+  { id: "mock-6", first_name: "Clara", last_name: "Ibarra", grade_level: "2", section: "Bonifacio", lrn: "445566778899", sex: "female", reading_profile: "Reading at Grade Level" },
+  { id: "mock-7", first_name: "Andres", last_name: "Bonifacio", grade_level: "3", section: "Mabini", lrn: "556677889900", sex: "male", reading_profile: "Developing Reader" },
+  { id: "mock-8", first_name: "Gabriela", last_name: "Silang", grade_level: "1", section: "Rizal", lrn: "667788990011", sex: "female", reading_profile: "High Emerging Reader" },
+  { id: "mock-9", first_name: "Emilio", last_name: "Aguinaldo", grade_level: "2", section: "Bonifacio", lrn: "778899001122", sex: "male", reading_profile: "Transitioning Reader" },
+  { id: "mock-10", first_name: "Teresa", last_name: "Magbanua", grade_level: "3", section: "Mabini", lrn: "889900112233", sex: "female", reading_profile: "Low Emerging Reader" },
+];
+
   // ── Fetch students ───────────────────────────────────────
   useEffect(() => {
     setLoading(true);
     studentsApi
       .list({ page_size: 200 })
-      .then((data) => setStudents(data.students))
+      .then((data) => {
+        let fetchedStudents = data.students || [];
+        if (ENABLE_MOCK_DATA) {
+          fetchedStudents = [...fetchedStudents, ...MOCK_STUDENTS];
+        }
+        setStudents(fetchedStudents);
+      })
       .catch((e) => {
         // Log full error details so you can see exactly which field fails validation
         console.error("studentsApi.list error:", e.response?.data || e.message);
