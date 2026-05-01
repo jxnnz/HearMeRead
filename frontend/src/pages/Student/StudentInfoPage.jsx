@@ -36,6 +36,17 @@ function sessionToRecord(session) {
     assessment_date:    session.created_at,
     period:             PERIOD_MAP[session.period] ?? session.period,
     language:           session.language,
+    
+    // Assessment 1 Part 1
+    task1:               rr?.part1_task1_correct ?? null,
+    task2l_word:         rr?.part1_route === "task_2L" ? rr?.part1_task2_correct : null,
+    task2h_sentences:    rr?.part1_route === "task_2H" ? rr?.part1_task2_correct : null,
+    total_score:         rr?.part1_total_score ?? null,
+    part1_reading_level: rr?.part1_classification ?? null,
+    reading_profile:     rr?.reading_profile ?? null,
+    
+    // Assessment 2 (Part 2)
+    story_number:       session.passage?.title ?? null,
     num_miscues:        rr?.miscue_count         ?? null,
     words_read:         rr?.total_words          ?? null,
     wpm:                rr?.cwpm != null ? Math.round(rr.cwpm) : null,

@@ -308,22 +308,37 @@ export default function AssessmentPage() {
   }
 
   // ── Recording controls ───────────────────────────────────────────────────
-  function handleFileSelect(e) {
+  async function handleFileSelect(e) {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = "";
     setAudioFile(file);
     setRecordingMode("upload");
 
+    // Extract exact duration from uploaded file
+    const duration = await new Promise((resolve) => {
+      const url = URL.createObjectURL(file);
+      const audio = new Audio(url);
+      audio.onloadedmetadata = () => {
+        URL.revokeObjectURL(url);
+        resolve(Math.round(audio.duration));
+      };
+      audio.onerror = () => resolve(1); // fallback to 1 second
+    });
+
+    setRecordingTime(duration);
+
     const s = currentStepRef.current;
     if (s === STEPS.INFO || s === STEPS.A1_G1) {
+      setG1RecordingTime(duration);
       setStep(STEPS.A1_G1_LOADING);
       fireTranscription(file, "g1");
     } else if (s === STEPS.A1_G2) {
+      setG2RecordingTime(duration);
       setStep(STEPS.A1_G2_LOADING);
       fireTranscription(file, "g2");
     } else if (s === STEPS.A2) {
-      setA2RecordingTime(recordingTime);
+      setA2RecordingTime(duration);
       setStep(STEPS.A2_LOADING);
       fireTranscription(file, "a2");
     }

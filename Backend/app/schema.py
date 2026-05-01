@@ -210,6 +210,14 @@ class ReadingResultResponse(BaseModel):
     total_words:          Optional[int]
     miscue_count:         Optional[int]
     cwpm:                 Optional[float]
+    
+    part1_task1_correct:  Optional[int] = None
+    part1_task2_correct:  Optional[int] = None
+    part1_total_score:    Optional[int] = None
+    part1_classification: Optional[str] = None
+    part1_route:          Optional[str] = None
+    reading_profile:      Optional[str] = None
+
     created_at:           datetime
     updated_at:           Optional[datetime] = None
 
@@ -307,6 +315,7 @@ class SessionResponse(BaseModel):
     # Nested child tables — None until the teacher completes those steps
     reading_result: Optional[ReadingResultResponse]      = None
     observation:    Optional[SessionObservationResponse] = None
+    passage:        Optional[PassageResponse]            = None
 
     class Config:
         from_attributes = True

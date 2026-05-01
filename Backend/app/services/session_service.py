@@ -112,6 +112,7 @@ async def get_sessions(
         .options(
             selectinload(AssessmentSession.reading_result),
             selectinload(AssessmentSession.observation),
+            selectinload(AssessmentSession.passage),
         )
         .where(and_(*filters))
         .order_by(AssessmentSession.created_at.desc())
@@ -129,6 +130,7 @@ async def get_session_by_id(
         .options(
             selectinload(AssessmentSession.reading_result),
             selectinload(AssessmentSession.observation),
+            selectinload(AssessmentSession.passage),
         )
         .where(
             AssessmentSession.id == session_id,
@@ -176,6 +178,7 @@ async def create_session(
         .options(
             selectinload(AssessmentSession.reading_result),
             selectinload(AssessmentSession.observation),
+            selectinload(AssessmentSession.passage),
         )
         .where(AssessmentSession.id == session.id)
     )
