@@ -4,7 +4,11 @@ from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 from sqlalchemy import text
 
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+
 from app.core.config import settings
+from app.core.rate_limit import limiter
 from app.router import api_router
 from app.db import engine
 from app.routes.asr import router as asr_router
@@ -41,10 +45,16 @@ app = FastAPI(
     title=settings.APP_NAME,
     description="Backend API for the HearMeRead oral reading assessment PWA",
     version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
+    # Disable Swagger/ReDoc in production to hide API surface from attackers
+    docs_url=None if settings.is_production else "/docs",
+    redoc_url=None if settings.is_production else "/redoc",
+    openapi_url=None if settings.is_production else "/openapi.json",
     lifespan=lifespan,
 )
+
+# ── Rate limiter registration ─────────────────────────────────────────────────
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 _cors_origins = [settings.FRONTEND_URL]
 if not settings.is_production:

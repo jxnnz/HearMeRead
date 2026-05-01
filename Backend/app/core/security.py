@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -8,12 +9,30 @@ from jwt.exceptions import InvalidTokenError
 from app.core.config import settings
 
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+# --------------------------------------------------------------------------- #
+#  Password hashing (async — runs bcrypt in thread pool)                       #
+# --------------------------------------------------------------------------- #
+#
+# bcrypt is intentionally slow (~200-400ms per call). Running it synchronously
+# inside an async FastAPI app blocks the entire event loop, freezing ALL
+# concurrent requests. By using run_in_executor we offload the CPU work to a
+# thread and keep the event loop free to serve other requests.
+
+async def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return await asyncio.get_event_loop().run_in_executor(
+        None,
+        bcrypt.checkpw,
+        plain_password.encode("utf-8"),
+        hashed_password.encode("utf-8"),
+    )
 
 
-def get_password_hash(password: str) -> str:
-    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+async def get_password_hash(password: str) -> str:
+    hashed = await asyncio.get_event_loop().run_in_executor(
+        None,
+        lambda: bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()),
+    )
+    return hashed.decode("utf-8")
 
 
 # --------------------------------------------------------------------------- #

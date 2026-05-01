@@ -2,7 +2,6 @@ from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
-from sqlalchemy.pool import NullPool
 
 from app.core.config import settings
 
@@ -14,11 +13,24 @@ class Base(DeclarativeBase):
 
 
 # ── Engine ────────────────────────────────────────────────────────────────────
+#
+# Previously used NullPool, which created a NEW TCP+SSL connection for every
+# single request (~200-500ms overhead each time). Switching to the default
+# AsyncAdaptedQueuePool keeps a small pool of persistent connections open,
+# so subsequent requests reuse them instantly.
+#
+# Supabase uses PgBouncer on port 6543 for server-side pooling, so our local
+# pool simply maintains warm TCP tunnels to the pooler — no conflicts.
 
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.DEBUG,
-    poolclass=NullPool,
+    # ── Connection pool settings ──────────────────────────────────────────
+    pool_size=5,              # 5 persistent connections kept open
+    max_overflow=10,          # up to 15 total under load spikes
+    pool_recycle=300,         # recycle connections every 5 min (avoids stale)
+    pool_pre_ping=True,       # verify connection is alive before using it
+    pool_timeout=30,          # wait up to 30s for a connection from the pool
     connect_args={
         "ssl": "require",
         "statement_cache_size": 0,

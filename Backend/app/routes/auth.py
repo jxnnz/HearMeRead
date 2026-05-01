@@ -1,7 +1,7 @@
 import secrets
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
@@ -16,6 +16,7 @@ from app.schema import (
     TeacherResponse, ResendVerificationRequest,
 )
 from app.services.email_service import send_verification_email
+from app.core.rate_limit import limiter
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -67,7 +68,8 @@ async def _create_verification_token(db: AsyncSession, teacher_id: int) -> str:
         "The teacher cannot log in until they click the link."
     ),
 )
-async def register(data: TeacherRegister, db: AsyncSession = Depends(get_db)):
+@limiter.limit("3/minute")
+async def register(request: Request, data: TeacherRegister, db: AsyncSession = Depends(get_db)):
     # 1. Duplicate email check
     result = await db.execute(select(Teacher).where(Teacher.email == data.email))
     if result.scalar_one_or_none():
@@ -81,7 +83,7 @@ async def register(data: TeacherRegister, db: AsyncSession = Depends(get_db)):
         first_name=data.first_name,
         last_name=data.last_name,
         email=data.email,
-        hashed_password=get_password_hash(data.password),
+        hashed_password=await get_password_hash(data.password),
     )
     db.add(teacher)
     await db.flush()   # gives teacher.id without full commit
@@ -182,7 +184,9 @@ async def verify_email(
         "Always returns 200 — never reveals whether the email exists (prevents enumeration)."
     ),
 )
+@limiter.limit("3/minute")
 async def resend_verification(
+    request: Request,
     data: ResendVerificationRequest,
     db: AsyncSession = Depends(get_db),
 ):
@@ -218,14 +222,15 @@ async def resend_verification(
     response_model=TokenResponse,
     summary="Login with email and password",
 )
-async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("5/minute")
+async def login(request: Request, data: LoginRequest, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Teacher).where(Teacher.email == data.email))
     teacher = result.scalar_one_or_none()
 
     # Constant-time path: run verify_password even for missing teachers
     # so timing attacks cannot enumerate valid email addresses
     dummy_hash = "$2b$12$KIXnMqiEdSY9CSoRYqYTuO2R6w1J/EeRKRpjLxDqZQeUVOZ9r7Pce"
-    password_ok = verify_password(
+    password_ok = await verify_password(
         data.password,
         teacher.hashed_password if teacher else dummy_hash,
     )

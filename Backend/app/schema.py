@@ -16,7 +16,7 @@ class TeacherRegister(BaseModel):
     first_name: str      = Field(..., min_length=1, max_length=75)
     last_name:  str      = Field(..., min_length=1, max_length=75)
     email:      EmailStr
-    password:   str      = Field(..., min_length=9, max_length=128)
+    password:   str      = Field(..., min_length=8, max_length=128)
 
     @field_validator("first_name", "last_name")
     @classmethod
@@ -28,8 +28,8 @@ class TeacherRegister(BaseModel):
     @field_validator("password")
     @classmethod
     def password_strength(cls, v: str) -> str:
-        if len(v) < 9:
-            raise ValueError("Password must be at least 9 characters long")
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters long")
         if not re.search(r"[A-Z]", v):
             raise ValueError("Password must contain at least one uppercase letter")
         if not re.search(r"[a-z]", v):
