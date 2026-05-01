@@ -170,7 +170,16 @@ async def create_session(
     )
     db.add(session)
     await db.commit()
-    await db.refresh(session)
+
+    result = await db.execute(
+        select(AssessmentSession)
+        .options(
+            selectinload(AssessmentSession.reading_result),
+            selectinload(AssessmentSession.observation),
+        )
+        .where(AssessmentSession.id == session.id)
+    )
+    session = result.scalar_one()
     return session, duplicate
 
 
