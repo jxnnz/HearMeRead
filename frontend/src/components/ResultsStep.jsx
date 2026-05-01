@@ -23,6 +23,7 @@ function fmtTime(secs) {
 export default function ResultsStep({
   form,
   finalResult,       // CompleteSessionOut from backend
+  part1Result,       // ScorePart1Out from backend
   a2Passage,
   a2RecordingTime,
   a2TimeLimit,       // grade-level time limit in seconds
@@ -33,7 +34,7 @@ export default function ResultsStep({
   learnerExperience,
   onDone,
 }) {
-  const part1 = finalResult?.part1 ?? null;
+  const part1 = part1Result ?? finalResult?.part1 ?? null;
   const part2 = finalResult?.part2 ?? null;
 
   const profileKey  = part2?.reading_profile || (part1 ? "Low Emerging Reader" : null);

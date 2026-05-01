@@ -849,7 +849,12 @@ export default function AssessmentPage() {
       <Layout>
         <ObservationStep
           sessionId={session?.id}
-          onComplete={() => handleCompleteSession()}
+          onComplete={(data) => {
+            const lvl = OBSERVATION_LEVELS.find((l) => l.backendValue === data.observation_level);
+            setObservationLevel(lvl?.value ?? "");
+            setTeacherNotes(data.teacher_remarks ?? "");
+            handleCompleteSession();
+          }}
           onBack={() => setStep(STEPS.A1_G2_RESULT)}
         />
         {isCompleting && <LoadingScreen message="Submitting results…" />}
@@ -884,6 +889,7 @@ export default function AssessmentPage() {
         <ResultsStep
           form={form}
           finalResult={finalResult}
+          part1Result={part1Result}
           a2Passage={a2Passage}
           a2RecordingTime={a2RecordingTime}
           a2TimeLimit={a2TimeLimit}

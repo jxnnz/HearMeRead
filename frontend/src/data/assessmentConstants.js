@@ -1,10 +1,10 @@
 // ── Reading observation levels ────────────────────────────────
 // backendValue maps to fluency_level (int 1–4) in CompleteSessionIn
 export const OBSERVATION_LEVELS = [
-  { value: "frustration",   label: "Frustration Level",   desc: "Below 90% accuracy",  backendValue: 1 },
-  { value: "instructional", label: "Instructional Level",  desc: "90–94% accuracy",     backendValue: 2 },
-  { value: "independent",   label: "Independent Level",   desc: "95–100% accuracy",    backendValue: 3 },
-  { value: "advanced",      label: "Advanced Level",      desc: "Reads with fluency",   backendValue: 4 },
+  { value: "level1", label: "Level 1", desc: "Reads word by word", backendValue: 1 },
+  { value: "level2", label: "Level 2", desc: "Reads word in chunks", backendValue: 2 },
+  { value: "level3", label: "Level 3", desc: "Reads fluently but not observing punctuation marks", backendValue: 3 },
+  { value: "level4", label: "Level 4", desc: "Reads fluently with proper expression", backendValue: 4 },
 ];
 
 // ── Learner experience options ────────────────────────────────
