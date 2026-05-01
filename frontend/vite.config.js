@@ -6,7 +6,15 @@ import { VitePWA } from 'vite-plugin-pwa'
 export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
-    VitePWA({ registerType: 'autoUpdate' })
+    VitePWA({ 
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon.svg', 'icons.svg', 'manifest.json'],
+      manifest: false,
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,json}'],
+        navigateFallbackDenylist: [/^\/api/]
+      }
+    })
   ],
   build: {
     // Disable source maps in production to prevent exposing

@@ -1,0 +1,16 @@
+{
+  "name": "HearMeRead Assessment",
+  "short_name": "HearMeRead",
+  "description": "Reading Assessment Tool for Teachers",
+  "theme_color": "#1a2340",
+  "background_color": "#f4f6fb",
+  "display": "standalone",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
