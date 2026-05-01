@@ -1,0 +1,45 @@
+[33m69b1d5a[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mbackend_updates[m[33m)[m add a backend docs for reference
+[33m8e93879[m Update frontend UI. Add a Loading screen, confirmation modal, archive modal, edit modal.
+[33m918954d[m Update the assessment complete process
+[33mba35a9c[m Refactor and fix the Student page connection with the backend. Added sex, remove teacher and make it automatically recognize by getting the current user.
+[33ma7954fc[m refactor the assessment page
+[33mf8810ef[m fix the student page connection to the backend
+[33m7315351[m[33m ([m[1;31morigin/backend_updates[m[33m)[m Merge remote-tracking branch 'origin/frontend' into backend_updates
+[33mfa23a63[m Put the css file to the designated folder
+[33mcb9bbb8[m Merge branch with frontend and backend updates
+[33m4e5ddea[m assessment page results updated
+[33m5cf5a56[m assessment page updated
+[33me9b0015[m landing page updated, login/signup updated, assessment updated
+[33m588d6db[m add landing page
+[33m165df7c[m Fix the passage page UI and functionality. Connect the frontend to backend for the establish pages and require auth fro all the pages. Add Assessment 1 to the backend routes and frontend passages page. Update the database for the added data and table needed. Separate the css file to its own folder on the pages and components folder.
+[33m42a3d2d[m landing page (draft), dashboard, assessment page updated
+[33m0a3f1a1[m Add a ASR test page and add the levenshtein algorithm and the computation of the evaluation metrics of the reading assessment.
+[33m8d5721b[m Merge remote-tracking branch 'origin/frontend' into backend_updates
+[33m0b2fb83[m add an asr test for testing the ASR model
+[33mb969fb8[m edited student page
+[33mcd44ea3[m student recrod updated, assessment page updated (on going)
+[33m62dfe32[m assessment page updated (not compete), student information (needs update)
+[33mc9edc0c[m Merge branch 'frontend' of https://github.com/jxnnz/HearMeRead into frontend
+[33m8b35ffa[m assessment page setup. pop up form
+[33m4c47af6[m added a docker environment for dev, test and production
+[33m9a7a5e7[m[33m ([m[1;32mfrontend[m[33m)[m Merge branch 'backend_updates' into frontend
+[33m744033a[m setup login and success connection for auth testing
+[33m3303771[m add .env.example
+[33m75cf477[m Merge remote-tracking branch 'origin/backend_updates' into frontend
+[33m29e711c[m upadated signup form, addstudent, loginpage
+[33m7408598[m[33m ([m[1;31morigin/main[m[33m, [m[1;32mmain[m[33m)[m fix the pooling
+[33m552eb50[m add an email authnetication
+[33m6cbfe20[m login page updated, signup form
+[33m8222460[m passage page, student page updated
+[33me630119[m Passages page setup, app updated
+[33m0550b57[m Merge branch 'main' into backend_updates
+[33m565f4a9[m fix config.py
+[33m579d201[m Fix routes and imports; add ASR and split assessement table
+[33m6e581f6[m Working database and routes for checking
+[33ma2066c6[m edited LoginPage and LoginForm. setup axios and router-dom
+[33me75a918[m Merge branch 'main' of https://github.com/jxnnz/HearMeRead
+[33m9672107[m all backend new routes for testing
+[33mddc103d[m added component and pages for login
+[33m523d956[m[33m ([m[1;32mbackend[m[33m)[m Change to async
+[33md8bbdea[m first frontend commit (Set up frontend with React, Vite, PWA and Supabase)
+[33m97e7cfb[m first commit

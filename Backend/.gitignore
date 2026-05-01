@@ -15,6 +15,9 @@ env/
 
 # Environment variables — NEVER commit this
 .env
+.env.dev
+.env.prod
+.env.test
 
 # IDE
 .vscode/
