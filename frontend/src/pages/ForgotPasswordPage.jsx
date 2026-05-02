@@ -26,7 +26,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <AuthLayout>
+    <AuthLayout page="forgot">
       <h1 className="auth-heading">Forgot Password?</h1>
       <p className="auth-subheading">
         Enter your email and we'll send you a reset link

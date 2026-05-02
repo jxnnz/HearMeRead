@@ -82,7 +82,7 @@ export default function LoginPage() {
                         error?.includes("invalid or has already expired");
 
   return (
-    <AuthLayout>
+    <AuthLayout page="login">
       <h1 className="auth-heading">Welcome Back!</h1>
       <p className="auth-subheading">Login to access your account</p>
 
