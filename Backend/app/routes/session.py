@@ -75,6 +75,28 @@ async def create_session(
     db:              AsyncSession = Depends(get_db),
     current_teacher: Teacher      = Depends(get_current_teacher),
 ):
+    # ── Duplicate session guard (commented out — re-enable after testing) ─────
+    # Enforces: only one assessment per student per school year and period.
+    # Uncomment the block below to enable this restriction.
+    #
+    # existing = await session_service.check_duplicate(
+    #     db=db,
+    #     teacher_id=current_teacher.id,
+    #     student_id=data.student_id,
+    #     school_year=data.school_year,
+    #     period=data.period,
+    # )
+    # if existing:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_409_CONFLICT,
+    #         detail=(
+    #             f"This student already has a {data.period.value.capitalize()} "
+    #             f"assessment for school year {data.school_year}. "
+    #             f"Only one assessment per period per school year is allowed."
+    #         ),
+    #     )
+    # ─────────────────────────────────────────────────────────────────────────
+
     session, duplicate = await session_service.create_session(
         db=db, data=data, teacher_id=current_teacher.id
     )

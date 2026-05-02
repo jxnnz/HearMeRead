@@ -94,12 +94,6 @@ export default function A1TaskResultStep({
           </div>
         </div>
 
-        {/* Transcription preview */}
-        <div className="asp-a1result-transcript">
-          <p className="asp-a1result-transcript__label">Transcription</p>
-          <p className="asp-a1result-transcript__text">{transcript || "—"}</p>
-        </div>
-
         <button className="asp-continue-btn" onClick={onContinue}>
           {continueLabel} <ChevronRight size={16} />
         </button>

@@ -117,18 +117,6 @@ export default function ReadingStep({
           {/* Live mode — recording in progress */}
           {recordingMode === "live" && isRecording && (
             <div className="asp-recording-active">
-              {/* Timer display */}
-              <div className="asp-recording-timer-row">
-                <span className="asp-recording-timer-text">
-                  {formatTime(recordingTime)}{timeLimitLabel}
-                </span>
-                {a2TimeLimit != null && (
-                  <span className="asp-recording-limit-hint">
-                    Time limit: {formatTime(a2TimeLimit)}
-                  </span>
-                )}
-              </div>
-
               <div className="asp-recording-controls">
                 {/* Red stop/finish button */}
                 <button

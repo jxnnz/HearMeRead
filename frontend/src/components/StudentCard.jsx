@@ -37,11 +37,7 @@ function StatBox({ value, label, isPercent = false, showTrend = false }) {
 export default function StudentCard({ student, onClick }) {
   const fullName = `${student.first_name} ${student.last_name}`;
 
-  // Latest session stats — backend may return these pre-computed
-  const accuracy  = student.latest_accuracy;
-  const wpm       = student.latest_wpm;
   const sessions  = student.session_count ?? 0;
-  const trend     = student.trend;
 
   return (
     <div
@@ -64,12 +60,9 @@ export default function StudentCard({ student, onClick }) {
         <LevelBadge level={student.reading_profile} />
       </div>
 
-      {/* ── 2×2 Stats grid ── */}
+      {/* ── Stats ── */}
       <div className="sc-stats">
-        <StatBox value={accuracy} label="Accuracy"  isPercent />
-        <StatBox value={wpm}      label="WPM" />
         <StatBox value={sessions} label="Sessions" />
-        <StatBox value={trend}    label="Trend" isPercent showTrend />
       </div>
     </div>
   );

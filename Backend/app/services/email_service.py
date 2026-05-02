@@ -94,6 +94,126 @@ If you did not create this account, you can safely ignore this email.
 """
 
 
+def _reset_html_body(first_name: str, reset_url: str) -> str:
+    return f"""\
+<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:0;font-family:'Poppins',Arial,sans-serif;background:#f4f6fb;">
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <tr>
+      <td align="center" style="padding:40px 16px;">
+        <table width="520" cellpadding="0" cellspacing="0"
+               style="background:#fff;border-radius:16px;
+                      box-shadow:0 4px 24px rgba(44,62,107,.12);overflow:hidden;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background:#1e2d52;padding:32px 40px;text-align:center;">
+              <h1 style="margin:0;color:#fff;font-size:22px;letter-spacing:.5px;">
+                HearMeRead
+              </h1>
+              <p style="margin:6px 0 0;color:#9099b8;font-size:13px;">
+                Automated Oral Reading Assessment
+              </p>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:40px 40px 32px;">
+              <p style="margin:0 0 8px;font-size:15px;color:#1a2340;">
+                Hi <strong>{first_name}</strong>,
+              </p>
+              <p style="margin:0 0 24px;font-size:14px;color:#4a5568;line-height:1.6;">
+                We received a request to reset your HearMeRead password.
+                Click the button below to choose a new password.
+              </p>
+              <div style="text-align:center;margin-bottom:28px;">
+                <a href="{reset_url}"
+                   style="display:inline-block;padding:13px 36px;
+                          background:#2c7fc1;color:#fff;border-radius:8px;
+                          text-decoration:none;font-size:14px;font-weight:600;
+                          letter-spacing:.3px;">
+                  Reset Password
+                </a>
+              </div>
+              <p style="margin:0 0 6px;font-size:12px;color:#8a94b2;">
+                Or copy and paste this link into your browser:
+              </p>
+              <p style="margin:0;font-size:11px;color:#4a6fa5;word-break:break-all;">
+                {reset_url}
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background:#f8f9fc;padding:20px 40px;
+                       border-top:1px solid #e8eaf2;text-align:center;">
+              <p style="margin:0;font-size:11.5px;color:#b0b8d0;line-height:1.6;">
+                This link expires in <strong>1 hour</strong>.<br>
+                If you did not request a password reset, you can safely ignore this email.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+"""
+
+
+def _reset_text_body(first_name: str, reset_url: str) -> str:
+    return f"""\
+Hi {first_name},
+
+We received a request to reset your HearMeRead password.
+Visit the link below to choose a new password:
+
+{reset_url}
+
+This link expires in 1 hour.
+
+If you did not request a password reset, you can safely ignore this email.
+
+— The HearMeRead Team
+"""
+
+
+async def send_password_reset_email(
+    to_email: str,
+    first_name: str,
+    token: str,
+) -> None:
+    resend.api_key = settings.RESEND_API_KEY
+
+    reset_url = f"{settings.FRONTEND_URL}/reset-password?token={token}"
+    from_address = f"{settings.EMAIL_FROM_NAME} <{settings.EMAIL_FROM}>"
+
+    params: resend.Emails.SendParams = {
+        "from":    from_address,
+        "to":      [to_email],
+        "subject": "Reset your HearMeRead password",
+        "html":    _reset_html_body(first_name, reset_url),
+        "text":    _reset_text_body(first_name, reset_url),
+    }
+
+    try:
+        response = resend.Emails.send(params)
+        logger.info(
+            f"Password reset email sent to {to_email} | "
+            f"Resend ID: {response.get('id', 'unknown')}"
+        )
+    except Exception as exc:
+        logger.error(f"Resend failed for {to_email}: {exc}")
+        raise RuntimeError(
+            "Could not send password reset email. Please try again later."
+        ) from exc
+
+
 async def send_verification_email(
     to_email: str,
     first_name: str,

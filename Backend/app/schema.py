@@ -55,6 +55,30 @@ class ResendVerificationRequest(BaseModel):
     email: EmailStr
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token:        str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=8, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def password_strength(cls, v: str) -> str:
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters long")
+        if not re.search(r"[A-Z]", v):
+            raise ValueError("Password must contain at least one uppercase letter")
+        if not re.search(r"[a-z]", v):
+            raise ValueError("Password must contain at least one lowercase letter")
+        if not re.search(r"\d", v):
+            raise ValueError("Password must contain at least one number")
+        if not re.search(r"[!@#$%^&*()_+\-=\[\]{};':\"\\|,.<>\/?`~]", v):
+            raise ValueError("Password must contain at least one symbol (e.g. !@#$%)")
+        return v
+
+
 class TeacherResponse(BaseModel):
     id:         int
     first_name: str
@@ -186,10 +210,12 @@ class StudentUpdate(BaseModel):
 
 
 class StudentResponse(StudentBase):
-    id:         int
-    teacher_id: int
-    created_at: datetime
-    updated_at: Optional[datetime] = None
+    id:              int
+    teacher_id:      int
+    created_at:      datetime
+    updated_at:      Optional[datetime] = None
+    reading_profile: Optional[str]      = None
+    session_count:   Optional[int]      = None
 
     class Config:
         from_attributes = True

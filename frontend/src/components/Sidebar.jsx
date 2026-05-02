@@ -16,7 +16,7 @@ const NAV_ITEMS = [
   { to: "/assessment", label: "Assessment", icon: ClipboardList },
   { to: "/passages", label: "Passages", icon: BookOpen },
   { to: "/students",  label: "Student Record", icon: UserRound     },
-  { to: "/asr-test", label: "ASR Tester",     icon: FlaskConical  },
+  // { to: "/asr-test", label: "ASR Tester",     icon: FlaskConical  },
 ];
 
 export default function Sidebar() {

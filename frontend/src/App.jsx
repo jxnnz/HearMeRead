@@ -2,15 +2,17 @@ import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LandingPage      from "./pages/LandingPage";
 import LoadingPage      from "./pages/LoadingPage";
-import LoginPage        from "./pages/LoginPage";
-import SignupPage       from "./pages/SignupPage";
+import LoginPage           from "./pages/LoginPage";
+import SignupPage          from "./pages/SignupPage";
+import ForgotPasswordPage  from "./pages/ForgotPasswordPage";
+import ResetPasswordPage   from "./pages/ResetPasswordPage";
 import DashboardPage    from "./pages/DashboardPage";
 import PassagePage      from "./pages/passages/PassagePage";
 import AddAssessment1Page from "./pages/passages/AddAssessment1Page";
 import AddAssessment2Page from "./pages/passages/AddAssessment2Page";
 import StudentRecordPage from "./pages/Student/StudentRecordPage";
 import AddStudentPage   from "./pages/Student/AddStudentPage";
-import ASRTestPage      from "./pages/ASRTestPage";
+// import ASRTestPage      from "./pages/ASRTestPage";
 import AssessmentPage   from "./pages/Assessment/AssessmentPage";
 import StudentInfoPage  from "./pages/Student/StudentInfoPage";
 
@@ -47,8 +49,10 @@ export default function App() {
       <Routes>
         {/* ── Public ── */}
         <Route path="/"       element={<LandingPage />} />
-        <Route path="/login"  element={<RequireGuest><LoginPage /></RequireGuest>} />
-        <Route path="/signup" element={<RequireGuest><SignupPage /></RequireGuest>} />
+        <Route path="/login"            element={<RequireGuest><LoginPage /></RequireGuest>} />
+        <Route path="/signup"           element={<RequireGuest><SignupPage /></RequireGuest>} />
+        <Route path="/forgot-password"  element={<ForgotPasswordPage />} />
+        <Route path="/reset-password"   element={<ResetPasswordPage />} />
 
         {/* ── Protected ── */}
         <Route path="/dashboard"   element={<RequireAuth><DashboardPage /></RequireAuth>} />
@@ -59,7 +63,7 @@ export default function App() {
         <Route path="/students"     element={<RequireAuth><StudentRecordPage /></RequireAuth>} />
         <Route path="/students/add" element={<RequireAuth><AddStudentPage /></RequireAuth>} />
         <Route path="/students/:id" element={<RequireAuth><StudentInfoPage /></RequireAuth>} />
-        <Route path="/asr-test"     element={<RequireAuth><ASRTestPage /></RequireAuth>} />
+        {/* <Route path="/asr-test"     element={<RequireAuth><ASRTestPage /></RequireAuth>} /> */}
 
       </Routes>
     </BrowserRouter>

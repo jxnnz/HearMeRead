@@ -18,10 +18,14 @@ export default function LoginPage() {
     const registered  = searchParams.get("registered");
     const errFlag     = searchParams.get("error");
 
+    const reset = searchParams.get("reset");
+
     if (verified === "true") {
       setSuccess("Email verified! You can now log in.");
     } else if (registered === "true") {
       setSuccess("Account created! Check your email and click the verification link before logging in.");
+    } else if (reset === "true") {
+      setSuccess("Password reset successfully. You can now log in with your new password.");
     } else if (errFlag === "invalid_token") {
       setError(
         "This verification link is invalid or has already expired. " +

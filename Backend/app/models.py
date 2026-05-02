@@ -74,8 +74,10 @@ class Teacher(Base):
     students            = relationship("Student",                back_populates="teacher")
     passages            = relationship("Passage",                back_populates="teacher")
     assessment_sessions = relationship("AssessmentSession",      back_populates="teacher")
-    verification_tokens = relationship("EmailVerificationToken", back_populates="teacher",
-                                       cascade="all, delete-orphan")
+    verification_tokens  = relationship("EmailVerificationToken", back_populates="teacher",
+                                        cascade="all, delete-orphan")
+    password_reset_tokens = relationship("PasswordResetToken", back_populates="teacher",
+                                         cascade="all, delete-orphan")
 
 
 class EmailVerificationToken(Base):
@@ -94,6 +96,24 @@ class EmailVerificationToken(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     teacher = relationship("Teacher", back_populates="verification_tokens")
+
+
+class PasswordResetToken(Base):
+    """
+    Single-use token emailed when a teacher requests a password reset.
+    Expires after 1 hour. Once used, used_at is stamped and cannot be reused.
+    """
+    __tablename__ = "password_reset_tokens"
+
+    id         = Column(Integer,  primary_key=True, index=True)
+    teacher_id = Column(Integer,  ForeignKey("teachers.id", ondelete="CASCADE"),
+                        nullable=False, index=True)
+    token      = Column(String(64), unique=True, index=True, nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    used_at    = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    teacher = relationship("Teacher", back_populates="password_reset_tokens")
 
 
 class Student(Base):

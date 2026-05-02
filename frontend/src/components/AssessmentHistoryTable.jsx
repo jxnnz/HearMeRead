@@ -9,7 +9,7 @@
 // ============================================================
 import { useState } from "react";
 import * as XLSX from "xlsx";
-import { Search, FileSpreadsheet, Printer, Pencil, Trash2, ChevronsUpDown } from "lucide-react";
+import { Search, FileSpreadsheet, Printer, Trash2, ChevronsUpDown } from "lucide-react";
 
 // ── Period labels ────────────────────────────────────────────
 const PERIOD_LABELS = {
@@ -51,7 +51,7 @@ const COLUMNS = [
   { key: "task2h_sentences",     label: "Task 2H Sentences"         },
   { key: "total_score",          label: "Total Score"               },
   { key: "part1_reading_level",  label: "Part 1 Reading Level"      },
-  { key: "story_number",         label: "Story No."                 },
+  { key: "story_number",         label: "Story Title"               },
   { key: "num_miscues",          label: "No. of Miscues"            },
   { key: "words_read",           label: "Words Read"                },
   { key: "total_time",           label: "Time (min:sec)"            },
@@ -63,7 +63,6 @@ const COLUMNS = [
     exportValue: (v) => v != null ? `${v}%` : "—",
   },
   { key: "total_correct",        label: "Total Correct Answers"     },
-  { key: "learner_experience",   label: "Learner Experience Rating" },
   { key: "observation_level",    label: "Observation Level"         },
   { key: "reading_profile",      label: "Reading Profile"           },
   { key: "remarks",              label: "Remarks"                   },
@@ -183,7 +182,6 @@ function printTable(records, student = {}) {
 export default function AssessmentHistoryTable({
   records  = [],
   student  = {},
-  onEdit,
   onDelete,
 }) {
   const [search,       setSearch]       = useState("");
@@ -341,13 +339,6 @@ export default function AssessmentHistoryTable({
                     </td>
                   ))}
                   <td className="aht-td aht-td--actions">
-                    <button
-                      className="aht-action-btn aht-action-btn--edit"
-                      onClick={() => onEdit?.(record)}
-                      title="Edit"
-                    >
-                      <Pencil size={14} />
-                    </button>
                     <button
                       className="aht-action-btn aht-action-btn--delete"
                       onClick={() => onDelete?.(record)}

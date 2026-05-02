@@ -3,8 +3,40 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_
 from fastapi import HTTPException, status
 
-from app.models import Student
+from app.models import Student, AssessmentSession, ReadingResult
 from app.schema import StudentCreate, StudentUpdate
+
+
+async def _inject_profile_and_count(db: AsyncSession, students: list) -> None:
+    if not students:
+        return
+    ids = [s.id for s in students]
+
+    count_rows = await db.execute(
+        select(AssessmentSession.student_id, func.count(AssessmentSession.id).label("cnt"))
+        .where(AssessmentSession.student_id.in_(ids), AssessmentSession.is_archived == False)
+        .group_by(AssessmentSession.student_id)
+    )
+    count_map = {row.student_id: row.cnt for row in count_rows}
+
+    profile_rows = await db.execute(
+        select(AssessmentSession.student_id, ReadingResult.reading_profile)
+        .join(ReadingResult, ReadingResult.session_id == AssessmentSession.id)
+        .where(
+            AssessmentSession.student_id.in_(ids),
+            AssessmentSession.is_completed == True,
+            ReadingResult.reading_profile.isnot(None),
+        )
+        .order_by(AssessmentSession.student_id, AssessmentSession.created_at.desc())
+    )
+    profile_map: dict = {}
+    for row in profile_rows:
+        if row.student_id not in profile_map:
+            profile_map[row.student_id] = row.reading_profile
+
+    for s in students:
+        s.__dict__["reading_profile"] = profile_map.get(s.id)
+        s.__dict__["session_count"]   = count_map.get(s.id, 0)
 
 
 async def get_students(
@@ -37,7 +69,8 @@ async def get_students(
         .limit(page_size)
     )
     result = await db.execute(query)
-    students = result.scalars().all()
+    students = list(result.scalars().all())
+    await _inject_profile_and_count(db, students)
 
     return total, students
 
@@ -52,6 +85,7 @@ async def get_student_by_id(db: AsyncSession, student_id: int, teacher_id: int) 
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Student with id {student_id} not found",
         )
+    await _inject_profile_and_count(db, [student])
     return student
 
 

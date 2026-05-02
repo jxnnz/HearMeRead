@@ -10,18 +10,20 @@ from app.core.config import settings
 from app.core.security import verify_password, get_password_hash, create_access_token
 from app.db import get_db
 from app.dependencies import get_current_teacher
-from app.models import Teacher, EmailVerificationToken
+from app.models import Teacher, EmailVerificationToken, PasswordResetToken
 from app.schema import (
     TeacherRegister, LoginRequest, TokenResponse,
     TeacherResponse, ResendVerificationRequest,
+    ForgotPasswordRequest, ResetPasswordRequest,
 )
-from app.services.email_service import send_verification_email
+from app.services.email_service import send_verification_email, send_password_reset_email
 from app.core.rate_limit import limiter
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
-# Token validity window
-_TOKEN_EXPIRE_HOURS = 24
+# Token validity windows
+_TOKEN_EXPIRE_HOURS       = 24   # email verification
+_RESET_TOKEN_EXPIRE_HOURS = 1    # password reset
 
 
 def _generate_token() -> str:
@@ -272,3 +274,105 @@ async def login(request: Request, data: LoginRequest, db: AsyncSession = Depends
 )
 async def get_me(current_teacher: Teacher = Depends(get_current_teacher)):
     return current_teacher
+
+
+# ── Forgot password ───────────────────────────────────────────────────────────
+
+@router.post(
+    "/forgot-password",
+    status_code=status.HTTP_200_OK,
+    summary="Request a password reset link",
+    description=(
+        "Sends a password reset email if the address is registered. "
+        "Always returns 200 — never reveals whether the email exists."
+    ),
+)
+@limiter.limit("3/minute")
+async def forgot_password(
+    request: Request,
+    data: ForgotPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    ok_response = {"message": "If that email is registered, a password reset link has been sent."}
+
+    result = await db.execute(select(Teacher).where(Teacher.email == data.email))
+    teacher = result.scalar_one_or_none()
+
+    if not teacher or not teacher.is_active:
+        return ok_response
+
+    # Invalidate any existing unused reset tokens for this teacher
+    await db.execute(
+        update(PasswordResetToken)
+        .where(
+            PasswordResetToken.teacher_id == teacher.id,
+            PasswordResetToken.used_at.is_(None),
+        )
+        .values(expires_at=datetime.now(timezone.utc))
+    )
+
+    token_str = _generate_token()
+    token_obj = PasswordResetToken(
+        teacher_id=teacher.id,
+        token=token_str,
+        expires_at=datetime.now(timezone.utc) + timedelta(hours=_RESET_TOKEN_EXPIRE_HOURS),
+    )
+    db.add(token_obj)
+    await db.commit()
+
+    try:
+        await send_password_reset_email(
+            to_email=teacher.email,
+            first_name=teacher.first_name,
+            token=token_str,
+        )
+    except RuntimeError:
+        pass  # Silently fail — don't reveal SMTP issues to callers
+
+    return ok_response
+
+
+# ── Reset password ────────────────────────────────────────────────────────────
+
+@router.post(
+    "/reset-password",
+    status_code=status.HTTP_200_OK,
+    summary="Reset password using a valid token",
+)
+async def reset_password(
+    data: ResetPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    now = datetime.now(timezone.utc)
+
+    result = await db.execute(
+        select(PasswordResetToken).where(PasswordResetToken.token == data.token)
+    )
+    token_obj = result.scalar_one_or_none()
+
+    if (
+        not token_obj
+        or token_obj.used_at is not None
+        or token_obj.expires_at < now
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This password reset link is invalid or has expired.",
+        )
+
+    result = await db.execute(
+        select(Teacher).where(Teacher.id == token_obj.teacher_id)
+    )
+    teacher = result.scalar_one_or_none()
+
+    if not teacher or not teacher.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This password reset link is invalid or has expired.",
+        )
+
+    teacher.hashed_password = await get_password_hash(data.new_password)
+    token_obj.used_at = now
+    await db.commit()
+
+    return {"message": "Password reset successfully. You can now log in with your new password."}

@@ -108,6 +108,12 @@ export default function AssessmentPage() {
   const [creating,     setCreating]     = useState(false);
   const [createError,  setCreateError]  = useState(null);
 
+  // ── Duplicate session warning (commented out — re-enable after testing) ────
+  // Holds the warning message returned by the backend when a session already
+  // exists for the same student, school year, and assessment period (HTTP 207).
+  // const [duplicateWarning, setDuplicateWarning] = useState(null);
+  // ───────────────────────────────────────────────────────────────────────────
+
   // Passages for Task 2 and A2
   const [g2Passage,  setG2Passage]  = useState(null);
   const [a2Passage,  setA2Passage]  = useState(null);
@@ -253,6 +259,7 @@ export default function AssessmentPage() {
   // ── Session creation ─────────────────────────────────────────────────────
   async function handleContinue() {
     setCreateError(null);
+    // setDuplicateWarning(null); // (commented out — re-enable after testing)
     if (!form.student_id)  { setCreateError("Please select a student."); return; }
     if (!form.passage_id)  { setCreateError("Please select a passage."); return; }
     setCreating(true);
@@ -264,6 +271,21 @@ export default function AssessmentPage() {
         period:      PERIOD_MAP[form.assessment_type] ?? "beginning",
         school_year: form.school_year,
       });
+
+      // ── Duplicate warning check (commented out — re-enable after testing) ─
+      // The backend returns HTTP 207 with a `warning` field when this student
+      // already has a session for the same school year and assessment period.
+      // When enabled, this shows the warning banner on the info page and stops
+      // the teacher from proceeding until they acknowledge or choose to proceed.
+      //
+      // if (res.warning) {
+      //   setDuplicateWarning(res.warning);
+      //   setSession(res.session);
+      //   setCreating(false);
+      //   return; // stop here — teacher sees the warning, must click Continue again
+      // }
+      // ───────────────────────────────────────────────────────────────────────
+
       setSession(res.session ?? res);
       setShowChoiceModal(true);
     } catch (err) {
@@ -677,6 +699,13 @@ export default function AssessmentPage() {
   if (step === STEPS.INFO) {
     return (
       <Layout>
+        {/* ── Duplicate session warning banner (commented out — re-enable after testing) ──
+        {duplicateWarning && (
+          <div className="asp-duplicate-warning">
+            ⚠ {duplicateWarning}
+          </div>
+        )}
+        ─────────────────────────────────────────────────────────────────────── */}
         <InfoStep
           form={form} setForm={setForm}
           students={students} allPassages={a1Passages}
