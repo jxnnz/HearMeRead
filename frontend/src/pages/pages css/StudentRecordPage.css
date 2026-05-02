@@ -23,6 +23,12 @@
   margin: 0;
 }
 
+.sr-header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 /* ── Global filters ──────────────────────────────────── */
 .sr-filters {
   display: flex;

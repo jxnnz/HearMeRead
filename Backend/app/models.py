@@ -186,7 +186,7 @@ class AssessmentSession(Base):
     # ── Who / what ────────────────────────────────────────────────────────────
     teacher_id = Column(Integer, ForeignKey("teachers.id", ondelete="CASCADE"), nullable=False, index=True)
     student_id = Column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True)
-    passage_id = Column(Integer, ForeignKey("passages.id", ondelete="CASCADE"), nullable=False, index=True)
+    passage_id = Column(Integer, ForeignKey("passages.id", ondelete="SET NULL"), nullable=True, index=True)
 
     # ── When ──────────────────────────────────────────────────────────────────
     school_year = Column(String(9),               nullable=False)   # e.g. "2024-2025"

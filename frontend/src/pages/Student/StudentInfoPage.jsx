@@ -2,14 +2,14 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 
-import Layout                  from "../../components/Layout";
-import StudentProfileCard      from "../../components/StudentProfileCard";
-import StudentStatsBar         from "../../components/StudentStatsBar";
-import AssessmentHistoryTable  from "../../components/AssessmentHistoryTable";
-import ConfirmModal            from "../../modals/ConfirmModal";
-import EditStudentModal        from "../../modals/EditStudentModal";
-import Toast                  from "../../modals/Toast";
-import useToast               from "../../hooks/Usetoast";
+import Layout from "../../components/Layout";
+import StudentProfileCard from "../../components/StudentProfileCard";
+import StudentStatsBar from "../../components/StudentStatsBar";
+import AssessmentHistoryTable from "../../components/AssessmentHistoryTable";
+import ConfirmModal from "../../modals/ConfirmModal";
+import EditStudentModal from "../../modals/EditStudentModal";
+import Toast from "../../modals/Toast";
+import useToast from "../../hooks/Usetoast";
 import { studentsApi, sessionsApi } from "../../services/api";
 
 import "../pages css/StudentInfoPage.css";
@@ -24,7 +24,7 @@ function formatTime(seconds) {
 }
 
 function sessionToRecord(session) {
-  const rr  = session.reading_result;
+  const rr = session.reading_result;
   const obs = session.observation;
 
   const pctCorrect = rr && rr.total_words > 0
@@ -32,30 +32,30 @@ function sessionToRecord(session) {
     : null;
 
   return {
-    id:                 session.id,
-    assessment_date:    session.created_at,
-    period:             PERIOD_MAP[session.period] ?? session.period,
-    language:           session.language,
-    
+    id: session.id,
+    assessment_date: session.created_at,
+    period: PERIOD_MAP[session.period] ?? session.period,
+    language: session.language,
+
     // Assessment 1 Part 1
-    task1:               rr?.part1_task1_correct ?? null,
-    task2l_word:         rr?.part1_route === "task_2L" ? rr?.part1_task2_correct : null,
-    task2h_sentences:    rr?.part1_route === "task_2H" ? rr?.part1_task2_correct : null,
-    total_score:         rr?.part1_total_score ?? null,
+    task1: rr?.part1_task1_correct ?? null,
+    task2l_word: rr?.part1_route === "task_2L" ? rr?.part1_task2_correct : null,
+    task2h_sentences: rr?.part1_route === "task_2H" ? rr?.part1_task2_correct : null,
+    total_score: rr?.part1_total_score ?? null,
     part1_reading_level: rr?.part1_classification ?? null,
-    reading_profile:     rr?.reading_profile ?? null,
-    
+    reading_profile: rr?.reading_profile ?? null,
+
     // Assessment 2 (Part 2)
-    story_number:       session.passage?.title ?? null,
-    num_miscues:        rr?.miscue_count         ?? null,
-    words_read:         rr?.total_words          ?? null,
-    wpm:                rr?.cwpm != null ? Math.round(rr.cwpm) : null,
-    pct_correct_words:  pctCorrect,
-    total_time:         formatTime(rr?.reading_time_seconds),
-    total_correct:      obs?.comprehension_correct ?? null,
-    learner_experience: obs?.learner_experience    ?? null,
-    observation_level:  obs?.fluency_level         ?? null,
-    remarks:            obs?.teacher_remarks        ?? null,
+    story_number: session.passage?.title ?? null,
+    num_miscues: rr?.miscue_count ?? null,
+    words_read: rr?.total_words ?? null,
+    wpm: rr?.cwpm != null ? Math.round(rr.cwpm) : null,
+    pct_correct_words: pctCorrect,
+    total_time: formatTime(rr?.reading_time_seconds),
+    total_correct: obs?.comprehension_correct ?? null,
+    learner_experience: obs?.learner_experience ?? null,
+    observation_level: obs?.fluency_level ?? null,
+    remarks: obs?.teacher_remarks ?? null,
   };
 }
 
@@ -75,20 +75,20 @@ function computeStats(records = []) {
 }
 
 export default function StudentInfoPage() {
-  const { id }   = useParams();
+  const { id } = useParams();
   const navigate = useNavigate();
   const { toasts, removeToast, showSaveSuccess } = useToast();
 
   const [student, setStudent] = useState(null);
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState(null);
+  const [error, setError] = useState(null);
 
   const [editStudentOpen, setEditStudentOpen] = useState(false);
-  const [editSaving,      setEditSaving]      = useState(false);
-  const [editError,       setEditError]       = useState(null);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState(null);
 
-  const [pendingDelete,        setPendingDelete]        = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null);
   const [pendingStudentDelete, setPendingStudentDelete] = useState(false);
 
   useEffect(() => {
@@ -110,12 +110,12 @@ export default function StudentInfoPage() {
     setEditError(null);
     try {
       const payload = {};
-      if (updatedFields.first_name)  payload.first_name  = updatedFields.first_name;
-      if (updatedFields.last_name)   payload.last_name   = updatedFields.last_name;
+      if (updatedFields.first_name) payload.first_name = updatedFields.first_name;
+      if (updatedFields.last_name) payload.last_name = updatedFields.last_name;
       if (updatedFields.grade_level) payload.grade_level = String(updatedFields.grade_level);
-      if (updatedFields.section)     payload.section     = updatedFields.section;
-      if (updatedFields.sex)         payload.sex         = updatedFields.sex;
-      if (updatedFields.lrn)         payload.lrn         = updatedFields.lrn;
+      if (updatedFields.section) payload.section = updatedFields.section;
+      if (updatedFields.sex) payload.sex = updatedFields.sex;
+      if (updatedFields.lrn) payload.lrn = updatedFields.lrn;
       const updated = await studentsApi.update(id, payload);
       setStudent(updated);
       setEditStudentOpen(false);
@@ -163,8 +163,8 @@ export default function StudentInfoPage() {
       {!loading && (error || !student) && (
         <div className="sip-state sip-state--error">
           <p>⚠ {error ?? "Student not found."}</p>
-          <button className="sip-back-btn" onClick={() => navigate("/students")}>
-            <ChevronLeft size={15} /> Back to Students
+          <button className="sip-back-btn" onClick={() => navigate("/students/class")}>
+            <ChevronLeft size={15} /> Back to Class
           </button>
         </div>
       )}
@@ -173,8 +173,8 @@ export default function StudentInfoPage() {
         <div className="sip-page">
           <button
             className="sip-back-btn"
-            onClick={() => navigate("/students")}
-            aria-label="Back to students"
+            onClick={() => navigate("/students/class")}
+            aria-label="Back to Class"
           >
             <ChevronLeft size={18} />
           </button>

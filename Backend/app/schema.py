@@ -228,6 +228,15 @@ class StudentListResponse(BaseModel):
     students:  List[StudentResponse]
 
 
+class ClassSummary(BaseModel):
+    grade_level:   GradeLevel
+    section:       Optional[str]
+    student_count: int
+
+class ClassListResponse(BaseModel):
+    classes: List[ClassSummary]
+
+
 # ── Reading Result ────────────────────────────────────────────────────────────
 
 class ReadingResultResponse(BaseModel):
@@ -329,7 +338,7 @@ class SessionResponse(BaseModel):
     id:          int
     teacher_id:  int
     student_id:  int
-    passage_id:  int
+    passage_id:  Optional[int]
     school_year: str
     period:      AssessmentPeriod
     language:    Language
@@ -358,3 +367,11 @@ class DuplicateWarning(BaseModel):
     warning:     str
     existing_id: int
     session:     SessionResponse
+
+
+class ExcelImportResponse(BaseModel):
+    students_created:  int
+    students_found:    int
+    sessions_created:  int
+    sessions_skipped:  int
+    errors:            List[str]

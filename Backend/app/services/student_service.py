@@ -46,6 +46,7 @@ async def get_students(
     page_size: int = 20,
     search: Optional[str] = None,
     grade_level: Optional[str] = None,
+    section: Optional[str] = None,
 ):
     query = select(Student).where(Student.teacher_id == teacher_id)
 
@@ -57,6 +58,12 @@ async def get_students(
 
     if grade_level:
         query = query.where(Student.grade_level == grade_level)
+
+    if section is not None:
+        if section == "":
+            query = query.where(or_(Student.section == None, Student.section == ""))
+        else:
+            query = query.where(Student.section == section)
 
     # Total count
     count_result = await db.execute(select(func.count()).select_from(query.subquery()))
@@ -73,6 +80,29 @@ async def get_students(
     await _inject_profile_and_count(db, students)
 
     return total, students
+
+
+async def get_class_summaries(db: AsyncSession, teacher_id: int):
+    query = (
+        select(
+            Student.grade_level,
+            Student.section,
+            func.count(Student.id).label("student_count")
+        )
+        .where(Student.teacher_id == teacher_id)
+        .group_by(Student.grade_level, Student.section)
+        .order_by(Student.grade_level, Student.section)
+    )
+    result = await db.execute(query)
+    
+    classes = []
+    for row in result:
+        classes.append({
+            "grade_level": row.grade_level,
+            "section": row.section if row.section else "No Section",
+            "student_count": row.student_count
+        })
+    return classes
 
 
 async def get_student_by_id(db: AsyncSession, student_id: int, teacher_id: int) -> Student:

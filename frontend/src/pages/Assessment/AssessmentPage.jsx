@@ -585,6 +585,7 @@ export default function AssessmentPage() {
       },
       part2: reachedA2
         ? {
+            passage_id:              a2Passage?.id,
             reference_text:          a2Passage?.content ?? "",
             transcribed_text:        a2Transcript,
             reading_time_sec:        a2RecordingTime > 0 ? a2RecordingTime : 1,

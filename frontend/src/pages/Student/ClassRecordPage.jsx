@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText, FileSpreadsheet } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
 
 import Layout from "../../components/Layout";
 import { authApi, studentsApi, sessionsApi } from "../../services/api";
@@ -55,6 +58,10 @@ export default function ClassRecordPage() {
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(null);
 
+  const [page, setPage]             = useState(1);
+  const [pageSize, setPageSize]     = useState(30);
+  const [totalStudents, setTotal]   = useState(0);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -64,24 +71,15 @@ export default function ClassRecordPage() {
       try {
         const [me, stuData, sessData] = await Promise.all([
           authApi.me(),
-          studentsApi.list({ page_size: 200 }),
-          sessionsApi.list({ school_year: year, period, is_completed: true, page_size: 100 }),
+          studentsApi.list({ page, page_size: pageSize, grade_level: grade, section }),
+          sessionsApi.list({ school_year: year, period, is_completed: true, page_size: pageSize, grade_level: grade, section }),
         ]);
         if (cancelled) return;
 
         setTeacher(me);
+        setTotal(stuData.total || 0);
 
-        const classStudents = (stuData.students || [])
-          .filter((s) => {
-            const matchGrade   = s.grade_level === grade;
-            const matchSection = section ? s.section === section : !s.section;
-            return matchGrade && matchSection;
-          })
-          .sort((a, b) =>
-            `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`)
-          );
-
-        setStudents(classStudents);
+        setStudents(stuData.students || []);
         setSessions(sessData.sessions || []);
       } catch (e) {
         if (!cancelled) {
@@ -99,17 +97,102 @@ export default function ClassRecordPage() {
 
     load();
     return () => { cancelled = true; };
-  }, [grade, section, year, period]);
+  }, [grade, section, year, period, page, pageSize]);
 
-  // Filter sessions by selected language, then build a student_id → session map
   const sessionByStudent = {};
   for (const sess of sessions) {
     if (sess.language === language) {
-      sessionByStudent[sess.student_id] = sess;
+      if (!sessionByStudent[sess.student_id]) {
+        sessionByStudent[sess.student_id] = sess;
+      }
     }
   }
 
   const periodLabel = PERIOD_LABELS[period] ?? period;
+  const teacherName = teacher ? `${teacher.first_name} ${teacher.last_name}` : "";
+  const fileName    = `ClassRecord_${formatGrade(grade).replace(" ", "")}${section ? `_${section}` : ""}_${year}_${period}`;
+
+  const EXPORT_HEADERS = [
+    "#", "LRN", "Student Name", "Sex", "Date",
+    "Task 1", "Task 2L Words", "Task 2H Sent.", "Total Score", "Part 1 Level",
+    "Story Title", "Total Words", "Miscues", "Words Read", "Total Time", "WPM", "% Correct", "Correct Ans.",
+    "Learner Exp.", "Obs. Level", "Reading Profile", "Remarks",
+  ];
+
+  function buildExportRows() {
+    return students.map((s, idx) => {
+      const sess       = sessionByStudent[s.id];
+      const rr         = sess?.reading_result;
+      const obs        = sess?.observation;
+      const profile    = rr?.reading_profile ?? s.reading_profile;
+      const totalWords = rr?.total_words   ?? null;
+      const miscues    = rr?.miscue_count  ?? null;
+      const wordsRead  = totalWords !== null && miscues !== null ? totalWords - miscues : null;
+      const pctCorrect = totalWords && totalWords > 0 && miscues !== null
+        ? `${Math.round(((totalWords - miscues) / totalWords) * 100)}%` : "—";
+      const route    = (rr?.part1_route ?? "").toLowerCase();
+      const task2L   = route.includes("2l") ? (rr?.part1_task2_correct ?? "—") : "—";
+      const task2H   = route.includes("2h") ? (rr?.part1_task2_correct ?? "—") : "—";
+
+      return [
+        idx + 1,
+        s.lrn ?? "—",
+        `${s.last_name}, ${s.first_name}`,
+        s.sex ? s.sex.charAt(0).toUpperCase() + s.sex.slice(1) : "—",
+        sess ? formatDate(sess.created_at) : "—",
+        rr?.part1_task1_correct ?? "—",
+        task2L, task2H,
+        rr?.part1_total_score ?? "—",
+        rr?.part1_classification ?? "—",
+        sess?.passage?.title ?? "—",
+        totalWords ?? "—",
+        miscues ?? "—",
+        wordsRead ?? "—",
+        formatTime(rr?.reading_time_seconds),
+        rr?.cwpm ?? "—",
+        pctCorrect,
+        obs ? `${obs.comprehension_correct ?? "—"}/${obs.comprehension_total ?? "—"}` : "—",
+        obs?.learner_experience ?? "—",
+        obs?.fluency_level ?? "—",
+        profile ?? "—",
+        obs?.teacher_remarks ?? "—",
+      ];
+    });
+  }
+
+  function exportToPDF() {
+    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.text(`${formatGrade(grade)}${section ? ` — ${section}` : ""}`, 14, 14);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.text(`${year}  ·  ${periodLabel}  ·  ${language === "filipino" ? "Filipino" : "English"}  ·  ${teacherName}`, 14, 21);
+
+    autoTable(doc, {
+      head: [EXPORT_HEADERS],
+      body: buildExportRows(),
+      startY: 27,
+      styles: { fontSize: 6.5, cellPadding: 2, font: "helvetica" },
+      headStyles: { fillColor: [44, 62, 107], textColor: 255, fontStyle: "bold" },
+      alternateRowStyles: { fillColor: [248, 249, 253] },
+      columnStyles: { 2: { cellWidth: 28 }, 10: { cellWidth: 28 }, 21: { cellWidth: 28 } },
+    });
+
+    doc.save(`${fileName}.pdf`);
+  }
+
+  function exportToExcel() {
+    const meta = [
+      [`Class: ${formatGrade(grade)}${section ? ` — ${section}` : ""}`],
+      [`School Year: ${year}`, `Period: ${periodLabel}`, `Language: ${language === "filipino" ? "Filipino" : "English"}`, `Teacher: ${teacherName}`],
+      [],
+    ];
+    const ws = XLSX.utils.aoa_to_sheet([...meta, EXPORT_HEADERS, ...buildExportRows()]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Class Record");
+    XLSX.writeFile(wb, `${fileName}.xlsx`);
+  }
 
   return (
     <Layout>
@@ -144,6 +227,17 @@ export default function ClassRecordPage() {
               <option value="filipino">Filipino</option>
               <option value="english">English</option>
             </select>
+
+            <div className="cr-topbar__divider" />
+
+            <button className="cr-export-btn cr-export-btn--pdf" onClick={exportToPDF} title="Export as PDF">
+              <FileText size={14} />
+              PDF
+            </button>
+            <button className="cr-export-btn cr-export-btn--excel" onClick={exportToExcel} title="Export as Excel">
+              <FileSpreadsheet size={14} />
+              Excel
+            </button>
           </div>
         </div>
 
@@ -248,7 +342,7 @@ export default function ClassRecordPage() {
                         ? `${Math.round(((totalWords - miscues) / totalWords) * 100)}%`
                         : null;
 
-                      const route       = rr?.part1_route ?? "";
+                      const route       = (rr?.part1_route ?? "").toLowerCase();
                       const task2LScore = route.includes("2l") ? d(rr?.part1_task2_correct) : "—";
                       const task2HScore = route.includes("2h") ? d(rr?.part1_task2_correct) : "—";
 
@@ -299,6 +393,47 @@ export default function ClassRecordPage() {
                   )}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* ── Pagination Controls ── */}
+        {!loading && !error && students.length > 0 && (
+          <div className="cr-pagination">
+            <span className="cr-pagination__info">
+              Showing {Math.min((page - 1) * pageSize + 1, totalStudents)}–{Math.min(page * pageSize, totalStudents)} of {totalStudents} students
+            </span>
+            <div className="cr-pagination__right">
+              <select
+                className="cr-pagination__size"
+                value={pageSize}
+                onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+              >
+                <option value={30}>30 per page</option>
+                <option value={50}>50 per page</option>
+                <option value={100}>100 per page</option>
+              </select>
+              <div className="cr-pagination__nav">
+                <button
+                  className="cr-pagination__btn"
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  title="Previous page"
+                >
+                  <ChevronLeft size={15} />
+                </button>
+                <span className="cr-pagination__pages">
+                  Page {page} of {Math.max(1, Math.ceil(totalStudents / pageSize))}
+                </span>
+                <button
+                  className="cr-pagination__btn"
+                  onClick={() => setPage(p => p + 1)}
+                  disabled={page * pageSize >= totalStudents}
+                  title="Next page"
+                >
+                  <ChevronRight size={15} />
+                </button>
+              </div>
             </div>
           </div>
         )}

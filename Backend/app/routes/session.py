@@ -36,6 +36,8 @@ async def list_sessions(
     school_year:      Optional[str]            = Query(None, description="Filter by school year, e.g. 2024-2025"),
     period:           Optional[AssessmentPeriod] = Query(None, description="Filter by assessment period"),
     is_completed:     Optional[bool]           = Query(None, description="Filter by completion status"),
+    grade_level:      Optional[str]            = Query(None, description="Filter by student grade_level"),
+    section:          Optional[str]            = Query(None, description="Filter by student section"),
     include_archived: bool                     = Query(False),
     db:               AsyncSession             = Depends(get_db),
     current_teacher:  Teacher                  = Depends(get_current_teacher),
@@ -49,6 +51,8 @@ async def list_sessions(
         school_year=school_year,
         period=period,
         is_completed=is_completed,
+        grade_level=grade_level,
+        section=section,
         include_archived=include_archived,
     )
     return SessionListResponse(total=total, page=page, page_size=page_size, sessions=sessions)

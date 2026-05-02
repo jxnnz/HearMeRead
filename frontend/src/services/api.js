@@ -188,6 +188,11 @@ export const studentsApi = {
     return res.data;
   },
 
+  listClasses: async () => {
+    const res = await api.get("/students/classes");
+    return res.data;
+  },
+
   get: async (id) => {
     const res = await api.get(`/students/${id}`);
     return res.data;
@@ -215,6 +220,13 @@ export const studentsApi = {
    */
   listSessions: async (studentId, params = {}) => {
     const res = await api.get(`/students/${studentId}/sessions`, { params });
+    return res.data;
+  },
+
+  importExcel: async (formData) => {
+    const res = await api.post("/students/import", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
     return res.data;
   },
 };

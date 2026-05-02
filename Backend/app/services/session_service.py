@@ -87,7 +87,9 @@ async def get_sessions(
     school_year: Optional[str],
     period: Optional[AssessmentPeriod],
     is_completed: Optional[bool],
-    include_archived: bool,
+    grade_level: Optional[str] = None,
+    section: Optional[str] = None,
+    include_archived: bool = False,
 ) -> Tuple[int, List[AssessmentSession]]:
     filters = [AssessmentSession.teacher_id == teacher_id]
 
@@ -102,13 +104,27 @@ async def get_sessions(
     if is_completed is not None:
         filters.append(AssessmentSession.is_completed == is_completed)
 
+    query = select(AssessmentSession)
+
+    if grade_level or section is not None:
+        from app.models import Student
+        query = query.join(Student, Student.id == AssessmentSession.student_id)
+        if grade_level:
+            filters.append(Student.grade_level == grade_level)
+        if section is not None:
+            if section == "":
+                from sqlalchemy import or_
+                filters.append(or_(Student.section == None, Student.section == ""))
+            else:
+                filters.append(Student.section == section)
+
     count_result = await db.execute(
-        select(func.count()).select_from(AssessmentSession).where(and_(*filters))
+        select(func.count()).select_from(query.where(and_(*filters)).subquery())
     )
     total = count_result.scalar_one()
 
     result = await db.execute(
-        select(AssessmentSession)
+        query
         .options(
             selectinload(AssessmentSession.reading_result),
             selectinload(AssessmentSession.observation),
@@ -280,6 +296,10 @@ async def complete_session(
 
     if payload.part2 is not None:
         p2_input = payload.part2
+
+        if getattr(p2_input, "passage_id", None) is not None:
+            session.passage_id = p2_input.passage_id
+
         p2 = score_part2(
             reference_text=p2_input.reference_text,
             transcribed_text=p2_input.transcribed_text,
@@ -317,6 +337,13 @@ async def complete_session(
     )
     reading_result = rr_query.scalar_one_or_none()
 
+    from app.services.levenshtein_service import ReadingProfile
+    final_reading_profile = None
+    if p2 and p2.reading_profile:
+        final_reading_profile = p2.reading_profile.value
+    elif p1.total_score <= 10:
+        final_reading_profile = ReadingProfile.LOW_EMERGING.value
+
     scoring_fields = dict(
         part1_task1_correct=p1.task1_correct,
         part1_task2_correct=p1.task2_correct,
@@ -329,7 +356,7 @@ async def complete_session(
         total_words=p2.total_words_in_passage if p2 else None,
         miscue_count=p2.total_miscues if p2 else None,
         cwpm=p2.cwpm if p2 else None,
-        reading_profile=p2.reading_profile.value if p2 and p2.reading_profile else None,
+        reading_profile=final_reading_profile,
         part2_alignments_json=_alignments_to_json(p2.alignments) if p2 else None,
         updated_at=_now(),
     )

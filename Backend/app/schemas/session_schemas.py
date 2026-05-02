@@ -44,6 +44,7 @@ class Part1CompleteIn(BaseModel):
 
 class Part2CompleteIn(BaseModel):
     """Part 2 data submitted after the passage recording + comprehension check."""
+    passage_id:              Optional[int] = Field(None, description="Optional Assessment 2 passage ID")
     reference_text:          str   = Field(..., description="Full passage reference text")
     transcribed_text:        str   = Field(..., description="Full Whisper transcript")
     reading_time_sec:        float = Field(..., gt=0, description="Total recording duration in seconds")

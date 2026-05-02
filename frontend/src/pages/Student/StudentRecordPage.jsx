@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Users } from "lucide-react";
+import { Plus, Users, Upload } from "lucide-react";
 
 import Layout from "../../components/Layout";
 import AppButton from "../../components/AppButton";
+import ImportRecordsModal from "../../modals/ImportRecordsModal";
 import { studentsApi } from "../../services/api";
 
 import "../pages css/StudentRecordPage.css";
@@ -26,41 +27,28 @@ function currentSchoolYear() {
   return now.getMonth() < 5 ? `${y - 1}-${y}` : `${y}-${y + 1}`;
 }
 
-function groupStudents(students) {
-  const groups = {};
-  for (const s of students) {
-    const grade   = s.grade_level ?? "unknown";
-    const section = s.section     ?? "No Section";
-    const key     = `${grade}||${section}`;
-    if (!groups[key]) groups[key] = { grade_level: grade, section, students: [] };
-    groups[key].students.push(s);
-  }
-  return Object.values(groups).sort((a, b) => {
-    const gCmp = String(a.grade_level).localeCompare(String(b.grade_level));
-    if (gCmp !== 0) return gCmp;
-    return a.section.localeCompare(b.section);
-  });
-}
 
 export default function StudentRecordPage() {
   const navigate = useNavigate();
 
-  const [students, setStudents] = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState(null);
+  const [classes, setClasses]       = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState(null);
+  const [showImport, setShowImport] = useState(false);
 
   const [schoolYear, setSchoolYear] = useState(currentSchoolYear());
   const [period, setPeriod]         = useState("beginning");
 
-  useEffect(() => {
+  const loadClasses = useCallback(() => {
+    setLoading(true);
     studentsApi
-      .list({ page_size: 200 })
-      .then((data) => setStudents(data.students || []))
+      .listClasses()
+      .then((data) => setClasses(data.classes || []))
       .catch((e) => setError(e.response?.data?.detail || e.message))
       .finally(() => setLoading(false));
   }, []);
 
-  const groups = groupStudents(students);
+  useEffect(() => { loadClasses(); }, [loadClasses]);
 
   function handleCardClick(grade_level, section) {
     const params = new URLSearchParams({
@@ -81,10 +69,16 @@ export default function StudentRecordPage() {
         {/* ── Header ── */}
         <div className="sr-header">
           <h1 className="sr-title">Student Record</h1>
-          <AppButton variant="teal" onClick={() => navigate("/students/add")}>
-            <Plus size={15} />
-            Add Student
-          </AppButton>
+          <div className="sr-header-actions">
+            <AppButton variant="ghost" onClick={() => setShowImport(true)}>
+              <Upload size={15} />
+              Import Records
+            </AppButton>
+            <AppButton variant="teal" onClick={() => navigate("/students/add")}>
+              <Plus size={15} />
+              Add Student
+            </AppButton>
+          </div>
         </div>
 
         {/* ── Global Filters ── */}
@@ -129,10 +123,10 @@ export default function StudentRecordPage() {
           </div>
         )}
 
-        {!loading && !error && groups.length === 0 && (
+        {!loading && !error && classes.length === 0 && (
           <div className="sr-state">
             <Users size={42} strokeWidth={1.2} />
-            <p>No students yet. Add a student to get started.</p>
+            <p>No classes yet. Add a student to get started.</p>
             <AppButton variant="teal" onClick={() => navigate("/students/add")}>
               <Plus size={15} /> Add Student
             </AppButton>
@@ -140,27 +134,27 @@ export default function StudentRecordPage() {
         )}
 
         {/* ── Class Cards ── */}
-        {!loading && !error && groups.length > 0 && (
+        {!loading && !error && classes.length > 0 && (
           <div className="sr-class-grid">
-            {groups.map((g) => (
+            {classes.map((c) => (
               <div
-                key={`${g.grade_level}||${g.section}`}
+                key={`${c.grade_level}||${c.section}`}
                 className="sr-class-card"
-                onClick={() => handleCardClick(g.grade_level, g.section)}
+                onClick={() => handleCardClick(c.grade_level, c.section)}
                 role="button"
                 tabIndex={0}
-                onKeyDown={(e) => e.key === "Enter" && handleCardClick(g.grade_level, g.section)}
-                aria-label={`View ${formatGrade(g.grade_level)} ${g.section}`}
+                onKeyDown={(e) => e.key === "Enter" && handleCardClick(c.grade_level, c.section)}
+                aria-label={`View ${formatGrade(c.grade_level)} ${c.section}`}
               >
                 <h2 className="sr-class-card__title">
-                  {formatGrade(g.grade_level)}
-                  {g.section !== "No Section" && ` — ${g.section}`}
+                  {formatGrade(c.grade_level)}
+                  {c.section !== "No Section" && ` — ${c.section}`}
                 </h2>
                 <p className="sr-class-card__meta">
                   {schoolYear} &nbsp;·&nbsp; {periodLabel}
                 </p>
                 <span className="sr-class-card__count">
-                  {g.students.length} {g.students.length === 1 ? "student" : "students"}
+                  {c.student_count} {c.student_count === 1 ? "student" : "students"}
                 </span>
               </div>
             ))}
@@ -168,6 +162,12 @@ export default function StudentRecordPage() {
         )}
 
       </div>
+
+      <ImportRecordsModal
+        isOpen={showImport}
+        onClose={() => setShowImport(false)}
+        onSuccess={loadClasses}
+      />
     </Layout>
   );
 }
