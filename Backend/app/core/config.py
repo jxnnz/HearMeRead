@@ -26,8 +26,8 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     RESEND_API_KEY: str
-    EMAIL_FROM: str
-    EMAIL_FROM_NAME: str
+    EMAIL_ADDRESS: str
+    EMAIL_NAME: str
     FRONTEND_URL: str = "http://localhost:5173"
     BACKEND_URL: str = "http://localhost:8000"
 

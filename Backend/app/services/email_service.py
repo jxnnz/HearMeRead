@@ -191,7 +191,7 @@ async def send_password_reset_email(
     resend.api_key = settings.RESEND_API_KEY
 
     reset_url = f"{settings.FRONTEND_URL}/reset-password?token={token}"
-    from_address = f"{settings.EMAIL_FROM_NAME} <{settings.EMAIL_FROM}>"
+    from_address = f"{settings.EMAIL_NAME} <{settings.EMAIL_ADDRESS}>"
 
     params: resend.Emails.SendParams = {
         "from":    from_address,
@@ -227,7 +227,7 @@ async def send_verification_email(
         f"{settings.BACKEND_URL}/routes/auth/verify?token={token}"
     )
 
-    from_address = f"{settings.EMAIL_FROM_NAME} <{settings.EMAIL_FROM}>"
+    from_address = f"{settings.EMAIL_NAME} <{settings.EMAIL_ADDRESS}>"
 
     params: resend.Emails.SendParams = {
         "from":    from_address,
