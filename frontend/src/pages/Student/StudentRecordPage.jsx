@@ -25,7 +25,11 @@ const FILTER_CONFIG = [
     key:     "grade_level",
     label:   "Grade Level",
     section: "Filter",
-    options: ["1", "2", "3"].map((g) => ({ value: g, label: `Grade ${g}` })),
+    options: [
+      { value: "grade_1", label: "Grade 1" },
+      { value: "grade_2", label: "Grade 2" },
+      { value: "grade_3", label: "Grade 3" },
+    ],
   },
   {
     key:   "reading_profile",
@@ -117,7 +121,7 @@ const MOCK_STUDENTS = [
       return `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`);
     }
     if (filters.sort_by === "grade_level") {
-      return (a.grade_level ?? 0) - (b.grade_level ?? 0);
+      return String(a.grade_level ?? "").localeCompare(String(b.grade_level ?? ""));
     }
     if (filters.sort_by === "reading_profile") {
       return (PROFILE_ORDER[a.reading_profile] ?? 99) - (PROFILE_ORDER[b.reading_profile] ?? 99);

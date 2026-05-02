@@ -79,10 +79,15 @@ export default function PassageModal({
                 value={form.grade_level}
                 onChange={(e) => update("grade_level", e.target.value)}
               >
-                {["1", "2", "3", "4", "5", "6"].map((g) => (
-                  <option key={g} value={g}>
-                    Grade {g}
-                  </option>
+                {[
+                  { value: "grade_1", label: "Grade 1" },
+                  { value: "grade_2", label: "Grade 2" },
+                  { value: "grade_3", label: "Grade 3" },
+                  { value: "grade_4", label: "Grade 4" },
+                  { value: "grade_5", label: "Grade 5" },
+                  { value: "grade_6", label: "Grade 6" },
+                ].map(({ value, label }) => (
+                  <option key={value} value={value}>{label}</option>
                 ))}
               </select>
             </div>

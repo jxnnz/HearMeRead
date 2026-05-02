@@ -13,7 +13,7 @@ import { passagesApi } from "../../services/api";
 
 import "../pages css/PassagePage.css";
 
-const EMPTY_FORM = { title: "", content: "", language: "filipino", grade_level: "2" };
+const EMPTY_FORM = { title: "", content: "", language: "filipino", grade_level: "grade_2" };
 
 export default function PassagePage() {
   const navigate = useNavigate();
@@ -43,14 +43,11 @@ export default function PassagePage() {
 
   function openEdit(passage, e) {
     e.stopPropagation();
-    const gradeStr = passage.grade_level
-      ? passage.grade_level.replace("Grade ", "")
-      : "2";
     setForm({
       title:       passage.title ?? "",
       content:     passage.content ?? "",
       language:    passage.language,
-      grade_level: gradeStr,
+      grade_level: passage.grade_level ?? "grade_2",
     });
     setFormError(null);
     setEditTarget(passage);
@@ -70,7 +67,7 @@ export default function PassagePage() {
     setSaving(true);
     try {
       const updateData = { language: form.language };
-      if (form.grade_level) updateData.grade_level = `Grade ${form.grade_level}`;
+      if (form.grade_level) updateData.grade_level = form.grade_level;
       if (isA2 && form.title.trim())   updateData.title   = form.title.trim();
       if (isA2 && form.content.trim()) updateData.content = form.content.trim();
       await passagesApi.update(editTarget.id, updateData);

@@ -82,7 +82,7 @@ export default function ResultsStep({
       ["STUDENT INFORMATION"],
       ["Name",            `${form.first_name} ${form.last_name}`],
       ["Reading Profile", profile.label],
-      ["Grade Level",     `Grade ${form.grade_level}`],
+      ["Grade Level",     String(form.grade_level ?? "").replace("grade_", "Grade ").replace("kindergarten", "Kindergarten")],
       ["Section",         form.section],
       ["School Year",     form.school_year],
       ["Assessment Type", form.assessment_type],

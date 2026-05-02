@@ -176,7 +176,7 @@ class PassageListResponse(BaseModel):
 class StudentBase(BaseModel):
     first_name:  str           = Field(..., min_length=1, max_length=100, examples=["Maria"])
     last_name:   str           = Field(..., min_length=1, max_length=100, examples=["Santos"])
-    grade_level: GradeLevel    = Field(..., examples=[GradeLevel.GRADE_3])
+    grade_level: GradeLevel    = Field(..., examples=[GradeLevel.grade_3])
     section:     Optional[str] = Field(None, max_length=100, examples=["Sampaguita"])
     sex:         Optional[Sex] = Field(None, examples=[Sex.female])
     lrn:         Optional[str] = Field(

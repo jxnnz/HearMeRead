@@ -8,7 +8,7 @@ import "../pages css/AddPassagePage.css";
 
 const EMPTY_DETAILS = {
   title: "",
-  grade_level: "2",
+  grade_level: "grade_2",
   language: "filipino",
   content: "",
 };
@@ -68,7 +68,7 @@ export default function AddAssessment2Page() {
         title:           details.title.trim(),
         content:         details.content.trim(),
         language:        details.language,
-        grade_level:     `Grade ${details.grade_level}`,
+        grade_level:     details.grade_level,
         assessment_type: 2,
       });
 
@@ -141,8 +141,12 @@ export default function AddAssessment2Page() {
                 value={details.grade_level}
                 onChange={(e) => updateDetails("grade_level", e.target.value)}
               >
-                {["1", "2", "3"].map((g) => (
-                  <option key={g} value={g}>Grade {g}</option>
+                {[
+                  { value: "grade_1", label: "Grade 1" },
+                  { value: "grade_2", label: "Grade 2" },
+                  { value: "grade_3", label: "Grade 3" },
+                ].map(({ value, label }) => (
+                  <option key={value} value={value}>{label}</option>
                 ))}
               </select>
             </div>

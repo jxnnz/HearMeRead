@@ -53,7 +53,7 @@ export default function EditStudentModal({
 
   function handleSubmit(e) {
     e.preventDefault();
-    onSave({ ...form, grade_level: parseInt(form.grade_level, 10) || form.grade_level });
+    onSave({ ...form });
   }
 
   return (
@@ -149,8 +149,12 @@ export default function EditStudentModal({
                 onChange={(e) => update("grade_level", e.target.value)}
               >
                 <option value="">Select grade</option>
-                {["1", "2", "3"].map((g) => (
-                  <option key={g} value={g}>Grade {g}</option>
+                {[
+                  { value: "grade_1", label: "Grade 1" },
+                  { value: "grade_2", label: "Grade 2" },
+                  { value: "grade_3", label: "Grade 3" },
+                ].map(({ value, label }) => (
+                  <option key={value} value={value}>{label}</option>
                 ))}
               </select>
             </div>

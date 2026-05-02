@@ -8,7 +8,7 @@ import "../pages css/AddPassagePage.css";
 
 const EMPTY_FORM = {
   language: "filipino",
-  grade_level: "1",
+  grade_level: "grade_1",
   task1_content: "",
   task2_words: "",
   task2_sentences: "",
@@ -47,7 +47,7 @@ export default function AddAssessment1Page() {
     try {
       await passagesApi.create({
         language:        form.language,
-        grade_level:     `Grade ${form.grade_level}`,
+        grade_level:     form.grade_level,
         assessment_type: 1,
         task1_content:   form.task1_content.trim(),
         task2_words:     form.task2_words.trim(),
@@ -109,8 +109,12 @@ export default function AddAssessment1Page() {
                 value={form.grade_level}
                 onChange={(e) => update("grade_level", e.target.value)}
               >
-                {["1", "2", "3"].map((g) => (
-                  <option key={g} value={g}>Grade {g}</option>
+                {[
+                  { value: "grade_1", label: "Grade 1" },
+                  { value: "grade_2", label: "Grade 2" },
+                  { value: "grade_3", label: "Grade 3" },
+                ].map(({ value, label }) => (
+                  <option key={value} value={value}>{label}</option>
                 ))}
               </select>
             </div>

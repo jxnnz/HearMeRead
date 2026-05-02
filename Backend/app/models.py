@@ -14,9 +14,13 @@ from app.db import Base
 # ── Enums ─────────────────────────────────────────────────────────────────────
 
 class GradeLevel(str, enum.Enum):
-    GRADE_1 = "Grade 1"
-    GRADE_2 = "Grade 2"
-    GRADE_3 = "Grade 3"
+    kindergarten = "kindergarten"
+    grade_1 = "grade_1"
+    grade_2 = "grade_2"
+    grade_3 = "grade_3"
+    grade_4 = "grade_4"
+    grade_5 = "grade_5"
+    grade_6 = "grade_6"
 
 
 class Sex(str, enum.Enum):

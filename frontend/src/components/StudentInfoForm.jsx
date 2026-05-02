@@ -219,7 +219,7 @@ export default function StudentInfoForm({
           <input
             type="text"
             className="si-input si-input--readonly"
-            value={form.grade_level ? `Grade ${form.grade_level}` : ""}
+            value={form.grade_level ? String(form.grade_level).replace("grade_", "Grade ").replace("kindergarten", "Kindergarten") : ""}
             placeholder="Auto-filled"
             readOnly
           />

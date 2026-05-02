@@ -99,7 +99,7 @@ function exportExcel(records, student = {}) {
     [],
     ["Student Name",    s.fullName],
     ["LRN",             s.lrn],
-    ["Grade & Section", `Grade ${s.grade_level} — ${s.section}`],
+    ["Grade & Section", `${String(s.grade_level ?? "").replace("grade_", "Grade ").replace("kindergarten", "Kindergarten")} — ${s.section}`],
     ["Teacher",         s.teacher],
     ["Sex",             s.sex],
     ["Reading Profile", s.reading_profile],
@@ -158,7 +158,7 @@ function printTable(records, student = {}) {
   <p class="subtitle">Student Assessment History Report</p>
   <div class="info-grid">
     <div class="info-row"><span class="info-label">LRN:</span><span class="info-value">${s.lrn}</span></div>
-    <div class="info-row"><span class="info-label">Grade &amp; Section:</span><span class="info-value">Grade ${s.grade_level} — ${s.section}</span></div>
+    <div class="info-row"><span class="info-label">Grade &amp; Section:</span><span class="info-value">${String(s.grade_level ?? "").replace("grade_", "Grade ").replace("kindergarten", "Kindergarten")} — ${s.section}</span></div>
     <div class="info-row"><span class="info-label">Teacher:</span><span class="info-value">${s.teacher}</span></div>
     <div class="info-row"><span class="info-label">Sex:</span><span class="info-value">${s.sex}</span></div>
     <div class="info-row"><span class="info-label">Reading Profile:</span><span class="info-value">${s.reading_profile}</span></div>
