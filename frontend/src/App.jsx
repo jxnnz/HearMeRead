@@ -15,6 +15,7 @@ import AddStudentPage   from "./pages/Student/AddStudentPage";
 // import ASRTestPage      from "./pages/ASRTestPage";
 import AssessmentPage   from "./pages/Assessment/AssessmentPage";
 import StudentInfoPage  from "./pages/Student/StudentInfoPage";
+import ClassRecordPage  from "./pages/Student/ClassRecordPage";
 
 
 function RequireAuth({ children }) {
@@ -60,9 +61,10 @@ export default function App() {
         <Route path="/passages"                  element={<RequireAuth><PassagePage /></RequireAuth>} />
         <Route path="/passages/add-assessment-1" element={<RequireAuth><AddAssessment1Page /></RequireAuth>} />
         <Route path="/passages/add-assessment-2" element={<RequireAuth><AddAssessment2Page /></RequireAuth>} />
-        <Route path="/students"     element={<RequireAuth><StudentRecordPage /></RequireAuth>} />
-        <Route path="/students/add" element={<RequireAuth><AddStudentPage /></RequireAuth>} />
-        <Route path="/students/:id" element={<RequireAuth><StudentInfoPage /></RequireAuth>} />
+        <Route path="/students"              element={<RequireAuth><StudentRecordPage /></RequireAuth>} />
+        <Route path="/students/add"          element={<RequireAuth><AddStudentPage /></RequireAuth>} />
+        <Route path="/students/class"        element={<RequireAuth><ClassRecordPage /></RequireAuth>} />
+        <Route path="/students/:id"          element={<RequireAuth><StudentInfoPage /></RequireAuth>} />
         {/* <Route path="/asr-test"     element={<RequireAuth><ASRTestPage /></RequireAuth>} /> */}
 
       </Routes>

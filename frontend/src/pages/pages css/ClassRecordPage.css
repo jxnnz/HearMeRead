@@ -1,0 +1,272 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+/* ── Page shell ─────────────────────────────────────── */
+.cr-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  font-family: "Poppins", sans-serif;
+}
+
+/* ── Top bar ─────────────────────────────────────────── */
+.cr-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.cr-topbar__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cr-back-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1.5px solid #dde2f0;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  color: #1a2340;
+  transition: background 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+
+.cr-back-btn:hover {
+  background: #f0f2fa;
+  border-color: #2c3e6b;
+}
+
+.cr-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a2340;
+  margin: 0;
+}
+
+.cr-subtitle {
+  font-size: 12.5px;
+  color: #8a94b2;
+  font-weight: 500;
+  margin: 2px 0 0;
+}
+
+.cr-topbar__right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cr-lang-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.cr-lang-select {
+  border: 1.5px solid #dde2f0;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 13px;
+  font-family: "Poppins", sans-serif;
+  color: #1a2340;
+  background: #fff;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.cr-lang-select:focus {
+  border-color: #2c3e6b;
+}
+
+/* ── Class record card ───────────────────────────────── */
+.cr-card {
+  background: #fff;
+  border: 1.5px solid #dde2f0;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+/* ── Info bar ────────────────────────────────────────── */
+.cr-info-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  background: #f4f6fb;
+  border-bottom: 1.5px solid #dde2f0;
+  padding: 16px 24px;
+  row-gap: 12px;
+}
+
+.cr-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-right: 32px;
+}
+
+.cr-info-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #8a94b2;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.cr-info-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a2340;
+}
+
+.cr-info-value--cap {
+  text-transform: capitalize;
+}
+
+/* ── Table wrapper ───────────────────────────────────── */
+.cr-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Assessment table ────────────────────────────────── */
+.cr-table {
+  width: 100%;
+  min-width: 1400px;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  font-family: "Poppins", sans-serif;
+}
+
+.cr-th {
+  background: #f4f6fb;
+  color: #4a5568;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 10px 10px;
+  border: 1px solid #e2e8f0;
+  white-space: nowrap;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.cr-th--id   { min-width: 40px; }
+.cr-th--name { min-width: 160px; text-align: left; }
+.cr-th--profile { min-width: 140px; }
+.cr-th--remarks { min-width: 180px; text-align: left; }
+
+/* Group header colours */
+.cr-th--group1 {
+  background: #e8f0fc;
+  color: #2c5282;
+}
+
+.cr-th--group2 {
+  background: #e8faf0;
+  color: #276749;
+}
+
+.cr-th--sub.cr-th--group1 {
+  background: #f0f5ff;
+  color: #3a5fa8;
+}
+
+.cr-th--sub.cr-th--group2 {
+  background: #f0faf5;
+  color: #2f855a;
+}
+
+/* ── Table body ──────────────────────────────────────── */
+.cr-table tbody tr {
+  transition: background 0.1s;
+}
+
+.cr-table tbody tr:hover {
+  background: #f8f9fd;
+}
+
+.cr-table tbody tr:nth-child(even) {
+  background: #fafbfe;
+}
+
+.cr-table tbody tr:nth-child(even):hover {
+  background: #f0f3fb;
+}
+
+.cr-td {
+  padding: 9px 10px;
+  border: 1px solid #e2e8f0;
+  color: #2d3748;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.cr-td--center { text-align: center; }
+.cr-td--cap    { text-transform: capitalize; }
+.cr-td--profile { white-space: normal; min-width: 140px; }
+.cr-td--remarks { white-space: normal; min-width: 180px; max-width: 240px; }
+
+/* Group tints on cells */
+.cr-td--g1 { background-color: rgba(232, 240, 252, 0.35); }
+.cr-td--g2 { background-color: rgba(232, 250, 240, 0.35); }
+
+/* ── Student name link ───────────────────────────────── */
+.cr-student-link {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: "Poppins", sans-serif;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-align: left;
+}
+
+.cr-student-link:hover {
+  opacity: 0.75;
+}
+
+/* ── Empty row ───────────────────────────────────────── */
+.cr-empty-row {
+  padding: 48px 24px;
+  text-align: center;
+  color: #8a94b2;
+  font-size: 13px;
+}
+
+/* ── Loading / error states ──────────────────────────── */
+.cr-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 72px 20px;
+  color: #8a94b2;
+  text-align: center;
+  font-size: 14px;
+}
+
+.cr-state--error { color: #c0392b; }
+
+.cr-spinner {
+  width: 34px;
+  height: 34px;
+  border: 3px solid #e0e4f0;
+  border-top-color: #2c3e6b;
+  border-radius: 50%;
+  animation: crSpin 0.7s linear infinite;
+}
+
+@keyframes crSpin { to { transform: rotate(360deg); } }
