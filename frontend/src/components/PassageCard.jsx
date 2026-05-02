@@ -10,8 +10,15 @@
 import { Pencil, Trash2 } from "lucide-react";
 import "./component css/PassageCard.css";
 
+function formatGrade(gl) {
+  if (!gl) return "";
+  if (gl === "kindergarten") return "Kindergarten";
+  return `Grade ${gl.replace("grade_", "")}`;
+}
+
 export default function PassageCard({ passage, onClick, onEdit, onRemove }) {
   const isArchived = passage.is_archived;
+  const isA1 = passage.assessment_type === 1;
   const lang = passage.language === "filipino" ? "Filipino" : "English";
 
   const words =
@@ -26,13 +33,17 @@ export default function PassageCard({ passage, onClick, onEdit, onRemove }) {
       role="button"
       tabIndex={0}
       onKeyDown={(e) => e.key === "Enter" && onClick()}
-      aria-label={`View passage: ${passage.title}`}
+      aria-label={`View passage: ${passage.title ?? "passage"}`}
     >
       {/* ── Meta row ── */}
       <div className="p-card__meta">
-        <span className="p-card__grade">Grade {passage.grade_level}</span>
-        <span className="p-card__dot">·</span>
-        <span className="p-card__words">{words} words</span>
+        <span className="p-card__grade">{formatGrade(passage.grade_level)}</span>
+        {!isA1 && (
+          <>
+            <span className="p-card__dot">·</span>
+            <span className="p-card__words">{words} words</span>
+          </>
+        )}
         <span className="p-card__dot">·</span>
         <span className="p-card__lang">{lang}</span>
       </div>

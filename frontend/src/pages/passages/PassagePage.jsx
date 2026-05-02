@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, FileText, ChevronRight } from "lucide-react";
+import { Plus, FileText } from "lucide-react";
 
 import Layout from "../../components/Layout";
 import PassageCard from "../../components/PassageCard";
@@ -13,7 +13,10 @@ import { passagesApi } from "../../services/api";
 
 import "../pages css/PassagePage.css";
 
-const EMPTY_FORM = { title: "", content: "", language: "filipino", grade_level: "grade_2" };
+const EMPTY_FORM = {
+  title: "", content: "", language: "filipino", grade_level: "grade_2",
+  task1_content: "", task2_words: "", task2_sentences: "",
+};
 
 export default function PassagePage() {
   const navigate = useNavigate();
@@ -44,10 +47,13 @@ export default function PassagePage() {
   function openEdit(passage, e) {
     e.stopPropagation();
     setForm({
-      title:       passage.title ?? "",
-      content:     passage.content ?? "",
-      language:    passage.language,
-      grade_level: passage.grade_level ?? "grade_2",
+      title:           passage.title           ?? "",
+      content:         passage.content         ?? "",
+      language:        passage.language        ?? "filipino",
+      grade_level:     passage.grade_level     ?? "grade_2",
+      task1_content:   passage.task1_content   ?? "",
+      task2_words:     passage.task2_words     ?? "",
+      task2_sentences: passage.task2_sentences ?? "",
     });
     setFormError(null);
     setEditTarget(passage);
@@ -68,8 +74,14 @@ export default function PassagePage() {
     try {
       const updateData = { language: form.language };
       if (form.grade_level) updateData.grade_level = form.grade_level;
-      if (isA2 && form.title.trim())   updateData.title   = form.title.trim();
-      if (isA2 && form.content.trim()) updateData.content = form.content.trim();
+      if (isA2) {
+        if (form.title.trim())   updateData.title   = form.title.trim();
+        if (form.content.trim()) updateData.content = form.content.trim();
+      } else {
+        if (form.task1_content.trim())   updateData.task1_content   = form.task1_content.trim();
+        if (form.task2_words.trim())     updateData.task2_words     = form.task2_words.trim();
+        if (form.task2_sentences.trim()) updateData.task2_sentences = form.task2_sentences.trim();
+      }
       await passagesApi.update(editTarget.id, updateData);
       setPassages((prev) =>
         prev.map((p) => (p.id === editTarget.id ? { ...p, ...updateData } : p))
@@ -108,9 +120,6 @@ export default function PassagePage() {
             <h2 className="ph-card__title">{label}</h2>
             <span className="ph-card__count">{list.length} passages</span>
           </div>
-          <button className="ph-view-all">
-            View all <ChevronRight size={13} />
-          </button>
         </div>
 
         {list.length === 0 ? (
@@ -182,6 +191,7 @@ export default function PassagePage() {
       {editTarget && (
         <PassageModal
           mode="edit"
+          assessmentType={editTarget.assessment_type}
           form={form}
           setForm={setForm}
           onSubmit={handleEditSubmit}
