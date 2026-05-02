@@ -59,7 +59,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 _cors_origins = [settings.FRONTEND_URL]
 if not settings.is_production:
     # Allow common local ports during development and testing
-    _cors_origins += ["http://localhost:5173"]
+    _cors_origins += ["http://localhost:5173", "http://localhost:3000", "http://localhost:8000", "https://hearmeread.pages.dev"]
 
 app.add_middleware(
     CORSMiddleware,
