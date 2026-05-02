@@ -6,6 +6,7 @@ Create Date: 2025-01-01 00:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 revision = "001_initial"
 down_revision = None
@@ -13,7 +14,18 @@ branch_labels = None
 depends_on = None
 
 
+# Define enum so we can .create() it with checkfirst=True
+gradelevel_enum = postgresql.ENUM(
+    "kindergarten", "grade_1", "grade_2", "grade_3",
+    "grade_4", "grade_5", "grade_6",
+    name="gradelevel",
+    create_type=False,
+)
+
+
 def upgrade() -> None:
+    gradelevel_enum.create(op.get_bind(), checkfirst=True)
+
     op.create_table(
         "teachers",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -35,11 +47,7 @@ def upgrade() -> None:
         sa.Column("last_name", sa.String(100), nullable=False),
         sa.Column(
             "grade_level",
-            sa.Enum(
-                "kindergarten", "grade_1", "grade_2", "grade_3",
-                "grade_4", "grade_5", "grade_6",
-                name="gradelevel",
-            ),
+            gradelevel_enum,
             nullable=False,
         ),
         sa.Column("section", sa.String(100), nullable=True),

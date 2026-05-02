@@ -6,6 +6,7 @@ Create Date: 2025-01-01 00:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 revision = "003_assessment_sessions"
 down_revision = "002_passages_questions"
@@ -13,15 +14,12 @@ branch_labels = None
 depends_on = None
 
 
+# Define the enum so we can .create() it with checkfirst=True
+assessmentperiod_enum = postgresql.ENUM("beginning", "middle", "end", name="assessmentperiod", create_type=False)
+
+
 def upgrade() -> None:
-    # Create enum safely — no-op if it already exists
-    op.execute("""
-        DO $$ BEGIN
-            CREATE TYPE assessmentperiod AS ENUM ('beginning', 'middle', 'end');
-        EXCEPTION
-            WHEN duplicate_object THEN null;
-        END $$;
-    """)
+    assessmentperiod_enum.create(op.get_bind(), checkfirst=True)
 
     op.create_table(
         "assessment_sessions",
@@ -32,7 +30,7 @@ def upgrade() -> None:
 
         # When
         sa.Column("school_year", sa.String(9), nullable=False),
-        sa.Column("period", sa.Enum("beginning", "middle", "end", name="assessmentperiod", create_type=False), nullable=False),
+        sa.Column("period", assessmentperiod_enum, nullable=False),
 
         # Reading metrics
         sa.Column("reading_time_seconds", sa.Float(),   nullable=True),

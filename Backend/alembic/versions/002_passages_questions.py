@@ -6,22 +6,20 @@ Create Date: 2025-01-01 00:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 revision = "002_passages_questions"
 down_revision = "001_initial"
 branch_labels = None
 depends_on = None
 
+# Define the enum type object so we can .create() it with checkfirst=True
+language_enum = postgresql.ENUM("english", "filipino", name="language", create_type=False)
+
 
 def upgrade() -> None:
-    # Create enum safely — no-op if it already exists
-    op.execute("""
-        DO $$ BEGIN
-            CREATE TYPE language AS ENUM ('english', 'filipino');
-        EXCEPTION
-            WHEN duplicate_object THEN null;
-        END $$;
-    """)
+    # Safely create the enum (no-op if it already exists)
+    language_enum.create(op.get_bind(), checkfirst=True)
 
     op.create_table(
         "passages",
@@ -29,14 +27,10 @@ def upgrade() -> None:
         sa.Column("teacher_id", sa.Integer(), nullable=False),
         sa.Column("title", sa.String(255), nullable=False),
         sa.Column("content", sa.Text(), nullable=False),
-        sa.Column(
-            "language",
-            sa.Enum("english", "filipino", name="language", create_type=False),
-            nullable=False,
-        ),
+        sa.Column("language", language_enum, nullable=False),
         sa.Column(
             "grade_level",
-            sa.Enum(
+            postgresql.ENUM(
                 "kindergarten", "grade_1", "grade_2", "grade_3",
                 "grade_4", "grade_5", "grade_6",
                 name="gradelevel",
@@ -77,4 +71,4 @@ def downgrade() -> None:
     op.drop_index("ix_passages_teacher_id", table_name="passages")
     op.drop_index("ix_passages_id", table_name="passages")
     op.drop_table("passages")
-    op.execute("DROP TYPE IF EXISTS language")
+    op.execute("DROP TYPE IF EXISTS language")

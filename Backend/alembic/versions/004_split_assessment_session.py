@@ -13,6 +13,7 @@ Changes:
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 revision = "004_split_assessment_sessions"
 down_revision = "003_assessment_sessions"
@@ -30,7 +31,7 @@ def upgrade() -> None:
         "assessment_sessions",
         sa.Column(
             "language",
-            sa.Enum("english", "filipino", name="language", create_type=False),
+            postgresql.ENUM("english", "filipino", name="language", create_type=False),
             nullable=False,
             server_default="filipino",
         ),
