@@ -417,7 +417,10 @@ Below is a map of how the pages flow into each other:
 ```
 Landing Page
 ├── → Login Page
-│     └── → Dashboard (after successful login)
+│     ├── → Dashboard (after successful login)
+│     └── → Forgot Password Page
+│               └── → (email sent) → Reset Password Page
+│                         └── → Login Page (with success banner)
 └── → Sign Up Page
       └── → (email sent) → Login Page
 
