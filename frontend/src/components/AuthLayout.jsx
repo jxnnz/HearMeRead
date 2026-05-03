@@ -1,16 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import "./component css/Auth.css";
-import bgImage      from "../assets/auth-bg.png";
-import teachImg     from "../assets/teach.png";
-import changePword  from "../assets/change-pword.png";
-import forgotPword  from "../assets/forgot-pword.png";
-
-const LEFT_IMAGE = {
-  login:  teachImg,
-  signup: teachImg,
-  forgot: forgotPword,
-  reset:  changePword,
-};
+import bgImage from "../assets/auth-bg.png";
 
 /**
  * AuthLayout
@@ -66,14 +56,7 @@ export default function AuthLayout({ children, page }) {
               backgroundSize: "cover",
               backgroundPosition: "center",
             }}
-          >
-            <img
-              src={LEFT_IMAGE[page] ?? teachImg}
-              alt=""
-              className="auth-card__left-img"
-              aria-hidden="true"
-            />
-          </div>
+          />
 
           {/* ── Form area (right) ── */}
           <div className="auth-card__right">

@@ -10,7 +10,10 @@ export default function LandingPage() {
 
       {/* ── Navbar ── */}
       <nav className="lp-nav">
-        <span className="lp-nav__brand">HearMeRead</span>
+        <span className="lp-nav__brand">
+          <img src="/HMR-LOGO.png" alt="" style={{ height: 32, width: "auto", verticalAlign: "middle", marginRight: 8 }} />
+          HearMeRead
+        </span>
         <div className="lp-nav__actions">
           <button className="lp-btn lp-btn--ghost" onClick={() => navigate("/login")}>
             Log In
