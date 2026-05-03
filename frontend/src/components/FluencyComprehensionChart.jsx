@@ -1,5 +1,5 @@
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, Legend,
+  BarChart, Bar, XAxis, YAxis, Tooltip, Legend, LabelList,
   ResponsiveContainer, CartesianGrid,
 } from "recharts";
 
@@ -67,7 +67,14 @@ export default function FluencyComprehensionChart({
             radius={[3, 3, 0, 0]}
             maxBarSize={36}
             unit={unit}
-          />
+          >
+            <LabelList
+              dataKey="fluency"
+              position="insideTop"
+              formatter={(v) => (v > 0 ? `${v}${unit}` : "")}
+              style={{ fill: "#fff", fontSize: 10, fontFamily: "Poppins", fontWeight: 700 }}
+            />
+          </Bar>
           <Bar
             dataKey="comprehension"
             name="Reading Comprehension"
@@ -75,7 +82,14 @@ export default function FluencyComprehensionChart({
             radius={[3, 3, 0, 0]}
             maxBarSize={36}
             unit={unit}
-          />
+          >
+            <LabelList
+              dataKey="comprehension"
+              position="insideTop"
+              formatter={(v) => (v > 0 ? `${v}${unit}` : "")}
+              style={{ fill: "#fff", fontSize: 10, fontFamily: "Poppins", fontWeight: 700 }}
+            />
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </div>

@@ -75,10 +75,12 @@ export default function ClassRecordPage() {
     setLoading(true);
     setError(null);
     try {
+      const stuParams  = { page, page_size: pageSize, ...(grade ? { grade_level: grade } : {}), ...(section ? { section } : {}) };
+      const sessParams = { school_year: year, period, is_completed: true, page_size: pageSize, ...(grade ? { grade_level: grade } : {}), ...(section ? { section } : {}) };
       const [me, stuData, sessData] = await Promise.all([
         authApi.me(),
-        studentsApi.list({ page, page_size: pageSize, grade_level: grade, section }),
-        sessionsApi.list({ school_year: year, period, is_completed: true, page_size: pageSize, grade_level: grade, section }),
+        studentsApi.list(stuParams),
+        sessionsApi.list(sessParams),
       ]);
       setTeacher(me);
       setTotal(stuData.total || 0);
@@ -102,10 +104,12 @@ export default function ClassRecordPage() {
       setLoading(true);
       setError(null);
       try {
+        const stuParams  = { page, page_size: pageSize, ...(grade ? { grade_level: grade } : {}), ...(section ? { section } : {}) };
+        const sessParams = { school_year: year, period, is_completed: true, page_size: pageSize, ...(grade ? { grade_level: grade } : {}), ...(section ? { section } : {}) };
         const [me, stuData, sessData] = await Promise.all([
           authApi.me(),
-          studentsApi.list({ page, page_size: pageSize, grade_level: grade, section }),
-          sessionsApi.list({ school_year: year, period, is_completed: true, page_size: pageSize, grade_level: grade, section }),
+          studentsApi.list(stuParams),
+          sessionsApi.list(sessParams),
         ]);
         if (cancelled) return;
         setTeacher(me);
@@ -451,7 +455,9 @@ export default function ClassRecordPage() {
                             <button
                               className="cr-student-link"
                               style={{ color: nameColor }}
-                              onClick={() => navigate(`/students/${s.id}`)}
+                              onClick={() => navigate(`/students/${s.id}`, {
+                                state: { from: `/students/class?grade=${grade}&section=${encodeURIComponent(section)}&year=${encodeURIComponent(year)}&period=${period}` }
+                              })}
                             >
                               {s.last_name}, {s.first_name}
                             </button>

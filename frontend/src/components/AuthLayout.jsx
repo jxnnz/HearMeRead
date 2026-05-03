@@ -1,6 +1,16 @@
 import { useNavigate } from "react-router-dom";
 import "./component css/Auth.css";
-import authBg from "../assets/teach.png";
+import bgImage      from "../assets/auth-bg.png";
+import teachImg     from "../assets/teach.png";
+import changePword  from "../assets/change-pword.png";
+import forgotPword  from "../assets/forgot-pword.png";
+
+const LEFT_IMAGE = {
+  login:  teachImg,
+  signup: teachImg,
+  forgot: forgotPword,
+  reset:  changePword,
+};
 
 /**
  * AuthLayout
@@ -24,7 +34,10 @@ export default function AuthLayout({ children, page }) {
 
       {/* ── Navbar ── */}
       <nav className="auth-nav">
-        <span className="auth-nav__brand">HearMeRead</span>
+        <span className="auth-nav__brand">
+          <img src="/HMR-LOGO.png" alt="HearMeRead" style={{ height: 32, width: "auto", verticalAlign: "middle", marginRight: 8 }} />
+          HearMeRead
+        </span>
         <div className="auth-nav__actions">
           <button
             className={`auth-nav__btn ${page === "login" ? "auth-nav__btn--active" : "auth-nav__btn--ghost"}`}
@@ -46,9 +59,16 @@ export default function AuthLayout({ children, page }) {
         <div className="auth-card">
 
           {/* ── Image panel (left) ── */}
-          <div className="auth-card__left">
+          <div
+            className="auth-card__left"
+            style={{
+              backgroundImage: `url(${bgImage})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          >
             <img
-              src={authBg}
+              src={LEFT_IMAGE[page] ?? teachImg}
               alt=""
               className="auth-card__left-img"
               aria-hidden="true"

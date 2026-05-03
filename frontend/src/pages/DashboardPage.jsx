@@ -11,6 +11,7 @@ import Layout                    from "../components/Layout";
 import DashboardStatCard         from "../components/DashboardStatCard";
 import ReadingProfileChart       from "../components/ReadingProfileChart";
 import FluencyComprehensionChart from "../components/FluencyComprehensionChart";
+import * as XLSX from "xlsx";
 import { dashboardApi, studentsApi } from "../services/api";
 
 import "./DashboardPage.css";
@@ -55,29 +56,44 @@ function getScoreColor(value, type = "percent") {
   return "#27ae60";
 }
 
-// ── Export students to CSV ───────────────────────────────────
-function exportStudentsCSV(students, schoolYear) {
-  const headers = [
-    "ID", "First Name", "Last Name", "LRN",
-    "Grade", "Section", "Sex", "Reading Profile",
+// ── Export dashboard data to Excel ──────────────────────────
+function exportDashboardXlsx(students, profileData, genderData, schoolYear) {
+  const wb = XLSX.utils.book_new();
+
+  // Sheet 1: Students
+  const studentRows = students.map((s) => ({
+    ID: s.id,
+    "First Name": s.first_name,
+    "Last Name": s.last_name,
+    LRN: s.lrn ?? "",
+    Grade: s.grade_level,
+    Section: s.section ?? "",
+    Sex: s.sex ?? "",
+    "Reading Profile": s.reading_profile ?? "",
+  }));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(studentRows), "Students");
+
+  // Sheet 2: Reading Profile Distribution
+  const PROFILES = [
+    "Low Emerging Reader", "High Emerging Reader", "Developing Reader",
+    "Transitioning Reader", "Reading at Grade Level",
   ];
-  const rows = students.map((s) =>
-    [
-      s.id, s.first_name, s.last_name, s.lrn ?? "",
-      s.grade_level, s.section ?? "", s.sex ?? "",
-      s.reading_profile ?? "",
-    ]
-      .map((v) => `"${String(v).replace(/"/g, '""')}"`)
-      .join(",")
-  );
-  const csv  = [headers.join(","), ...rows].join("\n");
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement("a");
-  a.href     = url;
-  a.download = `hearmeread_students_${schoolYear}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+  const profileRows = PROFILES.map((p) => ({
+    "Reading Profile": p,
+    "Female (%)": profileData.female?.[p] ?? 0,
+    "Male (%)": profileData.male?.[p] ?? 0,
+    "Total (%)": profileData.total?.[p] ?? 0,
+  }));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(profileRows), "Reading Profile Distribution");
+
+  // Sheet 3: Gender Distribution
+  const genderRows = [
+    { Sex: "Female", Count: genderData.female ?? 0 },
+    { Sex: "Male",   Count: genderData.male   ?? 0 },
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(genderRows), "Gender Distribution");
+
+  XLSX.writeFile(wb, `hearmeread_dashboard_${schoolYear}.xlsx`);
 }
 
 // ============================================================
@@ -123,7 +139,7 @@ export default function DashboardPage() {
   }, [schoolYear]);
 
   function handleExport() {
-    exportStudentsCSV(students, schoolYear);
+    exportDashboardXlsx(students, profileData, genderData, schoolYear);
   }
 
   // ── Loading state ─────────────────────────────────────────
@@ -231,7 +247,7 @@ export default function DashboardPage() {
           <>
             <FluencyComprehensionChart
               data={fluencyAcc}
-              title="Reading Fluency and Comprehension Average %"
+              title="Reading Fluency and Comprehension Average Percentage"
               unit="%"
             />
             <FluencyComprehensionChart

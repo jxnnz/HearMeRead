@@ -65,7 +65,7 @@ export default function StudentProfileCard({ student, onEdit, onDelete }) {
             <span>·</span>
             <span style={{ textTransform: "capitalize" }}>{sex ?? "—"}</span>
             <span>·</span>
-            <span>Grade {grade_level} — {section}</span>
+            <span>{grade_level === "kindergarten" ? "Kindergarten" : `Grade ${(grade_level ?? "").replace("grade_", "")}`}{section ? ` — ${section}` : ""}</span>
             {teacher && (
               <>
                 <span>·</span>

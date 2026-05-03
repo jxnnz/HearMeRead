@@ -48,7 +48,7 @@ export default function ResetPasswordPage() {
   // ── No token in URL → show error state ───────────────────────────────────
   if (!token) {
     return (
-      <AuthLayout page="forgot">
+      <AuthLayout page="reset">
         <h1 className="auth-heading">Invalid Link</h1>
         <p className="auth-subheading">This password reset link is missing or malformed.</p>
         <div className="auth-error" role="alert">
@@ -80,7 +80,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <AuthLayout page="forgot">
+    <AuthLayout page="reset">
       <h1 className="auth-heading">Reset Password</h1>
       <p className="auth-subheading">Enter your new password below</p>
 

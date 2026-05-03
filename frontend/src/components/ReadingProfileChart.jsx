@@ -9,7 +9,7 @@
 //   genderData — { female: number, male: number }
 // ============================================================
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, Legend,
+  BarChart, Bar, XAxis, YAxis, Tooltip, Legend, LabelList,
   ResponsiveContainer, PieChart, Pie, Cell,
 } from "recharts";
 
@@ -65,7 +65,7 @@ export default function ReadingProfileChart({ data = {}, genderData = {} }) {
       <div className="db-chart-card db-chart-card--wide">
         <div className="db-chart-header">
           <h3 className="db-chart-title">
-            % of Students Assessed by Reading Profile
+            Percentage of Students Assessed by Reading Profile
           </h3>
         </div>
 
@@ -73,7 +73,7 @@ export default function ReadingProfileChart({ data = {}, genderData = {} }) {
           <BarChart
             data={barData}
             margin={{ top: 16, right: 16, left: -16, bottom: 0 }}
-            barCategoryGap="30%"
+            barCategoryGap="20%"
             barGap={2}
           >
             <XAxis
@@ -102,8 +102,15 @@ export default function ReadingProfileChart({ data = {}, genderData = {} }) {
                 name={profile}
                 fill={PROFILE_COLORS[profile]}
                 radius={[3, 3, 0, 0]}
-                maxBarSize={20}
-              />
+                maxBarSize={36}
+              >
+                <LabelList
+                  dataKey={profile}
+                  position="insideTop"
+                  formatter={(v) => (v > 0 ? `${v}%` : "")}
+                  style={{ fill: "#fff", fontSize: 9, fontFamily: "Poppins", fontWeight: 700 }}
+                />
+              </Bar>
             ))}
           </BarChart>
         </ResponsiveContainer>
@@ -112,7 +119,7 @@ export default function ReadingProfileChart({ data = {}, genderData = {} }) {
       {/* ── Right: Gender Pie Chart ── */}
       <div className="db-chart-card db-chart-card--narrow">
         <div className="db-chart-header">
-          <h3 className="db-chart-title">% of Learners Assessed</h3>
+          <h3 className="db-chart-title">Percentage of Learners Assessed</h3>
         </div>
 
         <div className="db-pie-legend">
@@ -136,7 +143,19 @@ export default function ReadingProfileChart({ data = {}, genderData = {} }) {
               innerRadius={0}
               outerRadius={75}
               dataKey="value"
-              label={({ name, value }) => `${value}%`}
+              label={({ cx, cy, midAngle, innerRadius, outerRadius, value }) => {
+                if (!value) return null;
+                const RADIAN = Math.PI / 180;
+                const r = innerRadius + (outerRadius - innerRadius) * 0.5;
+                const x = cx + r * Math.cos(-midAngle * RADIAN);
+                const y = cy + r * Math.sin(-midAngle * RADIAN);
+                return (
+                  <text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central"
+                        fontSize={11} fontFamily="Poppins" fontWeight={700}>
+                    {value}%
+                  </text>
+                );
+              }}
               labelLine={false}
             >
               {pieData.map((_, i) => (

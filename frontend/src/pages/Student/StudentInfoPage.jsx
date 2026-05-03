@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 
 import Layout from "../../components/Layout";
@@ -77,6 +77,8 @@ function computeStats(records = []) {
 export default function StudentInfoPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const backTo = location.state?.from ?? "/students";
   const { toasts, removeToast, showSaveSuccess } = useToast();
 
   const [student, setStudent] = useState(null);
@@ -163,7 +165,7 @@ export default function StudentInfoPage() {
       {!loading && (error || !student) && (
         <div className="sip-state sip-state--error">
           <p>⚠ {error ?? "Student not found."}</p>
-          <button className="sip-back-btn" onClick={() => navigate("/students/class")}>
+          <button className="sip-back-btn" onClick={() => navigate(backTo)}>
             <ChevronLeft size={15} /> Back to Class
           </button>
         </div>
@@ -173,7 +175,7 @@ export default function StudentInfoPage() {
         <div className="sip-page">
           <button
             className="sip-back-btn"
-            onClick={() => navigate("/students/class")}
+            onClick={() => navigate(backTo)}
             aria-label="Back to Class"
           >
             <ChevronLeft size={18} />
