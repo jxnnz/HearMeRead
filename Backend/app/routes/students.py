@@ -34,7 +34,7 @@ router = APIRouter(prefix="/students", tags=["Students"])
 @router.get("", response_model=StudentListResponse, summary="List all students")
 async def list_students(
     page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=200),
+    page_size: int = Query(20, ge=1, le=2000),
     search: Optional[str] = Query(None, description="Search by first or last name"),
     grade_level: Optional[GradeLevel] = Query(None),
     section: Optional[str] = Query(None),

@@ -324,4 +324,19 @@ export const sessionsApi = {
   },
 };
 
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+export const dashboardApi = {
+  /**
+   * Fetch all dashboard summary stats and chart data for a school year.
+   * Params: school_year (optional, e.g. "2024-2025") — defaults to current year.
+   * Returns: { school_year, stats, profile_distribution, gender_distribution,
+   *            fluency_accuracy, fluency_wpm }
+   */
+  getSummary: async (schoolYear) => {
+    const params = schoolYear ? { school_year: schoolYear } : {};
+    const res = await api.get("/dashboard/summary", { params });
+    return res.data;
+  },
+};
+
 export default api;
