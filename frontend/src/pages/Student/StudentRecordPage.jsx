@@ -31,13 +31,14 @@ function currentSchoolYear() {
 export default function StudentRecordPage() {
   const navigate = useNavigate();
 
-  const [classes, setClasses]       = useState([]);
-  const [loading, setLoading]       = useState(true);
-  const [error, setError]           = useState(null);
-  const [showImport, setShowImport] = useState(false);
+  const [classes, setClasses]         = useState([]);
+  const [loading, setLoading]         = useState(true);
+  const [error, setError]             = useState(null);
+  const [showImport, setShowImport]   = useState(false);
 
-  const [schoolYear, setSchoolYear] = useState(currentSchoolYear());
-  const [period, setPeriod]         = useState("beginning");
+  const [schoolYears, setSchoolYears] = useState([]);
+  const [schoolYear, setSchoolYear]   = useState(currentSchoolYear());
+  const [period, setPeriod]           = useState("beginning");
 
   const loadClasses = useCallback(() => {
     setLoading(true);
@@ -49,6 +50,16 @@ export default function StudentRecordPage() {
   }, []);
 
   useEffect(() => { loadClasses(); }, [loadClasses]);
+
+  useEffect(() => {
+    studentsApi.listSchoolYears().then((data) => {
+      const years = data.school_years || [];
+      setSchoolYears(years);
+      if (years.length > 0 && !years.includes(schoolYear)) {
+        setSchoolYear(years[0]);
+      }
+    }).catch(() => {});
+  }, []);
 
   function handleCardClick(grade_level, section) {
     const params = new URLSearchParams({
@@ -85,14 +96,27 @@ export default function StudentRecordPage() {
         <div className="sr-filters">
           <div className="sr-filter-field">
             <label htmlFor="sr-year">School Year</label>
-            <input
-              id="sr-year"
-              type="text"
-              className="sr-filter-input"
-              value={schoolYear}
-              onChange={(e) => setSchoolYear(e.target.value)}
-              placeholder="e.g. 2025-2026"
-            />
+            {schoolYears.length > 0 ? (
+              <select
+                id="sr-year"
+                className="sr-filter-input"
+                value={schoolYear}
+                onChange={(e) => setSchoolYear(e.target.value)}
+              >
+                {schoolYears.map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            ) : (
+              <input
+                id="sr-year"
+                type="text"
+                className="sr-filter-input"
+                value={schoolYear}
+                onChange={(e) => setSchoolYear(e.target.value)}
+                placeholder="e.g. 2025-2026"
+              />
+            )}
           </div>
           <div className="sr-filter-field">
             <label htmlFor="sr-period">Assessment Period</label>

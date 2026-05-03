@@ -1919,10 +1919,10 @@
    OBSERVATION STEP (standalone)
    ============================================================ */
 
-/* Override sticky positioning when obs panel is standalone (not in a two-column layout) */
+/* Override sticky positioning when obs panel is standalone */
 .asp-page > .asp-obs-panel {
   position: static;
-  max-width: 600px;
+  max-width: 100%;
   margin: 0 auto 24px;
 }
 
@@ -1931,8 +1931,58 @@
   align-items: center;
   justify-content: flex-end;
   gap: 12px;
-  max-width: 600px;
+  max-width: 100%;
   margin: 0 auto;
+}
+
+/* Wider layout on desktop */
+@media (min-width: 768px) {
+  .asp-obs-panel {
+    padding: 28px 36px;
+  }
+
+  .asp-obs-footer .asp-continue-btn {
+    width: auto;
+    min-width: 200px;
+  }
+
+  .asp-obs-radio {
+    padding: 10px 14px;
+  }
+
+  .asp-obs-radio__label {
+    font-size: 14px;
+  }
+
+  .asp-obs-radio__desc {
+    font-size: 12px;
+  }
+
+  .asp-obs-section__label {
+    font-size: 12px;
+  }
+
+  .asp-obs-textarea {
+    font-size: 14px;
+    padding: 12px 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .asp-obs-panel {
+    padding: 16px 14px;
+  }
+
+  .asp-obs-footer {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+
+  .asp-obs-footer__back,
+  .asp-obs-footer .asp-continue-btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 .asp-obs-footer__back {
@@ -1953,3 +2003,107 @@
 
 .asp-obs-footer__back:hover:not(:disabled) { background: #dde2f0; }
 .asp-obs-footer__back:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ============================================================
+   LEARNER EXPERIENCE STEP
+   ============================================================ */
+
+.asp-lexp-container {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  max-width: 520px;
+  width: 100%;
+  margin: 8px auto 4px;
+}
+
+.asp-lexp-bar {
+  width: 10px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  margin: 6px 0;
+  background: linear-gradient(
+    to bottom,
+    #c0392b 0%,
+    #d35400 25%,
+    #d4ac0d 50%,
+    #1e8449 75%,
+    #117a65 100%
+  );
+}
+
+.asp-lexp-faces {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+.asp-lexp-face {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  border-radius: 50px;
+  border: 2.5px solid #dde2f0;
+  cursor: pointer;
+  background: #fff;
+  text-align: left;
+  font-family: "Poppins", sans-serif;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+
+.asp-lexp-face:hover {
+  transform: translateX(5px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.asp-lexp-face--selected {
+  transform: translateX(8px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
+.asp-lexp-face__emoji {
+  font-size: 2.4rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.asp-lexp-face__label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #5a6382;
+}
+
+@media (min-width: 768px) {
+  .asp-lexp-container {
+    max-width: 600px;
+  }
+
+  .asp-lexp-face {
+    padding: 14px 28px;
+  }
+
+  .asp-lexp-face__emoji {
+    font-size: 2.8rem;
+  }
+
+  .asp-lexp-face__label {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .asp-lexp-face {
+    padding: 10px 16px;
+    gap: 12px;
+  }
+
+  .asp-lexp-face__emoji {
+    font-size: 2rem;
+  }
+
+  .asp-lexp-face__label {
+    font-size: 0.9rem;
+  }
+}

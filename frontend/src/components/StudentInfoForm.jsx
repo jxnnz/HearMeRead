@@ -2,9 +2,6 @@ import { useState } from "react";
 import { Search, X } from "lucide-react";
 
 // ── School year options: current and past only ───────────────
-// Never shows a future school year.
-// School year starts in June — before June we are still in the
-// previous school year (e.g. April 2026 → still 2025-2026).
 function schoolYearOptions() {
   const now          = new Date();
   const year         = now.getFullYear();
@@ -18,8 +15,6 @@ function schoolYearOptions() {
     options.push(`${start}-${start + 1}`);
   }
   return options;
-  // e.g. today = April 2026 → ["2021-2022","2022-2023","2023-2024","2024-2025","2025-2026"]
-  // e.g. today = August 2026 → ["2022-2023","2023-2024","2024-2025","2025-2026","2026-2027"]
 }
 
 // ── Assessment type options ───────────────────────────────────
@@ -31,8 +26,8 @@ const ASSESSMENT_TYPES = [
 
 // ── Language options ──────────────────────────────────────────
 const LANGUAGE_OPTIONS = [
-  { value: "filipino", label: "🇵🇭 Filipino" },
-  { value: "english",  label: "🇬🇧 English"  },
+  { value: "filipino", label: "Filipino" },
+  { value: "english",  label: "English"  },
 ];
 
 // ============================================================

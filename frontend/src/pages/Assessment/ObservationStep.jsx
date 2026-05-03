@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { OBSERVATION_LEVELS } from "../../data/assessmentConstants";
 import { sessionsApi } from "../../services/api";
 
-export default function ObservationStep({ sessionId, onComplete, onBack }) {
+export default function ObservationStep({ sessionId, learnerExperience, onComplete, onBack }) {
   const [selectedLevel, setSelectedLevel] = useState(null);
   const [remarks, setRemarks]             = useState("");
   const [saving, setSaving]               = useState(false);
@@ -14,10 +14,12 @@ export default function ObservationStep({ sessionId, onComplete, onBack }) {
     setSaving(true);
     setError(null);
     try {
-      const data = await sessionsApi.saveObservation(sessionId, {
+      const payload = {
         observation_level: selectedLevel,
         teacher_remarks:   remarks.trim() || null,
-      });
+      };
+      if (learnerExperience != null) payload.learner_experience = learnerExperience;
+      const data = await sessionsApi.saveObservation(sessionId, payload);
       onComplete(data);
     } catch (e) {
       setError(e.response?.data?.detail || e.message || "Failed to save observation.");

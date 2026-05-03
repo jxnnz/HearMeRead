@@ -5,7 +5,9 @@ and returns structured data for bulk import.
 Supports the standard CRLA format:
   - Top rows contain metadata: Grade, Section, Language
   - A header row is identified by finding the "LRN" column
-  - Data rows follow immediately below the header row
+  - CRLA files often have TWO header rows (group labels + column names);
+    both are detected and merged into a single col_map
+  - Data rows follow immediately below the last header row
 """
 from __future__ import annotations
 
@@ -63,15 +65,36 @@ def _parse_time(raw: str) -> Optional[float]:
 
 
 def _normalize_grade(raw: str) -> Optional[str]:
-    """Convert 'Grade 2', '2', 'Kindergarten' → 'grade_2', 'kindergarten', etc."""
+    """
+    Convert a cell value to a grade enum string.
+
+    Matches:
+      - Standalone single digit: "2" → "grade_2"
+      - "Grade N" / "Grade Level: N" (not followed by a range dash): "Grade 2" → "grade_2"
+      - Roman numerals I–III (standalone): "II" → "grade_2"
+      - Kinder variants: "K", "Kinder", "Kindergarten" → "kindergarten"
+
+    Does NOT match ranges like "Grade 1-6" or long sentences that happen
+    to contain a grade number (e.g. title rows).
+    """
     r = raw.strip().lower()
     if r in ("k", "kinder", "kindergarten"):
         return "kindergarten"
-    m = re.search(r"(\d+)", r)
+    # Standalone single digit only (not "25" or "100")
+    if re.fullmatch(r"\d", r):
+        n = int(r)
+        if 1 <= n <= 3:
+            return f"grade_{n}"
+    # "Grade 2", "Grade Level: 2" — NOT followed by a range dash/hyphen
+    m = re.search(r"\bgrade(?:\s+level)?\s*[:\s]\s*(\d)\b(?!\s*[-–—])", r)
     if m:
         n = int(m.group(1))
-        if 1 <= n <= 6:
+        if 1 <= n <= 3:
             return f"grade_{n}"
+    # Standalone Roman numerals
+    roman = {"i": 1, "ii": 2, "iii": 3}
+    if r in roman:
+        return f"grade_{roman[r]}"
     return None
 
 
@@ -95,6 +118,69 @@ def _col_matches(header: str, *keywords: str) -> bool:
     """True if the header contains ANY of the keywords (case-insensitive)."""
     h = header.lower()
     return any(k in h for k in keywords)
+
+
+def _fill_col_map(row, col_map: dict, overwrite: bool = True) -> None:
+    """
+    Map column indices from a header row into col_map.
+    If overwrite=False, existing keys are not replaced (used for sub-header rows).
+    """
+    for idx, cell in enumerate(row):
+        h = _str(cell).strip()
+        if not h:
+            continue
+
+        def _set(key: str) -> None:
+            if overwrite or key not in col_map:
+                col_map[key] = idx
+
+        hl = h.lower()
+
+        if hl == "lrn":
+            _set("lrn")
+        elif _col_matches(h, "name of learner", "student name", "name"):
+            _set("name")
+        elif hl in ("sex", "gender"):
+            _set("sex")
+        elif _col_matches(h, "date of assess", "date"):
+            _set("date")
+        elif _col_matches(h, "task 1", "task1"):
+            _set("task1")
+        elif _col_matches(h, "task 2l", "task2l", "2l word", "rhyme"):
+            _set("task2l")
+        elif _col_matches(h, "task 2h", "task2h", "2h sent", "sentence"):
+            _set("task2h")
+        elif _col_matches(h, "total score", "total scor"):
+            _set("total_score")
+        elif _col_matches(h, "part 1 reading", "part1 reading", "reading level", "classification"):
+            _set("classification")
+        elif _col_matches(h, "story number", "story no"):
+            pass  # skip
+        elif _col_matches(h, "total words per", "total words in", "words per story"):
+            _set("total_words")
+        elif _col_matches(h, "total words"):
+            if overwrite or "total_words" not in col_map:
+                col_map.setdefault("total_words", idx)
+        elif _col_matches(h, "number of miscue", "no. of miscue", "miscue"):
+            _set("miscue_count")
+        elif _col_matches(h, "words read", "word read"):
+            pass  # computed, skip
+        elif _col_matches(h, "total time", "time used", "reading time"):
+            _set("reading_time")
+        elif _col_matches(h, "wpm", "words per min"):
+            _set("cwpm")
+        elif _col_matches(h, "% of correct", "% correct word", "percent correct"):
+            pass  # computed, skip
+        elif _col_matches(h, "total correct answer", "correct answer", "comprehension"):
+            _set("comprehension_correct")
+        elif _col_matches(h, "learner exp", "learner's exp"):
+            _set("learner_experience")
+        elif _col_matches(h, "observation level", "obs", "fluency"):
+            _set("fluency_level")
+        elif _col_matches(h, "reading profile", "profile"):
+            _set("reading_profile")
+        elif _col_matches(h, "remark"):
+            _set("teacher_remarks")
 
 
 # ── Data classes ──────────────────────────────────────────────────────────────
@@ -166,20 +252,31 @@ def parse_crla_excel(file_bytes: bytes) -> ParsedExcel:
         if header_row_idx is not None:
             break
 
-        # Extract Grade
+        # Extract Grade — only from cells ADJACENT to a "grade" label cell
+        # (avoids picking up digits from title rows like "CRLA FOR GRADE 1-6")
         if grade_level is None and "grade" in row_text:
-            for c in row:
-                val = _str(c)
-                g = _normalize_grade(val)
-                if g:
-                    grade_level = g
-                    break
+            for j, c in enumerate(row):
+                if "grade" in _str(c).lower():
+                    # Try this cell itself ("Grade 2", "Grade Level: 2")
+                    g = _normalize_grade(_str(c))
+                    if g:
+                        grade_level = g
+                        break
+                    # Try the next few cells (label "Grade Level:" → value "2")
+                    for nc in row[j + 1: j + 5]:
+                        v = _str(nc).strip()
+                        if v:
+                            g = _normalize_grade(v)
+                            if g:
+                                grade_level = g
+                                break
+                    if grade_level:
+                        break
 
         # Extract Section
         if section is None:
             for j, c in enumerate(row):
                 if "section" in _str(c).lower():
-                    # Value is usually in the next cell(s)
                     for nc in row[j + 1:]:
                         v = _str(nc)
                         if v and "section" not in v.lower():
@@ -205,59 +302,23 @@ def parse_crla_excel(file_bytes: bytes) -> ParsedExcel:
         )
 
     # ── Step 2: Build column map from header row ───────────────────────────────
-    header_row = all_rows[header_row_idx]
     col_map: dict[str, int] = {}
+    _fill_col_map(all_rows[header_row_idx], col_map, overwrite=True)
 
-    for idx, cell in enumerate(header_row):
-        h = _str(cell).strip()
-        if not h:
-            continue
-        hl = h.lower()
-
-        if hl == "lrn":
-            col_map["lrn"] = idx
-        elif _col_matches(h, "name of learner", "student name", "name"):
-            col_map["name"] = idx
-        elif hl in ("sex", "gender"):
-            col_map["sex"] = idx
-        elif _col_matches(h, "date of assess", "date"):
-            col_map["date"] = idx
-        elif _col_matches(h, "task 1", "task1"):
-            col_map["task1"] = idx
-        elif _col_matches(h, "task 2l", "task2l", "2l word", "rhyme"):
-            col_map["task2l"] = idx
-        elif _col_matches(h, "task 2h", "task2h", "2h sent", "sentence"):
-            col_map["task2h"] = idx
-        elif _col_matches(h, "total score", "total scor"):
-            col_map["total_score"] = idx
-        elif _col_matches(h, "part 1 reading", "part1 reading", "reading level", "classification"):
-            col_map["classification"] = idx
-        elif _col_matches(h, "story number", "story no"):
-            pass  # skip
-        elif _col_matches(h, "total words per", "total words in", "words per story"):
-            col_map["total_words"] = idx
-        elif _col_matches(h, "total words"):
-            col_map["total_words"] = col_map.get("total_words", idx)
-        elif _col_matches(h, "number of miscue", "no. of miscue", "miscue"):
-            col_map["miscue_count"] = idx
-        elif _col_matches(h, "words read", "word read"):
-            pass  # computed, skip
-        elif _col_matches(h, "total time", "time used", "reading time"):
-            col_map["reading_time"] = idx
-        elif _col_matches(h, "wpm", "words per min"):
-            col_map["cwpm"] = idx
-        elif _col_matches(h, "% of correct", "% correct word", "percent correct"):
-            pass  # computed, skip
-        elif _col_matches(h, "total correct answer", "correct answer", "comprehension"):
-            col_map["comprehension_correct"] = idx
-        elif _col_matches(h, "learner exp", "learner's exp"):
-            col_map["learner_experience"] = idx
-        elif _col_matches(h, "observation level", "obs", "fluency"):
-            col_map["fluency_level"] = idx
-        elif _col_matches(h, "reading profile", "profile"):
-            col_map["reading_profile"] = idx
-        elif _col_matches(h, "remark"):
-            col_map["teacher_remarks"] = idx
+    # Handle CRLA two-row headers: Row A has LRN/Name/Sex/Date + group labels
+    # (merged cells); Row B has the actual score column names.
+    # If the cell at the LRN position in the next row is NOT a 12-digit number,
+    # treat that row as a second header row and merge its mappings.
+    data_start = header_row_idx + 1
+    if data_start < len(all_rows):
+        next_row = all_rows[data_start]
+        lrn_idx  = col_map.get("lrn", 0)
+        raw_next_lrn = _str(next_row[lrn_idx]) if lrn_idx < len(next_row) else ""
+        next_lrn_digits = re.sub(r"\D", "", raw_next_lrn.strip())
+        if len(next_lrn_digits) != 12:
+            # Not a data row — treat as sub-header carrying score column names
+            _fill_col_map(next_row, col_map, overwrite=False)
+            data_start += 1  # skip this row when parsing data
 
     if "lrn" not in col_map and "name" not in col_map:
         raise ValueError(
@@ -274,8 +335,8 @@ def parse_crla_excel(file_bytes: bytes) -> ParsedExcel:
             return ""
         return _str(row[idx])
 
-    for row_idx, row in enumerate(all_rows[header_row_idx + 1:], start=header_row_idx + 2):
-        lrn_raw = get(row, "lrn").strip()
+    for row_idx, row in enumerate(all_rows[data_start:], start=data_start + 1):
+        lrn_raw  = get(row, "lrn").strip()
         name_raw = get(row, "name").strip()
 
         # Skip empty rows
@@ -309,8 +370,6 @@ def parse_crla_excel(file_bytes: bytes) -> ParsedExcel:
                 last_name  = ""
 
         # Determine Task 2 route
-        task2l_raw = get(row, "task2l")
-        task2h_raw = get(row, "task2h")
         task2l_val = _int(row[col_map["task2l"]]) if "task2l" in col_map else None
         task2h_val = _int(row[col_map["task2h"]]) if "task2h" in col_map else None
 
@@ -324,7 +383,7 @@ def parse_crla_excel(file_bytes: bytes) -> ParsedExcel:
             task2_correct = None
             task2_route   = None
 
-        time_raw = get(row, "reading_time")
+        time_raw     = get(row, "reading_time")
         reading_time = _parse_time(time_raw)
 
         parsed_rows.append(ParsedImportRow(

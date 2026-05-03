@@ -1,7 +1,7 @@
-from typing import Optional
+from typing import Optional, List
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
-from sqlalchemy import select
+from sqlalchemy import select, distinct
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db
@@ -53,6 +53,20 @@ async def list_students(
     return StudentListResponse(total=total, page=page, page_size=page_size, students=students)
 
 
+@router.get("/school-years", summary="List distinct school years that have sessions")
+async def list_school_years(
+    db: AsyncSession = Depends(get_db),
+    current_teacher: Teacher = Depends(get_current_teacher),
+) -> dict:
+    result = await db.execute(
+        select(distinct(AssessmentSession.school_year))
+        .where(AssessmentSession.teacher_id == current_teacher.id)
+        .order_by(AssessmentSession.school_year.desc())
+    )
+    years: List[str] = [row[0] for row in result.fetchall()]
+    return {"school_years": years}
+
+
 @router.get("/classes", response_model=ClassListResponse, summary="List class summaries")
 async def list_classes(
     db: AsyncSession = Depends(get_db),
@@ -97,6 +111,13 @@ async def import_excel_records(
     sessions_created = 0
     sessions_skipped = 0
     errors           = list(parsed.parse_errors)
+
+    if grade_level is None:
+        errors.append(
+            "Warning: Grade level could not be read from the file header. "
+            "Students were created with Grade 1 as default — use 'Edit Class Info' "
+            "on the Class Record page to correct the grade level."
+        )
 
     for row in parsed.rows:
         try:

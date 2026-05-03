@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ChevronLeft, ChevronRight, FileText, FileSpreadsheet } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText, FileSpreadsheet, Pencil, Trash2 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 
 import Layout from "../../components/Layout";
+import EditStudentModal from "../../modals/EditStudentModal";
+import EditClassInfoModal from "../../modals/EditClassInfoModal";
 import { authApi, studentsApi, sessionsApi } from "../../services/api";
 import "../pages css/ClassRecordPage.css";
 
@@ -62,9 +64,40 @@ export default function ClassRecordPage() {
   const [pageSize, setPageSize]     = useState(30);
   const [totalStudents, setTotal]   = useState(0);
 
+  const [editStudent, setEditStudent]       = useState(null);
+  const [editStudentSaving, setEditStudentSaving] = useState(false);
+  const [editStudentError, setEditStudentError]   = useState(null);
+  const [showEditClass, setShowEditClass]   = useState(false);
+  const [archiveSession, setArchiveSession] = useState(null);
+  const [archiving, setArchiving]           = useState(false);
+
+  async function reload() {
+    setLoading(true);
+    setError(null);
+    try {
+      const [me, stuData, sessData] = await Promise.all([
+        authApi.me(),
+        studentsApi.list({ page, page_size: pageSize, grade_level: grade, section }),
+        sessionsApi.list({ school_year: year, period, is_completed: true, page_size: pageSize, grade_level: grade, section }),
+      ]);
+      setTeacher(me);
+      setTotal(stuData.total || 0);
+      setStudents(stuData.students || []);
+      setSessions(sessData.sessions || []);
+    } catch (e) {
+      const detail = e.response?.data?.detail;
+      setError(
+        typeof detail === "string" ? detail
+        : Array.isArray(detail)   ? detail.map((d) => d.msg).join(", ")
+        : e.message
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
   useEffect(() => {
     let cancelled = false;
-
     async function load() {
       setLoading(true);
       setError(null);
@@ -75,10 +108,8 @@ export default function ClassRecordPage() {
           sessionsApi.list({ school_year: year, period, is_completed: true, page_size: pageSize, grade_level: grade, section }),
         ]);
         if (cancelled) return;
-
         setTeacher(me);
         setTotal(stuData.total || 0);
-
         setStudents(stuData.students || []);
         setSessions(sessData.sessions || []);
       } catch (e) {
@@ -94,10 +125,50 @@ export default function ClassRecordPage() {
         if (!cancelled) setLoading(false);
       }
     }
-
     load();
     return () => { cancelled = true; };
   }, [grade, section, year, period, page, pageSize]);
+
+  async function handleSaveStudent(updatedFields) {
+    if (!editStudent) return;
+    setEditStudentSaving(true);
+    setEditStudentError(null);
+    try {
+      const payload = {};
+      if (updatedFields.first_name)  payload.first_name  = updatedFields.first_name;
+      if (updatedFields.last_name)   payload.last_name   = updatedFields.last_name;
+      if (updatedFields.lrn)         payload.lrn         = updatedFields.lrn;
+      if (updatedFields.sex)         payload.sex         = updatedFields.sex;
+      if (updatedFields.grade_level) payload.grade_level = updatedFields.grade_level;
+      payload.section = updatedFields.section ?? null;
+      await studentsApi.update(editStudent.id, payload);
+      setEditStudent(null);
+      reload();
+    } catch (err) {
+      const detail = err.response?.data?.detail;
+      setEditStudentError(
+        typeof detail === "string" ? detail
+        : Array.isArray(detail)   ? detail.map((d) => d.msg).join(", ")
+        : err.message
+      );
+    } finally {
+      setEditStudentSaving(false);
+    }
+  }
+
+  async function handleArchiveSession() {
+    if (!archiveSession) return;
+    setArchiving(true);
+    try {
+      await sessionsApi.archive(archiveSession.id);
+      setArchiveSession(null);
+      reload();
+    } catch (err) {
+      console.error("Archive failed:", err);
+    } finally {
+      setArchiving(false);
+    }
+  }
 
   const sessionByStudent = {};
   for (const sess of sessions) {
@@ -259,29 +330,54 @@ export default function ClassRecordPage() {
 
             {/* Info bar (mirrors Excel header section) */}
             <div className="cr-info-bar">
-              <div className="cr-info-item">
-                <span className="cr-info-label">Assessment Period</span>
-                <span className="cr-info-value">{periodLabel}</span>
+              <div className="cr-info-bar__items">
+                <div className="cr-info-item">
+                  <span className="cr-info-label">Assessment Period</span>
+                  <span className="cr-info-value">{periodLabel}</span>
+                </div>
+                <div className="cr-info-item">
+                  <span className="cr-info-label">Teacher</span>
+                  <span className="cr-info-value">
+                    {teacher ? `${teacher.first_name} ${teacher.last_name}` : "—"}
+                  </span>
+                </div>
+                <div className="cr-info-item">
+                  <span className="cr-info-label">Grade Level</span>
+                  <span className="cr-info-value">{formatGrade(grade)}</span>
+                </div>
+                <div className="cr-info-item">
+                  <span className="cr-info-label">Section</span>
+                  <span className="cr-info-value">{section || "—"}</span>
+                </div>
+                <div className="cr-info-item">
+                  <span className="cr-info-label">Language</span>
+                  <span className="cr-info-value cr-info-value--cap">{language}</span>
+                </div>
               </div>
-              <div className="cr-info-item">
-                <span className="cr-info-label">Teacher</span>
-                <span className="cr-info-value">
-                  {teacher ? `${teacher.first_name} ${teacher.last_name}` : "—"}
-                </span>
-              </div>
-              <div className="cr-info-item">
-                <span className="cr-info-label">Grade Level</span>
-                <span className="cr-info-value">{formatGrade(grade)}</span>
-              </div>
-              <div className="cr-info-item">
-                <span className="cr-info-label">Section</span>
-                <span className="cr-info-value">{section || "—"}</span>
-              </div>
-              <div className="cr-info-item">
-                <span className="cr-info-label">Language</span>
-                <span className="cr-info-value cr-info-value--cap">{language}</span>
-              </div>
+              <button
+                className="cr-info-edit-btn"
+                onClick={() => setShowEditClass(true)}
+                title="Edit class info"
+              >
+                <Pencil size={13} />
+                Edit Class Info
+              </button>
             </div>
+
+            {/* Archive confirmation banner */}
+            {archiveSession && (
+              <div className="cr-archive-confirm">
+                <span>Archive the session record for this student? The student will remain but their scores for this period will be removed.</span>
+                <div className="cr-archive-confirm__actions">
+                  <button className="cr-archive-confirm__btn cr-archive-confirm__btn--cancel" onClick={() => setArchiveSession(null)} disabled={archiving}>
+                    Cancel
+                  </button>
+                  <button className="cr-archive-confirm__btn cr-archive-confirm__btn--confirm" onClick={handleArchiveSession} disabled={archiving}>
+                    {archiving ? "Archiving…" : "Confirm Archive"}
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Scrollable assessment table */}
             <div className="cr-table-wrapper">
@@ -303,6 +399,7 @@ export default function ClassRecordPage() {
                     <th rowSpan={2} className="cr-th">Obs. Level</th>
                     <th rowSpan={2} className="cr-th cr-th--profile">Reading Profile</th>
                     <th rowSpan={2} className="cr-th cr-th--remarks">Remarks</th>
+                    <th rowSpan={2} className="cr-th cr-th--actions"></th>
                   </tr>
                   <tr>
                     <th className="cr-th cr-th--sub cr-th--group1">Task 1</th>
@@ -323,7 +420,7 @@ export default function ClassRecordPage() {
                 <tbody>
                   {students.length === 0 ? (
                     <tr>
-                      <td colSpan={22} className="cr-empty-row">No students in this class.</td>
+                      <td colSpan={23} className="cr-empty-row">No students in this class.</td>
                     </tr>
                   ) : (
                     students.map((s, idx) => {
@@ -387,6 +484,23 @@ export default function ClassRecordPage() {
                             {profile ?? "—"}
                           </td>
                           <td className="cr-td cr-td--remarks">{obs?.teacher_remarks ?? "—"}</td>
+                          <td className="cr-td cr-td--actions">
+                            <button
+                              className="cr-action-btn cr-action-btn--edit"
+                              onClick={() => setEditStudent(s)}
+                              title="Edit student"
+                            >
+                              <Pencil size={13} />
+                            </button>
+                            <button
+                              className="cr-action-btn cr-action-btn--archive"
+                              onClick={() => setArchiveSession(sess ?? null)}
+                              disabled={!sess}
+                              title={sess ? "Archive session" : "No session to archive"}
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </td>
                         </tr>
                       );
                     })
@@ -439,6 +553,26 @@ export default function ClassRecordPage() {
         )}
 
       </div>
+
+      {/* ── Edit Student Modal ── */}
+      <EditStudentModal
+        isOpen={editStudent !== null}
+        student={editStudent}
+        onClose={() => { setEditStudent(null); setEditStudentError(null); }}
+        onSave={handleSaveStudent}
+        saving={editStudentSaving}
+        error={editStudentError}
+      />
+
+      {/* ── Edit Class Info Modal ── */}
+      <EditClassInfoModal
+        isOpen={showEditClass}
+        onClose={() => setShowEditClass(false)}
+        onSuccess={reload}
+        students={students}
+        currentGrade={grade}
+        currentSection={section}
+      />
     </Layout>
   );
 }

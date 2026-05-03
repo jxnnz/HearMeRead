@@ -270,6 +270,7 @@ async def save_session_observation(
         session_id=session_id,
         observation_level=payload.observation_level,
         teacher_remarks=payload.teacher_remarks,
+        learner_experience=payload.learner_experience,
     )
     return {
         "session_id":       session_id,

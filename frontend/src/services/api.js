@@ -193,6 +193,11 @@ export const studentsApi = {
     return res.data;
   },
 
+  listSchoolYears: async () => {
+    const res = await api.get("/students/school-years");
+    return res.data;
+  },
+
   get: async (id) => {
     const res = await api.get(`/students/${id}`);
     return res.data;

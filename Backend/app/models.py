@@ -128,6 +128,7 @@ class Student(Base):
     last_name   = Column(String(100), nullable=False)
     grade_level = Column(SAEnum(GradeLevel), nullable=False)
     section     = Column(String(100), nullable=True)
+    school_year = Column(String(9),   nullable=True)
     lrn         = Column(String(12), unique=True, nullable=True)
     sex         = Column(SAEnum(Sex), nullable=True)
     teacher_id  = Column(Integer, ForeignKey("teachers.id"), nullable=False, index=True)

@@ -157,5 +157,6 @@ class Part1ScoreIn(BaseModel):
 
 class ObservationIn(BaseModel):
     """Payload for POST /sessions/{id}/observe — saves observation without completing session."""
-    observation_level: int            = Field(..., ge=1, le=4)
-    teacher_remarks:   Optional[str]  = Field(None, max_length=1000)
+    observation_level:  int           = Field(..., ge=1, le=4)
+    teacher_remarks:    Optional[str] = Field(None, max_length=1000)
+    learner_experience: Optional[int] = Field(None, ge=1, le=5)

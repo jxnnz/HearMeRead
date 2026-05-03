@@ -459,10 +459,11 @@ async def archive_session(
 
 
 async def save_observation(
-    db:                AsyncSession,
-    session_id:        int,
-    observation_level: int,
-    teacher_remarks:   Optional[str],
+    db:                 AsyncSession,
+    session_id:         int,
+    observation_level:  int,
+    teacher_remarks:    Optional[str],
+    learner_experience: Optional[int] = None,
 ) -> SessionObservation:
     result = await db.execute(
         select(SessionObservation).where(SessionObservation.session_id == session_id)
@@ -471,11 +472,14 @@ async def save_observation(
     if obs:
         obs.fluency_level   = observation_level
         obs.teacher_remarks = teacher_remarks
+        if learner_experience is not None:
+            obs.learner_experience = learner_experience
     else:
         obs = SessionObservation(
-            session_id      = session_id,
-            fluency_level   = observation_level,
-            teacher_remarks = teacher_remarks,
+            session_id         = session_id,
+            fluency_level      = observation_level,
+            teacher_remarks    = teacher_remarks,
+            learner_experience = learner_experience,
         )
         db.add(obs)
     await db.commit()

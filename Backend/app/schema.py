@@ -185,6 +185,12 @@ class StudentBase(BaseModel):
         examples=["123456789012"],
         description="12-digit Learner Reference Number",
     )
+    school_year: Optional[str] = Field(
+        None,
+        max_length=9,
+        examples=["2025-2026"],
+        description="School year in YYYY-YYYY format",
+    )
 
     @field_validator("lrn")
     @classmethod
@@ -207,6 +213,7 @@ class StudentUpdate(BaseModel):
     section:     Optional[str]        = Field(None, max_length=100)
     sex:         Optional[Sex]        = None
     lrn:         Optional[str]        = Field(None, min_length=12, max_length=12, pattern=r"^\d{12}$")
+    school_year: Optional[str]        = Field(None, max_length=9)
 
 
 class StudentResponse(StudentBase):

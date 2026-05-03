@@ -2,9 +2,9 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 
-import Layout             from "../../components/Layout";
-import StudentDetailsForm from "../../components/StudentDetailsForm";
-import { studentsApi }    from "../../services/api";
+import Layout                              from "../../components/Layout";
+import StudentDetailsForm, { currentSchoolYear } from "../../components/StudentDetailsForm";
+import { studentsApi }                    from "../../services/api";
 
 import "../pages css/AddStudentPage.css";
 
@@ -15,6 +15,7 @@ const EMPTY_FORM = {
   last_name:   "",
   grade_level: "",
   section:     "",
+  school_year: currentSchoolYear(),
 };
 
 export default function AddStudentPage() {
@@ -46,6 +47,7 @@ export default function AddStudentPage() {
         section:     form.section.trim() || null,
         sex:         form.sex || null,
         lrn:         form.lrn.trim() || null,
+        school_year: form.school_year || null,
       });
       navigate("/students");
     } catch (err) {

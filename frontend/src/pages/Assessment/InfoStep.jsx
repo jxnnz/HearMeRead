@@ -7,9 +7,10 @@ export default function InfoStep({
   students, allPassages,
   loadingStudents, loadingPassages,
   fetchError, createError,
-  creating, onContinue,
+  creating, session, onContinue,
   fileInput, choiceModalProps,
 }) {
+  const sessionStarted = !!session;
   return (
     <>
       {fileInput}
@@ -31,10 +32,14 @@ export default function InfoStep({
         <button
           className="asp-continue-btn"
           onClick={onContinue}
-          disabled={creating || !form.student_id}
+          disabled={creating || !form.student_id || sessionStarted}
         >
-          {creating ? "Creating session…" : "Continue"}
-          {!creating && <ChevronRight size={16} />}
+          {creating
+            ? "Creating session…"
+            : sessionStarted
+              ? "Session already started"
+              : "Continue"}
+          {!creating && !sessionStarted && <ChevronRight size={16} />}
         </button>
       </div>
       <RecordingChoiceModal {...choiceModalProps} />

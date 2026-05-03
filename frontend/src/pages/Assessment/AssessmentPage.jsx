@@ -14,6 +14,7 @@ import {
 import {
   PERIOD_MAP,
   OBSERVATION_LEVELS,
+  EXPERIENCE_OPTIONS,
 } from "../../data/assessmentConstants";
 
 import InfoStep                 from "./InfoStep";
@@ -22,6 +23,7 @@ import TranscriptionPreviewStep from "./TranscriptionPreviewStep";
 import A1TaskResultStep         from "./A1TaskResultStep";
 import A2SelectStep             from "./A2SelectStep";
 import ObservationStep          from "./ObservationStep";
+import LearnerExperienceStep    from "./LearnerExperienceStep";
 
 import "../pages css/AssessmentPage.css";
 
@@ -38,7 +40,9 @@ const STEPS = {
   A1_G2_LOADING: "a1_g2_loading",
   A1_G2_PREVIEW: "a1_g2_preview",
   A1_G2_RESULT:  "a1_g2_result",
-  // Observation (standalone — after A1 Task 2 for non-A2 students, after comprehension for A2)
+  // Learner experience — after A1 result (non-A2) or after comprehension (A2)
+  LEARNER_EXP:   "learner_exp",
+  // Observation (standalone — after learner experience)
   A1_G1_OBSERVE: "a1_g1_observe",
   // Assessment 2
   A2_SELECT:     "a2_select",
@@ -287,6 +291,7 @@ export default function AssessmentPage() {
       // ───────────────────────────────────────────────────────────────────────
 
       setSession(res.session ?? res);
+      setStep(STEPS.A1_G1);
       setShowChoiceModal(true);
     } catch (err) {
       setCreateError(err.response?.data?.detail || err.message || "Failed to create session.");
@@ -561,7 +566,7 @@ export default function AssessmentPage() {
   }
 
   // ── Final session completion ─────────────────────────────────────────────
-  async function handleCompleteSession() {
+  async function handleCompleteSession(learnerExpBackendValue = null) {
     if (!session?.id) { handleReset(); return; }
     setIsCompleting(true);
     setCompleteError(null);
@@ -592,7 +597,7 @@ export default function AssessmentPage() {
             grade_level:             gradeNum,
             comprehension_correct:   compCorrect,
             fluency_level:           null,
-            learner_experience:      null,
+            learner_experience:      learnerExpBackendValue,
             teacher_remarks:         null,
             whisper_word_timestamps: a2Words.length > 0 ? a2Words : null,
           }
@@ -712,7 +717,7 @@ export default function AssessmentPage() {
           students={students} allPassages={a1Passages}
           loadingStudents={loadingStudents} loadingPassages={loadingPassages}
           fetchError={fetchError} createError={createError}
-          creating={creating} onContinue={handleContinue}
+          creating={creating} session={session} onContinue={handleContinue}
           fileInput={fileInput} choiceModalProps={choiceModalProps}
         />
       </Layout>
@@ -841,8 +846,8 @@ export default function AssessmentPage() {
           recordingTime={g2RecordingTime}
           transcript={g2Transcript}
           g1Score={task1ScoreResult?.task1_correct}
-          onContinue={reachedA2eligible ? handleProceedToA2 : () => setStep(STEPS.A1_G1_OBSERVE)}
-          continueLabel={reachedA2eligible ? "Proceed to Assessment 2" : "Record Observation"}
+          onContinue={reachedA2eligible ? handleProceedToA2 : () => setStep(STEPS.LEARNER_EXP)}
+          continueLabel={reachedA2eligible ? "Proceed to Assessment 2" : "Continue"}
         />
         {completeError && <p className="asp-error" style={{ textAlign: "center" }}>⚠ {completeError}</p>}
       </Layout>
@@ -882,7 +887,27 @@ export default function AssessmentPage() {
         <ComprehensionStep
           a2Passage={a2Passage}
           answers={answers} setAnswers={setAnswers}
-          onSubmit={handleCompleteSession}
+          onSubmit={() => setStep(STEPS.LEARNER_EXP)}
+        />
+      </Layout>
+    );
+  }
+
+  if (step === STEPS.LEARNER_EXP) {
+    const isA2Path = !!a2Passage;
+    return (
+      <Layout>
+        <LearnerExperienceStep
+          onConfirm={(selectedValue) => {
+            setLearnerExperience(selectedValue);
+            const backendVal = EXPERIENCE_OPTIONS.find((e) => e.value === selectedValue)?.backendValue ?? null;
+            if (isA2Path) {
+              handleCompleteSession(backendVal);
+            } else {
+              setStep(STEPS.A1_G1_OBSERVE);
+            }
+          }}
+          onBack={() => setStep(isA2Path ? STEPS.COMPREHENSION : STEPS.A1_G2_RESULT)}
         />
         {isCompleting && <LoadingScreen message="Submitting results…" />}
         {completeError && (
@@ -893,17 +918,19 @@ export default function AssessmentPage() {
   }
 
   if (step === STEPS.A1_G1_OBSERVE) {
+    const leBackendVal = EXPERIENCE_OPTIONS.find((e) => e.value === learnerExperience)?.backendValue ?? null;
     return (
       <Layout>
         <ObservationStep
           sessionId={session?.id}
+          learnerExperience={leBackendVal}
           onComplete={(data) => {
             const lvl = OBSERVATION_LEVELS.find((l) => l.backendValue === data.observation_level);
             setObservationLevel(lvl?.value ?? "");
             setTeacherNotes(data.teacher_remarks ?? "");
             handleCompleteSession();
           }}
-          onBack={() => setStep(STEPS.A1_G2_RESULT)}
+          onBack={() => setStep(STEPS.LEARNER_EXP)}
         />
         {isCompleting && <LoadingScreen message="Submitting results…" />}
         {completeError && (
@@ -924,7 +951,7 @@ export default function AssessmentPage() {
             setTeacherNotes(data.teacher_remarks ?? "");
             setStep(STEPS.RESULTS);
           }}
-          onBack={() => setStep(STEPS.COMPREHENSION)}
+          onBack={undefined}
         />
       </Layout>
     );

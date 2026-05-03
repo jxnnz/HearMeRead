@@ -1,3 +1,23 @@
+function currentSchoolYear() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const startYear = now.getMonth() < 5 ? y - 1 : y; // June (5) = new SY starts
+  return `${startYear}-${startYear + 1}`;
+}
+
+function schoolYearOptions() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const startYear = now.getMonth() < 5 ? y - 1 : y;
+  return [
+    `${startYear - 1}-${startYear}`,
+    `${startYear}-${startYear + 1}`,
+    `${startYear + 1}-${startYear + 2}`,
+  ];
+}
+
+export { currentSchoolYear };
+
 export default function StudentDetailsForm({ form, setForm }) {
   function update(field, val) {
     setForm((prev) => ({ ...prev, [field]: val }));
@@ -5,8 +25,28 @@ export default function StudentDetailsForm({ form, setForm }) {
 
   return (
     <div className="as-card">
-      <h2 className="as-card__title">Student Details</h2>
-      <p className="as-card__subtitle">Enter the student details.</p>
+
+      {/* ── Card header: title + school year selector ── */}
+      <div className="as-card__header">
+        <div>
+          <h2 className="as-card__title">Student Details</h2>
+          <p className="as-card__subtitle">Enter the student details.</p>
+        </div>
+
+        <div className="as-card__year-field">
+          <label className="as-label" htmlFor="student-school-year">School Year:</label>
+          <select
+            id="student-school-year"
+            className="as-input"
+            value={form.school_year}
+            onChange={(e) => update("school_year", e.target.value)}
+          >
+            {schoolYearOptions().map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+        </div>
+      </div>
 
       {/* ── Row 1: LRN + Sex ── */}
       <div className="as-row as-row--lrn-sex">

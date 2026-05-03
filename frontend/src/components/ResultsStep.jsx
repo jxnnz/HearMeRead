@@ -59,7 +59,7 @@ export default function ResultsStep({
   const learnerExp         = expOption ? `${expOption.score}/10` : (part2?.learner_experience ?? "—");
   const obsLevelDisplay    = part2?.observation_level
     ? `Level ${part2.observation_level}`
-    : (obsLevel?.label?.split(" ")[0] ?? "—");
+    : (obsLevel?.label ?? "—");
 
   const statCards = [
     { label: "Story",                                           value: storyNumber,                                    color: "#1a2340" },

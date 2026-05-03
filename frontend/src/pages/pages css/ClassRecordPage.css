@@ -97,12 +97,45 @@
 /* ── Info bar ────────────────────────────────────────── */
 .cr-info-bar {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   background: #f4f6fb;
   border-bottom: 1.5px solid #dde2f0;
   padding: 16px 24px;
+  flex-wrap: wrap;
+}
+
+.cr-info-bar__items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
   row-gap: 12px;
+  flex: 1;
+}
+
+.cr-info-edit-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1.5px solid #dde2f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: "Poppins", sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+.cr-info-edit-btn:hover {
+  background: #f0f2fa;
+  border-color: #2c3e6b;
+  color: #1a2340;
 }
 
 .cr-info-item {
@@ -129,6 +162,52 @@
 .cr-info-value--cap {
   text-transform: capitalize;
 }
+
+/* ── Archive confirm banner ──────────────────────────── */
+.cr-archive-confirm {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: #fff8ed;
+  border-bottom: 1.5px solid #fde68a;
+  padding: 12px 24px;
+  font-size: 13px;
+  color: #92400e;
+}
+
+.cr-archive-confirm__actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.cr-archive-confirm__btn {
+  height: 30px;
+  padding: 0 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: "Poppins", sans-serif;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s;
+}
+.cr-archive-confirm__btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.cr-archive-confirm__btn--cancel {
+  background: transparent;
+  border: 1px solid #d1d5db;
+  color: #374151;
+}
+.cr-archive-confirm__btn--cancel:hover:not(:disabled) { background: #f3f4f6; }
+
+.cr-archive-confirm__btn--confirm {
+  background: #dc2626;
+  color: #fff;
+}
+.cr-archive-confirm__btn--confirm:hover:not(:disabled) { background: #b91c1c; }
 
 /* ── Table wrapper ───────────────────────────────────── */
 .cr-table-wrapper {
@@ -243,6 +322,51 @@
   text-align: center;
   color: #8a94b2;
   font-size: 13px;
+}
+
+/* ── Action column ───────────────────────────────────── */
+.cr-th--actions { width: 70px; min-width: 70px; }
+.cr-td--actions {
+  text-align: center;
+  white-space: nowrap;
+  padding: 6px 8px;
+}
+
+.cr-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  margin: 0 2px;
+}
+
+.cr-action-btn--edit {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+.cr-action-btn--edit:hover {
+  background: #dcfce7;
+  border-color: #86efac;
+}
+
+.cr-action-btn--archive {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+.cr-action-btn--archive:hover:not(:disabled) {
+  background: #fee2e2;
+  border-color: #f87171;
+}
+.cr-action-btn--archive:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
 /* ── Export buttons ──────────────────────────────────── */
