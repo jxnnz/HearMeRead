@@ -1,0 +1,79 @@
+/* ── Shared public navbar (Landing, Login, Signup, Forgot, Reset) ── */
+.pub-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 48px;
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+.pub-nav__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.5px;
+  font-family: "Poppins", sans-serif;
+  cursor: pointer;
+  user-select: none;
+}
+
+.pub-nav__logo {
+  height: 32px;
+  width: auto;
+}
+
+.pub-nav__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pub-nav__btn {
+  padding: 9px 22px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  border: 2px solid transparent;
+  transition: background 0.18s, color 0.18s, border-color 0.18s;
+}
+
+.pub-nav__btn--ghost {
+  background: transparent;
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.pub-nav__btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.pub-nav__btn--active {
+  background: #2c7fc1;
+  color: #fff;
+  border-color: #2c7fc1;
+}
+
+.pub-nav__btn--active:hover {
+  background: #1f6aad;
+  border-color: #1f6aad;
+}
+
+@media (max-width: 480px) {
+  .pub-nav {
+    padding: 16px 20px;
+  }
+  .pub-nav__brand {
+    font-size: 18px;
+  }
+  .pub-nav__btn {
+    padding: 7px 14px;
+    font-size: 13px;
+  }
+}

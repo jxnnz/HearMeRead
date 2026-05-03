@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import teachImg from "../assets/teach.png";
+import PublicNav from "../components/PublicNav";
 import "../pages/pages css/LandingPage.css";
 
 export default function LandingPage() {
@@ -8,21 +9,7 @@ export default function LandingPage() {
   return (
     <div className="lp-page">
 
-      {/* ── Navbar ── */}
-      <nav className="lp-nav">
-        <span className="lp-nav__brand">
-          <img src="/HMR-LOGO.png" alt="" style={{ height: 32, width: "auto", verticalAlign: "middle", marginRight: 8 }} />
-          HearMeRead
-        </span>
-        <div className="lp-nav__actions">
-          <button className="lp-btn lp-btn--ghost" onClick={() => navigate("/login")}>
-            Log In
-          </button>
-          <button className="lp-btn lp-btn--primary" onClick={() => navigate("/signup")}>
-            Register
-          </button>
-        </div>
-      </nav>
+      <PublicNav page="landing" />
 
       {/* ── teach ── */}
       <main className="lp-teach">
