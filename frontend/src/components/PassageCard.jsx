@@ -53,8 +53,10 @@ export default function PassageCard({ passage, onClick, onEdit, onRemove }) {
 
       {/* ── Excerpt ── */}
       <p className="p-card__excerpt">
-        {passage.content?.slice(0, 160)}
-        {passage.content?.length > 160 ? "…" : ""}
+        {isA1
+          ? (passage.task1_content?.slice(0, 160) ?? "")
+          : (passage.content?.slice(0, 160) ?? "")}
+        {((isA1 ? passage.task1_content : passage.content)?.length ?? 0) > 160 ? "…" : ""}
       </p>
 
       {/* ── Action buttons (visible on hover) ── */}

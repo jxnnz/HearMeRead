@@ -998,6 +998,19 @@
   font-family: "Poppins", sans-serif;
 }
 
+.asp-comp-question__answer {
+  font-size: 13px;
+  color: #1a2340;
+  margin: 0;
+  line-height: 1.5;
+  font-family: "Poppins", sans-serif;
+  font-weight: 600;
+}
+
+.asp-comp-question__answer-label {
+  font-weight: 600;
+}
+
 .asp-comp-question__hint {
   font-size: 12.5px;
   color: #2c7fc1;

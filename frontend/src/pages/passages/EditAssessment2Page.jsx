@@ -1,49 +1,71 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { ChevronLeft, Plus, X } from "lucide-react";
 
 import Layout from "../../components/Layout";
 import { passagesApi, questionsApi } from "../../services/api";
 import "../pages css/AddPassagePage.css";
 
-const EMPTY_DETAILS = {
-  title: "",
-  grade_level: "grade_2",
-  language: "filipino",
-  content: "",
-};
-
-function blankQuestion() {
-  return {
-    id: crypto.randomUUID(),
-    question: "",
-    answer: "",
-  };
-}
-
-export default function AddAssessment2Page() {
+export default function EditAssessment2Page() {
   const navigate = useNavigate();
+  const { id } = useParams();
 
-  const [details, setDetails]     = useState(EMPTY_DETAILS);
-  const [questions, setQuestions] = useState([blankQuestion()]);
-  const [saving, setSaving]       = useState(false);
-  const [error, setError]         = useState(null);
+  const [details, setDetails] = useState({
+    title: "", grade_level: "grade_2", language: "filipino", content: "",
+  });
+  const [questions, setQuestions] = useState([]);
+  const [removedIds, setRemovedIds] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    passagesApi
+      .get(id)
+      .then((p) => {
+        setDetails({
+          title:       p.title       ?? "",
+          grade_level: p.grade_level ?? "grade_2",
+          language:    p.language    ?? "filipino",
+          content:     p.content     ?? "",
+        });
+        setQuestions(
+          (p.questions ?? [])
+            .filter((q) => !q.is_archived)
+            .map((q) => ({
+              localId:    crypto.randomUUID(),
+              serverId:   q.id,
+              text:       q.text,
+              answer_key: q.answer_key ?? "",
+            }))
+        );
+      })
+      .catch((e) => setError(e.response?.data?.detail || e.message))
+      .finally(() => setLoading(false));
+  }, [id]);
 
   function updateDetails(field, val) {
     setDetails((prev) => ({ ...prev, [field]: val }));
   }
 
   function addQuestion() {
-    setQuestions((prev) => [...prev, blankQuestion()]);
+    setQuestions((prev) => [
+      ...prev,
+      { localId: crypto.randomUUID(), serverId: null, text: "", answer_key: "" },
+    ]);
   }
 
   function removeQuestion(index) {
+    const q = questions[index];
+    if (q.serverId !== null) {
+      setRemovedIds((prev) => [...prev, q.serverId]);
+    }
     setQuestions((prev) => prev.filter((_, i) => i !== index));
   }
 
-  function updateQuestion(index, field, val) {
+  function updateQuestion(index, field, value) {
     setQuestions((prev) =>
-      prev.map((q, i) => (i === index ? { ...q, [field]: val } : q))
+      prev.map((q, i) => (i === index ? { ...q, [field]: value } : q))
     );
   }
 
@@ -51,7 +73,7 @@ export default function AddAssessment2Page() {
     if (!details.title.trim())   { setError("Passage title is required.");   return false; }
     if (!details.content.trim()) { setError("Passage content is required."); return false; }
     for (let i = 0; i < questions.length; i++) {
-      if (!questions[i].question.trim()) {
+      if (!questions[i].text.trim()) {
         setError(`Question ${i + 1} text is required.`);
         return false;
       }
@@ -64,31 +86,48 @@ export default function AddAssessment2Page() {
     if (!validate()) return;
     setSaving(true);
     try {
-      const passage = await passagesApi.create({
-        title:           details.title.trim(),
-        content:         details.content.trim(),
-        language:        details.language,
-        grade_level:     details.grade_level,
-        assessment_type: 2,
+      await passagesApi.update(id, {
+        title:       details.title.trim(),
+        content:     details.content.trim(),
+        language:    details.language,
+        grade_level: details.grade_level,
       });
 
+      for (const serverId of removedIds) {
+        await questionsApi.archive(serverId);
+      }
+
       for (const q of questions) {
-        if (!q.question.trim()) continue;
-        await questionsApi.create(passage.id, {
-          text:       q.question.trim(),
-          answer_key: q.answer.trim() || null,
-        });
+        const payload = {
+          text:       q.text.trim(),
+          answer_key: q.answer_key.trim() || null,
+        };
+        if (q.serverId !== null) {
+          await questionsApi.update(q.serverId, payload);
+        } else {
+          await questionsApi.create(Number(id), payload);
+        }
       }
 
       navigate("/passages");
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data?.detail || err.message);
     } finally {
       setSaving(false);
     }
   }
 
   const wordCount = details.content.trim().split(/\s+/).filter(Boolean).length;
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="ap-page">
+          <p style={{ padding: "32px", color: "#8a94b2" }}>Loading…</p>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -104,10 +143,10 @@ export default function AddAssessment2Page() {
             >
               <ChevronLeft size={18} />
             </button>
-            <h1 className="ap-page__title">Add Assessment 2</h1>
+            <h1 className="ap-page__title">Edit Assessment 2</h1>
           </div>
           <button className="ap-save-btn" onClick={handleSave} disabled={saving}>
-            {saving ? "Saving…" : "Save Passage"}
+            {saving ? "Saving…" : "Save Changes"}
           </button>
         </div>
 
@@ -117,9 +156,8 @@ export default function AddAssessment2Page() {
         {/* ── Passage Details Card ── */}
         <div className="ap-card">
           <h2 className="ap-card__title">Passage Details</h2>
-          <p className="ap-card__subtitle">Enter the passage details.</p>
+          <p className="ap-card__subtitle">Update the passage details.</p>
 
-          {/* Title */}
           <div className="ap-field">
             <label className="ap-label" htmlFor="a2-title">Passage Title:</label>
             <input
@@ -132,7 +170,6 @@ export default function AddAssessment2Page() {
             />
           </div>
 
-          {/* Grade Level + Language side by side */}
           <div className="ap-row">
             <div className="ap-field">
               <label className="ap-label" htmlFor="a2-grade">Grade Level:</label>
@@ -151,7 +188,6 @@ export default function AddAssessment2Page() {
                 ))}
               </select>
             </div>
-
             <div className="ap-field">
               <label className="ap-label" htmlFor="a2-language">Language:</label>
               <select
@@ -166,7 +202,6 @@ export default function AddAssessment2Page() {
             </div>
           </div>
 
-          {/* Content */}
           <div className="ap-field">
             <label className="ap-label" htmlFor="a2-content">
               Passage Content:
@@ -183,13 +218,13 @@ export default function AddAssessment2Page() {
           </div>
         </div>
 
-        {/* ── Passage Questions Card ── */}
+        {/* ── Questions Card ── */}
         <div className="ap-card">
           <h2 className="ap-card__title">Passage Questions</h2>
-          <p className="ap-card__subtitle">Enter the comprehension questions.</p>
+          <p className="ap-card__subtitle">Update the comprehension questions.</p>
 
           {questions.map((q, qIndex) => (
-            <div key={q.id} className="pq-block">
+            <div key={q.localId} className="pq-block">
               <div className="pq-block__header">
                 <span className="pq-block__num">Question {qIndex + 1}</span>
                 {questions.length > 1 && (
@@ -203,28 +238,26 @@ export default function AddAssessment2Page() {
                   </button>
                 )}
               </div>
-
               <div className="ap-field">
-                <label className="ap-label" htmlFor={`question-${q.id}`}>Question:</label>
+                <label className="ap-label" htmlFor={`question-${q.localId}`}>Question:</label>
                 <input
-                  id={`question-${q.id}`}
+                  id={`question-${q.localId}`}
                   type="text"
                   className="ap-input"
-                  value={q.question}
-                  onChange={(e) => updateQuestion(qIndex, "question", e.target.value)}
+                  value={q.text}
+                  onChange={(e) => updateQuestion(qIndex, "text", e.target.value)}
                   placeholder="e.g. Sino ang pangunahing tauhan sa kwento?"
                 />
               </div>
-
               <div className="ap-field">
-                <label className="ap-label" htmlFor={`answer-${q.id}`}>Answer:</label>
+                <label className="ap-label" htmlFor={`answer-${q.localId}`}>Answer Key:</label>
                 <textarea
-                  id={`answer-${q.id}`}
+                  id={`answer-${q.localId}`}
                   className="ap-textarea ap-textarea--sm"
-                  value={q.answer}
-                  onChange={(e) => updateQuestion(qIndex, "answer", e.target.value)}
+                  value={q.answer_key}
+                  onChange={(e) => updateQuestion(qIndex, "answer_key", e.target.value)}
                   placeholder="Enter the correct answer…"
-                  rows={3}
+                  rows={2}
                 />
               </div>
             </div>

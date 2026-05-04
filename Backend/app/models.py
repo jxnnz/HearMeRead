@@ -170,6 +170,7 @@ class Question(Base):
     id          = Column(Integer, primary_key=True, index=True)
     passage_id  = Column(Integer, ForeignKey("passages.id", ondelete="CASCADE"), nullable=False, index=True)
     text        = Column(String(500), nullable=False)
+    answer_key  = Column(Text, nullable=True)
     order       = Column(Integer, nullable=False, default=0)
     is_archived = Column(Boolean, nullable=False, default=False)
     created_at  = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

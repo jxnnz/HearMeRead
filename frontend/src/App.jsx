@@ -8,8 +8,10 @@ import ForgotPasswordPage  from "./pages/ForgotPasswordPage";
 import ResetPasswordPage   from "./pages/ResetPasswordPage";
 import DashboardPage    from "./pages/DashboardPage";
 import PassagePage      from "./pages/passages/PassagePage";
-import AddAssessment1Page from "./pages/passages/AddAssessment1Page";
-import AddAssessment2Page from "./pages/passages/AddAssessment2Page";
+import AddAssessment1Page  from "./pages/passages/AddAssessment1Page";
+import AddAssessment2Page  from "./pages/passages/AddAssessment2Page";
+import EditAssessment1Page from "./pages/passages/EditAssessment1Page";
+import EditAssessment2Page from "./pages/passages/EditAssessment2Page";
 import StudentRecordPage from "./pages/Student/StudentRecordPage";
 import AddStudentPage   from "./pages/Student/AddStudentPage";
 // import ASRTestPage      from "./pages/ASRTestPage";
@@ -59,8 +61,10 @@ export default function App() {
         <Route path="/dashboard"   element={<RequireAuth><DashboardPage /></RequireAuth>} />
         <Route path="/assessment"  element={<RequireAuth><AssessmentPage /></RequireAuth>} />
         <Route path="/passages"                  element={<RequireAuth><PassagePage /></RequireAuth>} />
-        <Route path="/passages/add-assessment-1" element={<RequireAuth><AddAssessment1Page /></RequireAuth>} />
-        <Route path="/passages/add-assessment-2" element={<RequireAuth><AddAssessment2Page /></RequireAuth>} />
+        <Route path="/passages/add-assessment-1"      element={<RequireAuth><AddAssessment1Page /></RequireAuth>} />
+        <Route path="/passages/add-assessment-2"      element={<RequireAuth><AddAssessment2Page /></RequireAuth>} />
+        <Route path="/passages/edit-assessment-1/:id" element={<RequireAuth><EditAssessment1Page /></RequireAuth>} />
+        <Route path="/passages/edit-assessment-2/:id" element={<RequireAuth><EditAssessment2Page /></RequireAuth>} />
         <Route path="/students"              element={<RequireAuth><StudentRecordPage /></RequireAuth>} />
         <Route path="/students/add"          element={<RequireAuth><AddStudentPage /></RequireAuth>} />
         <Route path="/students/class"        element={<RequireAuth><ClassRecordPage /></RequireAuth>} />

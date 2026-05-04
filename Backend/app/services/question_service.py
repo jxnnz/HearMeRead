@@ -46,6 +46,7 @@ async def create_question(
     question = Question(
         passage_id=passage_id,
         text=data.text,
+        answer_key=data.answer_key,
         order=data.order,
     )
     db.add(question)
@@ -97,6 +98,7 @@ async def update_question(
         question.text = data.text
     if data.order is not None:
         question.order = data.order
+    question.answer_key = data.answer_key
 
     await db.commit()
     await db.refresh(question)

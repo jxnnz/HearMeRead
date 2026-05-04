@@ -4,7 +4,6 @@ import { Plus, FileText } from "lucide-react";
 
 import Layout from "../../components/Layout";
 import PassageCard from "../../components/PassageCard";
-import PassageModal from "../../components/PassageModal";
 import AppButton from "../../components/AppButton";
 import ConfirmModal from "../../modals/ConfirmModal";
 import Toast from "../../modals/Toast";
@@ -13,23 +12,13 @@ import { passagesApi } from "../../services/api";
 
 import "../pages css/PassagePage.css";
 
-const EMPTY_FORM = {
-  title: "", content: "", language: "filipino", grade_level: "grade_2",
-  task1_content: "", task2_words: "", task2_sentences: "",
-};
-
 export default function PassagePage() {
   const navigate = useNavigate();
-  const { toasts, removeToast, showSaveSuccess } = useToast();
+  const { toasts, removeToast } = useToast();
 
   const [passages, setPassages]   = useState([]);
   const [loading, setLoading]     = useState(true);
   const [pageError, setPageError] = useState(null);
-
-  const [editTarget, setEditTarget] = useState(null);
-  const [form, setForm]             = useState(EMPTY_FORM);
-  const [saving, setSaving]         = useState(false);
-  const [formError, setFormError]   = useState(null);
 
   const [pendingArchive, setPendingArchive] = useState(null);
 
@@ -46,52 +35,10 @@ export default function PassagePage() {
 
   function openEdit(passage, e) {
     e.stopPropagation();
-    setForm({
-      title:           passage.title           ?? "",
-      content:         passage.content         ?? "",
-      language:        passage.language        ?? "filipino",
-      grade_level:     passage.grade_level     ?? "grade_2",
-      task1_content:   passage.task1_content   ?? "",
-      task2_words:     passage.task2_words     ?? "",
-      task2_sentences: passage.task2_sentences ?? "",
-    });
-    setFormError(null);
-    setEditTarget(passage);
-  }
-
-  function closeEdit() {
-    setEditTarget(null);
-    setForm(EMPTY_FORM);
-    setFormError(null);
-  }
-
-  async function handleEditSubmit(e) {
-    e.preventDefault();
-    const isA2 = editTarget?.assessment_type === 2;
-    if (isA2 && !form.title.trim())   { setFormError("Title is required.");           return; }
-    if (isA2 && !form.content.trim()) { setFormError("Passage content is required."); return; }
-    setSaving(true);
-    try {
-      const updateData = { language: form.language };
-      if (form.grade_level) updateData.grade_level = form.grade_level;
-      if (isA2) {
-        if (form.title.trim())   updateData.title   = form.title.trim();
-        if (form.content.trim()) updateData.content = form.content.trim();
-      } else {
-        if (form.task1_content.trim())   updateData.task1_content   = form.task1_content.trim();
-        if (form.task2_words.trim())     updateData.task2_words     = form.task2_words.trim();
-        if (form.task2_sentences.trim()) updateData.task2_sentences = form.task2_sentences.trim();
-      }
-      await passagesApi.update(editTarget.id, updateData);
-      setPassages((prev) =>
-        prev.map((p) => (p.id === editTarget.id ? { ...p, ...updateData } : p))
-      );
-      closeEdit();
-      showSaveSuccess("Passage");
-    } catch (err) {
-      setFormError(err.response?.data?.detail || err.message);
-    } finally {
-      setSaving(false);
+    if (passage.assessment_type === 1) {
+      navigate(`/passages/edit-assessment-1/${passage.id}`);
+    } else {
+      navigate(`/passages/edit-assessment-2/${passage.id}`);
     }
   }
 
@@ -187,19 +134,6 @@ export default function PassagePage() {
         )}
 
       </div>
-
-      {editTarget && (
-        <PassageModal
-          mode="edit"
-          assessmentType={editTarget.assessment_type}
-          form={form}
-          setForm={setForm}
-          onSubmit={handleEditSubmit}
-          onClose={closeEdit}
-          saving={saving}
-          formError={formError}
-        />
-      )}
 
       <ConfirmModal
         isOpen={!!pendingArchive}

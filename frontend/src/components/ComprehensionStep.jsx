@@ -25,6 +25,11 @@ export default function ComprehensionStep({
         {questions.map((q, idx) => (
           <div key={q.id} className="asp-comp-question">
             <p className="asp-comp-question__text">{idx + 1}. {q.text}</p>
+            {q.answer_key && (
+              <p className="asp-comp-question__answer">
+                <span className="asp-comp-question__answer-label">Answer:</span> {q.answer_key}
+              </p>
+            )}
             <div className="asp-comp-choices">
               {ANSWER_OPTIONS.map((opt) => {
                 const key      = opt.toLowerCase().replace("/", "");

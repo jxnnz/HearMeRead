@@ -92,8 +92,9 @@ class TeacherResponse(BaseModel):
 # ── Question ──────────────────────────────────────────────────────────────────
 
 class QuestionBase(BaseModel):
-    text:  str = Field(..., min_length=1, max_length=500)
-    order: int = Field(0, ge=0)
+    text:       str            = Field(..., min_length=1, max_length=500)
+    answer_key: Optional[str] = None
+    order:      int            = Field(0, ge=0)
 
 
 class QuestionCreate(QuestionBase):
@@ -101,8 +102,9 @@ class QuestionCreate(QuestionBase):
 
 
 class QuestionUpdate(BaseModel):
-    text:  Optional[str] = Field(None, min_length=1, max_length=500)
-    order: Optional[int] = Field(None, ge=0)
+    text:       Optional[str] = Field(None, min_length=1, max_length=500)
+    answer_key: Optional[str] = None
+    order:      Optional[int] = Field(None, ge=0)
 
 
 class QuestionResponse(QuestionBase):
