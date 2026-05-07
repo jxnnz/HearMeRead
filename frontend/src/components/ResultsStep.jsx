@@ -1,6 +1,7 @@
 import * as XLSX from "xlsx";
 import { CheckCircle } from "lucide-react";
 import { OBSERVATION_LEVELS, EXPERIENCE_OPTIONS } from "../data/assessmentConstants";
+import WordHighlightView from "./WordHighlightView";
 
 const PROFILE_MAP = {
   "Reading at Grade Level": { label: "Reading at Grade Level", color: "#27ae60", bg: "#e8f5e9" },
@@ -32,6 +33,7 @@ export default function ResultsStep({
   observationLevel,
   teacherNotes,
   learnerExperience,
+  a2Alignments,     // finalResult.part2.alignments
   onDone,
 }) {
   const part1 = part1Result ?? finalResult?.part1 ?? null;
@@ -206,6 +208,16 @@ export default function ResultsStep({
           </p>
         </div>
       </div>
+
+      {/* ── A2 Reading Transcription ── */}
+      {a2Alignments?.length > 0 && (
+        <div className="asp-res-profile-detail">
+          <WordHighlightView
+            alignments={a2Alignments}
+            label="Reading Transcription"
+          />
+        </div>
+      )}
 
       {/* ── Observation Level detail ── */}
       <div className="asp-res-lower">

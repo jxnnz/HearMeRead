@@ -1581,6 +1581,79 @@
   margin: 0;
 }
 
+/* Stat chips row in preview */
+.asp-preview-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 520px) {
+  .asp-preview-stats { grid-template-columns: repeat(2, 1fr); }
+}
+
+.asp-preview-stat {
+  background: #f4f6fd;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-family: "Poppins", sans-serif;
+}
+
+.asp-preview-stat__value {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.asp-preview-stat__label {
+  font-size: 11px;
+  color: #8a94b2;
+  font-weight: 500;
+}
+
+/* Original passage reference block */
+.asp-preview-passage {
+  border: 1.5px solid #b8d4f5;
+  background: #eef6ff;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.asp-preview-passage__header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.asp-preview-passage__label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #2c7fc1;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.asp-preview-passage__hint {
+  font-size: 11px;
+  color: #5a7fa8;
+}
+
+.asp-preview-passage__text {
+  font-size: 14px;
+  color: #1a2340;
+  line-height: 1.75;
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: "Poppins", sans-serif;
+}
+
 /* A2 highlighted word view */
 .asp-preview-highlight-wrap {
   display: flex;
@@ -1836,6 +1909,15 @@
 /* ============================================================
    RESULTS STEP — 8-card grid + profile detail
    ============================================================ */
+
+/* 4-card grid (A1 results) */
+.asp-res-stats--4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 700px) {
+  .asp-res-stats--4 { grid-template-columns: repeat(2, 1fr); }
+}
 
 /* 4-column grid for 8 stat cards */
 .asp-res-stats--8 {
@@ -2119,4 +2201,118 @@
   .asp-lexp-face__label {
     font-size: 0.9rem;
   }
+}
+
+/* ============================================================
+   WORD HIGHLIGHT VIEW
+   ============================================================ */
+.asp-word-highlight {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-family: "Poppins", sans-serif;
+}
+
+.asp-word-highlight__label {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a2340;
+  margin: 0 0 14px;
+}
+
+.asp-word-highlight__legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.asp-word-highlight__text {
+  background: #f4f6fd;
+  border-radius: 10px;
+  padding: 16px 18px;
+  font-size: 14px;
+  line-height: 2;
+  color: #1a2340;
+  font-family: "Poppins", sans-serif;
+}
+
+.asp-whl-word {
+  display: inline;
+}
+
+.asp-whl--correct {
+  color: #1a2340;
+}
+
+.asp-whl--substitution {
+  color: #e67e22;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-style: wavy;
+}
+
+.asp-whl--deletion {
+  color: #c0392b;
+  text-decoration: line-through;
+}
+
+.asp-whl--insertion {
+  color: #2c7fc1;
+  font-style: italic;
+}
+
+/* ============================================================
+   WORD CHIP (A2 cutoff + miscue display)
+   ============================================================ */
+.word-chip {
+  display: inline-block;
+  padding: 1px 4px;
+  border-radius: 4px;
+  margin: 2px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.word-chip--correct    { background: transparent; }
+.word-chip--wrong      { background: #fdecea; color: #c0392b; border-bottom: 2px solid #c0392b; }
+.word-chip--cutoff     { background: #e8f3fc; color: #2c7fc1; font-weight: 600; }
+.word-chip--past-limit { color: #888; }
+.word-chip--wrong.word-chip--cutoff { background: #fdecea; border-bottom: 2px solid #2c7fc1; color: #c0392b; }
+
+/* ============================================================
+   EDIT BUTTON (TranscriptionPreviewStep)
+   ============================================================ */
+.asp-edit-btn {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  color: #8a94b2;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  padding: 0;
+}
+
+.asp-edit-btn:hover { background: #eef1fc; color: #2c3e6b; }
+
+/* Read-only transcript display */
+.asp-preview-readonly {
+  background: #f4f6fd;
+  border: 1.5px solid #dde2f0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 14px;
+  color: #1a2340;
+  font-family: "Poppins", sans-serif;
+  line-height: 1.7;
+  min-height: 80px;
+  white-space: pre-wrap;
+  word-break: break-word;
 }

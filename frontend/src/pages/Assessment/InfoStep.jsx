@@ -4,6 +4,7 @@ import RecordingChoiceModal from "../../modals/RecordingChoiceModal";
 
 export default function InfoStep({
   form, setForm,
+  availableGrades,
   students, allPassages,
   loadingStudents, loadingPassages,
   fetchError, createError,
@@ -21,6 +22,7 @@ export default function InfoStep({
         <StudentInfoForm
           form={form}
           setForm={setForm}
+          availableGrades={availableGrades}
           students={students}
           passages={allPassages}
           loadingStudents={loadingStudents}

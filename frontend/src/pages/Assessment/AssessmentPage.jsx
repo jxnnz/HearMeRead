@@ -21,6 +21,7 @@ import InfoStep                 from "./InfoStep";
 import ReadingStep              from "./ReadingStep";
 import TranscriptionPreviewStep from "./TranscriptionPreviewStep";
 import A1TaskResultStep         from "./A1TaskResultStep";
+import A1OnlyResultsStep        from "../../components/A1OnlyResultsStep";
 import A2SelectStep             from "./A2SelectStep";
 import ObservationStep          from "./ObservationStep";
 import LearnerExperienceStep    from "./LearnerExperienceStep";
@@ -40,6 +41,8 @@ const STEPS = {
   A1_G2_LOADING: "a1_g2_loading",
   A1_G2_PREVIEW: "a1_g2_preview",
   A1_G2_RESULT:  "a1_g2_result",
+  // Dedicated result page for A1-only students (non-A2 path)
+  A1_RESULTS:    "a1_results",
   // Learner experience — after A1 result (non-A2) or after comprehension (A2)
   LEARNER_EXP:   "learner_exp",
   // Observation (standalone — after learner experience)
@@ -101,9 +104,10 @@ export default function AssessmentPage() {
   const { toasts, removeToast, showSaveSuccess } = useToast();
 
   // Student & passage loading
+  const [availableGrades, setAvailableGrades] = useState([]);
   const [students,        setStudents]        = useState([]);
   const [a1Passages,      setA1Passages]      = useState([]);
-  const [loadingStudents, setLoadingStudents] = useState(true);
+  const [loadingStudents, setLoadingStudents] = useState(false);
   const [loadingPassages, setLoadingPassages] = useState(false);
   const [fetchError,      setFetchError]      = useState(null);
 
@@ -196,14 +200,30 @@ export default function AssessmentPage() {
     }
   }, [recordingTime, step, isRecording, isPaused, timeLimitReached, form.grade_level]);
 
-  // ── Fetch students on mount ──────────────────────────────────────────────
+  // ── Fetch available grade levels on mount ───────────────────────────────
+  const GRADE_ORDER = ["grade_1", "grade_2", "grade_3"];
   useEffect(() => {
+    studentsApi.listClasses()
+      .then((data) => {
+        const grades = [...new Set((data.classes || []).map((c) => c.grade_level))]
+          .filter((g) => GRADE_ORDER.includes(g))
+          .sort((a, b) => GRADE_ORDER.indexOf(a) - GRADE_ORDER.indexOf(b));
+        setAvailableGrades(grades);
+      })
+      .catch(() => {});
+  }, []);
+
+  // ── Fetch students when grade level is selected ──────────────────────────
+  useEffect(() => {
+    if (!form.grade_level) { setStudents([]); return; }
+    setLoadingStudents(true);
+    setFetchError(null);
     studentsApi
-      .list({ page_size: 200 })
-      .then((data) => setStudents(data.students))
+      .list({ grade_level: form.grade_level, page_size: 500 })
+      .then((data) => setStudents(data.students || []))
       .catch((e)  => setFetchError(e.response?.data?.detail || e.message))
       .finally(()  => setLoadingStudents(false));
-  }, []);
+  }, [form.grade_level]);
 
   // ── Fetch A1 passages when language or grade_level changes ───────────────
   useEffect(() => {
@@ -489,7 +509,7 @@ export default function AssessmentPage() {
         task1_transcribed_text: editedText,
       });
       setTask1ScoreResult(result);
-      setStep(STEPS.A1_G1_RESULT);
+      handleProceedToG2();
     } catch (e) {
       setScoreError(e.response?.data?.detail || e.message || "Scoring failed.");
       setStep(STEPS.A1_G1_PREVIEW);
@@ -517,7 +537,8 @@ export default function AssessmentPage() {
         task2_transcribed_text: editedText,
       });
       setPart1Result(result);
-      setStep(STEPS.A1_G2_RESULT);
+      if (result.route === "task_2H") handleProceedToA2();
+      else setStep(STEPS.LEARNER_EXP);
     } catch (e) {
       setScoreError(e.response?.data?.detail || e.message || "Scoring failed.");
       setStep(STEPS.A1_G2_PREVIEW);
@@ -608,7 +629,7 @@ export default function AssessmentPage() {
       const result = await sessionsApi.complete(session.id, payload);
       setFinalResult(result);
       // A2 students record observation after completing; non-A2 go straight to results
-      setStep(reachedA2 ? STEPS.A2_OBSERVE : STEPS.RESULTS);
+      setStep(reachedA2 ? STEPS.A2_OBSERVE : STEPS.A1_RESULTS);
     } catch (err) {
       setCompleteError(
         err.response?.data?.detail || err.message || "Failed to submit session."
@@ -714,6 +735,7 @@ export default function AssessmentPage() {
         ─────────────────────────────────────────────────────────────────────── */}
         <InfoStep
           form={form} setForm={setForm}
+          availableGrades={availableGrades}
           students={students} allPassages={a1Passages}
           loadingStudents={loadingStudents} loadingPassages={loadingPassages}
           fetchError={fetchError} createError={createError}
@@ -725,7 +747,7 @@ export default function AssessmentPage() {
   }
 
   if (isLoadingStep) {
-    const msg = isScoring ? "Scoring…" : "Processing audio…";
+    const msg = isScoring ? "Proceeding…" : "Processing audio…";
     return (
       <Layout>
         <LoadingScreen message={msg} />
@@ -760,7 +782,7 @@ export default function AssessmentPage() {
           onBack={() => {
             resetRecording();
             if (step === STEPS.A1_G1) setStep(STEPS.INFO);
-            if (step === STEPS.A1_G2) setStep(STEPS.A1_G1_RESULT);
+            if (step === STEPS.A1_G2) setStep(STEPS.A1_G1);
             if (step === STEPS.A2)    setStep(STEPS.A2_SELECT);
           }}
           onCycleFontSize={cycleFontSize}
@@ -786,9 +808,11 @@ export default function AssessmentPage() {
         <TranscriptionPreviewStep
           badge={STEP_LABELS[step]}
           transcript={g1Transcript}
+          referenceText={form.selected_passage?.task1_content ?? form.passage_content ?? ""}
           words={g1Words}
           timeLimitSec={null}
           audioFile={audioFile}
+          recordingTime={g1RecordingTime}
           onConfirm={handleConfirmG1Preview}
         />
         {scoreError && <p className="asp-error" style={{ textAlign: "center" }}>⚠ {scoreError}</p>}
@@ -796,60 +820,23 @@ export default function AssessmentPage() {
     );
   }
 
-  if (step === STEPS.A1_G1_RESULT) {
-    return (
-      <Layout>
-        <A1TaskResultStep
-          badge="Assessment 1 — Gawain 1"
-          task="task1"
-          scoreResult={task1ScoreResult}
-          passageWordCount={form.word_count}
-          recordingTime={g1RecordingTime}
-          transcript={g1Transcript}
-          onContinue={handleProceedToG2}
-          continueLabel={
-            task1ScoreResult?.route === "task_2L"
-              ? "Continue to Task 2 (Words)"
-              : "Continue to Task 2 (Sentences)"
-          }
-        />
-      </Layout>
-    );
-  }
-
   if (step === STEPS.A1_G2_PREVIEW) {
+    const g2Ref = task1ScoreResult?.route === "task_2L"
+      ? (form.selected_passage?.task2_words     ?? "")
+      : (form.selected_passage?.task2_sentences ?? "");
     return (
       <Layout>
         <TranscriptionPreviewStep
           badge={STEP_LABELS[step]}
           transcript={g2Transcript}
+          referenceText={g2Ref}
           words={[]}
           timeLimitSec={null}
           audioFile={audioFile}
+          recordingTime={g2RecordingTime}
           onConfirm={handleConfirmG2Preview}
         />
         {scoreError && <p className="asp-error" style={{ textAlign: "center" }}>⚠ {scoreError}</p>}
-      </Layout>
-    );
-  }
-
-  if (step === STEPS.A1_G2_RESULT) {
-    const reachedA2eligible = part1Result?.route === "task_2H"; // 7-10 scorers get A2
-    return (
-      <Layout>
-        <A1TaskResultStep
-          badge="Assessment 1 — Gawain 2"
-          task="task2"
-          scoreResult={task1ScoreResult}
-          part1Result={part1Result}
-          passageWordCount={g2Passage?.word_count ?? 0}
-          recordingTime={g2RecordingTime}
-          transcript={g2Transcript}
-          g1Score={task1ScoreResult?.task1_correct}
-          onContinue={reachedA2eligible ? handleProceedToA2 : () => setStep(STEPS.LEARNER_EXP)}
-          continueLabel={reachedA2eligible ? "Proceed to Assessment 2" : "Continue"}
-        />
-        {completeError && <p className="asp-error" style={{ textAlign: "center" }}>⚠ {completeError}</p>}
       </Layout>
     );
   }
@@ -872,9 +859,11 @@ export default function AssessmentPage() {
         <TranscriptionPreviewStep
           badge={STEP_LABELS[step]}
           transcript={a2Transcript}
+          referenceText={a2Passage?.content ?? ""}
           words={a2Words}
           timeLimitSec={a2TimeLimit}
           audioFile={audioFile}
+          recordingTime={a2RecordingTime}
           onConfirm={handleConfirmA2Preview}
         />
       </Layout>
@@ -907,7 +896,7 @@ export default function AssessmentPage() {
               setStep(STEPS.A1_G1_OBSERVE);
             }
           }}
-          onBack={() => setStep(isA2Path ? STEPS.COMPREHENSION : STEPS.A1_G2_RESULT)}
+          onBack={() => setStep(isA2Path ? STEPS.COMPREHENSION : STEPS.A1_G2)}
         />
         {isCompleting && <LoadingScreen message="Submitting results…" />}
         {completeError && (
@@ -957,6 +946,25 @@ export default function AssessmentPage() {
     );
   }
 
+  if (step === STEPS.A1_RESULTS) {
+    return (
+      <Layout>
+        <Toast toasts={toasts} onRemove={removeToast} />
+        <A1OnlyResultsStep
+          form={form}
+          part1Result={part1Result}
+          task1ScoreResult={task1ScoreResult}
+          g1Transcript={g1Transcript}
+          g2Transcript={g2Transcript}
+          learnerExperience={learnerExperience}
+          observationLevel={observationLevel}
+          teacherNotes={teacherNotes}
+          onDone={handleDoneAndSubmit}
+        />
+      </Layout>
+    );
+  }
+
   if (step === STEPS.RESULTS) {
     return (
       <Layout>
@@ -973,6 +981,7 @@ export default function AssessmentPage() {
           observationLevel={observationLevel}
           teacherNotes={teacherNotes}
           learnerExperience={learnerExperience}
+          a2Alignments={finalResult?.part2?.alignments ?? []}
           onDone={handleDoneAndSubmit}
         />
       </Layout>

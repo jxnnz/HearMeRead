@@ -30,10 +30,15 @@ const LANGUAGE_OPTIONS = [
   { value: "english",  label: "English"  },
 ];
 
+function gradeLabel(gl) {
+  return `Grade ${String(gl).replace("grade_", "")}`;
+}
+
 // ============================================================
 export default function StudentInfoForm({
   form,
   setForm,
+  availableGrades = [],
   students        = [],
   passages        = [],
   loadingStudents = false,
@@ -64,11 +69,11 @@ export default function StudentInfoForm({
   function clearStudent() {
     setForm((prev) => ({
       ...prev,
-      student_id:  null,
-      first_name:  "",
-      last_name:   "",
-      grade_level: "",
-      section:     "",
+      student_id: null,
+      first_name: "",
+      last_name:  "",
+      section:    "",
+      // grade_level kept intentionally — it acts as the search filter
     }));
   }
 
@@ -184,7 +189,7 @@ export default function StudentInfoForm({
                           {s.first_name} {s.last_name}
                         </span>
                         <span className="si-dropdown__sub">
-                          Grade {s.grade_level} · {s.section ?? "—"}
+                          {gradeLabel(s.grade_level)} · {s.section ?? "—"}
                         </span>
                       </button>
                     ))
@@ -207,17 +212,38 @@ export default function StudentInfoForm({
         </div>
       </div>
 
-      {/* ── Row 3: Grade Level + Section (auto-filled) ── */}
+      {/* ── Row 3: Grade Level (filter) + Section (auto-filled) ── */}
       <div className="si-row">
         <div className="si-field">
-          <label className="si-label">Grade Level:</label>
-          <input
-            type="text"
-            className="si-input si-input--readonly"
-            value={form.grade_level ? String(form.grade_level).replace("grade_", "Grade ").replace("kindergarten", "Kindergarten") : ""}
-            placeholder="Auto-filled"
-            readOnly
-          />
+          <label className="si-label" htmlFor="si-grade-level">Grade Level:</label>
+          <select
+            id="si-grade-level"
+            className={`si-input${hasStudent ? " si-input--filled" : ""}`}
+            value={form.grade_level}
+            disabled={hasStudent}
+            onChange={(e) => {
+              const newGrade = e.target.value;
+              setForm((prev) => ({
+                ...prev,
+                grade_level:      newGrade,
+                student_id:       null,
+                first_name:       "",
+                last_name:        "",
+                section:          "",
+                passage_id:       null,
+                passage_title:    "",
+                passage_content:  "",
+                word_count:       0,
+                selected_passage: null,
+              }));
+              setStudentSearch("");
+            }}
+          >
+            <option value="">— Select grade —</option>
+            {availableGrades.map((g) => (
+              <option key={g} value={g}>{gradeLabel(g)}</option>
+            ))}
+          </select>
         </div>
 
         <div className="si-field">
@@ -266,7 +292,11 @@ export default function StudentInfoForm({
         <label className="si-label" htmlFor="si-passage">
           Passage <span style={{ color: "#8a94b2", fontWeight: 400 }}>(Assessment 1 — Gawain 1)</span>
         </label>
-        {!hasStudent ? (
+        {!form.grade_level ? (
+          <div className="si-input si-input--readonly si-input--disabled">
+            Select a grade level first
+          </div>
+        ) : !hasStudent ? (
           <div className="si-input si-input--readonly si-input--disabled">
             Select a student first
           </div>

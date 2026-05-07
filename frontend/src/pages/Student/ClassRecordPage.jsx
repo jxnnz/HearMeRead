@@ -8,6 +8,7 @@ import * as XLSX from "xlsx";
 import Layout from "../../components/Layout";
 import EditStudentModal from "../../modals/EditStudentModal";
 import EditClassInfoModal from "../../modals/EditClassInfoModal";
+import StudentInfoModal from "../../modals/StudentInfoModal";
 import { authApi, studentsApi, sessionsApi } from "../../services/api";
 import "../pages css/ClassRecordPage.css";
 
@@ -63,6 +64,8 @@ export default function ClassRecordPage() {
   const [page, setPage]             = useState(1);
   const [pageSize, setPageSize]     = useState(30);
   const [totalStudents, setTotal]   = useState(0);
+
+  const [selectedSessionId, setSelectedSessionId] = useState(null);
 
   const [editStudent, setEditStudent]       = useState(null);
   const [editStudentSaving, setEditStudentSaving] = useState(false);
@@ -455,9 +458,15 @@ export default function ClassRecordPage() {
                             <button
                               className="cr-student-link"
                               style={{ color: nameColor }}
-                              onClick={() => navigate(`/students/${s.id}`, {
-                                state: { from: `/students/class?grade=${grade}&section=${encodeURIComponent(section)}&year=${encodeURIComponent(year)}&period=${period}` }
-                              })}
+                              onClick={() => {
+                                if (sess) {
+                                  setSelectedSessionId(sess.id);
+                                } else {
+                                  navigate(`/students/${s.id}`, {
+                                    state: { from: `/students/class?grade=${grade}&section=${encodeURIComponent(section)}&year=${encodeURIComponent(year)}&period=${period}` }
+                                  });
+                                }
+                              }}
                             >
                               {s.last_name}, {s.first_name}
                             </button>
@@ -559,6 +568,12 @@ export default function ClassRecordPage() {
         )}
 
       </div>
+
+      {/* ── Session Detail Modal ── */}
+      <StudentInfoModal
+        sessionId={selectedSessionId}
+        onClose={() => setSelectedSessionId(null)}
+      />
 
       {/* ── Edit Student Modal ── */}
       <EditStudentModal

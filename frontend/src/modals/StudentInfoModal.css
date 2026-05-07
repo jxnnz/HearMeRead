@@ -1,0 +1,295 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+/* ── Overlay ─────────────────────────────────────────────── */
+.sim-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 35, 64, 0.52);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  padding: 24px 16px;
+  animation: simFadeIn 0.15s ease both;
+}
+
+@keyframes simFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Modal card ──────────────────────────────────────────── */
+.sim-modal {
+  background: #fff;
+  border-radius: 18px;
+  width: 100%;
+  min-width: 320px;
+  max-width: min(760px, 92vw);
+  max-height: 88vh;
+  box-shadow: 0 12px 52px rgba(26, 35, 64, 0.22);
+  font-family: "Poppins", sans-serif;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: simSlideIn 0.2s ease both;
+}
+
+@keyframes simSlideIn {
+  from { opacity: 0; transform: translateY(18px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Header (sticky) ─────────────────────────────────────── */
+.sim-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 22px 24px 18px;
+  border-bottom: 1.5px solid #e8ecf5;
+  flex-shrink: 0;
+}
+
+.sim-header__info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.sim-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a2340;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.sim-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sim-badge {
+  display: inline-block;
+  background: #eef1fc;
+  color: #2c3e6b;
+  border-radius: 20px;
+  padding: 3px 11px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.sim-badge--cap { text-transform: capitalize; }
+
+.sim-close-btn {
+  width: 34px;
+  height: 34px;
+  border: 1.5px solid #c8d0e4;
+  border-radius: 50%;
+  background: #fff;
+  color: #5a6382;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.14s, color 0.14s, border-color 0.14s;
+}
+
+.sim-close-btn:hover {
+  background: #fdecea;
+  border-color: #e74c3c;
+  color: #c0392b;
+}
+
+/* ── Scrollable body ─────────────────────────────────────── */
+.sim-body {
+  overflow-y: auto;
+  padding: 20px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Loading / error ─────────────────────────────────────── */
+.sim-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 56px 20px;
+  color: #8a94b2;
+  font-size: 13.5px;
+  text-align: center;
+}
+
+.sim-state--error { color: #c0392b; }
+
+.sim-spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid #e0e4f0;
+  border-top-color: #2c3e6b;
+  border-radius: 50%;
+  animation: simSpin 0.7s linear infinite;
+}
+
+@keyframes simSpin { to { transform: rotate(360deg); } }
+
+/* ── Session meta strip ──────────────────────────────────── */
+.sim-meta-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  background: #f4f6fb;
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+
+.sim-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.sim-meta-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #8a94b2;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sim-meta-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a2340;
+}
+
+.sim-meta-value--cap { text-transform: capitalize; }
+
+/* ── Reading profile banner ──────────────────────────────── */
+.sim-profile-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1.5px solid;
+  border-radius: 10px;
+  padding: 10px 16px;
+}
+
+.sim-profile-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sim-profile-text {
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+/* ── Sections ────────────────────────────────────────────── */
+.sim-section {
+  background: #fff;
+  border: 1.5px solid #e8ecf5;
+  border-radius: 12px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sim-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #8a94b2;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0;
+}
+
+.sim-story-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #2c3e6b;
+  margin: 0;
+  background: #eef1fc;
+  border-radius: 7px;
+  padding: 7px 12px;
+}
+
+/* ── Stat grid ───────────────────────────────────────────── */
+.sim-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 10px;
+}
+
+.sim-stat {
+  background: #f8f9fd;
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sim-stat--wide {
+  grid-column: span 2;
+}
+
+.sim-stat__val {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a2340;
+  line-height: 1.1;
+}
+
+.sim-stat__val--sm {
+  font-size: 14px;
+}
+
+.sim-stat__lbl {
+  font-size: 11px;
+  color: #8a94b2;
+  font-weight: 500;
+}
+
+/* ── Remarks ─────────────────────────────────────────────── */
+.sim-remarks {
+  background: #f8f9fd;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.sim-remarks__label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8a94b2;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sim-remarks__text {
+  font-size: 13px;
+  color: #1a2340;
+  line-height: 1.6;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+/* ── Mobile ──────────────────────────────────────────────── */
+@media (max-width: 520px) {
+  .sim-header { padding: 16px 16px 14px; }
+  .sim-body   { padding: 14px 16px 20px; }
+  .sim-name   { font-size: 15px; }
+  .sim-stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .sim-stat--wide { grid-column: span 2; }
+}

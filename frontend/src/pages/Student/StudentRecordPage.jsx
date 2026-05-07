@@ -5,6 +5,7 @@ import { Plus, Users, Upload } from "lucide-react";
 import Layout from "../../components/Layout";
 import AppButton from "../../components/AppButton";
 import ImportRecordsModal from "../../modals/ImportRecordsModal";
+import StudentInfoModal from "../../modals/StudentInfoModal";
 import { studentsApi } from "../../services/api";
 
 import "../pages css/StudentRecordPage.css";
@@ -30,6 +31,8 @@ function currentSchoolYear() {
 
 export default function StudentRecordPage() {
   const navigate = useNavigate();
+
+  const [selectedSessionId, setSelectedSessionId] = useState(null);
 
   const [classes, setClasses]         = useState([]);
   const [loading, setLoading]         = useState(true);
@@ -191,6 +194,11 @@ export default function StudentRecordPage() {
         isOpen={showImport}
         onClose={() => setShowImport(false)}
         onSuccess={loadClasses}
+      />
+
+      <StudentInfoModal
+        sessionId={selectedSessionId}
+        onClose={() => setSelectedSessionId(null)}
       />
     </Layout>
   );

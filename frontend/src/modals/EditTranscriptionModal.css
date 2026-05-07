@@ -1,0 +1,99 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+/* ── Overlay ─────────────────────────────────────────── */
+.etm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 35, 64, 0.52);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+  padding: 20px;
+  animation: etmFadeIn 0.15s ease both;
+}
+
+@keyframes etmFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Modal card ──────────────────────────────────────── */
+.etm-modal {
+  background: #fff;
+  border-radius: 18px;
+  width: 100%;
+  max-width: 560px;
+  box-shadow: 0 10px 48px rgba(26, 35, 64, 0.22);
+  font-family: "Poppins", sans-serif;
+  padding: 28px 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: etmSlideIn 0.18s ease both;
+}
+
+@keyframes etmSlideIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Title ───────────────────────────────────────────── */
+.etm-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1a2340;
+  margin: 0;
+}
+
+/* ── Textarea ────────────────────────────────────────── */
+.etm-textarea {
+  width: 100%;
+  border: 1.5px solid #dde2f0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 14px;
+  color: #1a2340;
+  background: #f4f6fd;
+  font-family: "Courier New", Courier, monospace;
+  resize: vertical;
+  outline: none;
+  box-sizing: border-box;
+  line-height: 1.7;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.etm-textarea:focus { border-color: #2c3e6b; background: #fff; }
+
+/* ── Actions ─────────────────────────────────────────── */
+.etm-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.etm-btn {
+  padding: 9px 22px;
+  border-radius: 9px;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: "Poppins", sans-serif;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.etm-btn--cancel {
+  background: #f4f6fb;
+  border-color: #c8d0e4;
+  color: #5a6382;
+}
+
+.etm-btn--cancel:hover { background: #e8ecf7; }
+
+.etm-btn--save {
+  background: #2c3e6b;
+  color: #fff;
+}
+
+.etm-btn--save:hover { background: #1a2a55; }
