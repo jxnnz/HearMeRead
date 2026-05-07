@@ -31,6 +31,10 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "http://localhost:5173"
     BACKEND_URL: str = "http://localhost:8000"
 
+    # Field-level encryption key for student PII (Fernet key — generate with:
+    # python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")
+    ENCRYPTION_KEY: str
+
     # Groq API (for Whisper speech-to-text)
     GROQ_API_KEY: str = ""
 

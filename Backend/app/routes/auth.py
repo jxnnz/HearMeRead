@@ -1,3 +1,4 @@
+import hashlib
 import secrets
 from datetime import datetime, timedelta, timezone
 
@@ -31,6 +32,11 @@ def _generate_token() -> str:
     return secrets.token_hex(24)   # 24 bytes → 48 hex chars
 
 
+def _hash_token(token: str) -> str:
+    """One-way SHA-256 hash of a token — what we store in the DB."""
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
 async def _create_verification_token(db: AsyncSession, teacher_id: int) -> str:
     """
     Invalidate any existing unused tokens for this teacher,
@@ -49,7 +55,7 @@ async def _create_verification_token(db: AsyncSession, teacher_id: int) -> str:
     token_str = _generate_token()
     token_obj = EmailVerificationToken(
         teacher_id=teacher_id,
-        token=token_str,
+        token=_hash_token(token_str),  # store hash; raw token goes only in the email
         expires_at=datetime.now(timezone.utc) + timedelta(hours=_TOKEN_EXPIRE_HOURS),
     )
     db.add(token_obj)
@@ -125,16 +131,18 @@ async def register(request: Request, data: TeacherRegister, db: AsyncSession = D
         "On failure, redirects to `{FRONTEND_URL}/login?error=invalid_token`."
     ),
 )
+@limiter.limit("5/minute")
 async def verify_email(
+    request: Request,
     token: str = Query(..., description="The verification token from the email link"),
     db: AsyncSession = Depends(get_db),
 ):
     now = datetime.now(timezone.utc)
 
-    # 1. Look up the token
+    # 1. Look up the token by its hash (raw token is never stored in DB)
     result = await db.execute(
         select(EmailVerificationToken)
-        .where(EmailVerificationToken.token == token)
+        .where(EmailVerificationToken.token == _hash_token(token))
     )
     token_obj = result.scalar_one_or_none()
 
@@ -314,7 +322,7 @@ async def forgot_password(
     token_str = _generate_token()
     token_obj = PasswordResetToken(
         teacher_id=teacher.id,
-        token=token_str,
+        token=_hash_token(token_str),  # store hash; raw token goes only in the email
         expires_at=datetime.now(timezone.utc) + timedelta(hours=_RESET_TOKEN_EXPIRE_HOURS),
     )
     db.add(token_obj)
@@ -339,14 +347,16 @@ async def forgot_password(
     status_code=status.HTTP_200_OK,
     summary="Reset password using a valid token",
 )
+@limiter.limit("5/minute")
 async def reset_password(
+    request: Request,
     data: ResetPasswordRequest,
     db: AsyncSession = Depends(get_db),
 ):
     now = datetime.now(timezone.utc)
 
     result = await db.execute(
-        select(PasswordResetToken).where(PasswordResetToken.token == data.token)
+        select(PasswordResetToken).where(PasswordResetToken.token == _hash_token(data.token))
     )
     token_obj = result.scalar_one_or_none()
 

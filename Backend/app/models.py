@@ -124,12 +124,13 @@ class Student(Base):
     __tablename__ = "students"
 
     id          = Column(Integer, primary_key=True, index=True)
-    first_name  = Column(String(100), nullable=False)
-    last_name   = Column(String(100), nullable=False)
+    first_name  = Column(String(500), nullable=False)   # stored encrypted
+    last_name   = Column(String(500), nullable=False)   # stored encrypted
     grade_level = Column(SAEnum(GradeLevel), nullable=False)
     section     = Column(String(100), nullable=True)
     school_year = Column(String(9),   nullable=True)
-    lrn         = Column(String(12), unique=True, nullable=True)
+    lrn         = Column(String(500), nullable=True)    # stored encrypted
+    lrn_hash    = Column(String(64),  unique=True, nullable=True, index=True)  # HMAC for uniqueness
     sex         = Column(SAEnum(Sex), nullable=True)
     teacher_id  = Column(Integer, ForeignKey("teachers.id"), nullable=False, index=True)
     created_at  = Column(DateTime(timezone=True), server_default=func.now())

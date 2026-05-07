@@ -27,6 +27,7 @@ from app.schema import (
 )
 from app.services import student_service
 from app.utils.excel_parser import parse_crla_excel
+from app.core.encryption import encrypt, hash_lrn
 
 router = APIRouter(prefix="/students", tags=["Students"])
 
@@ -91,8 +92,8 @@ async def import_excel_records(
 
     try:
         parsed = parse_crla_excel(file_bytes)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=400, detail="Failed to parse the uploaded file. Please check the format.")
 
     grade_level: Optional[GradeLevel] = None
     if parsed.grade_level:
@@ -124,9 +125,10 @@ async def import_excel_records(
             # Find or create student
             student: Optional[Student] = None
             if row.lrn:
+                lrn_hash = hash_lrn(row.lrn)
                 res = await db.execute(
                     select(Student).where(
-                        Student.lrn == row.lrn,
+                        Student.lrn_hash == lrn_hash,
                         Student.teacher_id == current_teacher.id,
                     )
                 )
@@ -134,9 +136,10 @@ async def import_excel_records(
 
             if student is None:
                 student = Student(
-                    first_name  = row.first_name or "Unknown",
-                    last_name   = row.last_name  or "Unknown",
-                    lrn         = row.lrn,
+                    first_name  = encrypt(row.first_name or "Unknown"),
+                    last_name   = encrypt(row.last_name  or "Unknown"),
+                    lrn         = encrypt(row.lrn) if row.lrn else None,
+                    lrn_hash    = hash_lrn(row.lrn),
                     sex         = Sex(row.sex) if row.sex in ("female", "male") else None,
                     grade_level = grade_level or GradeLevel.grade_1,
                     section     = parsed.section,
