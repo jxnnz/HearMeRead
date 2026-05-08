@@ -219,7 +219,7 @@ export default function AssessmentPage() {
     setLoadingStudents(true);
     setFetchError(null);
     studentsApi
-      .list({ grade_level: form.grade_level, page_size: 500 })
+      .list({ grade_level: form.grade_level })
       .then((data) => setStudents(data.students || []))
       .catch((e)  => setFetchError(e.response?.data?.detail || e.message))
       .finally(()  => setLoadingStudents(false));
