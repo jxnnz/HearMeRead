@@ -4,6 +4,7 @@ import { ChevronLeft, Plus, X } from "lucide-react";
 
 import Layout from "../../components/Layout";
 import { passagesApi, questionsApi } from "../../services/api";
+import { parseApiError } from "../../utils/apiError";
 import "../pages css/AddPassagePage.css";
 
 const EMPTY_DETAILS = {
@@ -82,7 +83,7 @@ export default function AddAssessment2Page() {
 
       navigate("/passages");
     } catch (err) {
-      setError(err.message);
+      setError(parseApiError(err, "Failed to save passage. Please try again."));
     } finally {
       setSaving(false);
     }

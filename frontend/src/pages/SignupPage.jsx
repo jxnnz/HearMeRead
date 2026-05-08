@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import AuthLayout from "../components/AuthLayout";
 import SignupForm  from "../components/SignupForm";
 import { authApi } from "../services/api";
+import { parseApiError } from "../utils/apiError";
 
 export default function SignupPage() {
   const navigate = useNavigate();
@@ -23,7 +24,7 @@ export default function SignupPage() {
       // Navigate to login with a flag so it shows the "check your email" banner.
       navigate("/login?registered=true");
     } catch (err) {
-      setError(err.response?.data?.detail || err.message || "Registration failed. Please try again.");
+      setError(parseApiError(err, "Registration failed. Please try again."));
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,3 @@
-import hashlib
 import secrets
 from datetime import datetime, timedelta, timezone
 
@@ -8,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 
 from app.core.config import settings
+from app.core.encryption import hash_token as _hash_token
 from app.core.security import verify_password, get_password_hash, create_access_token
 from app.db import get_db
 from app.dependencies import get_current_teacher
@@ -31,10 +31,6 @@ def _generate_token() -> str:
     """Generate a cryptographically secure 48-char hex token."""
     return secrets.token_hex(24)   # 24 bytes → 48 hex chars
 
-
-def _hash_token(token: str) -> str:
-    """One-way SHA-256 hash of a token — what we store in the DB."""
-    return hashlib.sha256(token.encode()).hexdigest()
 
 
 async def _create_verification_token(db: AsyncSession, teacher_id: int) -> str:

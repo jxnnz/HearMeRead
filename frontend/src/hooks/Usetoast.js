@@ -17,11 +17,14 @@ export default function useToast() {
   }, []);
 
   const showSaveSuccess = useCallback(
-    (label = "Changes") => {
-      addToast(`${label} saved successfully!`);
-    },
+    (label = "Changes") => addToast(`${label} saved successfully!`),
     [addToast]
   );
 
-  return { toasts, removeToast, showSaveSuccess };
+  const showError = useCallback(
+    (message = "Something went wrong. Please try again.") => addToast(message, "error"),
+    [addToast]
+  );
+
+  return { toasts, removeToast, showSaveSuccess, showError };
 }

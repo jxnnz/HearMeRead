@@ -10,6 +10,9 @@ import EditStudentModal from "../../modals/EditStudentModal";
 import EditClassInfoModal from "../../modals/EditClassInfoModal";
 import StudentInfoModal from "../../modals/StudentInfoModal";
 import { authApi, studentsApi, sessionsApi } from "../../services/api";
+import useToast from "../../hooks/Usetoast";
+import Toast from "../../modals/Toast";
+import { parseApiError } from "../../utils/apiError";
 import "../pages css/ClassRecordPage.css";
 
 const PROFILE_COLORS = {
@@ -46,6 +49,7 @@ function d(val) {
 }
 
 export default function ClassRecordPage() {
+  const { toasts, removeToast, showError } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -171,7 +175,7 @@ export default function ClassRecordPage() {
       setArchiveSession(null);
       reload();
     } catch (err) {
-      console.error("Archive failed:", err);
+      showError(parseApiError(err, "Failed to archive session. Please try again."));
     } finally {
       setArchiving(false);
     }
@@ -594,6 +598,8 @@ export default function ClassRecordPage() {
         currentGrade={grade}
         currentSection={section}
       />
+
+      <Toast toasts={toasts} onRemove={removeToast} />
     </Layout>
   );
 }

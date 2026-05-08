@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import AuthLayout from "../components/AuthLayout";
 import LoginForm  from "../components/LoginForm";
 import { authApi } from "../services/api";
+import { parseApiError } from "../utils/apiError";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -44,14 +45,7 @@ export default function LoginPage() {
       localStorage.setItem("token", res.access_token);
       navigate("/dashboard");
     } catch (err) {
-      const detail = err.response?.data?.detail;
-
-      // Surface the "please verify your email" message with a helpful hint
-      if (err.response?.status === 403 && detail?.includes("verify your email")) {
-        setError(detail);  // backend message is already user-friendly
-      } else {
-        setError(detail || err.message || "Invalid email or password.");
-      }
+      setError(parseApiError(err, "Invalid email or password."));
     } finally {
       setLoading(false);
     }

@@ -11,6 +11,7 @@ import EditStudentModal from "../../modals/EditStudentModal";
 import Toast from "../../modals/Toast";
 import useToast from "../../hooks/Usetoast";
 import { studentsApi, sessionsApi } from "../../services/api";
+import { parseApiError } from "../../utils/apiError";
 
 import "../pages css/StudentInfoPage.css";
 
@@ -79,7 +80,7 @@ export default function StudentInfoPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const backTo = location.state?.from ?? "/students";
-  const { toasts, removeToast, showSaveSuccess } = useToast();
+  const { toasts, removeToast, showSaveSuccess, showError } = useToast();
 
   const [student, setStudent] = useState(null);
   const [records, setRecords] = useState([]);
@@ -103,7 +104,7 @@ export default function StudentInfoPage() {
         setStudent(studentData);
         setRecords((sessionData.sessions ?? []).map(sessionToRecord));
       })
-      .catch((e) => setError(e.response?.data?.detail || e.message))
+      .catch((e) => setError(parseApiError(e, "Failed to load student.")))
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -123,7 +124,7 @@ export default function StudentInfoPage() {
       setEditStudentOpen(false);
       showSaveSuccess("Student");
     } catch (e) {
-      setEditError(e.response?.data?.detail || "Failed to save changes.");
+      setEditError(parseApiError(e, "Failed to save changes."));
     } finally {
       setEditSaving(false);
     }
@@ -138,7 +139,7 @@ export default function StudentInfoPage() {
     sessionsApi
       .archive(pendingDelete.id)
       .then(() => setRecords((prev) => prev.filter((r) => r.id !== pendingDelete.id)))
-      .catch((e) => alert(e.response?.data?.detail || "Failed to delete record."));
+      .catch((e) => showError(parseApiError(e, "Failed to delete record.")));
     setPendingDelete(null);
   }
 
@@ -147,7 +148,7 @@ export default function StudentInfoPage() {
       await studentsApi.delete(student.id);
       navigate("/students");
     } catch (e) {
-      alert(e.response?.data?.detail || "Failed to delete student.");
+      showError(parseApiError(e, "Failed to delete student."));
     }
   }
 

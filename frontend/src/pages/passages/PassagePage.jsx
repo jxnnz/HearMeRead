@@ -9,6 +9,7 @@ import ConfirmModal from "../../modals/ConfirmModal";
 import Toast from "../../modals/Toast";
 import useToast from "../../hooks/Usetoast";
 import { passagesApi } from "../../services/api";
+import { parseApiError } from "../../utils/apiError";
 
 import "../pages css/PassagePage.css";
 
@@ -21,12 +22,13 @@ export default function PassagePage() {
   const [pageError, setPageError] = useState(null);
 
   const [pendingArchive, setPendingArchive] = useState(null);
+  const [archiveError, setArchiveError]     = useState(null);
 
   useEffect(() => {
     passagesApi
       .list({ page_size: 100 })
       .then((data) => setPassages(data.passages))
-      .catch((e) => setPageError(e.response?.data?.detail || e.message))
+      .catch((e) => setPageError(parseApiError(e, "Failed to load passages.")))
       .finally(() => setLoading(false));
   }, []);
 
@@ -49,11 +51,12 @@ export default function PassagePage() {
 
   async function confirmArchive() {
     if (!pendingArchive) return;
+    setArchiveError(null);
     try {
       await passagesApi.archive(pendingArchive.id);
       setPassages((prev) => prev.filter((p) => p.id !== pendingArchive.id));
     } catch (err) {
-      alert(err.response?.data?.detail || "Failed to remove passage.");
+      setArchiveError(parseApiError(err, "Failed to remove passage."));
     } finally {
       setPendingArchive(null);
     }
@@ -124,6 +127,9 @@ export default function PassagePage() {
 
         {pageError && !loading && (
           <div className="ap-error" role="alert">{pageError}</div>
+        )}
+        {archiveError && (
+          <div className="ap-error" role="alert">{archiveError}</div>
         )}
 
         {!loading && !pageError && (

@@ -80,18 +80,10 @@ def upgrade() -> None:
             {"fn": new_first, "ln": new_last, "lrn": new_lrn, "lh": new_hash, "id": row.id},
         )
 
-    # 4. Drop old unique constraint on lrn; add unique constraint on lrn_hash
-    with op.batch_alter_table("students") as batch_op:
-        # Drop the existing unique index on lrn (name may vary by DB; try both conventions)
-        try:
-            batch_op.drop_index("ix_students_lrn")
-        except Exception:
-            pass
-        try:
-            batch_op.drop_constraint("students_lrn_key", type_="unique")
-        except Exception:
-            pass
-        batch_op.create_index("ix_students_lrn_hash", ["lrn_hash"], unique=True)
+    # 4. Drop old unique constraint on lrn (IF EXISTS — name varies by DB); add unique constraint on lrn_hash
+    conn.execute(text("DROP INDEX IF EXISTS ix_students_lrn"))
+    conn.execute(text("ALTER TABLE students DROP CONSTRAINT IF EXISTS students_lrn_key"))
+    op.create_index("ix_students_lrn_hash", "students", ["lrn_hash"], unique=True)
 
 
 def downgrade() -> None:
@@ -100,17 +92,17 @@ def downgrade() -> None:
     enc_key = _get_encryption_key()
     fernet  = Fernet(enc_key.encode())
 
+    def _dec(v):
+        if not v:
+            return v
+        try:
+            return fernet.decrypt(v.encode()).decode()
+        except Exception:
+            return v
+
     conn = op.get_bind()
     rows = conn.execute(text("SELECT id, first_name, last_name, lrn FROM students")).fetchall()
     for row in rows:
-        def _dec(v):
-            if not v:
-                return v
-            try:
-                return fernet.decrypt(v.encode()).decode()
-            except Exception:
-                return v  # already plaintext (shouldn't happen)
-
         conn.execute(
             text("UPDATE students SET first_name=:fn, last_name=:ln, lrn=:lrn WHERE id=:id"),
             {"fn": _dec(row.first_name), "ln": _dec(row.last_name), "lrn": _dec(row.lrn), "id": row.id},

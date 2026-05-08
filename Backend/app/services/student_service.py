@@ -9,11 +9,20 @@ from app.core.encryption import encrypt, decrypt, hash_lrn
 
 
 def _decrypt_student(s: Student) -> Student:
-    """Decrypt PII fields on a student object in-place."""
-    s.first_name = decrypt(s.first_name)
-    s.last_name = decrypt(s.last_name)
-    if s.lrn:
-        s.lrn = decrypt(s.lrn)
+    """Decrypt PII fields via __dict__ to bypass SQLAlchemy dirty tracking.
+
+    Using s.attr = value goes through the instrumented descriptor and marks the
+    object dirty, causing an auto-flush that writes plaintext back to the DB the
+    next time the session executes any query. Writing to __dict__ directly is
+    invisible to SQLAlchemy's change-tracking machinery.
+    """
+    d = s.__dict__
+    if d.get("first_name"):
+        d["first_name"] = decrypt(d["first_name"])
+    if d.get("last_name"):
+        d["last_name"] = decrypt(d["last_name"])
+    if d.get("lrn"):
+        d["lrn"] = decrypt(d["lrn"])
     return s
 
 
@@ -24,12 +33,13 @@ def _encrypt_fields(data: dict) -> dict:
         out["first_name"] = encrypt(out["first_name"])
     if out.get("last_name"):
         out["last_name"] = encrypt(out["last_name"])
-    lrn = out.get("lrn")
-    if lrn:
-        out["lrn_hash"] = hash_lrn(lrn)
-        out["lrn"] = encrypt(lrn)
-    else:
-        out["lrn_hash"] = None
+    if "lrn" in data:
+        lrn = data["lrn"]
+        if lrn:
+            out["lrn_hash"] = hash_lrn(lrn)
+            out["lrn"] = encrypt(lrn)
+        else:
+            out["lrn_hash"] = None
     return out
 
 

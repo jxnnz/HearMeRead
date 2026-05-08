@@ -113,7 +113,7 @@ export default function DashboardPage() {
   useEffect(() => {
     Promise.all([
       dashboardApi.getSummary(schoolYear),
-      studentsApi.list({ page_size: 500 }),
+      studentsApi.list(),
     ])
       .then(([summary, studentData]) => {
         setStats({
