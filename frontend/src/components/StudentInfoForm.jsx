@@ -308,10 +308,7 @@ export default function StudentInfoForm({
           </div>
         ) : passages.length === 1 ? (
           <div className="si-input si-input--filled">
-            {passages[0].title ?? "Assessment 1"}{" "}
-            <span style={{ color: "#8a94b2", fontSize: "0.85em" }}>
-              ({passages[0].word_count} items) — auto-selected
-            </span>
+            {passages[0].title ?? "Assessment 1"}
           </div>
         ) : (
           <select

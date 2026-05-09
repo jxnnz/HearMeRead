@@ -150,9 +150,36 @@ export default function DashboardPage() {
           <div className="db-header">
             <h1 className="db-title">Dashboard</h1>
           </div>
-          <p style={{ color: "#8a94b2", textAlign: "center", padding: "64px 0" }}>
-            Loading dashboard…
-          </p>
+
+          {/* Stat cards skeleton */}
+          <div className="db-stats-row">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="db-skeleton-stat">
+                <div className="db-skeleton db-skeleton-stat__value" />
+                <div className="db-skeleton db-skeleton-stat__label" />
+              </div>
+            ))}
+          </div>
+
+          {/* Profile chart + pie skeleton */}
+          <div style={{ display: "flex", gap: "16px" }}>
+            <div className="db-skeleton-chart" style={{ flex: 1 }}>
+              <div className="db-skeleton db-skeleton-chart__title" />
+              <div className="db-skeleton db-skeleton-chart__body" />
+            </div>
+            <div className="db-skeleton-chart" style={{ width: "240px", flexShrink: 0 }}>
+              <div className="db-skeleton db-skeleton-chart__title" />
+              <div className="db-skeleton db-skeleton-chart__body" />
+            </div>
+          </div>
+
+          {/* Fluency charts skeleton */}
+          {[1, 2].map((i) => (
+            <div key={i} className="db-skeleton-chart">
+              <div className="db-skeleton db-skeleton-chart__title" />
+              <div className="db-skeleton db-skeleton-chart__body" style={{ height: "200px" }} />
+            </div>
+          ))}
         </div>
       </Layout>
     );

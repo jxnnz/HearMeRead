@@ -151,6 +151,45 @@
   .db-chart-card--narrow { width: 100%; }
 }
 
+/* ── Skeleton shimmer ────────────────────────────────── */
+@keyframes dbShimmer {
+  0%   { background-position: -800px 0; }
+  100% { background-position: 800px 0; }
+}
+
+.db-skeleton {
+  background: linear-gradient(90deg, #e8ecf4 25%, #f4f6fb 50%, #e8ecf4 75%);
+  background-size: 1600px 100%;
+  animation: dbShimmer 1.4s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+.db-skeleton-stat {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px 22px;
+  border: 1px solid #e8ecf4;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.db-skeleton-stat__value { height: 32px; width: 70%; }
+.db-skeleton-stat__label { height: 13px; width: 50%; }
+
+.db-skeleton-chart {
+  background: #fff;
+  border-radius: 12px;
+  padding: 18px 20px 20px;
+  border: 1px solid #e8ecf4;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.db-skeleton-chart__title { height: 14px; width: 45%; }
+.db-skeleton-chart__body  { height: 220px; width: 100%; border-radius: 8px; }
+
 /* ── Chart header ────────────────────────────────────── */
 .db-chart-header {
   display: flex;

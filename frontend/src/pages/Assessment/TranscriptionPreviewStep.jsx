@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronRight, Volume2, Pencil } from "lucide-react";
+import { ChevronRight, Volume2, Pencil, RotateCcw } from "lucide-react";
 import EditTranscriptionModal from "../../modals/EditTranscriptionModal";
 
 function alignWords(refText, transText) {
@@ -7,8 +7,8 @@ function alignWords(refText, transText) {
   const ref   = refText.trim().split(/\s+/).filter(Boolean);
   const trans = transText.trim().split(/\s+/).filter(Boolean);
 
-  if (!ref.length) return trans.map((w) => ({ word: w, correct: true }));
-  if (!trans.length) return [];
+  if (!ref.length) return trans.map((w) => ({ word: w, correct: true,  source: "extra"  }));
+  if (!trans.length) return ref.map((w)  => ({ word: w, correct: false, source: "missed" }));
 
   const m = ref.length;
   const n = trans.length;
@@ -23,14 +23,15 @@ function alignWords(refText, transText) {
 
   const result = [];
   let i = m, j = n;
-  while (j > 0) {
-    if (i > 0 && strip(ref[i - 1]) === strip(trans[j - 1])) {
-      result.unshift({ word: trans[j - 1], correct: true });
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && strip(ref[i - 1]) === strip(trans[j - 1])) {
+      result.unshift({ word: trans[j - 1], correct: true,  source: "match"  });
       i--; j--;
-    } else if (i === 0 || dp[i][j - 1] >= dp[i - 1][j]) {
-      result.unshift({ word: trans[j - 1], correct: false });
+    } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+      result.unshift({ word: trans[j - 1], correct: false, source: "extra"  });
       j--;
     } else {
+      result.unshift({ word: ref[i - 1],  correct: false, source: "missed" });
       i--;
     }
   }
@@ -50,6 +51,8 @@ export default function TranscriptionPreviewStep({
   timeLimitSec,
   audioFile,
   recordingTime,
+  recordingMode,
+  onRetakeRecording,
   onConfirm,
 }) {
   const [edited, setEdited] = useState(transcript ?? "");
@@ -75,42 +78,55 @@ export default function TranscriptionPreviewStep({
 
   const aligned = referenceText
     ? alignWords(referenceText, edited)
-    : edited.trim().split(/\s+/).filter(Boolean).map((w) => ({ word: w, correct: true }));
+    : edited.trim().split(/\s+/).filter(Boolean).map((w) => ({ word: w, correct: true, source: "match" }));
 
   const totalRefWords = referenceText
     ? referenceText.trim().split(/\s+/).filter(Boolean).length
     : aligned.length;
-  const correctCount  = aligned.filter((a) => a.correct).length;
-  const wrongCount    = aligned.filter((a) => !a.correct).length;
+  const correctCount = aligned.filter((a) => a.correct).length;
+  const wrongCount   = totalRefWords - correctCount;
+
+  // Annotate each word with time-limit context (A2 only)
+  const displayWords = (() => {
+    let tIdx = -1;
+    return aligned.map((a) => {
+      if (a.source !== "missed") tIdx++;
+      return {
+        ...a,
+        isCutoff:    showHighlight && a.source !== "missed" && tIdx === cutoffIdx,
+        isPastLimit: showHighlight && a.source !== "missed" && tIdx > cutoffIdx,
+      };
+    });
+  })();
 
   const stats = [
-    { label: "Total Words",  value: totalRefWords,                  color: "#1a2340" },
-    { label: "Correct",      value: `${correctCount}/${totalRefWords}`, color: "#27ae60" },
-    { label: "Wrong",        value: wrongCount,                     color: "#c0392b" },
-    { label: "Time",         value: fmtTime(recordingTime),         color: "#2c7fc1" },
+    { label: "Total Words", value: totalRefWords,                     color: "#1a2340" },
+    { label: "Correct",     value: `${correctCount}/${totalRefWords}`, color: "#27ae60" },
+    { label: "Wrong",       value: wrongCount,                        color: "#c0392b" },
+    { label: "Time",        value: fmtTime(recordingTime),            color: "#2c7fc1" },
   ];
 
   return (
     <div className="asp-page">
       <div className="asp-preview-card">
         <span className="asp-reading-badge">{badge}</span>
-        <h2 className="asp-preview-card__title">Transcription Preview</h2>
 
-        {/* Audio + pencil button */}
+        {/* Title row + Retake button */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <h2 className="asp-preview-card__title" style={{ margin: 0 }}>Transcription Preview</h2>
+          {recordingMode === "live" && onRetakeRecording && (
+            <button className="asp-retake-btn" onClick={onRetakeRecording}>
+              <RotateCcw size={14} />
+              Retake
+            </button>
+          )}
+        </div>
+
+        {/* Audio player */}
         {audioUrl && (
           <div style={{ display: "flex", alignItems: "center", gap: "10px", background: "#f4f6fb", padding: "12px", borderRadius: "8px", border: "1px solid #c8d0e4" }}>
             <Volume2 size={16} style={{ color: "#2c7fc1", flexShrink: 0 }} />
             <audio controls src={audioUrl} style={{ flex: 1, height: "32px" }} />
-            <button className="asp-edit-btn" onClick={() => setShowEditModal(true)} title="Edit transcription">
-              <Pencil size={15} />
-            </button>
-          </div>
-        )}
-        {!audioUrl && (
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <button className="asp-edit-btn" onClick={() => setShowEditModal(true)} title="Edit transcription">
-              <Pencil size={15} />
-            </button>
           </div>
         )}
 
@@ -135,52 +151,45 @@ export default function TranscriptionPreviewStep({
           </div>
         )}
 
-        {/* A2 cutoff word highlight */}
-        {showHighlight && (
-          <div className="asp-preview-highlight-wrap">
-            <p className="asp-preview-highlight-label">
-              Words up to the time limit are shown below. The{" "}
-              <span style={{ color: "#2c7fc1", fontWeight: 600 }}>blue word</span>{" "}
-              is the last word read within the limit.
-            </p>
-            <div className="asp-preview-highlight-text">
-              {words.map((w, i) => (
-                <span
-                  key={i}
-                  className={
-                    i === cutoffIdx ? "asp-preview-word asp-preview-word--cutoff"
-                    : i < cutoffIdx ? "asp-preview-word"
-                    : "asp-preview-word asp-preview-word--past"
-                  }
-                >
-                  {w.word}{" "}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Color-coded transcription */}
+        {/* Color-coded transcription — cutoff highlighting merged in */}
         <div className="asp-preview-edit-wrap">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
             <span className="asp-preview-edit-label" style={{ marginBottom: 0 }}>Transcription:</span>
-            {referenceText && (
-              <span style={{ display: "flex", gap: "12px", fontSize: "11.5px", fontWeight: 600, fontFamily: "Poppins, sans-serif" }}>
-                <span style={{ color: "#1a2340" }}>● Correct</span>
-                <span style={{ color: "#c0392b" }}>● Wrong</span>
-              </span>
-            )}
-          </div>
-          {aligned.length > 0 ? (
-            <div className="asp-word-highlight__text" style={{ borderRadius: "10px" }}>
-              {aligned.map((a, i) => (
-                <span
-                  key={i}
-                  style={{ color: a.correct ? "#1a2340" : "#c0392b", fontWeight: a.correct ? "inherit" : 600 }}
-                >
-                  {a.word}{" "}
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              {referenceText && (
+                <span style={{ display: "flex", gap: "10px", fontSize: "11px", fontWeight: 600, fontFamily: "Poppins, sans-serif", flexWrap: "wrap", justifyContent: "flex-end" }}>
+                  <span style={{ color: "#1a2340" }}>● Correct</span>
+                  <span style={{ color: "#c0392b" }}>● Wrong</span>
+                  {showHighlight && <span style={{ color: "#2c7fc1" }}>● Last in Limit</span>}
+                  {showHighlight && <span style={{ color: "#b8bdd4" }}>● Past Limit</span>}
                 </span>
-              ))}
+              )}
+              <button className="asp-edit-btn" onClick={() => setShowEditModal(true)} title="Edit transcription">
+                <Pencil size={15} />
+              </button>
+            </div>
+          </div>
+
+          {displayWords.length > 0 ? (
+            <div className="asp-word-highlight__text" style={{ borderRadius: "10px" }}>
+              {displayWords.map((a, i) => {
+                let color, fontWeight, background, borderRadius, padding;
+                if (a.isCutoff) {
+                  color = "#2c7fc1"; fontWeight = 700;
+                  background = "#d6ecfb"; borderRadius = "3px"; padding = "0 3px";
+                } else if (a.isPastLimit) {
+                  color = "#b8bdd4";
+                } else if (a.correct) {
+                  color = "#1a2340";
+                } else {
+                  color = "#c0392b"; fontWeight = 600;
+                }
+                return (
+                  <span key={i} style={{ color, fontWeight, background, borderRadius, padding }}>
+                    {a.word}{" "}
+                  </span>
+                );
+              })}
             </div>
           ) : (
             <div className="asp-word-highlight__text" style={{ borderRadius: "10px", color: "#b8bdd4", fontStyle: "italic" }}>

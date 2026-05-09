@@ -63,14 +63,10 @@ async def list_sessions(
 @router.post(
     "",
     summary="Start a new assessment session",
-    description=(
-        "Creates a new session. If the student already has a session for the same "
-        "school year and period, the session is still created but a **207** response "
-        "is returned with a `warning` field and the `existing_id` of the duplicate."
-    ),
+    description="Creates a new session. Only one assessment per student per school year and period is allowed.",
     responses={
         201: {"description": "Session created", "model": SessionResponse},
-        207: {"description": "Session created with duplicate warning", "model": DuplicateWarning},
+        409: {"description": "Duplicate session — student already assessed this period"},
     },
     status_code=status.HTTP_201_CREATED,
 )
@@ -79,45 +75,26 @@ async def create_session(
     db:              AsyncSession = Depends(get_db),
     current_teacher: Teacher      = Depends(get_current_teacher),
 ):
-    # ── Duplicate session guard (commented out — re-enable after testing) ─────
-    # Enforces: only one assessment per student per school year and period.
-    # Uncomment the block below to enable this restriction.
-    #
-    # existing = await session_service.check_duplicate(
-    #     db=db,
-    #     teacher_id=current_teacher.id,
-    #     student_id=data.student_id,
-    #     school_year=data.school_year,
-    #     period=data.period,
-    # )
-    # if existing:
-    #     raise HTTPException(
-    #         status_code=status.HTTP_409_CONFLICT,
-    #         detail=(
-    #             f"This student already has a {data.period.value.capitalize()} "
-    #             f"assessment for school year {data.school_year}. "
-    #             f"Only one assessment per period per school year is allowed."
-    #         ),
-    #     )
-    # ─────────────────────────────────────────────────────────────────────────
-
-    session, duplicate = await session_service.create_session(
-        db=db, data=data, teacher_id=current_teacher.id
+    existing = await session_service.check_duplicate(
+        db=db,
+        teacher_id=current_teacher.id,
+        student_id=data.student_id,
+        school_year=data.school_year,
+        period=data.period,
     )
-
-    if duplicate:
-        return JSONResponse(
-            status_code=status.HTTP_207_MULTI_STATUS,
-            content=DuplicateWarning(
-                warning=(
-                    f"This student already has a {data.period.value} assessment "
-                    f"for {data.school_year}. The new session was still created."
-                ),
-                existing_id=duplicate.id,
-                session=SessionResponse.model_validate(session),
-            ).model_dump(mode="json"),
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"This student already has a {data.period.value.capitalize()} "
+                f"assessment for school year {data.school_year}. "
+                f"Only one assessment per period per school year is allowed."
+            ),
         )
 
+    session, _ = await session_service.create_session(
+        db=db, data=data, teacher_id=current_teacher.id
+    )
     return session
 
 

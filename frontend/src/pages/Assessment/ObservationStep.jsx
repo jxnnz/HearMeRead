@@ -59,7 +59,10 @@ export default function ObservationStep({ sessionId, learnerExperience, onComple
         </div>
 
         <div className="asp-obs-section">
-          <p className="asp-obs-section__label">Teacher Remarks</p>
+          <p className="asp-obs-section__label">
+            Teacher Remarks
+            <span style={{ fontSize: "11px", fontWeight: 400, color: "#8a94b2", marginLeft: "6px" }}>(Optional)</span>
+          </p>
           <textarea
             className="asp-obs-textarea"
             placeholder="Write your observations here…"

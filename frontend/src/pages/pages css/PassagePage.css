@@ -124,3 +124,49 @@
 .ph-empty p {
   margin: 0;
 }
+
+/* ── Skeleton shimmer ────────────────────────────────────── */
+@keyframes phShimmer {
+  0%   { background-position: -800px 0; }
+  100% { background-position: 800px 0; }
+}
+
+.ph-skeleton {
+  background: linear-gradient(90deg, #e8ecf4 25%, #f4f6fb 50%, #e8ecf4 75%);
+  background-size: 1600px 100%;
+  animation: phShimmer 1.4s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+.ph-skeleton-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 24px 28px;
+  border: 1.5px solid #e8ecf4;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ph-skeleton-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ph-skeleton-title  { height: 20px; width: 160px; }
+.ph-skeleton-count  { height: 13px; width: 80px; }
+
+.ph-skeleton-passage {
+  background: #f4f6fb;
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ph-skeleton-meta   { height: 12px; width: 120px; }
+.ph-skeleton-ptitle { height: 16px; width: 80%; }
+.ph-skeleton-line   { height: 12px; width: 100%; }
+.ph-skeleton-line--short { width: 65%; }

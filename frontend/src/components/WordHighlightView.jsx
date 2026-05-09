@@ -13,10 +13,10 @@ export default function WordHighlightView({ alignments, label, words, timeLimitS
     <div className="asp-word-highlight">
       {label && <p className="asp-word-highlight__label">{label}</p>}
       <div className="asp-word-highlight__legend">
-        <span className="asp-whl--correct">Correct</span>
-        <span className="asp-whl--substitution">Substitution</span>
-        <span className="asp-whl--deletion">Deletion</span>
-        <span className="asp-whl--insertion">Insertion</span>
+        <span className="asp-whl--correct">Read Correctly</span>
+        <span className="asp-whl--substitution">Wrong Word</span>
+        <span className="asp-whl--deletion">Skipped</span>
+        <span className="asp-whl--insertion">Added Word</span>
       </div>
       <div className="asp-word-highlight__text">
         {alignments.map((a, i) => {
