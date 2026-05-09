@@ -209,12 +209,31 @@ export default function ResultsStep({
         </div>
       </div>
 
+      {/* ── A1 Transcriptions ── */}
+      {(part1?.task1_alignments?.length > 0 || part1?.task2_alignments?.length > 0) && (
+        <div className="asp-res-profile-detail">
+          <h3 className="asp-res-section-title">Assessment 1 — Transcription</h3>
+          {part1?.task1_alignments?.length > 0 && (
+            <WordHighlightView
+              alignments={part1.task1_alignments}
+              label="Gawain 1 — Word Reading"
+            />
+          )}
+          {part1?.task2_alignments?.length > 0 && (
+            <WordHighlightView
+              alignments={part1.task2_alignments}
+              label={`Gawain 2 — ${part1.route === "task_2L" ? "Word Reading" : "Sentence Reading"}`}
+            />
+          )}
+        </div>
+      )}
+
       {/* ── A2 Reading Transcription ── */}
       {a2Alignments?.length > 0 && (
         <div className="asp-res-profile-detail">
           <WordHighlightView
             alignments={a2Alignments}
-            label="Reading Transcription"
+            label="Assessment 2 — Reading Transcription"
           />
         </div>
       )}

@@ -119,9 +119,25 @@ export default function PassagePage() {
         </div>
 
         {loading && (
-          <div className="ph-empty">
-            <div className="sr-spinner" />
-            <p>Loading passages…</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+            {[1, 2].map((s) => (
+              <div key={s} className="ph-skeleton-card">
+                <div className="ph-skeleton-header">
+                  <div className="ph-skeleton ph-skeleton-title" />
+                  <div className="ph-skeleton ph-skeleton-count" />
+                </div>
+                <div className="ph-grid">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="ph-skeleton-passage">
+                      <div className="ph-skeleton ph-skeleton-meta" />
+                      <div className="ph-skeleton ph-skeleton-ptitle" />
+                      <div className="ph-skeleton ph-skeleton-line" />
+                      <div className="ph-skeleton ph-skeleton-line ph-skeleton-line--short" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         )}
 

@@ -497,6 +497,26 @@ export default function AssessmentPage() {
     handleStopRecording();
   }
 
+  // ── Retake from transcription preview (live recordings only) ────────────
+  function handleRetakeFromPreview(forTask) {
+    resetRecording();
+    if (forTask === "g1") {
+      setG1Transcript("");
+      setG1Words([]);
+      setStep(STEPS.A1_G1);
+    } else if (forTask === "g2") {
+      setG2Transcript("");
+      setStep(STEPS.A1_G2);
+    } else if (forTask === "a2") {
+      setA2Transcript("");
+      setA2Words([]);
+      setA2RecordingTime(0);
+      setTimeLimitReached(false);
+      setStep(STEPS.A2);
+    }
+    setShowChoiceModal(true);
+  }
+
   // ── Transcription preview confirm handlers ───────────────────────────────
   async function handleConfirmG1Preview(editedText) {
     setG1Transcript(editedText);
@@ -813,6 +833,8 @@ export default function AssessmentPage() {
           timeLimitSec={null}
           audioFile={audioFile}
           recordingTime={g1RecordingTime}
+          recordingMode={recordingMode}
+          onRetakeRecording={() => handleRetakeFromPreview("g1")}
           onConfirm={handleConfirmG1Preview}
         />
         {scoreError && <p className="asp-error" style={{ textAlign: "center" }}>⚠ {scoreError}</p>}
@@ -834,6 +856,8 @@ export default function AssessmentPage() {
           timeLimitSec={null}
           audioFile={audioFile}
           recordingTime={g2RecordingTime}
+          recordingMode={recordingMode}
+          onRetakeRecording={() => handleRetakeFromPreview("g2")}
           onConfirm={handleConfirmG2Preview}
         />
         {scoreError && <p className="asp-error" style={{ textAlign: "center" }}>⚠ {scoreError}</p>}
@@ -864,6 +888,8 @@ export default function AssessmentPage() {
           timeLimitSec={a2TimeLimit}
           audioFile={audioFile}
           recordingTime={a2RecordingTime}
+          recordingMode={recordingMode}
+          onRetakeRecording={() => handleRetakeFromPreview("a2")}
           onConfirm={handleConfirmA2Preview}
         />
       </Layout>

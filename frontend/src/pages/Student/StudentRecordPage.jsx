@@ -138,9 +138,14 @@ export default function StudentRecordPage() {
 
         {/* ── States ── */}
         {loading && (
-          <div className="sr-state">
-            <div className="sr-spinner" />
-            <p>Loading classes…</p>
+          <div className="sr-class-grid">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="sr-skeleton-card">
+                <div className="sr-skeleton sr-skeleton-card__title" />
+                <div className="sr-skeleton sr-skeleton-card__meta" />
+                <div className="sr-skeleton sr-skeleton-card__badge" />
+              </div>
+            ))}
           </div>
         )}
 

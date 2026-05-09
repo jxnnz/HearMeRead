@@ -143,7 +143,15 @@
 .si-input:focus { border-color: #2c3e6b; background: #fff; }
 .si-input::placeholder { color: #b8bdd4; }
 
-.si-input--readonly { background: #f0f2fa; color: #8a94b2; cursor: default; }
+select.si-input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%233a4566' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+  padding-right: 34px;
+}
+
+.si-input--readonly { background: #f0f2fa; color: #3a4566; cursor: default; }
 
 .si-input--filled {
   display: block;
@@ -2292,15 +2300,34 @@
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  color: #8a94b2;
-  background: transparent;
-  border: none;
+  color: #3a4566;
+  background: #e0e4ef;
+  border: 1.5px solid #c0c8de;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
   padding: 0;
 }
 
-.asp-edit-btn:hover { background: #eef1fc; color: #2c3e6b; }
+.asp-edit-btn:hover { background: #cdd3e8; color: #1a2340; }
+
+.asp-retake-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1.5px solid #ffd5d5;
+  background: #fff0f0;
+  color: #c0392b;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: "Poppins", sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.asp-retake-btn:hover { background: #ffe0e0; border-color: #f5aeae; }
 
 /* Read-only transcript display */
 .asp-preview-readonly {

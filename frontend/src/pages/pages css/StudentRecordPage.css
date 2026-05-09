@@ -148,13 +148,42 @@
 
 .sr-state--error { color: #c0392b; }
 
-.sr-spinner {
-  width: 34px;
-  height: 34px;
-  border: 3px solid #e0e4f0;
-  border-top-color: #2c3e6b;
-  border-radius: 50%;
-  animation: srSpin 0.7s linear infinite;
+/* ── Skeleton shimmer ────────────────────────────────── */
+@keyframes srShimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position: 600px 0; }
 }
 
-@keyframes srSpin { to { transform: rotate(360deg); } }
+.sr-skeleton {
+  background: linear-gradient(90deg, #e8ecf4 25%, #f4f6fb 50%, #e8ecf4 75%);
+  background-size: 1200px 100%;
+  animation: srShimmer 1.4s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+.sr-skeleton-card {
+  background: #fff;
+  border: 1.5px solid #dde2f0;
+  border-radius: 14px;
+  padding: 24px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sr-skeleton-card__title {
+  height: 20px;
+  width: 70%;
+}
+
+.sr-skeleton-card__meta {
+  height: 13px;
+  width: 50%;
+}
+
+.sr-skeleton-card__badge {
+  height: 22px;
+  width: 90px;
+  border-radius: 20px;
+  margin-top: 4px;
+}
