@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from './pages/LoginPage';
 import SignupPage from "./pages/SignupPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import PassagesPage from "./pages/PassagesPage";
 import AddPassagePage from "./pages/AddPassagePage";
 import StudentRecordPage from "./pages/StudentRecordPage";
@@ -33,7 +34,8 @@ export default function App() {
       <Routes>
         <Route path="/"        element={<LandingPage />} />
         <Route path="/login"   element={<LoginPage />} />
-        <Route path="/signup"  element={<SignupPage />} />
+        <Route path="/signup"          element={<SignupPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/dashboard" element={<DashboardPage />}/>
         <Route path="/assessment" element={<AssessmentPage />} />
 

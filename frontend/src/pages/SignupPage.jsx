@@ -30,7 +30,7 @@ export default function SignupPage() {
   }
 
   return (
-    <AuthLayout>
+    <AuthLayout page="signup">
       <h1 className="auth-heading">Get Started</h1>
       <p className="auth-subheading">Create an account</p>
 

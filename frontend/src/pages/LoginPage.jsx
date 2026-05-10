@@ -108,7 +108,7 @@ export default function LoginPage() {
       {/* ── Toast portal (top-right, outside the card) ── */}
       <Toast toasts={toasts} onRemove={removeToast} />
 
-      <AuthLayout>
+      <AuthLayout page="login">
         <h1 className="auth-heading">Welcome Back!</h1>
         <p className="auth-subheading">Login to access your account</p>
 
