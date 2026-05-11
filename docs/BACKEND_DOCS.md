@@ -23,6 +23,7 @@
    - [Questions](#94-question-routes--routesquestionspy)
    - [Sessions](#95-session-routes--routessessionpy)
    - [ASR (Audio)](#96-asr-routes--routesasrpy)
+   - [Dashboard](#97-dashboard-routes--routesdashboardpy)
 10. [Services — `/services`](#10-services--services)
     - [ASR Service](#101-asr-service)
     - [Audio Storage](#102-audio-storage)
@@ -53,14 +54,17 @@ backend/
     ├── schema.py            # Pydantic request/response schemas
     ├── core/
     │   ├── config.py        # Environment variables / settings
-    │   └── security.py      # Password hashing, JWT creation/decoding
+    │   ├── security.py      # Password hashing, JWT creation/decoding
+    │   ├── encryption.py    # Fernet field-level encryption for student PII
+    │   └── rate_limit.py    # Shared slowapi rate limiter instance
     ├── routes/
-    │   ├── auth.py          # Registration, login, verification
+    │   ├── auth.py          # Registration, login, verification, password reset
     │   ├── students.py      # Student CRUD
     │   ├── passages.py      # Passage CRUD + file upload
     │   ├── questions.py     # Question CRUD + file upload
     │   ├── session.py       # Assessment session lifecycle
-    │   └── asr.py           # Audio upload + Whisper transcription
+    │   ├── asr.py           # Audio upload + Whisper transcription
+    │   └── dashboard.py     # Dashboard summary stats and chart data
     ├── services/
     │   ├── asr_service.py         # Whisper model wrapper
     │   ├── audio_storage.py       # Save / retrieve / delete audio files
@@ -74,7 +78,8 @@ backend/
     ├── schemas/
     │   └── session_schemas.py     # Extended schemas for scoring payloads
     └── utils/
-        └── docx_parser.py         # .docx / .txt file parser
+        ├── docx_parser.py         # .docx / .txt file parser
+        └── excel_parser.py        # CRLA Excel spreadsheet parser for bulk import
 ```
 
 ---
@@ -185,6 +190,7 @@ Keeps `main.py` clean. All API endpoints are accessible at `/routes/<subrouter-p
 | `questions` | *(mixed)* | Questions |
 | `sessions` | `/sessions` | Sessions |
 | `asr` | *(session-scoped)* | ASR |
+| `dashboard` | `/dashboard` | Dashboard |
 
 ### Full path example
 `POST /routes/auth/login`
@@ -200,11 +206,11 @@ Defines all SQLAlchemy database table models. These map directly to Supabase Pos
 
 | Enum | Values |
 |---|---|
-| `GradeLevel` | `Grade 1`, `Grade 2`, `Grade 3` |
+| `GradeLevel` | `kindergarten`, `grade_1`, `grade_2`, `grade_3`, `grade_4`, `grade_5`, `grade_6` |
 | `Sex` | `female`, `male` |
 | `Language` | `english`, `filipino` |
 | `AssessmentPeriod` | `beginning`, `middle`, `end` |
-| `ReadingProfile` | `Low Emerging`, `High Emerging`, `Developing`, `Transitioning`, `Grade Level` |
+| `ReadingProfile` | `Low Emerging Reader`, `High Emerging Reader`, `Developing Reader`, `Transitioning Reader`, `Reading at Grade Level` |
 | `Part1Classification` | `Full Refresher`, `Moderate Refresher`, `Light Refresher`, `Grade Ready` |
 
 ### Models
@@ -227,21 +233,35 @@ Single-use tokens sent by email to verify a teacher's account.
 
 | Column | Notes |
 |---|---|
-| `token` | UUID, primary key |
+| `id` | Integer, primary key |
 | `teacher_id` | FK → Teacher |
+| `token` | SHA-256 hash of raw token (64-char hex) |
 | `expires_at` | 24 hours from creation |
-| `used` | Set to `true` after first use |
+| `used_at` | Timestamped on first use; `NULL` means unused |
+
+#### `PasswordResetToken`
+Single-use tokens sent by email when a teacher requests a password reset.
+
+| Column | Notes |
+|---|---|
+| `id` | Integer, primary key |
+| `teacher_id` | FK → Teacher |
+| `token` | SHA-256 hash of raw token (64-char hex) |
+| `expires_at` | 1 hour from creation |
+| `used_at` | Timestamped on first use; `NULL` means unused |
 
 #### `Student`
 A learner record owned by a teacher.
 
 | Column | Notes |
 |---|---|
-| `id` | UUID |
-| `first_name`, `last_name` | — |
+| `id` | Integer, primary key |
+| `first_name`, `last_name` | Fernet-encrypted at rest; decrypted transparently in the service layer |
 | `grade_level` | `GradeLevel` enum |
 | `section` | String |
-| `lrn` | Learner Reference Number, globally unique |
+| `school_year` | String, e.g. `"2025-2026"` |
+| `lrn` | Learner Reference Number — Fernet-encrypted at rest |
+| `lrn_hash` | HMAC-SHA256 of the plaintext LRN — used for uniqueness checks without storing plaintext |
 | `sex` | `Sex` enum |
 | `teacher_id` | FK → Teacher |
 
@@ -250,14 +270,16 @@ A reading text used in assessments.
 
 | Column | Notes |
 |---|---|
-| `id` | UUID |
-| `title` | — |
-| `content` | Full passage text |
+| `id` | Integer, primary key |
+| `title` | Nullable — Assessment 1 passages have no title |
+| `content` | Full passage text — nullable for Assessment 1 (which uses task fields instead) |
 | `language` | `english` or `filipino` |
-| `grade_level` | `GradeLevel` enum |
+| `grade_level` | `GradeLevel` enum — nullable for Assessment 1 |
 | `word_count` | Auto-computed on create/update |
-| `assessment_type` | `1` (with tasks) or `2` (passage reading) |
-| `task1_text`, `task2_text` | For type-1 passages |
+| `assessment_type` | `1` (word/sentence tasks) or `2` (full story reading) |
+| `task1_content` | Assessment 1: the Task 1 reading passage |
+| `task2_words` | Assessment 1: comma-separated word list for the lower route (Task 2L) |
+| `task2_sentences` | Assessment 1: period-separated sentences for the higher route (Task 2H) |
 | `is_archived` | Soft-delete flag |
 
 #### `Question`
@@ -265,8 +287,9 @@ A comprehension question linked to a passage.
 
 | Column | Notes |
 |---|---|
-| `id` | UUID |
+| `id` | Integer, primary key |
 | `text` | Question text |
+| `answer_key` | Optional model answer / answer key text |
 | `order` | Display order |
 | `passage_id` | FK → Passage |
 | `is_archived` | Soft-delete flag |
@@ -276,43 +299,51 @@ One assessment event: a specific student reading a specific passage.
 
 | Column | Notes |
 |---|---|
-| `id` | UUID |
+| `id` | Integer, primary key |
 | `teacher_id` | FK → Teacher |
 | `student_id` | FK → Student |
-| `passage_id` | FK → Passage |
-| `school_year` | String, e.g. `"2025-2026"` |
+| `passage_id` | FK → Passage (nullable — set to NULL if passage is deleted) |
+| `school_year` | String, e.g. `"2025-2026"` — validated as `YYYY-YYYY` with consecutive years |
 | `period` | `AssessmentPeriod` enum |
 | `language` | Language of the passage |
-| `is_completed` | Set after scoring |
+| `is_completed` | Set to `true` after scoring |
 | `is_archived` | Soft-delete flag |
+
+A unique partial index on `(student_id, school_year, period)` prevents duplicate active sessions for the same student and period.
 
 #### `ReadingResult`
 Stores all scoring outputs for a completed session.
 
 | Column | Notes |
 |---|---|
-| `session_id` | FK → AssessmentSession (1-to-1) |
-| `task1_score`, `task2_score` | Part 1 raw scores |
-| `part1_route` | `task_2L` or `task_2H` |
-| `part1_classification` | `Part1Classification` enum |
-| `cwpm` | Correct Words Per Minute |
-| `accuracy_rate` | Percentage |
-| `reading_profile` | `ReadingProfile` enum |
+| `session_id` | FK → AssessmentSession (1-to-1, primary key) |
+| `reading_time_seconds` | Duration of the Part 2 reading |
+| `total_words` | Total word count in the Part 2 passage |
+| `miscue_count` | Number of miscues in Part 2 |
+| `cwpm` | Correct Words Per Minute — auto-computed: `(total_words − miscue_count) / (reading_time_seconds / 60)` |
 | `audio_path` | File path on disk |
 | `audio_expires_at` | 7 days from upload |
-| `word_alignments` | JSON — word-level miscue data |
+| `part1_task1_correct` | Words correct in Task 1 |
+| `part1_task2_correct` | Words correct in Task 2 |
+| `part1_total_score` | Combined Part 1 score |
+| `part1_classification` | `Full Refresher` / `Moderate Refresher` / `Light Refresher` / `Grade Ready` |
+| `part1_route` | `task_2l` or `task_2h` |
+| `part1_task1_alignments_json` | JSON — word-level miscue alignment for Task 1 |
+| `part1_task2_alignments_json` | JSON — word-level miscue alignment for Task 2 |
+| `part2_alignments_json` | JSON — word-level miscue alignment for Part 2 |
+| `reading_profile` | `ReadingProfile` string value |
 
 #### `SessionObservation`
 Teacher-rated qualitative data for a session.
 
 | Column | Notes |
 |---|---|
-| `session_id` | FK → AssessmentSession (1-to-1) |
-| `comprehension_score` | Count of correct answers |
-| `total_questions` | Total comprehension questions |
-| `fluency_level` | 1–4 rating |
-| `learner_experience` | 1–5 rating |
-| `remarks` | Optional free text |
+| `session_id` | FK → AssessmentSession (1-to-1, primary key) |
+| `comprehension_correct` | Count of correct comprehension answers |
+| `comprehension_total` | Total number of comprehension questions |
+| `fluency_level` | 1–4 teacher rating (1 = Frustration, 4 = Advanced) — validated on save |
+| `learner_experience` | 1–5 teacher rating of the student's session experience — validated on save |
+| `teacher_remarks` | Optional free text notes from the teacher |
 
 ---
 
@@ -377,13 +408,17 @@ Loads all environment variables using Pydantic's `BaseSettings`. All sensitive v
 |---|---|
 | `DATABASE_URL` | Supabase PostgreSQL connection string |
 | `SECRET_KEY` | JWT signing secret (keep this private) |
-| `ALGORITHM` | `HS256` |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | Default: `30` |
+| `ALGORITHM` | `HS256` (default) |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Default: `60` |
 | `RESEND_API_KEY` | Resend.com API key for email |
-| `FROM_EMAIL` | Sender address for verification emails |
-| `FRONTEND_URL` | Used in CORS and email links |
-| `BACKEND_URL` | Used in verification email link |
-| `DB_SCHEMA` | Supabase schema name (multi-tenant) |
+| `EMAIL_ADDRESS` | Sender email address for outgoing emails |
+| `EMAIL_NAME` | Display name for the sender (e.g. `"HearMeRead"`) |
+| `FRONTEND_URL` | Used in CORS and email links (default: `http://localhost:5173`) |
+| `BACKEND_URL` | Used in email verification links (default: `http://localhost:8000`) |
+| `DB_SCHEMA` | Supabase schema name for multi-tenant isolation (default: `"dev"`) |
+| `ENCRYPTION_KEY` | Fernet key for field-level encryption of student PII — generate with `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"` |
+| `GROQ_API_KEY` | Groq API key for Whisper-via-Groq (optional; empty string by default) |
+| `ENVIRONMENT` | `development`, `test`, or `production` (default: `development`) |
 
 #### How to use it
 ```python
@@ -409,8 +444,49 @@ Provides password hashing (bcrypt) and JWT token creation/decoding.
 
 #### Security details
 - Algorithm: `HS256`
-- Token payload contains `sub` = teacher UUID string
+- Token payload contains `sub` = teacher email string
 - Tokens expire after `ACCESS_TOKEN_EXPIRE_MINUTES` (configurable)
+
+---
+
+### `core/encryption.py`
+
+#### What it does
+Provides Fernet symmetric encryption and HMAC hashing for student PII. The encryption key comes from `settings.ENCRYPTION_KEY`.
+
+#### Functions
+
+| Function | Input | Output | Notes |
+|---|---|---|---|
+| `encrypt(value)` | Plain string or `None` | Encrypted string or `None` | Used before writing PII to the database |
+| `decrypt(value)` | Encrypted string or `None` | Plain string or `None` | Used after reading PII from the database |
+| `hash_lrn(lrn)` | LRN string | HMAC-SHA256 hex string | Deterministic — used for uniqueness checks without storing plaintext |
+| `hash_token(token)` | Raw token string | SHA-256 hex string | One-way — only the hash is stored in the database |
+
+The student service layer calls `encrypt`/`decrypt` transparently, so routes and schemas always work with plaintext values.
+
+---
+
+### `core/rate_limit.py`
+
+#### What it does
+Exports a shared `slowapi.Limiter` instance keyed on the client's remote IP address. Separating this from `main.py` avoids circular imports (routes import the limiter; `main.py` imports the routes).
+
+#### Usage
+```python
+from app.core.rate_limit import limiter
+
+@router.post("/register")
+@limiter.limit("3/minute")
+async def register(request: Request, ...):
+    ...
+```
+
+Auth endpoints are protected with the following limits:
+- `POST /register` — 3 requests/minute
+- `POST /login` — 5 requests/minute
+- `POST /forgot-password` — 3 requests/minute
+- `POST /reset-password` — 5 requests/minute
 
 ---
 
@@ -514,7 +590,7 @@ Base path: `/routes/auth`
 **Response (200):**
 ```json
 {
-  "id": "uuid",
+  "id": 1,
   "first_name": "Maria",
   "last_name": "Santos",
   "email": "maria@school.edu",
@@ -523,6 +599,55 @@ Base path: `/routes/auth`
 ```
 
 **How the frontend uses it:** Used to populate the teacher's name in the UI header/sidebar after login.
+
+---
+
+#### `POST /routes/auth/forgot-password` — Public
+**What it does:** Sends a password reset email if the address is registered. Always returns `200` regardless of whether the email exists (prevents email enumeration).
+
+**Request body:**
+```json
+{ "email": "maria@school.edu" }
+```
+
+**Response (200):**
+```json
+{ "message": "If that email is registered, a password reset link has been sent." }
+```
+
+**Rate limit:** 3 requests/minute.
+
+**How it works:**
+1. Existing unused reset tokens for that teacher are invalidated.
+2. A new single-use `PasswordResetToken` is created (expires in **1 hour**). Only the SHA-256 hash of the raw token is stored in the database.
+3. The raw token is sent via the Resend email API as a link: `{FRONTEND_URL}/reset-password?token=<raw>`.
+
+**How the frontend uses it:** Forgot Password page. Always show a success message after submission.
+
+---
+
+#### `POST /routes/auth/reset-password` — Public
+**What it does:** Validates the reset token and updates the teacher's password.
+
+**Request body:**
+```json
+{
+  "token": "<raw-token-from-email>",
+  "new_password": "NewSecurePass1!"
+}
+```
+
+**Response (200):**
+```json
+{ "message": "Password reset successfully. You can now log in with your new password." }
+```
+
+**Errors:**
+- `400` — Token is invalid, already used, or expired
+
+**Rate limit:** 5 requests/minute.
+
+**How the frontend uses it:** Reset Password page (`/reset-password?token=...`). On success, redirect to `/login` with a confirmation banner. On error, show the error with a link back to `/forgot-password`.
 
 ---
 
@@ -889,6 +1014,70 @@ Session-scoped. All routes are **protected**.
 
 ---
 
+### 9.7 Dashboard Routes — `routes/dashboard.py`
+
+Base path: `/routes/dashboard`  
+All routes are **protected**.
+
+---
+
+#### `GET /routes/dashboard/summary`
+**What it does:** Returns aggregate statistics and chart data for the logged-in teacher's class, scoped to a specific school year.
+
+**Query parameters:**
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `school_year` | string | Current school year (auto-computed) | e.g. `"2025-2026"` |
+
+**Response (200):**
+```json
+{
+  "school_year": "2025-2026",
+  "stats": {
+    "total_students": 40,
+    "total_assessed": 30,
+    "avg_accuracy_pct": 82.5,
+    "avg_error_rate": 17.5
+  },
+  "profile_distribution": {
+    "female": {
+      "Low Emerging Reader": 10.0,
+      "High Emerging Reader": 20.0,
+      "Developing Reader": 30.0,
+      "Transitioning Reader": 25.0,
+      "Reading at Grade Level": 15.0
+    },
+    "male": { ... },
+    "total": { ... }
+  },
+  "gender_distribution": {
+    "female": 55.0,
+    "male": 45.0
+  },
+  "fluency_accuracy": [
+    { "group": "All",    "fluency": 82.5, "comprehension": 70.0 },
+    { "group": "Female", "fluency": 85.0, "comprehension": 72.0 },
+    { "group": "Male",   "fluency": 80.0, "comprehension": 68.0 }
+  ],
+  "fluency_wpm": [
+    { "group": "All",    "fluency": 72.0, "comprehension": 50.4 },
+    { "group": "Female", "fluency": 75.0, "comprehension": 54.0 },
+    { "group": "Male",   "fluency": 69.0, "comprehension": 46.9 }
+  ]
+}
+```
+
+**Field notes:**
+- `stats.avg_accuracy_pct` and `stats.avg_error_rate` are computed from Assessment 2 results only (sessions with a `ReadingResult.total_words > 0`).
+- `profile_distribution` values are percentages within each gender group.
+- `fluency_accuracy.fluency` = average accuracy % across Part 2 readings; `.comprehension` = average comprehension % (correct answers / total questions).
+- `fluency_wpm.fluency` = average CWPM; `.comprehension` = average CWPM × average comprehension %.
+- The current school year is auto-computed: June–December of year Y → `"Y–Y+1"`; January–May of year Y → `"Y-1–Y"`.
+
+**How the frontend uses it:** Dashboard page — populates the summary cards and all charts (reading profile by gender, fluency/comprehension breakdowns).
+
+---
+
 ## 10. Services — `/services`
 
 Services contain the business logic. Routes call services; services interact with the database and external APIs.
@@ -1086,6 +1275,28 @@ Can be multiple paragraphs.
 
 ---
 
+### `utils/excel_parser.py`
+
+**What it does:** Parses the official DepEd CRLA (Classroom Reading Level Assessment) Excel spreadsheet format and returns structured data for bulk import.
+
+| Function / Class | What it does |
+|---|---|
+| `parse_crla_excel(file_bytes)` | Main entry point. Returns a `ParsedExcel` object. |
+| `ParsedExcel` | Dataclass: `grade_level`, `section`, `language`, `rows: list[ParsedImportRow]`, `parse_errors: list[str]` |
+| `ParsedImportRow` | Dataclass: one student's full assessment record, including LRN, name, sex, Task 1/2 scores, Part 2 metrics (CWPM, miscues, reading time), comprehension, fluency level, learner experience, reading profile, and remarks |
+
+**How CRLA files are parsed:**
+1. The top rows (up to row 30) are scanned for metadata: `grade_level`, `section`, `language`.
+2. The header row is identified by finding a cell with the value `"LRN"`. CRLA files often use a two-row header (group labels + column names); both rows are merged into a single column map.
+3. Data rows are read from the first row after the header(s). Rows missing both LRN and name are skipped.
+4. LRN values must be exactly 12 digits; invalid rows are added to `parse_errors` and skipped.
+5. Student names are split on a comma (`"Dela Cruz, Juan"`) or by whitespace if no comma is present.
+6. `reading_time` values accept either `"M:SS"` format or a plain number (seconds).
+
+**Used by:** The `ImportRecordsModal` in the frontend, which uploads a CRLA spreadsheet and lets the teacher review and confirm the parsed rows before importing them as assessment records.
+
+---
+
 ## 12. Extended Schemas — `/schemas`
 
 ### `schemas/session_schemas.py`
@@ -1151,13 +1362,16 @@ Used for both Task 1 and Task 2 scoring inputs.
 | Concern | Implementation |
 |---|---|
 | **Password storage** | bcrypt hashing via `passlib`. Passwords are never stored in plain text. |
-| **Authentication** | JWT tokens (HS256). Tokens expire after `ACCESS_TOKEN_EXPIRE_MINUTES`. |
+| **Authentication** | JWT tokens (HS256). Tokens expire after `ACCESS_TOKEN_EXPIRE_MINUTES` (default: 60 minutes). |
 | **Authorization** | Every data access is scoped to the authenticated teacher's `teacher_id`. A teacher cannot read or modify another teacher's data. |
-| **Email verification** | Account cannot log in until email is verified. Tokens are single-use with a 24-hour expiry. |
+| **Email verification** | Account cannot log in until email is verified. Tokens are single-use with a 24-hour expiry. Only the SHA-256 hash of the raw token is stored in the database. |
+| **Password reset** | Single-use tokens expire in 1 hour. Token hashes are stored, not raw values. Email always returns 200 to prevent enumeration. |
+| **Field-level encryption** | Student PII (`first_name`, `last_name`, `lrn`) is Fernet-encrypted at rest. The LRN is also stored as an HMAC-SHA256 hash for uniqueness checks. |
+| **Rate limiting** | Auth endpoints are rate-limited by IP via `slowapi` (register: 3/min; login: 5/min; forgot-password: 3/min; reset-password: 5/min). |
 | **CORS** | Only whitelisted origins (localhost dev + production `FRONTEND_URL`) can make requests. |
-| **Secrets** | All sensitive values (`SECRET_KEY`, `DATABASE_URL`, API keys) are in `.env` and never committed to source control. |
+| **Secrets** | All sensitive values (`SECRET_KEY`, `DATABASE_URL`, `ENCRYPTION_KEY`, API keys) are in `.env` and never committed to source control. |
 | **Input validation** | Pydantic schemas validate all request bodies. FastAPI returns `422 Unprocessable Entity` for malformed input. |
-| **File uploads** | Enforced 5 MB size limit and file type whitelist (`.docx`, `.txt` for documents; audio format list for ASR). |
+| **File uploads** | Enforced 5 MB size limit and file type whitelist (`.docx`, `.txt` for documents; audio formats for ASR; `.xlsx` for CRLA import). |
 | **Soft deletes** | Passages, questions, and sessions use `is_archived` flags rather than hard deletion, preserving data integrity. |
 | **Audio retention** | Audio files are automatically deleted after 7 days. |
 
@@ -1196,7 +1410,11 @@ const api = axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL });
 | Register | POST | `/auth/register` |
 | Login | POST | `/auth/login` |
 | Verify email | GET | `/auth/verify?token=...` |
+| Resend verification | POST | `/auth/resend-verification` |
+| Forgot password | POST | `/auth/forgot-password` |
+| Reset password | POST | `/auth/reset-password` |
 | Get profile | GET | `/auth/me` |
+| Dashboard summary | GET | `/dashboard/summary?school_year=2025-2026` |
 | Student list page | GET | `/students?page=1&search=...` |
 | Add student modal | POST | `/students` |
 | Edit student modal | PATCH | `/students/{id}` |

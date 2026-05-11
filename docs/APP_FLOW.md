@@ -147,7 +147,7 @@ After stopping, the teacher sees a quick prompt asking if they want to keep the 
 
 ### Step 3: Review the Transcript (Task 1)
 
-The app processes the audio and converts what the student said into text (using the Whisper ASR model — `medium` for Filipino, `base` for English). This is shown to the teacher in an editable box so they can correct any mistakes the transcription made.
+The app processes the audio and converts what the student said into text (using the Whisper ASR model — `tiny` for Filipino, `base` for English). This is shown to the teacher in an editable box so they can correct any mistakes the transcription made.
 
 A warning banner is always shown at the top of this screen reminding the teacher to check the transcription carefully, since the model is not perfect.
 
@@ -233,9 +233,13 @@ The student reads the full story aloud while the teacher records. This step has 
 
 | Grade | Time Limit |
 |---|---|
+| Kindergarten | 60 seconds |
 | Grade 1 | 60 seconds |
 | Grade 2 | 120 seconds |
 | Grade 3 | 180 seconds |
+| Grade 4 | 180 seconds |
+| Grade 5 | 180 seconds |
+| Grade 6 | 180 seconds |
 
 When the time limit is reached, a message pops up asking the teacher to either let the student continue or stop and submit what was recorded. The timer pauses while this message is open.
 
@@ -278,6 +282,8 @@ The teacher fills in:
   - Level 2 — Instructional (reads in chunks, some errors)
   - Level 3 — Independent (reads fluently but may ignore punctuation)
   - Level 4 — Advanced (reads fluently with proper expression)
+
+- **Learner Experience (1–5):** A separate rating of how the student experienced the session overall (1 = very difficult/stressful, 5 = confident/comfortable).
 
 - **Remarks** — An optional free-text box for the teacher's personal notes about the session
 
@@ -334,6 +340,7 @@ This page shows all of the teacher's students in a grid of cards. Each card show
 - Sort alphabetically
 - Click on any student card to open their profile
 - Click "Add Student" to register a new student
+- Click **"Import Records"** to bulk-import assessment data from an existing DepEd CRLA Excel spreadsheet (see [Import Records](#import-records) below)
 
 ---
 
@@ -358,6 +365,34 @@ The table can be filtered by language or period, searched by keyword, sorted by 
 - Editing a student opens a small edit window (modal) right on the same page
 - Deleting a student or a session record asks for confirmation before removing
 - The assessment history links back to sessions that were created during the Assessment flow
+
+---
+
+### Class Record Page
+
+A class-level view that shows assessment data for all students in a given section and assessment period side by side. The teacher selects a grade, section, and period, and the page populates with every student's key metrics for that snapshot.
+
+The table can be exported to Excel as a single class record sheet — useful for submitting to the school administration.
+
+**What connects here:** Accessible from the Student Records section via a "Class Record" button.
+
+---
+
+### Import Records
+
+The **Import Records** modal lets the teacher bulk-import historical assessment data from an official DepEd CRLA Excel spreadsheet without running a live session.
+
+**How it works:**
+1. The teacher uploads a `.xlsx` CRLA file.
+2. The backend parses the file (grade level, section, language, and all student rows) and returns a preview.
+3. The teacher reviews the parsed rows, checks for any parse errors reported in the preview, and confirms.
+4. The records are written to the database as completed sessions.
+
+**What to expect from the CRLA format:**
+- The file must contain a column labelled `"LRN"` — this is how the parser locates the header row.
+- LRN values must be exactly 12 digits.
+- Student names may be `"Last Name, First Name"` or `"First Name Last Name"`.
+- Time values may be `"M:SS"` or plain seconds.
 
 ---
 
@@ -393,10 +428,10 @@ Each passage card shows the title and word count. The teacher can edit or remove
 
 The teacher fills in:
 - **Language** — Filipino or English
-- **Grade Level** — Grade 1, 2, or 3
+- **Grade Level** — Kindergarten through Grade 6
 - **Task 1 Text** — The passage the student reads for the first task
-- **Task 2 — Words** — A comma-separated list of words for the lower-route version of Task 2
-- **Task 2 — Sentences** — Period-separated sentences for the higher-route version of Task 2
+- **Task 2 — Words** — A comma-separated list of words for the lower-route version of Task 2 (Task 2L)
+- **Task 2 — Sentences** — Period-separated sentences for the higher-route version of Task 2 (Task 2H)
 
 ---
 
@@ -404,7 +439,7 @@ The teacher fills in:
 
 The teacher fills in:
 - **Title** — The story name
-- **Grade Level and Language**
+- **Grade Level** (Kindergarten through Grade 6) **and Language**
 - **Story Content** — The full passage text. The app automatically counts the words.
 - **Comprehension Questions** — The teacher adds at least one question. They can add or remove questions from the list.
 
@@ -453,6 +488,8 @@ Student Records (List)
 │     ├── → Edit Student (modal on same page)
 │     ├── → Delete Record (confirmation modal)
 │     └── → Delete Student (confirmation modal)
+├── → Class Record Page (class-level export view)
+├── → Import Records Modal (bulk CRLA Excel import)
 └── → Add Student Page
 
 Passages
@@ -493,5 +530,5 @@ These features are built into the code but commented out. They can be enabled by
 
 ---
 
-*Last updated: 2026-05-02*
+*Last updated: 2026-05-11*
 *Update this file whenever a new page, step, or flow is added or changed.*
