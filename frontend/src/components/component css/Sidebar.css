@@ -1,26 +1,60 @@
+/* ── Base ──────────────────────────────────────────────── */
 .sidebar {
-  width: 160px;
-  min-width: 160px;
+  width: 220px;
+  min-width: 220px;
   background: #2c3e6b;
   display: flex;
   flex-direction: column;
   height: 100vh;
   position: sticky;
   top: 0;
-  padding: 20px 0 20px;
-  gap: 0;
+  padding: 20px 0;
+  overflow: hidden;
+  transition: width 0.25s ease, min-width 0.25s ease;
 }
 
-/* ── Logo ─────────────────────────────────────── */
-.sidebar__logo {
-  padding: 0 16px 24px;
+.sidebar--collapsed {
+  width: 64px;
+  min-width: 64px;
+}
+
+/* ── Header (logo + toggle) ────────────────────────────── */
+.sidebar__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px 24px;
+}
+
+.sidebar--collapsed .sidebar__header {
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
 }
 
 .sidebar__logo-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   background: #fff;
   border-radius: 8px;
-  padding: 10px 12px;
-  text-align: center;
+  padding: 9px 10px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.sidebar--collapsed .sidebar__logo-box {
+  flex: 0 0 auto;
+  padding: 9px;
+  justify-content: center;
+}
+
+.sidebar__logo-img {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
 }
 
 .sidebar__logo-text {
@@ -28,10 +62,39 @@
   font-weight: 700;
   color: #2c3e6b;
   letter-spacing: 0.02em;
-  font-family: "Georgia", serif;
+  font-family: "Poppins", serif;
+  white-space: nowrap;
+  overflow: hidden;
+  opacity: 1;
+  max-width: 160px;
+  transition: opacity 0.15s ease, max-width 0.25s ease;
 }
 
-/* ── Nav ──────────────────────────────────────── */
+.sidebar--collapsed .sidebar__logo-text {
+  opacity: 0;
+  max-width: 0;
+}
+
+.sidebar__toggle {
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+
+.sidebar__toggle:hover {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
+/* ── Nav ───────────────────────────────────────────────── */
 .sidebar__nav {
   display: flex;
   flex-direction: column;
@@ -43,15 +106,20 @@
 .sidebar__link {
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 9px 12px;
+  gap: 10px;
+  padding: 10px 12px;
   border-radius: 8px;
   color: rgba(255, 255, 255, 0.75);
   text-decoration: none;
   font-size: 13px;
   font-weight: 500;
+  overflow: hidden;
   transition: background 0.15s, color 0.15s;
-  white-space: nowrap;
+}
+
+.sidebar--collapsed .sidebar__link {
+  justify-content: center;
+  padding: 10px;
 }
 
 .sidebar__link:hover {
@@ -60,7 +128,7 @@
 }
 
 .sidebar__link--active {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.14);
   color: #fff;
 }
 
@@ -69,13 +137,26 @@
   opacity: 0.85;
 }
 
-/* ── Logout ───────────────────────────────────── */
+.sidebar__label {
+  white-space: nowrap;
+  overflow: hidden;
+  opacity: 1;
+  max-width: 180px;
+  transition: opacity 0.15s ease, max-width 0.25s ease;
+}
+
+.sidebar--collapsed .sidebar__label {
+  opacity: 0;
+  max-width: 0;
+}
+
+/* ── Logout ────────────────────────────────────────────── */
 .sidebar__logout {
   margin: 8px 8px 0;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 9px 12px;
+  gap: 10px;
+  padding: 10px 12px;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.08);
   color: rgba(255, 255, 255, 0.8);
@@ -83,8 +164,14 @@
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
-  transition: background 0.15s, color 0.15s;
   width: calc(100% - 16px);
+  overflow: hidden;
+  transition: background 0.15s, color 0.15s;
+}
+
+.sidebar--collapsed .sidebar__logout {
+  justify-content: center;
+  padding: 10px;
 }
 
 .sidebar__logout:hover {

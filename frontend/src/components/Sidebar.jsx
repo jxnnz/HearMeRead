@@ -6,22 +6,24 @@ import {
   BookOpen,
   UserRound,
   LogOut,
-  FlaskConical,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
+import HmrLogo from "../assets/HMR-LOGO.png";
 import ConfirmModal from "../modals/ConfirmModal";
 import "./component css/Sidebar.css";
 
 const NAV_ITEMS = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/assessment", label: "Assessment", icon: ClipboardList },
-  { to: "/passages", label: "Passages", icon: BookOpen },
-  { to: "/students",  label: "Student Record", icon: UserRound     },
-  // { to: "/asr-test", label: "ASR Tester",     icon: FlaskConical  },
+  { to: "/dashboard",  label: "Dashboard",     icon: LayoutDashboard },
+  { to: "/assessment", label: "Assessment",     icon: ClipboardList   },
+  { to: "/passages",   label: "Passages",       icon: BookOpen        },
+  { to: "/students",   label: "Student Record", icon: UserRound       },
 ];
 
 export default function Sidebar() {
   const navigate = useNavigate();
   const [showLogout, setShowLogout] = useState(false);
+  const [collapsed, setCollapsed]   = useState(false);
 
   function handleLogout() {
     localStorage.removeItem("token");
@@ -30,12 +32,21 @@ export default function Sidebar() {
 
   return (
     <>
-      <aside className="sidebar">
-        {/* Logo / brand area */}
-        <div className="sidebar__logo">
+      <aside className={`sidebar${collapsed ? " sidebar--collapsed" : ""}`}>
+
+        {/* Logo + toggle */}
+        <div className="sidebar__header">
           <div className="sidebar__logo-box">
+            <img src={HmrLogo} alt="HMR" className="sidebar__logo-img" />
             <span className="sidebar__logo-text">HearMeRead</span>
           </div>
+          <button
+            className="sidebar__toggle"
+            onClick={() => setCollapsed((c) => !c)}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? <ChevronRight size={15} /> : <ChevronLeft size={15} />}
+          </button>
         </div>
 
         {/* Navigation */}
@@ -44,21 +55,27 @@ export default function Sidebar() {
             <NavLink
               key={to}
               to={to}
+              title={label}
               className={({ isActive }) =>
                 `sidebar__link${isActive ? " sidebar__link--active" : ""}`
               }
             >
-              <Icon size={17} className="sidebar__icon" />
-              <span>{label}</span>
+              <Icon size={18} className="sidebar__icon" />
+              <span className="sidebar__label">{label}</span>
             </NavLink>
           ))}
         </nav>
 
         {/* Logout */}
-        <button className="sidebar__logout" onClick={() => setShowLogout(true)}>
-          <LogOut size={15} />
-          <span>Log out</span>
+        <button
+          className="sidebar__logout"
+          onClick={() => setShowLogout(true)}
+          title="Log out"
+        >
+          <LogOut size={16} className="sidebar__icon" />
+          <span className="sidebar__label">Log out</span>
         </button>
+
       </aside>
 
       <ConfirmModal

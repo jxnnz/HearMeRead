@@ -153,7 +153,7 @@ export default function ResultsStep({
           </div>
           <div className="asp-res-header__badges">
             <span className="asp-res-badge asp-res-badge--lang">
-              {form.language === "filipino" ? "🇵🇭 Filipino" : "🇬🇧 English"}
+              {form.language === "filipino" ? "Filipino" : "English"}
             </span>
             <span className="asp-res-badge asp-res-badge--grade">Grade {form.grade_level}</span>
             <span className="asp-res-badge asp-res-badge--period">{form.assessment_type}</span>

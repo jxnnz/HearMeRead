@@ -79,7 +79,8 @@ export default function StudentInfoPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const backTo = location.state?.from ?? "/students";
+  const backTo      = location.state?.from ?? "/students";
+  const backOptions = location.state?.classState ? { state: location.state.classState } : {};
   const { toasts, removeToast, showSaveSuccess, showError } = useToast();
 
   const [student, setStudent] = useState(null);
@@ -166,7 +167,7 @@ export default function StudentInfoPage() {
       {!loading && (error || !student) && (
         <div className="sip-state sip-state--error">
           <p>⚠ {error ?? "Student not found."}</p>
-          <button className="sip-back-btn" onClick={() => navigate(backTo)}>
+          <button className="sip-back-btn" onClick={() => navigate(backTo, backOptions)}>
             <ChevronLeft size={15} /> Back to Class
           </button>
         </div>
@@ -176,7 +177,7 @@ export default function StudentInfoPage() {
         <div className="sip-page">
           <button
             className="sip-back-btn"
-            onClick={() => navigate(backTo)}
+            onClick={() => navigate(backTo, backOptions)}
             aria-label="Back to Class"
           >
             <ChevronLeft size={18} />

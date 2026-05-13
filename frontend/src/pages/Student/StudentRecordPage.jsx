@@ -65,13 +65,14 @@ export default function StudentRecordPage() {
   }, []);
 
   function handleCardClick(grade_level, section) {
-    const params = new URLSearchParams({
-      grade:   grade_level,
-      section: section === "No Section" ? "" : section,
-      year:    schoolYear,
-      period,
+    navigate("/students/class", {
+      state: {
+        grade:   grade_level,
+        section: section === "No Section" ? "" : section,
+        year:    schoolYear,
+        period,
+      },
     });
-    navigate(`/students/class?${params.toString()}`);
   }
 
   const periodLabel = PERIOD_OPTIONS.find((p) => p.value === period)?.label ?? period;

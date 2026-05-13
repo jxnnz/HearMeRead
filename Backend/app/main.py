@@ -45,21 +45,19 @@ app = FastAPI(
     title=settings.APP_NAME,
     description="Backend API for the HearMeRead oral reading assessment PWA",
     version="1.0.0",
-    # Disable Swagger/ReDoc in production to hide API surface from attackers
     docs_url=None if settings.is_production else "/docs",
     redoc_url=None if settings.is_production else "/redoc",
     openapi_url=None if settings.is_production else "/openapi.json",
     lifespan=lifespan,
 )
 
-# ── Rate limiter registration ─────────────────────────────────────────────────
+#Rate limiter registration 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 _cors_origins = [settings.FRONTEND_URL]
 if not settings.is_production:
-    # Allow common local ports during development and testing
-    _cors_origins += ["http://localhost:5173", "http://localhost:3000", "http://localhost:8000", "https://hearmeread.pages.dev"]
+    _cors_origins += ["http://localhost:5173", "http://localhost:3000", "http://localhost:8000", "https://hearmeread.pages.dev", "https://www.hearmeread.site", "https://hearmeread.site"]
 
 app.add_middleware(
     CORSMiddleware,

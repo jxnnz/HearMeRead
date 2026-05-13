@@ -116,11 +116,6 @@ export default function AssessmentPage() {
   const [creating,     setCreating]     = useState(false);
   const [createError,  setCreateError]  = useState(null);
 
-  // ── Duplicate session warning (commented out — re-enable after testing) ────
-  // Holds the warning message returned by the backend when a session already
-  // exists for the same student, school year, and assessment period (HTTP 207).
-  // const [duplicateWarning, setDuplicateWarning] = useState(null);
-  // ───────────────────────────────────────────────────────────────────────────
 
   // Passages for Task 2 and A2
   const [g2Passage,  setG2Passage]  = useState(null);
@@ -181,14 +176,14 @@ export default function AssessmentPage() {
   // Keep currentStepRef in sync
   useEffect(() => { currentStepRef.current = step; }, [step]);
 
-  // ── Recording timer ──────────────────────────────────────────────────────
+  // Recording timer
   useEffect(() => {
     if (!isRecording || isPaused) return;
     const id = setInterval(() => setRecordingTime((t) => t + 1), 1000);
     return () => clearInterval(id);
   }, [isRecording, isPaused]);
 
-  // ── A2 grade-level time limit trigger ────────────────────────────────────
+  //  A2 grade-level time limit trigger
   useEffect(() => {
     if (step !== STEPS.A2 || !isRecording || isPaused || timeLimitReached) return;
     const gradeNum = getGradeNum(form.grade_level);
@@ -200,7 +195,7 @@ export default function AssessmentPage() {
     }
   }, [recordingTime, step, isRecording, isPaused, timeLimitReached, form.grade_level]);
 
-  // ── Fetch available grade levels on mount ───────────────────────────────
+  //  Fetch available grade levels on mount 
   const GRADE_ORDER = ["grade_1", "grade_2", "grade_3"];
   useEffect(() => {
     studentsApi.listClasses()
@@ -283,7 +278,6 @@ export default function AssessmentPage() {
   // ── Session creation ─────────────────────────────────────────────────────
   async function handleContinue() {
     setCreateError(null);
-    // setDuplicateWarning(null); // (commented out — re-enable after testing)
     if (!form.student_id)  { setCreateError("Please select a student."); return; }
     if (!form.passage_id)  { setCreateError("Please select a passage."); return; }
     setCreating(true);
@@ -296,20 +290,7 @@ export default function AssessmentPage() {
         school_year: form.school_year,
       });
 
-      // ── Duplicate warning check (commented out — re-enable after testing) ─
-      // The backend returns HTTP 207 with a `warning` field when this student
-      // already has a session for the same school year and assessment period.
-      // When enabled, this shows the warning banner on the info page and stops
-      // the teacher from proceeding until they acknowledge or choose to proceed.
-      //
-      // if (res.warning) {
-      //   setDuplicateWarning(res.warning);
-      //   setSession(res.session);
-      //   setCreating(false);
-      //   return; // stop here — teacher sees the warning, must click Continue again
-      // }
-      // ───────────────────────────────────────────────────────────────────────
-
+    
       setSession(res.session ?? res);
       setStep(STEPS.A1_G1);
       setShowChoiceModal(true);

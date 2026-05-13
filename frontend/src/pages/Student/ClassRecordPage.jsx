@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { ChevronLeft, ChevronRight, FileText, FileSpreadsheet, Pencil, Trash2 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -51,12 +51,8 @@ function d(val) {
 export default function ClassRecordPage() {
   const { toasts, removeToast, showError } = useToast();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-
-  const grade   = searchParams.get("grade")   ?? "";
-  const section = searchParams.get("section") ?? "";
-  const year    = searchParams.get("year")    ?? "";
-  const period  = searchParams.get("period")  ?? "beginning";
+  const location = useLocation();
+  const { grade = "", section = "", year = "", period = "beginning" } = location.state ?? {};
 
   const [language, setLanguage] = useState("filipino");
   const [teacher, setTeacher]   = useState(null);
@@ -467,7 +463,7 @@ export default function ClassRecordPage() {
                                   setSelectedSessionId(sess.id);
                                 } else {
                                   navigate(`/students/${s.id}`, {
-                                    state: { from: `/students/class?grade=${grade}&section=${encodeURIComponent(section)}&year=${encodeURIComponent(year)}&period=${period}` }
+                                    state: { from: "/students/class", classState: { grade, section, year, period } }
                                   });
                                 }
                               }}

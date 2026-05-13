@@ -15,7 +15,6 @@ import EditAssessment1Page from "./pages/passages/EditAssessment1Page";
 import EditAssessment2Page from "./pages/passages/EditAssessment2Page";
 import StudentRecordPage from "./pages/Student/StudentRecordPage";
 import AddStudentPage   from "./pages/Student/AddStudentPage";
-// import ASRTestPage      from "./pages/ASRTestPage";
 import AssessmentPage   from "./pages/Assessment/AssessmentPage";
 import StudentInfoPage  from "./pages/Student/StudentInfoPage";
 import ClassRecordPage  from "./pages/Student/ClassRecordPage";
@@ -79,7 +78,6 @@ export default function App() {
         <Route path="/students/add"          element={<RequireAuth><AddStudentPage /></RequireAuth>} />
         <Route path="/students/class"        element={<RequireAuth><ClassRecordPage /></RequireAuth>} />
         <Route path="/students/:id"          element={<RequireAuth><StudentInfoPage /></RequireAuth>} />
-        {/* <Route path="/asr-test"     element={<RequireAuth><ASRTestPage /></RequireAuth>} /> */}
 
       </Routes>
     </BrowserRouter>

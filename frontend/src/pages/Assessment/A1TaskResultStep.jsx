@@ -7,21 +7,6 @@ const PROFILE_COLOR = {
   "Grade Ready":        { color: "#27ae60", bg: "#e8f5e9" },
 };
 
-/**
- * Shown after Task 1 scoring OR Task 2 scoring within Assessment 1.
- *
- * Props:
- *   badge          — step label
- *   task           — "task1" | "task2"
- *   scoreResult    — from score-task1: { task1_correct, task1_miscues, route, task2_type }
- *   part1Result    — from score-part1: { task1_correct, task2_correct, total_score, classification, route }
- *   passageWordCount — total words in the passage
- *   recordingTime  — seconds
- *   transcript     — confirmed transcript text
- *   g1Score        — task1_correct (carried over to task2 result page)
- *   onContinue()   — advance to next step
- *   continueLabel  — text for the continue button
- */
 export default function A1TaskResultStep({
   badge,
   task,
