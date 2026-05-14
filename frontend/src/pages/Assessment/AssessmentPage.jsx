@@ -309,6 +309,14 @@ export default function AssessmentPage() {
     const fd = new FormData();
     fd.append("audio", file);
 
+    // Pass the reference passage as a Whisper prompt to reduce hallucinations.
+    // g2Passage is already set by handleProceedToG2 before this is called for "g2".
+    const promptText =
+      forTask === "g1" ? (form.selected_passage?.task1_content ?? "") :
+      forTask === "g2" ? (g2Passage?.content ?? "") :
+      forTask === "a2" ? (a2Passage?.content ?? "") : "";
+    if (promptText) fd.append("prompt", promptText);
+
     try {
       const result = await sessionsApi.transcribe(session.id, fd);
 
@@ -510,7 +518,9 @@ export default function AssessmentPage() {
         task1_transcribed_text: editedText,
       });
       setTask1ScoreResult(result);
-      handleProceedToG2();
+      // Pass fresh result directly — state update above is async and would be
+      // stale inside handleProceedToG2 if we relied on task1ScoreResult there.
+      handleProceedToG2(result);
     } catch (e) {
       setScoreError(e.response?.data?.detail || e.message || "Scoring failed.");
       setStep(STEPS.A1_G1_PREVIEW);
@@ -554,10 +564,11 @@ export default function AssessmentPage() {
   }
 
   // ── A1 G1 result — proceed to Task 2 ────────────────────────────────────
-  function handleProceedToG2() {
-    // Derive Task 2 content from route returned by backend
+  function handleProceedToG2(freshScoreResult) {
+    // freshScoreResult is passed directly from handleConfirmG1Preview to avoid
+    // reading stale task1ScoreResult React state (which hasn't flushed yet).
     const p       = form.selected_passage;
-    const route   = task1ScoreResult?.route; // "task_2L" or "task_2H"
+    const route   = freshScoreResult?.route; // "task_2L" or "task_2H"
     const content = route === "task_2L"
       ? (p?.task2_words     ?? "")
       : (p?.task2_sentences ?? "");
@@ -824,15 +835,12 @@ export default function AssessmentPage() {
   }
 
   if (step === STEPS.A1_G2_PREVIEW) {
-    const g2Ref = task1ScoreResult?.route === "task_2L"
-      ? (form.selected_passage?.task2_words     ?? "")
-      : (form.selected_passage?.task2_sentences ?? "");
     return (
       <Layout>
         <TranscriptionPreviewStep
           badge={STEP_LABELS[step]}
           transcript={g2Transcript}
-          referenceText={g2Ref}
+          referenceText={g2Passage?.content ?? ""}
           words={[]}
           timeLimitSec={null}
           audioFile={audioFile}

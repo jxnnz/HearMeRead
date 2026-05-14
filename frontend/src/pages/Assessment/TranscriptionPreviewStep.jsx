@@ -86,18 +86,15 @@ export default function TranscriptionPreviewStep({
   const correctCount = aligned.filter((a) => a.correct).length;
   const wrongCount   = totalRefWords - correctCount;
 
-  // Annotate each word with time-limit context (A2 only)
-  const displayWords = (() => {
-    let tIdx = -1;
-    return aligned.map((a) => {
-      if (a.source !== "missed") tIdx++;
-      return {
-        ...a,
-        isCutoff:    showHighlight && a.source !== "missed" && tIdx === cutoffIdx,
-        isPastLimit: showHighlight && a.source !== "missed" && tIdx > cutoffIdx,
-      };
-    });
-  })();
+  // Only show transcript words (matches + extras); missed reference words are
+  // already captured in the wrong count and would confuse the edit modal comparison.
+  const displayWords = aligned
+    .filter((a) => a.source !== "missed")
+    .map((a, tIdx) => ({
+      ...a,
+      isCutoff:    showHighlight && tIdx === cutoffIdx,
+      isPastLimit: showHighlight && tIdx > cutoffIdx,
+    }));
 
   const stats = [
     { label: "Total Words", value: totalRefWords,                     color: "#1a2340" },
