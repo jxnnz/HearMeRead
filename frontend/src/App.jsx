@@ -72,9 +72,8 @@ export default function App() {
   if (!appReady) return <LoadingPage />;
 
   return (
-    <>
-    <SessionExpiredModal isOpen={sessionExpired} />
     <BrowserRouter>
+    <SessionExpiredModal isOpen={sessionExpired} onLogin={() => setSessionExpired(false)} />
       <Routes>
         {/* ── Public ── */}
         <Route path="/"       element={<LandingPage />} />
@@ -105,6 +104,5 @@ export default function App() {
         <Route path="*" element={<CatchAll />} />
       </Routes>
     </BrowserRouter>
-    </>
   );
 }

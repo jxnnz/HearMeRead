@@ -3,9 +3,10 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 
-from app.models import Passage, Language
+from app.models import Passage, Language, Teacher
 from app.models import GradeLevel
 from app.schema import PassageCreate, PassageUpdate
+from app.services.log_service import log_activity
 
 
 def _compute_word_count(text: str) -> int:
@@ -80,6 +81,16 @@ async def create_passage(db: AsyncSession, data: PassageCreate, teacher_id: int)
     db.add(passage)
     await db.commit()
     await db.refresh(passage)
+    teacher_result = await db.execute(select(Teacher).where(Teacher.id == teacher_id))
+    _teacher = teacher_result.scalar_one_or_none()
+    if _teacher and _teacher.school_id:
+        await log_activity(
+            db, teacher_id, _teacher.school_id,
+            action="uploaded_passage",
+            entity_type="passage",
+            entity_id=passage.id,
+            metadata={"title": passage.title or "Untitled"},
+        )
     return passage
 
 
@@ -102,6 +113,16 @@ async def create_passage_from_docx(
     db.add(passage)
     await db.commit()
     await db.refresh(passage)
+    teacher_result = await db.execute(select(Teacher).where(Teacher.id == teacher_id))
+    _teacher = teacher_result.scalar_one_or_none()
+    if _teacher and _teacher.school_id:
+        await log_activity(
+            db, teacher_id, _teacher.school_id,
+            action="uploaded_passage",
+            entity_type="passage",
+            entity_id=passage.id,
+            metadata={"title": passage.title or "Untitled"},
+        )
     return passage
 
 

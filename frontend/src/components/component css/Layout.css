@@ -9,3 +9,43 @@
   padding: 20px 24px;
   overflow-y: auto;
 }
+
+/* ── Global skeleton shimmer ───────────────────────────── */
+@keyframes sk-shimmer {
+  0%   { background-position: -800px 0; }
+  100% { background-position:  800px 0; }
+}
+
+.sk {
+  background: linear-gradient(90deg, #dde3ef 25%, #edf0f8 50%, #dde3ef 75%);
+  background-size: 1600px 100%;
+  animation: sk-shimmer 1.5s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+.sk-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 24px 28px;
+  box-shadow: 0 2px 16px rgba(44, 62, 107, 0.07);
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sk-row-inline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Size utilities */
+.sk-circle  { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; }
+.sk-h1      { height: 18px; width: 38%; }
+.sk-h2      { height: 14px; width: 26%; }
+.sk-text    { height: 12px; width: 80%; }
+.sk-text-sm { height: 12px; width: 50%; }
+.sk-badge   { height: 90px; width: 220px; border-radius: 12px; }
+.sk-row     { height: 42px; width: 100%; border-radius: 8px; }
+.sk-row-sm  { height: 30px; width: 100%; border-radius: 6px; }

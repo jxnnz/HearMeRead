@@ -23,7 +23,16 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const url = error.config?.url ?? "";
+    const isUnauthRoute =
+      url.includes("/auth/login") ||
+      url.includes("/auth/register") ||
+      url.includes("/auth/forgot-password") ||
+      url.includes("/auth/reset-password") ||
+      url.includes("/auth/resend-verification") ||
+      url.includes("/auth/school-lookup");
+
+    if (error.response?.status === 401 && !isUnauthRoute) {
       localStorage.removeItem("token");
       window.dispatchEvent(new CustomEvent("session-expired"));
     }

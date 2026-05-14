@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Copy, Check, Users, School } from "lucide-react";
 import Layout from "../components/Layout";
+import TopBar from "../components/TopBar";
 import { adminApi } from "../services/api";
 
 export default function AdminDashboardPage() {
@@ -35,8 +36,29 @@ export default function AdminDashboardPage() {
   if (loading) {
     return (
       <Layout>
-        <div style={{ padding: 40, textAlign: "center", color: "#8a94b2", fontFamily: "Poppins, sans-serif" }}>
-          Loading…
+        <div style={{ fontFamily: "Poppins, sans-serif", maxWidth: 900 }}>
+          <TopBar title="Dashboard" />
+
+          {/* School info card skeleton */}
+          <div className="sk-card">
+            <div className="sk-row-inline">
+              <div className="sk sk-circle" />
+              <div className="sk sk-h1" />
+            </div>
+            <div className="sk sk-badge" />
+          </div>
+
+          {/* Teachers table skeleton */}
+          <div className="sk-card">
+            <div className="sk-row-inline">
+              <div className="sk sk-circle" />
+              <div className="sk sk-h2" />
+            </div>
+            <div className="sk sk-row-sm" />
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="sk sk-row" />
+            ))}
+          </div>
         </div>
       </Layout>
     );
@@ -45,8 +67,11 @@ export default function AdminDashboardPage() {
   if (error) {
     return (
       <Layout>
-        <div style={{ padding: 40, textAlign: "center", color: "#c0392b", fontFamily: "Poppins, sans-serif" }}>
-          {error}
+        <div style={{ fontFamily: "Poppins, sans-serif", maxWidth: 900 }}>
+          <TopBar title="Dashboard" />
+          <p style={{ color: "#c0392b", textAlign: "center", padding: "64px 0" }}>
+            {error}
+          </p>
         </div>
       </Layout>
     );
@@ -56,7 +81,8 @@ export default function AdminDashboardPage() {
 
   return (
     <Layout>
-      <div style={{ padding: "32px 36px", fontFamily: "Poppins, sans-serif", maxWidth: 900 }}>
+      <div style={{ fontFamily: "Poppins, sans-serif", maxWidth: 900 }}>
+        <TopBar title="Dashboard" />
 
         {/* ── School info card ────────────────────────────────────── */}
         <div style={{

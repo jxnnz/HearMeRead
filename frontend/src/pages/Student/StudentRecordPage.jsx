@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Plus, Users, Upload } from "lucide-react";
 
 import Layout from "../../components/Layout";
+import TopBar from "../../components/TopBar";
 import AppButton from "../../components/AppButton";
 import ImportRecordsModal from "../../modals/ImportRecordsModal";
 import StudentInfoModal from "../../modals/StudentInfoModal";
@@ -82,19 +83,16 @@ export default function StudentRecordPage() {
       <div className="sr-page">
 
         {/* ── Header ── */}
-        <div className="sr-header">
-          <h1 className="sr-title">Student Record</h1>
-          <div className="sr-header-actions">
-            <AppButton variant="ghost" onClick={() => setShowImport(true)}>
-              <Upload size={15} />
-              Import Records
-            </AppButton>
-            <AppButton variant="teal" onClick={() => navigate("/students/add")}>
-              <Plus size={15} />
-              Add Student
-            </AppButton>
-          </div>
-        </div>
+        <TopBar title="Student Record">
+          <AppButton variant="ghost" onClick={() => setShowImport(true)}>
+            <Upload size={15} />
+            Import Records
+          </AppButton>
+          <AppButton variant="teal" onClick={() => navigate("/students/add")}>
+            <Plus size={15} />
+            Add Student
+          </AppButton>
+        </TopBar>
 
         {/* ── Global Filters ── */}
         <div className="sr-filters">

@@ -21,6 +21,7 @@ class TeacherRegister(BaseModel):
     deped_school_id:  Optional[str] = Field(None, max_length=20)
     school_name:      Optional[str] = Field(None, max_length=255)
     school_code:      Optional[str] = Field(None, min_length=8, max_length=8)
+    employee_id:      Optional[str] = Field(None, max_length=50)
     agreed_to_terms:  bool          = Field(...)
     agreed_to_privacy: bool         = Field(...)
 
@@ -423,3 +424,41 @@ class ExcelImportResponse(BaseModel):
     sessions_created:  int
     sessions_skipped:  int
     errors:            List[str]
+
+
+# ── Admin ─────────────────────────────────────────────────────────────────────
+
+class AdminTeacherUpdateRequest(BaseModel):
+    employee_id: Optional[str] = Field(None, max_length=50)
+    grade_level: Optional[GradeLevel] = None
+    section:     Optional[str] = Field(None, max_length=100)
+
+
+class ActivityLogResponse(BaseModel):
+    id:           int
+    teacher_id:   int
+    school_id:    int
+    action:       str
+    entity_type:  str
+    entity_id:    Optional[int] = None
+    log_metadata: Optional[dict] = None
+    created_at:   datetime
+
+    class Config:
+        from_attributes = True
+
+
+class TeacherAdminView(BaseModel):
+    id:          int
+    first_name:  str
+    last_name:   str
+    email:       str
+    employee_id: Optional[str] = None
+    grade_level: Optional[GradeLevel] = None
+    section:     Optional[str] = None
+    is_verified: bool
+    is_active:   bool
+    created_at:  datetime
+
+    class Config:
+        from_attributes = True

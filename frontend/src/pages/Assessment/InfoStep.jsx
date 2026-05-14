@@ -1,6 +1,7 @@
 import { ChevronRight } from "lucide-react";
 import StudentInfoForm from "../../components/StudentInfoForm";
 import RecordingChoiceModal from "../../modals/RecordingChoiceModal";
+import TopBar from "../../components/TopBar";
 
 export default function InfoStep({
   form, setForm,
@@ -15,8 +16,8 @@ export default function InfoStep({
   return (
     <>
       {fileInput}
+      <TopBar title="Assessment Session" />
       <div className="asp-page asp-page--step1">
-        <h1 className="asp-title">Assessment Session</h1>
         {fetchError && <div className="asp-error">⚠ {fetchError}</div>}
 
         <StudentInfoForm

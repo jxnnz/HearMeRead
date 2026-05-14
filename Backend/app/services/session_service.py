@@ -9,7 +9,7 @@ from sqlalchemy.orm import selectinload
 
 from app.models import (
     AssessmentSession, AssessmentPeriod,
-    Student, Passage,
+    Student, Passage, Teacher,
     ReadingResult, SessionObservation,
 )
 from app.schema import SessionCreate, SessionComplete, SessionUpdate
@@ -18,6 +18,7 @@ from app.schemas.session_schemas import (
     Part1ResultOut, Part2ResultOut, WordAlignmentOut,
 )
 from app.services.levenshtein_service import score_part1, score_part2
+from app.services.log_service import log_activity
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -199,6 +200,20 @@ async def create_session(
         .where(AssessmentSession.id == session.id)
     )
     session = result.scalar_one()
+    teacher_result = await db.execute(select(Teacher).where(Teacher.id == teacher_id))
+    _teacher = teacher_result.scalar_one_or_none()
+    if _teacher and _teacher.school_id:
+        await log_activity(
+            db, teacher_id, _teacher.school_id,
+            action="started_session",
+            entity_type="session",
+            entity_id=session.id,
+            metadata={
+                "student_id": session.student_id,
+                "period": session.period.value,
+                "school_year": session.school_year,
+            },
+        )
     return session, duplicate
 
 
@@ -401,7 +416,29 @@ async def complete_session(
         .values(is_completed=True, updated_at=_now())
     )
 
+    # Capture values before commit expires ORM attributes
+    _log_student_id = session.student_id
+    _log_period = session.period.value
+    _log_cwpm = scoring_fields.get("cwpm")
+    _log_profile = scoring_fields.get("reading_profile")
+
     await db.commit()
+
+    teacher_result = await db.execute(select(Teacher).where(Teacher.id == teacher_id))
+    _teacher = teacher_result.scalar_one_or_none()
+    if _teacher and _teacher.school_id:
+        await log_activity(
+            db, teacher_id, _teacher.school_id,
+            action="completed_session",
+            entity_type="session",
+            entity_id=session_id,
+            metadata={
+                "student_id": _log_student_id,
+                "cwpm": _log_cwpm,
+                "reading_profile": _log_profile,
+                "period": _log_period,
+            },
+        )
 
     return CompleteSessionOut(
         session_id=session_id,

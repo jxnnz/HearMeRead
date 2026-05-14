@@ -7,6 +7,7 @@ from sqlalchemy import (
     Enum as SAEnum, func
 )
 from sqlalchemy.orm import relationship, validates
+from sqlalchemy.dialects.postgresql import JSONB
 
 from app.db import Base
 
@@ -94,6 +95,9 @@ class Teacher(Base):
     school_id       = Column(Integer, ForeignKey("schools.id", ondelete="SET NULL"), nullable=True)
     agreed_to_terms   = Column(Boolean, default=False, nullable=False)
     agreed_to_privacy = Column(Boolean, default=False, nullable=False)
+    employee_id = Column(String(50),  nullable=True)
+    grade_level = Column(SAEnum(GradeLevel), nullable=True)
+    section     = Column(String(100), nullable=True)
     created_at      = Column(DateTime(timezone=True), server_default=func.now())
     updated_at      = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -108,6 +112,7 @@ class Teacher(Base):
     school              = relationship("School", foreign_keys=[school_id], back_populates="teachers")
     administered_school = relationship("School", foreign_keys="School.admin_id",
                                        back_populates="admin", uselist=False)
+    activity_logs = relationship("ActivityLog", foreign_keys="ActivityLog.teacher_id")
 
 
 class EmailVerificationToken(Base):
@@ -329,3 +334,18 @@ class SessionObservation(Base):
         if value is not None and value not in range(1, 6):
             raise ValueError("learner_experience must be between 1 and 5")
         return value
+
+
+class ActivityLog(Base):
+    __tablename__ = "activity_logs"
+
+    id          = Column(Integer, primary_key=True, index=True)
+    teacher_id  = Column(Integer, ForeignKey("teachers.id", ondelete="CASCADE"), nullable=False, index=True)
+    school_id   = Column(Integer, ForeignKey("schools.id",  ondelete="CASCADE"), nullable=False, index=True)
+    action      = Column(String(50),  nullable=False)
+    entity_type = Column(String(50),  nullable=False)
+    entity_id   = Column(Integer,     nullable=True)
+    log_metadata = Column("metadata", JSONB, nullable=True, server_default="{}")
+    created_at  = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    teacher = relationship("Teacher", foreign_keys=[teacher_id])

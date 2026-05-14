@@ -3,9 +3,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_
 from fastapi import HTTPException, status
 
-from app.models import Student, AssessmentSession, ReadingResult
+from app.models import Student, AssessmentSession, ReadingResult, Teacher
 from app.schema import StudentCreate, StudentUpdate
 from app.core.encryption import encrypt, decrypt, hash_lrn
+from app.services.log_service import log_activity
 
 
 def _decrypt_student(s: Student) -> Student:
@@ -179,6 +180,16 @@ async def create_student(db: AsyncSession, data: StudentCreate, teacher_id: int)
     await db.commit()
     await db.refresh(student)
     _decrypt_student(student)
+    teacher_result = await db.execute(select(Teacher).where(Teacher.id == teacher_id))
+    _teacher = teacher_result.scalar_one_or_none()
+    if _teacher and _teacher.school_id:
+        await log_activity(
+            db, teacher_id, _teacher.school_id,
+            action="created_student",
+            entity_type="student",
+            entity_id=student.id,
+            metadata={"student_name": f"{student.first_name} {student.last_name}"},
+        )
     return student
 
 

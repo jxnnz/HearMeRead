@@ -43,7 +43,6 @@ export default function LandingPage() {
         <div className="hero-visual">
           <div className="hero-card-stack">
             <div className="hero-card-shadow" />
-            <div className="float-tag tr">✓ CWPM Computed</div>
             <div className="hero-main-card">
               <div className="card-header">
                 <div className="student-row">
@@ -84,6 +83,7 @@ export default function LandingPage() {
                 </div>
               </div>
             </div>
+            <div className="float-tag tr">✓ CWPM Computed</div>
             <div className="float-tag bl">📄 Report ready</div>
           </div>
         </div>

@@ -23,6 +23,7 @@ from app.services.email_service import (
     send_verification_email, send_password_reset_email, send_admin_welcome_email,
 )
 from app.core.rate_limit import limiter
+from app.services.log_service import log_activity
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -357,6 +358,13 @@ async def login(request: Request, data: LoginRequest, db: AsyncSession = Depends
         data={"sub": teacher.email},
         expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
     )
+    if teacher.school_id:
+        await log_activity(
+            db, teacher.id, teacher.school_id,
+            action="logged_in",
+            entity_type="auth",
+            metadata={"email": teacher.email},
+        )
     return TokenResponse(access_token=token, role=teacher.role)
 
 

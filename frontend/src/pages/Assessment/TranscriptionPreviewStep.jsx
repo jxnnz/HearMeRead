@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronRight, Volume2, Pencil, RotateCcw } from "lucide-react";
+import { ChevronRight, Volume2, Pencil, RotateCcw, Upload } from "lucide-react";
 import EditTranscriptionModal from "../../modals/EditTranscriptionModal";
 
 function alignWords(refText, transText) {
@@ -114,10 +114,10 @@ export default function TranscriptionPreviewStep({
         {/* Title row + Retake button */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h2 className="asp-preview-card__title" style={{ margin: 0 }}>Transcription Preview</h2>
-          {recordingMode === "live" && onRetakeRecording && (
+          {onRetakeRecording && (
             <button className="asp-retake-btn" onClick={onRetakeRecording}>
-              <RotateCcw size={14} />
-              Retake
+              {recordingMode === "upload" ? <Upload size={14} /> : <RotateCcw size={14} />}
+              {recordingMode === "upload" ? "Re-upload" : "Retake"}
             </button>
           )}
         </div>

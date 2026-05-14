@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Plus, FileText } from "lucide-react";
 
 import Layout from "../../components/Layout";
+import TopBar from "../../components/TopBar";
 import PassageCard from "../../components/PassageCard";
 import AppButton from "../../components/AppButton";
 import ConfirmModal from "../../modals/ConfirmModal";
@@ -98,25 +99,22 @@ export default function PassagePage() {
     <Layout>
       <div className="ph-page">
 
-        <div className="ph-topbar">
-          <h1 className="ph-title">Reading Passages</h1>
-          <div className="ph-topbar__actions">
-            <AppButton
-              variant="teal"
-              onClick={() => navigate("/passages/add-assessment-1")}
-            >
-              <Plus size={15} />
-              Add Assessment 1
-            </AppButton>
-            <AppButton
-              variant="teal"
-              onClick={() => navigate("/passages/add-assessment-2")}
-            >
-              <Plus size={15} />
-              Add Assessment 2
-            </AppButton>
-          </div>
-        </div>
+        <TopBar title="Reading Passages">
+          <AppButton
+            variant="teal"
+            onClick={() => navigate("/passages/add-assessment-1")}
+          >
+            <Plus size={15} />
+            Add Assessment 1
+          </AppButton>
+          <AppButton
+            variant="teal"
+            onClick={() => navigate("/passages/add-assessment-2")}
+          >
+            <Plus size={15} />
+            Add Assessment 2
+          </AppButton>
+        </TopBar>
 
         {loading && (
           <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
