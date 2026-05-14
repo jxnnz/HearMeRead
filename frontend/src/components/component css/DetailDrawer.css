@@ -51,7 +51,7 @@
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: #8a94b2;
+  color: #100c08;
   font-weight: 500;
 }
 
@@ -75,7 +75,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #8a94b2;
+  color: #100c08;
   display: flex;
   align-items: center;
   padding: 4px;
@@ -85,7 +85,7 @@
 }
 
 .drawer__close:hover {
-  color: #1a2340;
+  color: #000000;
   background: #f0f1f5;
 }
 
@@ -93,7 +93,7 @@
 .drawer__title {
   font-size: 22px;
   font-weight: 700;
-  color: #1a2340;
+  color: #000000;
   font-family: "Georgia", serif;
   padding: 14px 24px 2px;
   margin: 0;
@@ -103,7 +103,7 @@
 /* ── Word count ──────────────────────────────────────── */
 .drawer__meta {
   font-size: 12px;
-  color: #8a94b2;
+  color: #100c08;
   padding: 0 24px 16px;
   margin: 0;
   border-bottom: 1.5px solid #eef0f8;
@@ -114,7 +114,7 @@
   padding: 20px 24px;
   flex: 1;
   font-size: 14.5px;
-  color: #2a3452;
+  color: #000000;
   line-height: 1.85;
   white-space: pre-wrap;
   word-break: break-word;
@@ -154,7 +154,7 @@
 .drawer__btn--ghost {
   background: transparent;
   border-color: #ccd1e4;
-  color: #1a2340;
+  color: #000000;
 }
 
 .drawer__btn--ghost:hover { background: #f0f1f5; }

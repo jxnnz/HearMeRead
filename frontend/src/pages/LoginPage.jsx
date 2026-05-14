@@ -43,7 +43,8 @@ export default function LoginPage() {
     try {
       const res = await authApi.login(email, password);
       localStorage.setItem("token", res.access_token);
-      navigate("/dashboard");
+      localStorage.setItem("role", res.role || "TEACHER");
+      navigate(res.role === "ADMIN" ? "/admin/dashboard" : "/dashboard");
     } catch (err) {
       setError(parseApiError(err, "Invalid email or password."));
     } finally {

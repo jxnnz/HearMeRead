@@ -42,7 +42,7 @@
 .etm-title {
   font-size: 17px;
   font-weight: 700;
-  color: #1a2340;
+  color: #000000;
   margin: 0;
 }
 
@@ -53,7 +53,7 @@
   border-radius: 10px;
   padding: 12px 14px;
   font-size: 17px;
-  color: #1a2340;
+  color: #000000;
   background: #f4f6fd;
   font-family: "Courier New", Courier, monospace;
   resize: vertical;
@@ -86,7 +86,7 @@
 .etm-btn--cancel {
   background: #f4f6fb;
   border-color: #c8d0e4;
-  color: #5a6382;
+  color: #080808;
 }
 
 .etm-btn--cancel:hover { background: #e8ecf7; }

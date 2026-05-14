@@ -63,13 +63,13 @@
 .sem-title {
   font-size: 18px;
   font-weight: 700;
-  color: #1a2340;
+  color: #000000;
   margin: 0;
 }
 
 .sem-message {
   font-size: 13.5px;
-  color: #5a6382;
+  color: #080808;
   line-height: 1.6;
   margin: 0;
 }

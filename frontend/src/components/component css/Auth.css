@@ -154,14 +154,14 @@
 .auth-heading {
   font-size: 26px;
   font-weight: 800;
-  color: #1a2340;
+  color: #000000;
   margin: 0 0 4px;
   font-family: "Poppins", sans-serif;
 }
 
 .auth-subheading {
   font-size: 13px;
-  color: #8a94b2;
+  color: #100c08;
   margin: 0 0 22px;
   font-weight: 400;
 }
@@ -198,41 +198,41 @@
 .auth-label {
   font-size: 12.5px;
   font-weight: 600;
-  color: #3a4566;
+  color: #080808;
   font-family: "Poppins", sans-serif;
 }
 
 .auth-input {
-  border: 1.5px solid #dde2f0;
+  border: 1.5px solid #6b7280;
   border-radius: 8px;
   padding: 9px 12px;
   font-size: 13px;
-  color: #1a2340;
-  background: #e8eaf2;
+  color: #000000;
+  background: transparent;
   outline: none;
   font-family: "Poppins", sans-serif;
   width: 100%;
   box-sizing: border-box;
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color 0.15s;
 }
 
 .auth-input:focus {
   border-color: #2c3e6b;
-  background: #fff;
+  background: transparent;
 }
 
 .auth-input::placeholder {
-  color: #b0b8d0;
+  color: #9ca3af;
 }
 
 .auth-input--error {
   border-color: #c0392b;
-  background: #fff8f8;
+  background: transparent;
 }
 
 .auth-input--success {
   border-color: #27ae60;
-  background: #f0faf4;
+  background: transparent;
 }
 
 .auth-field-error {
@@ -258,7 +258,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #8a94b2;
+  color: #100c08;
   display: flex;
   align-items: center;
   padding: 0;
@@ -314,7 +314,7 @@
 .auth-switch {
   text-align: center;
   font-size: 12.5px;
-  color: #8a94b2;
+  color: #100c08;
   margin-top: 4px;
 }
 
@@ -437,7 +437,7 @@
 }
 
 .pw-rule--pass { color: #27ae60; }
-.pw-rule--fail { color: #b0b8d0; }
+.pw-rule--fail { color: #888888; }
 .pw-rule__icon { flex-shrink: 0; }
 
 /* ── Password match feedback ───────────────────────────── */
@@ -472,4 +472,207 @@
   .auth-form__row {
     grid-template-columns: 1fr;
   }
+}
+
+/* ── Role toggle ───────────────────────────────────────── */
+.auth-role-toggle {
+  display: flex;
+  border: 1.5px solid #dde2f0;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.auth-role-toggle__btn {
+  flex: 1;
+  padding: 9px;
+  border: none;
+  background: transparent;
+  color: #100c08;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: "Poppins", sans-serif;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.auth-role-toggle__btn--active {
+  background: #2c7fc1;
+  color: #fff;
+}
+
+/* ── Field hint text ───────────────────────────────────── */
+.auth-field-hint {
+  font-size: 11.5px;
+  color: #100c08;
+  font-family: "Poppins", sans-serif;
+  margin-top: 4px;
+  display: block;
+}
+
+/* ── Checkbox fields ───────────────────────────────────── */
+.auth-field--checkbox {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.auth-field--checkbox input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  margin-top: 3px;
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+  background: transparent;
+  border: 1.5px solid #6b7280;
+  border-radius: 3px;
+  position: relative;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.auth-field--checkbox input[type="checkbox"]:checked {
+  background: #2c7fc1;
+  border-color: #2c7fc1;
+}
+
+.auth-field--checkbox input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+  border: 2px solid #fff;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+}
+
+.auth-checkbox-label {
+  font-size: 12px;
+  color: #080808;
+  font-family: "Poppins", sans-serif;
+  cursor: pointer;
+  line-height: 1.6;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.auth-legal-link {
+  background: none;
+  border: none;
+  color: #2c7fc1;
+  font-weight: 600;
+  font-size: 12px;
+  font-family: "Poppins", sans-serif;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  display: inline;
+}
+
+.auth-legal-link:hover {
+  color: #1a5fa0;
+}
+
+/* ── Legal modal overlay ───────────────────────────────── */
+.legal-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.legal-modal {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 640px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.2);
+}
+
+.legal-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #e8eaf2;
+  flex-shrink: 0;
+}
+
+.legal-modal__header h2 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #000000;
+  font-family: "Poppins", sans-serif;
+  margin: 0;
+}
+
+.legal-modal__close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #100c08;
+  cursor: pointer;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.legal-modal__close:hover {
+  background: #f0f2f8;
+  color: #000000;
+}
+
+.legal-modal__body {
+  overflow-y: auto;
+  padding: 20px 24px 24px;
+  font-family: "Poppins", sans-serif;
+  font-size: 12.5px;
+  color: #080808;
+  line-height: 1.7;
+}
+
+.legal-modal__body h3 {
+  font-size: 13px;
+  font-weight: 700;
+  color: #000000;
+  margin: 18px 0 6px;
+}
+
+.legal-modal__body h3:first-child {
+  margin-top: 0;
+}
+
+.legal-modal__body p {
+  margin: 0 0 10px;
+}
+
+.legal-modal__body ol,
+.legal-modal__body ul {
+  padding-left: 20px;
+  margin: 6px 0 10px;
+}
+
+.legal-modal__body li {
+  margin-bottom: 5px;
+}
+
+.legal-modal__body .legal-updated {
+  font-size: 11px;
+  color: #888888;
+  margin-bottom: 16px;
 }

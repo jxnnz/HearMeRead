@@ -13,6 +13,11 @@ from app.db import Base
 
 # ── Enums ─────────────────────────────────────────────────────────────────────
 
+class UserRole(str, enum.Enum):
+    teacher = "TEACHER"
+    admin   = "ADMIN"
+
+
 class GradeLevel(str, enum.Enum):
     kindergarten = "kindergarten"
     grade_1 = "grade_1"
@@ -61,6 +66,20 @@ _SCHOOL_YEAR_RE = re.compile(r"^\d{4}-\d{4}$")
 
 # ── Models ────────────────────────────────────────────────────────────────────
 
+class School(Base):
+    __tablename__ = "schools"
+
+    id              = Column(Integer, primary_key=True, index=True)
+    school_code     = Column(String(8), unique=True, index=True, nullable=False)
+    deped_school_id = Column(String(20), unique=True, nullable=True, index=True)
+    name            = Column(String(255), nullable=False)
+    admin_id        = Column(Integer, ForeignKey("teachers.id", ondelete="SET NULL"), nullable=True)
+    created_at      = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    admin    = relationship("Teacher", foreign_keys=[admin_id], back_populates="administered_school")
+    teachers = relationship("Teacher", foreign_keys="Teacher.school_id", back_populates="school")
+
+
 class Teacher(Base):
     __tablename__ = "teachers"
 
@@ -71,6 +90,10 @@ class Teacher(Base):
     hashed_password = Column(String(255), nullable=False)
     is_active       = Column(Boolean, default=True,  nullable=False)
     is_verified     = Column(Boolean, default=False, nullable=False)
+    role            = Column(SAEnum(UserRole, values_callable=lambda x: [e.value for e in x]), nullable=False, server_default="TEACHER")
+    school_id       = Column(Integer, ForeignKey("schools.id", ondelete="SET NULL"), nullable=True)
+    agreed_to_terms   = Column(Boolean, default=False, nullable=False)
+    agreed_to_privacy = Column(Boolean, default=False, nullable=False)
     created_at      = Column(DateTime(timezone=True), server_default=func.now())
     updated_at      = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -82,6 +105,9 @@ class Teacher(Base):
                                         cascade="all, delete-orphan")
     password_reset_tokens = relationship("PasswordResetToken", back_populates="teacher",
                                          cascade="all, delete-orphan")
+    school              = relationship("School", foreign_keys=[school_id], back_populates="teachers")
+    administered_school = relationship("School", foreign_keys="School.admin_id",
+                                       back_populates="admin", uselist=False)
 
 
 class EmailVerificationToken(Base):

@@ -5,7 +5,7 @@ from sqlalchemy import select
 
 from app.core.security import decode_access_token
 from app.db import get_db
-from app.models import Teacher
+from app.models import Teacher, UserRole
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
@@ -37,3 +37,14 @@ async def get_current_teacher(
         )
 
     return teacher
+
+
+async def require_admin(
+    current_teacher: Teacher = Depends(get_current_teacher),
+) -> Teacher:
+    if current_teacher.role != UserRole.admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required.",
+        )
+    return current_teacher

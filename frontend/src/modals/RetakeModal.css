@@ -29,7 +29,7 @@
   right: 14px;
   background: none;
   border: none;
-  color: #8e95a3;
+  color: #100c08;
   cursor: pointer;
   padding: 4px;
   border-radius: 6px;
@@ -37,7 +37,7 @@
 }
 
 .rtm-close:hover {
-  color: #1a2340;
+  color: #000000;
   background: #f5f6f8;
 }
 
@@ -58,14 +58,14 @@
   margin: 0;
   font-size: 18px;
   font-weight: 700;
-  color: #1a2340;
+  color: #000000;
   text-align: center;
 }
 
 .rtm-body {
   margin: 0;
   font-size: 14px;
-  color: #5a6178;
+  color: #080808;
   text-align: center;
   line-height: 1.5;
 }
@@ -91,7 +91,7 @@
 .rtm-btn--secondary {
   background: #f5f6f8;
   border: 1.5px solid #d1d5e0;
-  color: #5a6178;
+  color: #080808;
 }
 
 .rtm-btn--secondary:hover {

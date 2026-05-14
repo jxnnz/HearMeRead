@@ -74,6 +74,22 @@ export const authApi = {
     const res = await api.post("/auth/reset-password", { token, new_password: newPassword });
     return res.data;
   },
+
+  lookupSchool: async ({ schoolCode, depedSchoolId } = {}) => {
+    const params = {};
+    if (schoolCode)    params.school_code = schoolCode;
+    if (depedSchoolId) params.school_id   = depedSchoolId;
+    const res = await api.get("/auth/school-lookup", { params });
+    return res.data;
+  },
+};
+
+// ── Admin ─────────────────────────────────────────────────────────────────────
+export const adminApi = {
+  getDashboard: async () => {
+    const res = await api.get("/admin/dashboard");
+    return res.data;
+  },
 };
 
 // ── Passages ──────────────────────────────────────────────────────────────────

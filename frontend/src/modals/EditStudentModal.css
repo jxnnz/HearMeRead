@@ -52,7 +52,7 @@
 .esm-title {
   font-size: 17px;
   font-weight: 700;
-  color: #1a2340;
+  color: #000000;
   margin: 0;
 }
 
@@ -60,7 +60,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #8a94b2;
+  color: #100c08;
   padding: 4px;
   border-radius: 6px;
   display: flex;
@@ -68,7 +68,7 @@
   transition: background 0.15s, color 0.15s;
 }
 
-.esm-close:hover { background: #f4f6fb; color: #1a2340; }
+.esm-close:hover { background: #f4f6fb; color: #000000; }
 
 /* ── Error banner ────────────────────────────────────── */
 .esm-error {
@@ -105,7 +105,7 @@
 .esm-label {
   font-size: 12px;
   font-weight: 600;
-  color: #5a6382;
+  color: #080808;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -116,7 +116,7 @@
   padding: 9px 12px;
   font-size: 14px;
   font-family: "Poppins", sans-serif;
-  color: #1a2340;
+  color: #000000;
   outline: none;
   background: #f8f9fd;
   width: 100%;
@@ -138,7 +138,7 @@
   align-items: center;
   gap: 7px;
   font-size: 13.5px;
-  color: #2a3452;
+  color: #000000;
   font-weight: 500;
   cursor: pointer;
   text-transform: capitalize;
@@ -167,7 +167,7 @@
 .esm-btn--cancel {
   background: #f4f6fb;
   border-color: #c8d0e4;
-  color: #5a6382;
+  color: #080808;
 }
 
 .esm-btn--cancel:hover:not(:disabled) { background: #e8ecf7; }
