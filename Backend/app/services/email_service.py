@@ -214,6 +214,150 @@ async def send_password_reset_email(
         ) from exc
 
 
+def _admin_html_body(first_name: str, school_name: str, school_code: str, verify_url: str) -> str:
+    return f"""\
+<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:0;font-family:'Poppins',Arial,sans-serif;background:#f4f6fb;">
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <tr>
+      <td align="center" style="padding:40px 16px;">
+        <table width="520" cellpadding="0" cellspacing="0"
+               style="background:#fff;border-radius:16px;
+                      box-shadow:0 4px 24px rgba(44,62,107,.12);overflow:hidden;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background:#1e2d52;padding:32px 40px;text-align:center;">
+              <h1 style="margin:0;color:#fff;font-size:22px;letter-spacing:.5px;">
+                HearMeRead
+              </h1>
+              <p style="margin:6px 0 0;color:#9099b8;font-size:13px;">
+                Automated Oral Reading Assessment
+              </p>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:40px 40px 32px;">
+              <p style="margin:0 0 8px;font-size:15px;color:#1a2340;">
+                Hi <strong>{first_name}</strong>,
+              </p>
+              <p style="margin:0 0 20px;font-size:14px;color:#4a5568;line-height:1.6;">
+                Your administrator account for <strong>{school_name}</strong> has been created.
+                Please verify your email address to activate your account.
+              </p>
+
+              <!-- School code block -->
+              <div style="background:#f0f6ff;border:2px solid #2c7fc1;border-radius:12px;
+                          padding:20px 24px;margin-bottom:24px;text-align:center;">
+                <p style="margin:0 0 6px;font-size:12px;color:#4a6fa5;font-weight:600;
+                           text-transform:uppercase;letter-spacing:.8px;">
+                  Your School Code
+                </p>
+                <p style="margin:0;font-size:28px;font-weight:700;color:#1e2d52;
+                           letter-spacing:6px;font-family:monospace;">
+                  {school_code}
+                </p>
+                <p style="margin:8px 0 0;font-size:12px;color:#8a94b2;line-height:1.5;">
+                  Share this code with your teachers so they can link to your school during signup.
+                </p>
+              </div>
+
+              <div style="text-align:center;margin-bottom:28px;">
+                <a href="{verify_url}"
+                   style="display:inline-block;padding:13px 36px;
+                          background:#2c7fc1;color:#fff;border-radius:8px;
+                          text-decoration:none;font-size:14px;font-weight:600;
+                          letter-spacing:.3px;">
+                  Verify Email Address
+                </a>
+              </div>
+              <p style="margin:0 0 6px;font-size:12px;color:#8a94b2;">
+                Or copy and paste this link into your browser:
+              </p>
+              <p style="margin:0;font-size:11px;color:#4a6fa5;word-break:break-all;">
+                {verify_url}
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background:#f8f9fc;padding:20px 40px;
+                       border-top:1px solid #e8eaf2;text-align:center;">
+              <p style="margin:0;font-size:11.5px;color:#b0b8d0;line-height:1.6;">
+                This link expires in <strong>24 hours</strong>.<br>
+                If you did not create this account, you can safely ignore this email.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+"""
+
+
+def _admin_text_body(first_name: str, school_name: str, school_code: str, verify_url: str) -> str:
+    return f"""\
+Hi {first_name},
+
+Your administrator account for {school_name} has been created on HearMeRead.
+
+YOUR SCHOOL CODE: {school_code}
+
+Share this code with your teachers so they can link to your school when they sign up.
+
+Please verify your email address by visiting:
+
+{verify_url}
+
+This link expires in 24 hours.
+
+If you did not create this account, you can safely ignore this email.
+
+— The HearMeRead Team
+"""
+
+
+async def send_admin_welcome_email(
+    to_email: str,
+    first_name: str,
+    school_name: str,
+    school_code: str,
+    token: str,
+) -> None:
+    resend.api_key = settings.RESEND_API_KEY
+
+    verify_url = f"{settings.BACKEND_URL}/routes/auth/verify?token={token}"
+    from_address = f"{settings.EMAIL_NAME} <{settings.EMAIL_ADDRESS}>"
+
+    params: resend.Emails.SendParams = {
+        "from":    from_address,
+        "to":      [to_email],
+        "subject": f"Welcome to HearMeRead — Your school code is {school_code}",
+        "html":    _admin_html_body(first_name, school_name, school_code, verify_url),
+        "text":    _admin_text_body(first_name, school_name, school_code, verify_url),
+    }
+
+    try:
+        response = resend.Emails.send(params)
+        logger.info(
+            f"Admin welcome email sent to {to_email} | "
+            f"Resend ID: {response.get('id', 'unknown')}"
+        )
+    except Exception as exc:
+        logger.error(f"Resend failed for {to_email}: {exc}")
+        raise RuntimeError(
+            "Could not send admin welcome email. Please try again later."
+        ) from exc
+
+
 async def send_verification_email(
     to_email: str,
     first_name: str,

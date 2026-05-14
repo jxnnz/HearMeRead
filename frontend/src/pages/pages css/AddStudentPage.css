@@ -28,7 +28,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: #1a2340;
+  color: #000000;
   flex-shrink: 0;
   transition: background 0.15s, border-color 0.15s;
 }
@@ -41,7 +41,7 @@
 .as-page__title {
   font-size: 22px;
   font-weight: 700;
-  color: #1a2340;
+  color: #000000;
   margin: 0;
   font-family: "Poppins", sans-serif;
 }
@@ -85,14 +85,14 @@
 .as-card__title {
   font-size: 18px;
   font-weight: 700;
-  color: #1a2340;
+  color: #000000;
   margin: 0;
   font-family: "Poppins", sans-serif;
 }
 
 .as-card__subtitle {
   font-size: 12.5px;
-  color: #8a94b2;
+  color: #100c08;
   margin: 2px 0 0;
   font-family: "Poppins", sans-serif;
 }
@@ -133,7 +133,7 @@
 .as-label {
   font-size: 12.5px;
   font-weight: 600;
-  color: #3a4566;
+  color: #080808;
   font-family: "Poppins", sans-serif;
 }
 
@@ -143,7 +143,7 @@
   border-radius: 8px;
   padding: 9px 12px;
   font-size: 13px;
-  color: #1a2340;
+  color: #000000;
   background: #e8eaf2;
   outline: none;
   font-family: "Poppins", sans-serif;
@@ -159,7 +159,7 @@
 }
 
 .as-input::placeholder {
-  color: #b8bdd4;
+  color: #888888;
 }
 
 /* ── Sex radio buttons ───────────────────────────────── */
@@ -179,7 +179,7 @@
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: #1a2340;
+  color: #000000;
   font-family: "Poppins", sans-serif;
   cursor: pointer;
   font-weight: 500;
@@ -222,7 +222,7 @@
 .as-btn--cancel {
   background: #f0f1f5;
   border-color: #c8d0e4;
-  color: #1a2340;
+  color: #000000;
 }
 
 .as-btn--cancel:hover:not(:disabled) {

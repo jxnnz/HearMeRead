@@ -1,4 +1,5 @@
 import secrets
+import string
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -11,13 +12,16 @@ from app.core.encryption import hash_token as _hash_token
 from app.core.security import verify_password, get_password_hash, create_access_token
 from app.db import get_db
 from app.dependencies import get_current_teacher
-from app.models import Teacher, EmailVerificationToken, PasswordResetToken
+from app.models import Teacher, EmailVerificationToken, PasswordResetToken, School, UserRole
 from app.schema import (
     TeacherRegister, LoginRequest, TokenResponse,
     TeacherResponse, ResendVerificationRequest,
     ForgotPasswordRequest, ResetPasswordRequest,
+    SchoolLookupResponse,
 )
-from app.services.email_service import send_verification_email, send_password_reset_email
+from app.services.email_service import (
+    send_verification_email, send_password_reset_email, send_admin_welcome_email,
+)
 from app.core.rate_limit import limiter
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
@@ -26,10 +30,27 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 _TOKEN_EXPIRE_HOURS       = 24   # email verification
 _RESET_TOKEN_EXPIRE_HOURS = 1    # password reset
 
+_SCHOOL_CODE_ALPHABET = string.ascii_uppercase + string.digits
+
 
 def _generate_token() -> str:
     """Generate a cryptographically secure 48-char hex token."""
     return secrets.token_hex(24)   # 24 bytes → 48 hex chars
+
+
+def _generate_school_code() -> str:
+    """Generate a random 8-char uppercase alphanumeric school code."""
+    return "".join(secrets.choice(_SCHOOL_CODE_ALPHABET) for _ in range(8))
+
+
+async def _generate_unique_school_code(db: AsyncSession) -> str:
+    """Retry up to 5 times to find a code not already in use."""
+    for _ in range(5):
+        code = _generate_school_code()
+        result = await db.execute(select(School).where(School.school_code == code))
+        if result.scalar_one_or_none() is None:
+            return code
+    raise RuntimeError("Failed to generate unique school code")
 
 
 
@@ -65,11 +86,12 @@ async def _create_verification_token(db: AsyncSession, teacher_id: int) -> str:
     "/register",
     response_model=TeacherResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Register a new teacher account",
+    summary="Register a new teacher or admin account",
     description=(
         "Creates the account in an **unverified** state. "
         "A verification email is sent immediately. "
-        "The teacher cannot log in until they click the link."
+        "Admins receive their generated school code in the email. "
+        "The user cannot log in until they click the verification link."
     ),
 )
 @limiter.limit("3/minute")
@@ -82,37 +104,106 @@ async def register(request: Request, data: TeacherRegister, db: AsyncSession = D
             detail="An account with this email already exists",
         )
 
-    # 2. Create teacher (is_verified=False by default)
-    teacher = Teacher(
-        first_name=data.first_name,
-        last_name=data.last_name,
-        email=data.email,
-        hashed_password=await get_password_hash(data.password),
-    )
-    db.add(teacher)
-    await db.flush()   # gives teacher.id without full commit
+    school_code_out: str | None = None
 
-    # 3. Create verification token
+    if data.role == UserRole.admin:
+        # ── Admin path ──────────────────────────────────────────────────────
+        school_code_out = await _generate_unique_school_code(db)
+        school = School(
+            school_code=school_code_out,
+            deped_school_id=data.deped_school_id.strip() if data.deped_school_id else None,
+            name=data.school_name,
+            admin_id=None,
+        )
+        db.add(school)
+        await db.flush()   # get school.id
+
+        teacher = Teacher(
+            first_name=data.first_name,
+            last_name=data.last_name,
+            email=data.email,
+            hashed_password=await get_password_hash(data.password),
+            role=UserRole.admin,
+            school_id=school.id,
+            agreed_to_terms=data.agreed_to_terms,
+            agreed_to_privacy=data.agreed_to_privacy,
+        )
+        db.add(teacher)
+        await db.flush()   # get teacher.id
+
+        school.admin_id = teacher.id
+
+    else:
+        # ── Teacher path ────────────────────────────────────────────────────
+        school_id: int | None = None
+        if data.deped_school_id or data.school_code:
+            # Try DepEd School ID first, then fall back to school code
+            school = None
+            if data.deped_school_id:
+                res = await db.execute(
+                    select(School).where(School.deped_school_id == data.deped_school_id.strip())
+                )
+                school = res.scalar_one_or_none()
+            if not school and data.school_code:
+                res = await db.execute(
+                    select(School).where(School.school_code == data.school_code.upper())
+                )
+                school = res.scalar_one_or_none()
+            if not school:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="No school found with that ID or code. Please check with your administrator.",
+                )
+            school_id = school.id
+
+        teacher = Teacher(
+            first_name=data.first_name,
+            last_name=data.last_name,
+            email=data.email,
+            hashed_password=await get_password_hash(data.password),
+            role=UserRole.teacher,
+            school_id=school_id,
+            agreed_to_terms=data.agreed_to_terms,
+            agreed_to_privacy=data.agreed_to_privacy,
+        )
+        db.add(teacher)
+        await db.flush()
+
+    # Create verification token
     token_str = await _create_verification_token(db, teacher.id)
-
-    # 4. Commit everything together so we never have a teacher without a token
     await db.commit()
     await db.refresh(teacher)
 
-    # 5. Send verification email (after commit so DB is safe even if email fails)
+    # Send email after commit so DB is safe even if email fails
     try:
-        await send_verification_email(
-            to_email=teacher.email,
-            first_name=teacher.first_name,
-            token=token_str,
-        )
+        if data.role == UserRole.admin:
+            await send_admin_welcome_email(
+                to_email=teacher.email,
+                first_name=teacher.first_name,
+                school_name=data.school_name,
+                school_code=school_code_out,
+                token=token_str,
+            )
+        else:
+            await send_verification_email(
+                to_email=teacher.email,
+                first_name=teacher.first_name,
+                token=token_str,
+            )
     except RuntimeError:
-        # Email failed — account exists but is unverified.
-        # Teacher can use /resend-verification to get a new link.
-        # We do NOT roll back the account — that would be worse UX.
         pass
 
-    return teacher
+    # Build response dict — school_code not on Teacher model directly
+    response_data = {
+        "id":          teacher.id,
+        "first_name":  teacher.first_name,
+        "last_name":   teacher.last_name,
+        "email":       teacher.email,
+        "role":        teacher.role,
+        "school_id":   teacher.school_id,
+        "school_code": school_code_out,
+    }
+    return TeacherResponse(**response_data)
 
 
 # ── Verify email ──────────────────────────────────────────────────────────────
@@ -266,7 +357,7 @@ async def login(request: Request, data: LoginRequest, db: AsyncSession = Depends
         data={"sub": teacher.email},
         expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
     )
-    return TokenResponse(access_token=token)
+    return TokenResponse(access_token=token, role=teacher.role)
 
 
 # ── Me ────────────────────────────────────────────────────────────────────────
@@ -278,6 +369,37 @@ async def login(request: Request, data: LoginRequest, db: AsyncSession = Depends
 )
 async def get_me(current_teacher: Teacher = Depends(get_current_teacher)):
     return current_teacher
+
+
+# ── School lookup ─────────────────────────────────────────────────────────────
+
+@router.get(
+    "/school-lookup",
+    response_model=SchoolLookupResponse,
+    summary="Look up a school by school code or DepEd School ID",
+)
+@limiter.limit("10/minute")
+async def school_lookup(
+    request: Request,
+    school_code: str | None = Query(None, min_length=8, max_length=8),
+    school_id:   str | None = Query(None, min_length=1, max_length=20),
+    db: AsyncSession = Depends(get_db),
+):
+    if not school_code and not school_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Provide either school_code or school_id",
+        )
+    school = None
+    if school_id:
+        result = await db.execute(select(School).where(School.deped_school_id == school_id.strip()))
+        school = result.scalar_one_or_none()
+    if not school and school_code:
+        result = await db.execute(select(School).where(School.school_code == school_code.upper()))
+        school = result.scalar_one_or_none()
+    if not school:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="School not found")
+    return school
 
 
 # ── Forgot password ───────────────────────────────────────────────────────────

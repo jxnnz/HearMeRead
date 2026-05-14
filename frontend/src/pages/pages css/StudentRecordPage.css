@@ -19,7 +19,7 @@
 .sr-title {
   font-size: 28px;
   font-weight: 700;
-  color: #1a2340;
+  color: #000000;
   margin: 0;
 }
 
@@ -46,7 +46,7 @@
 .sr-filter-field label {
   font-size: 12px;
   font-weight: 600;
-  color: #4a5568;
+  color: #080808;
 }
 
 .sr-filter-input {
@@ -55,7 +55,7 @@
   padding: 8px 12px;
   font-size: 13px;
   font-family: "Poppins", sans-serif;
-  color: #1a2340;
+  color: #000000;
   background: #fff;
   outline: none;
   transition: border-color 0.15s;
@@ -110,13 +110,13 @@
 .sr-class-card__title {
   font-size: 18px;
   font-weight: 700;
-  color: #1a2340;
+  color: #000000;
   margin: 0;
 }
 
 .sr-class-card__meta {
   font-size: 12.5px;
-  color: #8a94b2;
+  color: #100c08;
   font-weight: 500;
   margin: 0;
 }
@@ -140,7 +140,7 @@
   justify-content: center;
   gap: 14px;
   padding: 72px 20px;
-  color: #8a94b2;
+  color: #100c08;
   text-align: center;
   font-size: 14px;
   font-family: "Poppins", sans-serif;

@@ -2,9 +2,9 @@ import re
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
-from app.models import AssessmentPeriod, GradeLevel, Language, Sex
+from app.models import AssessmentPeriod, GradeLevel, Language, Sex, UserRole
 
 
 _SCHOOL_YEAR_RE = re.compile(r"^\d{4}-\d{4}$")
@@ -13,10 +13,16 @@ _SCHOOL_YEAR_RE = re.compile(r"^\d{4}-\d{4}$")
 # ── Teacher / Auth ────────────────────────────────────────────────────────────
 
 class TeacherRegister(BaseModel):
-    first_name: str      = Field(..., min_length=1, max_length=75)
-    last_name:  str      = Field(..., min_length=1, max_length=75)
-    email:      EmailStr
-    password:   str      = Field(..., min_length=8, max_length=128)
+    first_name:       str           = Field(..., min_length=1, max_length=75)
+    last_name:        str           = Field(..., min_length=1, max_length=75)
+    email:            EmailStr
+    password:         str           = Field(..., min_length=8, max_length=128)
+    role:             UserRole      = Field(default=UserRole.teacher)
+    deped_school_id:  Optional[str] = Field(None, max_length=20)
+    school_name:      Optional[str] = Field(None, max_length=255)
+    school_code:      Optional[str] = Field(None, min_length=8, max_length=8)
+    agreed_to_terms:  bool          = Field(...)
+    agreed_to_privacy: bool         = Field(...)
 
     @field_validator("first_name", "last_name")
     @classmethod
@@ -40,6 +46,19 @@ class TeacherRegister(BaseModel):
             raise ValueError("Password must contain at least one symbol (e.g. !@#$%)")
         return v
 
+    @model_validator(mode="after")
+    def check_role_fields(self) -> "TeacherRegister":
+        if not self.agreed_to_terms:
+            raise ValueError("You must agree to the Terms & Conditions")
+        if not self.agreed_to_privacy:
+            raise ValueError("You must agree to the Data Privacy Agreement")
+        if self.role == UserRole.admin:
+            if not self.school_name:
+                raise ValueError("School name is required for admin registration")
+            if not self.deped_school_id:
+                raise ValueError("DepEd School ID is required for admin registration")
+        return self
+
 
 class LoginRequest(BaseModel):
     email:    EmailStr
@@ -48,7 +67,8 @@ class LoginRequest(BaseModel):
 
 class TokenResponse(BaseModel):
     access_token: str
-    token_type:   str = "bearer"
+    token_type:   str      = "bearer"
+    role:         UserRole = UserRole.teacher
 
 
 class ResendVerificationRequest(BaseModel):
@@ -80,13 +100,32 @@ class ResetPasswordRequest(BaseModel):
 
 
 class TeacherResponse(BaseModel):
-    id:         int
-    first_name: str
-    last_name:  str
-    email:      str
+    id:          int
+    first_name:  str
+    last_name:   str
+    email:       str
+    role:        UserRole       = UserRole.teacher
+    school_id:   Optional[int] = None
+    school_code: Optional[str] = None
+    is_verified: bool           = False
 
     class Config:
         from_attributes = True
+
+
+class SchoolLookupResponse(BaseModel):
+    school_code:     str
+    deped_school_id: Optional[str] = None
+    name:            str
+
+    class Config:
+        from_attributes = True
+
+
+class AdminDashboardResponse(BaseModel):
+    school_code: str
+    school_name: str
+    teachers:    List["TeacherResponse"] = []
 
 
 # ── Question ──────────────────────────────────────────────────────────────────

@@ -42,7 +42,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #6b7280;
+  color: #100c08;
   padding: 4px;
   border-radius: 6px;
   display: flex;
@@ -115,7 +115,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #6b7280;
+  color: #100c08;
   padding: 3px;
   border-radius: 4px;
   display: flex;
@@ -141,7 +141,7 @@
 .im-field label {
   font-size: 0.8rem;
   font-weight: 500;
-  color: #374151;
+  color: #080808;
 }
 
 .im-input {
@@ -241,7 +241,7 @@
 .im-btn--ghost {
   background: transparent;
   border: 1px solid #d1d5db;
-  color: #374151;
+  color: #080808;
 }
 .im-btn--ghost:hover:not(:disabled) { background: #f3f4f6; }
 

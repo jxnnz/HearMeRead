@@ -125,8 +125,8 @@ export default function LandingPage() {
               <p>Using speech recognition and intelligent error detection, the system automates transcription, identifies reading miscues, and generates performance reports aligned with classroom reading assessment standards.</p>
               <p>Built with support for both English and Filipino, HearMeRead empowers teachers with a smarter, data-driven approach to monitoring student progress and improving literacy outcomes.</p>
               <div className="lang-pills">
-                <span className="lang-pill en">🇬🇧 English</span>
-                <span className="lang-pill fil">🇵🇭 Filipino</span>
+                <span className="lang-pill en">English</span>
+                <span className="lang-pill fil">Filipino</span>
               </div>
             </div>
           </div>

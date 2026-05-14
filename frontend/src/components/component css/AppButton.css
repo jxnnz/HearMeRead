@@ -54,7 +54,7 @@
 /* ── Outline (white bg, grey border) ─────────────────── */
 .app-btn--outline {
   background: #fff;
-  color: #1a2340;
+  color: #000000;
   border-color: #c8d0e4;
 }
 .app-btn--outline:hover:not(:disabled) {

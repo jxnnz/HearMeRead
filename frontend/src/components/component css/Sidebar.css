@@ -94,6 +94,28 @@
   color: #fff;
 }
 
+/* ── Admin role badge ──────────────────────────────────── */
+.sidebar__role-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 8px 10px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  overflow: hidden;
+}
+
+.sidebar--collapsed .sidebar__role-badge {
+  justify-content: center;
+  padding: 6px;
+}
+
 /* ── Nav ───────────────────────────────────────────────── */
 .sidebar__nav {
   display: flex;

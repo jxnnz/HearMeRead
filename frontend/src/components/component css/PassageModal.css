@@ -42,7 +42,7 @@
 .modal__header h2 {
   font-size: 18px;
   font-weight: 700;
-  color: #1a2340;
+  color: #000000;
   margin: 0;
   font-family: "Georgia", serif;
 }
@@ -51,7 +51,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #8a94b2;
+  color: #100c08;
   display: flex;
   align-items: center;
   padding: 4px;
@@ -60,7 +60,7 @@
 }
 
 .modal__close:hover {
-  color: #1a2340;
+  color: #000000;
   background: #f0f1f5;
 }
 
@@ -91,7 +91,7 @@
 .field label {
   font-size: 12px;
   font-weight: 600;
-  color: #5a6382;
+  color: #080808;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -103,7 +103,7 @@
   margin-left: auto;
   font-size: 11px;
   font-weight: 400;
-  color: #aab0c8;
+  color: #666666;
 }
 
 .field input,
@@ -113,7 +113,7 @@
   border-radius: 8px;
   padding: 9px 12px;
   font-size: 13.5px;
-  color: #1a2340;
+  color: #000000;
   outline: none;
   background: #f8f9fd;
   font-family: inherit;
@@ -175,7 +175,7 @@
 .btn--ghost {
   background: transparent;
   border-color: #ccd1e4;
-  color: #1a2340;
+  color: #000000;
 }
 
 .btn--ghost:hover:not(:disabled) { background: #f0f1f5; }
