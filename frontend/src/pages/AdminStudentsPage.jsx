@@ -1,8 +1,13 @@
-import { useState, useEffect, useCallback } from "react";
-import { GraduationCap, ChevronLeft, ChevronRight, Users, FileText, FileSpreadsheet } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  GraduationCap, ChevronLeft, ChevronRight, Users,
+  Search, ArrowUpDown, FileText, FileSpreadsheet, Pencil, Trash2,
+} from "lucide-react";
 import Layout from "../components/Layout";
-import TopBar from "../components/TopBar";
 import { adminApi } from "../services/api";
+import StudentInfoModal from "../modals/StudentInfoModal";
+import "../pages/pages css/ClassRecordPage.css";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -20,8 +25,8 @@ function currentSchoolYear() {
 
 function formatDate(iso) {
   if (!iso) return "—";
-  const d = new Date(iso);
-  return d.toLocaleDateString("en-PH", { month: "2-digit", day: "2-digit", year: "2-digit" });
+  const dt = new Date(iso);
+  return `${String(dt.getMonth() + 1).padStart(2, "0")}/${String(dt.getDate()).padStart(2, "0")}/${String(dt.getFullYear()).slice(-2)}`;
 }
 
 function formatTime(seconds) {
@@ -54,7 +59,7 @@ const GRADE_TEXT = {
 
 const PERIOD_LABELS = { beginning: "Beginning", middle: "Middle", end: "End" };
 
-// ── Class Record sub-view (mirrors teacher-side ClassRecordPage) ──────────────
+// ── Class Record sub-view (reuses teacher-side cr-* CSS classes) ──────────────
 
 function ClassRecordView({ card, onBack }) {
   const [record,     setRecord]     = useState(null);
@@ -62,6 +67,7 @@ function ClassRecordView({ card, onBack }) {
   const [schoolYear, setSchoolYear] = useState(currentSchoolYear());
   const [period,     setPeriod]     = useState("beginning");
   const [language,   setLanguage]   = useState("filipino");
+  const [selectedSessionId, setSelectedSessionId] = useState(null);
 
   const SCHOOL_YEARS = (() => {
     const y = new Date().getFullYear();
@@ -73,7 +79,8 @@ function ClassRecordView({ card, onBack }) {
     try {
       const params = {};
       if (schoolYear) params.school_year = schoolYear;
-      if (period)     params.period      = period;
+      if (period) params.period = period;
+      if (language) params.language = language;
       const data = await adminApi.getClassRecord(card.teacher_id, params);
       setRecord(data);
     } catch {
@@ -81,167 +88,131 @@ function ClassRecordView({ card, onBack }) {
     } finally {
       setLoading(false);
     }
-  }, [card.teacher_id, schoolYear, period]);
+  }, [card.teacher_id, schoolYear, period, language]);
 
   useEffect(() => { load(); }, [load]);
 
   const students = record?.students ?? [];
-
-  // Match sessions by language
-  const sessionByStudent = {};
-  for (const s of students) {
-    // The admin class record endpoint returns students with their session data embedded
-    // Check if sessions are embedded; if not, we only have the basic info
-    if (s.session && s.session.language === language) {
-      sessionByStudent[s.student_id] = s.session;
-    }
-  }
-
   const periodLabel = PERIOD_LABELS[period] ?? period;
-  const teacherName = card.teacher_name ?? "—";
-  const gradeFull = formatGrade(card.grade_level);
-  const sectionName = card.section ?? "—";
-
-  const selectStyle = {
-    padding: "7px 12px", border: "1.5px solid #dde1ee", borderRadius: 8,
-    fontSize: 12, fontFamily: "Poppins, sans-serif", background: "#fff",
-    outline: "none", color: "#1a2340", cursor: "pointer",
-  };
 
   return (
-    <div style={{ fontFamily: "Poppins, sans-serif" }}>
-      {/* ── Header ── */}
-      <div style={{
-        display: "flex", alignItems: "center", gap: 12,
-        marginBottom: 8, flexWrap: "wrap",
-      }}>
-        <button
-          onClick={onBack}
-          style={{
-            display: "flex", alignItems: "center", gap: 4,
-            background: "none", border: "none", cursor: "pointer",
-            color: "#2c7fc1", fontSize: 13, fontFamily: "Poppins, sans-serif",
-            padding: "4px 0",
-          }}
-        >
-          <ChevronLeft size={16} /> Back
-        </button>
-        <div>
-          <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: "#1a2340" }}>
-            {gradeFull} — {sectionName}
-          </h2>
-          <p style={{ margin: "2px 0 0", fontSize: 12, color: "#8a94b2" }}>
-            Adviser: {teacherName}
-          </p>
+    <div className="cr-page">
+      {/* Top bar */}
+      <div className="cr-topbar">
+        <div className="cr-topbar__left">
+          <button className="cr-back-btn" onClick={onBack} aria-label="Back">
+            <ChevronLeft size={18} />
+          </button>
+          <div>
+            <h1 className="cr-title">
+              {formatGrade(card.grade_level)} — {card.section ?? "—"}
+            </h1>
+            <p className="cr-subtitle">
+              Adviser: {card.teacher_name} &nbsp;·&nbsp; {schoolYear} &nbsp;·&nbsp; {periodLabel}
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* ── Info bar (matches teacher-side cr-info-bar) ── */}
-      <div style={{
-        background: "#f8f9fd", borderRadius: 12, padding: "14px 20px",
-        display: "flex", flexWrap: "wrap", gap: 24, alignItems: "center",
-        marginBottom: 20, border: "1px solid #eef0f8",
-      }}>
-        <div>
-          <span style={{ fontSize: 10, fontWeight: 600, color: "#8a94b2", textTransform: "uppercase", letterSpacing: ".4px", display: "block" }}>Assessment Period</span>
-          <span style={{ fontSize: 13, fontWeight: 600, color: "#1a2340" }}>{periodLabel}</span>
-        </div>
-        <div>
-          <span style={{ fontSize: 10, fontWeight: 600, color: "#8a94b2", textTransform: "uppercase", letterSpacing: ".4px", display: "block" }}>Teacher</span>
-          <span style={{ fontSize: 13, fontWeight: 600, color: "#1a2340" }}>{teacherName}</span>
-        </div>
-        <div>
-          <span style={{ fontSize: 10, fontWeight: 600, color: "#8a94b2", textTransform: "uppercase", letterSpacing: ".4px", display: "block" }}>Grade Level</span>
-          <span style={{ fontSize: 13, fontWeight: 600, color: "#1a2340" }}>{gradeFull}</span>
-        </div>
-        <div>
-          <span style={{ fontSize: 10, fontWeight: 600, color: "#8a94b2", textTransform: "uppercase", letterSpacing: ".4px", display: "block" }}>Section</span>
-          <span style={{ fontSize: 13, fontWeight: 600, color: "#1a2340" }}>{sectionName}</span>
-        </div>
-        <div>
-          <span style={{ fontSize: 10, fontWeight: 600, color: "#8a94b2", textTransform: "uppercase", letterSpacing: ".4px", display: "block" }}>Language</span>
-          <span style={{ fontSize: 13, fontWeight: 600, color: "#1a2340", textTransform: "capitalize" }}>{language}</span>
-        </div>
-      </div>
-
-      {/* ── Filters ── */}
-      <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 20, flexWrap: "wrap" }}>
+      {/* Filters */}
+      <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
         <label style={{ fontSize: 12, color: "#4a5568", fontWeight: 500 }}>School Year:</label>
-        <select style={selectStyle} value={schoolYear} onChange={e => setSchoolYear(e.target.value)}>
+        <select className="cr-lang-select" value={schoolYear} onChange={e => setSchoolYear(e.target.value)}>
           {SCHOOL_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
         </select>
-
         <label style={{ fontSize: 12, color: "#4a5568", fontWeight: 500, marginLeft: 8 }}>Period:</label>
-        <select style={selectStyle} value={period} onChange={e => setPeriod(e.target.value)}>
+        <select className="cr-lang-select" value={period} onChange={e => setPeriod(e.target.value)}>
           <option value="beginning">Beginning</option>
           <option value="middle">Middle</option>
           <option value="end">End</option>
         </select>
-
         <label style={{ fontSize: 12, color: "#4a5568", fontWeight: 500, marginLeft: 8 }}>Language:</label>
-        <select style={selectStyle} value={language} onChange={e => setLanguage(e.target.value)}>
+        <select className="cr-lang-select" value={language} onChange={e => setLanguage(e.target.value)}>
           <option value="filipino">Filipino</option>
           <option value="english">English</option>
         </select>
       </div>
 
-      {/* ── Table ── */}
-      <div style={{
-        background: "#fff", borderRadius: 14,
-        boxShadow: "0 2px 12px rgba(44,62,107,.08)", overflow: "hidden",
-      }}>
-        {loading ? (
-          <div style={{ padding: "40px 0", textAlign: "center", color: "#8a94b2", fontSize: 13 }}>
-            Loading students…
+      {/* States */}
+      {loading && (
+        <div className="cr-state">
+          <div className="cr-spinner" />
+          <p>Loading class data…</p>
+        </div>
+      )}
+
+      {/* Class record card — reuses teacher-side CSS */}
+      {!loading && (
+        <div className="cr-card">
+          {/* Info bar */}
+          <div className="cr-info-bar">
+            <div className="cr-info-bar__items">
+              <div className="cr-info-item">
+                <span className="cr-info-label">Assessment Period</span>
+                <span className="cr-info-value">{periodLabel}</span>
+              </div>
+              <div className="cr-info-item">
+                <span className="cr-info-label">Teacher</span>
+                <span className="cr-info-value">{card.teacher_name}</span>
+              </div>
+              <div className="cr-info-item">
+                <span className="cr-info-label">Grade Level</span>
+                <span className="cr-info-value">{formatGrade(card.grade_level)}</span>
+              </div>
+              <div className="cr-info-item">
+                <span className="cr-info-label">Section</span>
+                <span className="cr-info-value">{card.section || "—"}</span>
+              </div>
+              <div className="cr-info-item">
+                <span className="cr-info-label">Language</span>
+                <span className="cr-info-value cr-info-value--cap">{language}</span>
+              </div>
+            </div>
           </div>
-        ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11.5, fontFamily: "Poppins, sans-serif" }}>
+
+          {/* Assessment table — same as teacher side, no actions column */}
+          <div className="cr-table-wrapper">
+            <table className="cr-table">
               <thead>
                 <tr>
-                  <th rowSpan={2} style={thStyle}>#</th>
-                  <th rowSpan={2} style={thStyle}>LRN</th>
-                  <th rowSpan={2} style={{ ...thStyle, minWidth: 140 }}>Student Name</th>
-                  <th rowSpan={2} style={thStyle}>Sex</th>
-                  <th rowSpan={2} style={thStyle}>Date</th>
-                  <th colSpan={5} style={{ ...thStyle, textAlign: "center", background: "#eef3ff", color: "#2c5fc1" }}>Assessment Part 1</th>
-                  <th colSpan={8} style={{ ...thStyle, textAlign: "center", background: "#eef8f0", color: "#1a7f52" }}>Assessment Part 2</th>
-                  <th rowSpan={2} style={thStyle}>Learner Exp.</th>
-                  <th rowSpan={2} style={thStyle}>Obs. Level</th>
-                  <th rowSpan={2} style={{ ...thStyle, minWidth: 130 }}>Reading Profile</th>
-                  <th rowSpan={2} style={{ ...thStyle, minWidth: 100 }}>Remarks</th>
+                  <th rowSpan={2} className="cr-th cr-th--id">#</th>
+                  <th rowSpan={2} className="cr-th cr-th--id">LRN</th>
+                  <th rowSpan={2} className="cr-th cr-th--name">Student Name</th>
+                  <th rowSpan={2} className="cr-th">Sex</th>
+                  <th rowSpan={2} className="cr-th">Date</th>
+                  <th colSpan={5} className="cr-th cr-th--group1">Assessment Part 1</th>
+                  <th colSpan={8} className="cr-th cr-th--group2">Assessment Part 2</th>
+                  <th rowSpan={2} className="cr-th">Learner Exp.</th>
+                  <th rowSpan={2} className="cr-th">Obs. Level</th>
+                  <th rowSpan={2} className="cr-th cr-th--profile">Reading Profile</th>
+                  <th rowSpan={2} className="cr-th cr-th--remarks">Remarks</th>
                 </tr>
                 <tr>
-                  {/* Part 1 sub-headers */}
-                  <th style={{ ...subThStyle, background: "#eef3ff" }}>Task 1</th>
-                  <th style={{ ...subThStyle, background: "#eef3ff" }}>Task 2L</th>
-                  <th style={{ ...subThStyle, background: "#eef3ff" }}>Task 2H</th>
-                  <th style={{ ...subThStyle, background: "#eef3ff" }}>Total</th>
-                  <th style={{ ...subThStyle, background: "#eef3ff" }}>Part 1 Level</th>
-                  {/* Part 2 sub-headers */}
-                  <th style={{ ...subThStyle, background: "#eef8f0" }}>Story Title</th>
-                  <th style={{ ...subThStyle, background: "#eef8f0" }}>Total Words</th>
-                  <th style={{ ...subThStyle, background: "#eef8f0" }}>Miscues</th>
-                  <th style={{ ...subThStyle, background: "#eef8f0" }}>Words Read</th>
-                  <th style={{ ...subThStyle, background: "#eef8f0" }}>Time</th>
-                  <th style={{ ...subThStyle, background: "#eef8f0" }}>WPM</th>
-                  <th style={{ ...subThStyle, background: "#eef8f0" }}>% Correct</th>
-                  <th style={{ ...subThStyle, background: "#eef8f0" }}>Correct Ans.</th>
+                  <th className="cr-th cr-th--sub cr-th--group1">Task 1</th>
+                  <th className="cr-th cr-th--sub cr-th--group1">Task 2L</th>
+                  <th className="cr-th cr-th--sub cr-th--group1">Task 2H</th>
+                  <th className="cr-th cr-th--sub cr-th--group1">Total</th>
+                  <th className="cr-th cr-th--sub cr-th--group1">Part 1 Level</th>
+                  <th className="cr-th cr-th--sub cr-th--group2">Story Title</th>
+                  <th className="cr-th cr-th--sub cr-th--group2">Total Words</th>
+                  <th className="cr-th cr-th--sub cr-th--group2">Miscues</th>
+                  <th className="cr-th cr-th--sub cr-th--group2">Words Read</th>
+                  <th className="cr-th cr-th--sub cr-th--group2">Time</th>
+                  <th className="cr-th cr-th--sub cr-th--group2">WPM</th>
+                  <th className="cr-th cr-th--sub cr-th--group2">% Correct</th>
+                  <th className="cr-th cr-th--sub cr-th--group2">Correct Ans.</th>
                 </tr>
               </thead>
               <tbody>
                 {students.length === 0 ? (
                   <tr>
-                    <td colSpan={23} style={{ ...tdStyle, textAlign: "center", color: "#8a94b2", padding: "32px 0" }}>
-                      No students found for this period.
-                    </td>
+                    <td colSpan={22} className="cr-empty-row">No students found for this period.</td>
                   </tr>
-                ) : students.map((s, i) => {
+                ) : students.map((s, idx) => {
                   const rr = s.reading_result || null;
                   const obs = s.observation || null;
                   const profile = rr?.reading_profile ?? s.reading_profile ?? null;
-                  const profileColor = PROFILE_COLORS[profile] ?? "#1a2340";
-
+                  const nameColor = PROFILE_COLORS[profile] ?? "#1a2340";
                   const totalWords = rr?.total_words ?? null;
                   const miscues = rr?.miscue_count ?? null;
                   const wordsRead = totalWords !== null && miscues !== null ? totalWords - miscues : null;
@@ -252,75 +223,57 @@ function ClassRecordView({ card, onBack }) {
                   const task2H = route.includes("2h") ? d(rr?.part1_task2_correct) : "—";
 
                   return (
-                    <tr key={s.student_id} style={{ borderBottom: "1px solid #f0f2f8" }}>
-                      <td style={{ ...tdStyle, color: "#8a94b2", textAlign: "center" }}>{i + 1}</td>
-                      <td style={{ ...tdStyle, fontFamily: "monospace", fontSize: 10.5, color: "#4a5568" }}>{s.lrn ?? "—"}</td>
-                      <td style={{ ...tdStyle, fontWeight: 600, color: profileColor }}>
-                        {s.last_name}, {s.first_name}
+                    <tr key={s.student_id}>
+                      <td className="cr-td cr-td--center">{idx + 1}</td>
+                      <td className="cr-td">{s.lrn ?? "—"}</td>
+                      <td className="cr-td">
+                        <span style={{ color: nameColor, fontWeight: 600 }}>
+                          {s.last_name}, {s.first_name}
+                        </span>
                       </td>
-                      <td style={{ ...tdStyle, textTransform: "capitalize", color: "#4a5568" }}>{s.sex ?? "—"}</td>
-                      <td style={tdStyle}>{s.session_date ? formatDate(s.session_date) : "—"}</td>
-                      {/* Part 1 */}
-                      <td style={{ ...tdStyle, textAlign: "center", background: "#fafcff" }}>{d(rr?.part1_task1_correct)}</td>
-                      <td style={{ ...tdStyle, textAlign: "center", background: "#fafcff" }}>{task2L}</td>
-                      <td style={{ ...tdStyle, textAlign: "center", background: "#fafcff" }}>{task2H}</td>
-                      <td style={{ ...tdStyle, textAlign: "center", background: "#fafcff" }}>{d(rr?.part1_total_score)}</td>
-                      <td style={{ ...tdStyle, background: "#fafcff" }}>{rr?.part1_classification ?? "—"}</td>
-                      {/* Part 2 */}
-                      <td style={{ ...tdStyle, background: "#fafdf8" }}>{s.passage_title ?? "—"}</td>
-                      <td style={{ ...tdStyle, textAlign: "center", background: "#fafdf8" }}>{d(totalWords)}</td>
-                      <td style={{ ...tdStyle, textAlign: "center", background: "#fafdf8" }}>{d(miscues)}</td>
-                      <td style={{ ...tdStyle, textAlign: "center", background: "#fafdf8" }}>{d(wordsRead)}</td>
-                      <td style={{ ...tdStyle, textAlign: "center", background: "#fafdf8" }}>{formatTime(rr?.reading_time_seconds)}</td>
-                      <td style={{ ...tdStyle, textAlign: "center", background: "#fafdf8" }}>{d(rr?.cwpm)}</td>
-                      <td style={{ ...tdStyle, textAlign: "center", background: "#fafdf8" }}>{pctCorrect}</td>
-                      <td style={{ ...tdStyle, textAlign: "center", background: "#fafdf8" }}>
+                      <td className="cr-td cr-td--cap">{s.sex ?? "—"}</td>
+                      <td className="cr-td">{s.session_date ? formatDate(s.session_date) : "—"}</td>
+                      <td className="cr-td cr-td--center cr-td--g1">{d(rr?.part1_task1_correct)}</td>
+                      <td className="cr-td cr-td--center cr-td--g1">{task2L}</td>
+                      <td className="cr-td cr-td--center cr-td--g1">{task2H}</td>
+                      <td className="cr-td cr-td--center cr-td--g1">{d(rr?.part1_total_score)}</td>
+                      <td className="cr-td cr-td--g1">{rr?.part1_classification ?? "—"}</td>
+                      <td className="cr-td cr-td--g2">{s.passage_title ?? "—"}</td>
+                      <td className="cr-td cr-td--center cr-td--g2">{d(totalWords)}</td>
+                      <td className="cr-td cr-td--center cr-td--g2">{d(miscues)}</td>
+                      <td className="cr-td cr-td--center cr-td--g2">{d(wordsRead)}</td>
+                      <td className="cr-td cr-td--center cr-td--g2">{formatTime(rr?.reading_time_seconds)}</td>
+                      <td className="cr-td cr-td--center cr-td--g2">{d(rr?.cwpm)}</td>
+                      <td className="cr-td cr-td--center cr-td--g2">{pctCorrect}</td>
+                      <td className="cr-td cr-td--center cr-td--g2">
                         {obs ? `${obs.comprehension_correct ?? "—"}/${obs.comprehension_total ?? "—"}` : "—"}
                       </td>
-                      {/* Observation */}
-                      <td style={{ ...tdStyle, textAlign: "center" }}>{d(obs?.learner_experience)}</td>
-                      <td style={{ ...tdStyle, textAlign: "center" }}>{d(obs?.fluency_level)}</td>
-                      <td style={{ ...tdStyle, fontWeight: 600, color: profileColor }}>{profile ?? "—"}</td>
-                      <td style={{ ...tdStyle, fontSize: 10.5 }}>{obs?.teacher_remarks ?? "—"}</td>
+                      <td className="cr-td cr-td--center">{d(obs?.learner_experience)}</td>
+                      <td className="cr-td cr-td--center">{d(obs?.fluency_level)}</td>
+                      <td className="cr-td cr-td--profile" style={{ color: nameColor, fontWeight: 600 }}>{profile ?? "—"}</td>
+                      <td className="cr-td cr-td--remarks">{obs?.teacher_remarks ?? "—"}</td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {!loading && (
-        <div style={{ marginTop: 12, fontSize: 12, color: "#8a94b2" }}>
+        <div style={{ fontSize: 12, color: "#8a94b2" }}>
           {students.filter(s => s.reading_profile || s.reading_result).length} of {students.length} students assessed
         </div>
       )}
+
+      <StudentInfoModal
+        sessionId={selectedSessionId}
+        onClose={() => setSelectedSessionId(null)}
+      />
     </div>
   );
 }
-
-// ── Table styles ──────────────────────────────────────────────────────────────
-
-const thStyle = {
-  textAlign: "left", padding: "9px 10px",
-  color: "#4a5568", fontWeight: 700,
-  fontSize: 10, textTransform: "uppercase", letterSpacing: ".5px",
-  borderBottom: "2px solid #e8eaf2", whiteSpace: "nowrap",
-  background: "#f8f9fd",
-};
-
-const subThStyle = {
-  textAlign: "center", padding: "6px 8px",
-  color: "#4a5568", fontWeight: 600,
-  fontSize: 9.5, textTransform: "uppercase", letterSpacing: ".3px",
-  borderBottom: "2px solid #e8eaf2", whiteSpace: "nowrap",
-};
-
-const tdStyle = {
-  padding: "9px 10px",
-  fontSize: 11.5, color: "#1a2340", verticalAlign: "middle",
-};
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
@@ -330,6 +283,10 @@ export default function AdminStudentsPage() {
   const [error,    setError]    = useState(null);
   const [selected, setSelected] = useState(null);
 
+  // Search and grade filter
+  const [search, setSearch]     = useState("");
+  const [gradeFilter, setGradeFilter] = useState("all");
+
   useEffect(() => {
     adminApi.getClassCards()
       .then(setCards)
@@ -337,122 +294,170 @@ export default function AdminStudentsPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Unique grade levels for filter
+  const gradeOptions = useMemo(() => {
+    const grades = [...new Set(cards.map(c => c.grade_level))].sort();
+    return grades;
+  }, [cards]);
+
+  // Filtered list
+  const filtered = useMemo(() => {
+    let list = [...cards];
+    if (gradeFilter !== "all") {
+      list = list.filter(c => c.grade_level === gradeFilter);
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(c =>
+        (c.section || "").toLowerCase().includes(q) ||
+        (c.teacher_name || "").toLowerCase().includes(q) ||
+        formatGrade(c.grade_level).toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [cards, search, gradeFilter]);
+
+  const inputStyle = {
+    padding: "8px 12px 8px 34px", border: "1.5px solid #dde1ee", borderRadius: 8,
+    fontSize: 13, fontFamily: "Poppins, sans-serif", outline: "none",
+    background: "#fff", color: "#1a2340", width: 220,
+  };
+
+  const gradeBtnStyle = (active) => ({
+    padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600,
+    cursor: "pointer", fontFamily: "Poppins, sans-serif",
+    border: `1.5px solid ${active ? "#2c3e6b" : "#dde1ee"}`,
+    background: active ? "#eef3ff" : "#fff",
+    color: active ? "#2c5fc1" : "#4a5568",
+    transition: "all 0.15s",
+  });
+
   return (
     <Layout>
       <div style={{ fontFamily: "Poppins, sans-serif", width: "100%" }}>
-        <TopBar title="Students" />
+        <h1 style={{ fontSize: 28, fontWeight: 700, color: "#1a2340", margin: "0 0 24px", fontFamily: "Poppins, sans-serif" }}>
+          Students
+        </h1>
 
         {selected ? (
           <ClassRecordView card={selected} onBack={() => setSelected(null)} />
         ) : (
           <>
+            {/* Toolbar */}
+            {!loading && !error && cards.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 20 }}>
+                {/* Row 1: count + search */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <Users size={15} color="#2c7fc1" />
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "#4a6fa5" }}>
+                      {filtered.length} class{filtered.length !== 1 ? "es" : ""} across your school
+                    </span>
+                  </div>
+                  <div style={{ position: "relative" }}>
+                    <Search size={14} color="#8a94b2" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)" }} />
+                    <input
+                      style={inputStyle}
+                      placeholder="Search classes…"
+                      value={search}
+                      onChange={e => setSearch(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Row 2: grade filter pills */}
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <button style={gradeBtnStyle(gradeFilter === "all")} onClick={() => setGradeFilter("all")}>
+                    All Grades
+                  </button>
+                  {gradeOptions.map(g => (
+                    <button key={g} style={gradeBtnStyle(gradeFilter === g)} onClick={() => setGradeFilter(g)}>
+                      {formatGrade(g)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {loading && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginTop: 4 }}>
                 {[1, 2, 3, 4].map(i => (
-                  <div key={i} style={{
-                    width: 260, height: 100, borderRadius: 14,
-                    background: "linear-gradient(90deg, #e8ecf4 25%, #f4f6fb 50%, #e8ecf4 75%)",
-                    backgroundSize: "1600px 100%",
-                    animation: "phShimmer 1.4s ease-in-out infinite",
-                  }} />
+                  <div key={i} className="sk-card" style={{ width: 280, height: 120, borderRadius: 14 }} />
                 ))}
               </div>
             )}
 
             {error && !loading && (
-              <p style={{ color: "#c0392b", textAlign: "center", padding: "64px 0", fontSize: 13 }}>
-                {error}
-              </p>
+              <p style={{ color: "#c0392b", textAlign: "center", padding: "64px 0", fontSize: 13 }}>{error}</p>
             )}
 
-            {!loading && !error && cards.length === 0 && (
+            {!loading && !error && filtered.length === 0 && (
               <div style={{
                 display: "flex", flexDirection: "column", alignItems: "center",
                 justifyContent: "center", height: "50vh", gap: 14, color: "#8a94b2",
               }}>
                 <GraduationCap size={44} strokeWidth={1.2} />
                 <p style={{ margin: 0, fontSize: 13 }}>
-                  No class cards yet. Assign grade levels and sections to teachers first.
+                  {search || gradeFilter !== "all" ? "No classes match your filter." : "No class cards yet. Assign grade levels and sections to teachers first."}
                 </p>
               </div>
             )}
 
-            {!loading && !error && cards.length > 0 && (
-              <>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
-                  <Users size={15} color="#2c7fc1" />
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "#4a6fa5" }}>
-                    {cards.length} class{cards.length !== 1 ? "es" : ""} across your school
-                  </span>
-                </div>
-
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
-                  {cards.map(card => {
-                    const bg   = GRADE_BG[card.grade_level]   ?? "#f0f6ff";
-                    const text = GRADE_TEXT[card.grade_level]  ?? "#2c7fc1";
-                    return (
-                      <button
-                        key={card.teacher_id}
-                        onClick={() => setSelected(card)}
-                        style={{
-                          background: "#fff", border: "1.5px solid #e8ecf4",
-                          borderRadius: 14,
-                          boxShadow: "0 2px 12px rgba(44,62,107,.06)",
-                          padding: "20px 24px", cursor: "pointer", textAlign: "left",
-                          width: 280, transition: "box-shadow 0.15s, transform 0.1s, border-color 0.15s",
-                          fontFamily: "Poppins, sans-serif",
-                        }}
-                        onMouseEnter={e => {
-                          e.currentTarget.style.boxShadow = "0 6px 24px rgba(44,62,107,.14)";
-                          e.currentTarget.style.transform = "translateY(-2px)";
-                          e.currentTarget.style.borderColor = "#c8d0ec";
-                        }}
-                        onMouseLeave={e => {
-                          e.currentTarget.style.boxShadow = "0 2px 12px rgba(44,62,107,.06)";
-                          e.currentTarget.style.transform = "translateY(0)";
-                          e.currentTarget.style.borderColor = "#e8ecf4";
-                        }}
-                      >
-                        {/* Grade badge */}
-                        <div style={{
-                          display: "inline-block",
-                          background: bg, color: text,
-                          borderRadius: 8, padding: "3px 12px",
-                          fontSize: 12, fontWeight: 700,
-                          marginBottom: 10,
-                        }}>
-                          {formatGrade(card.grade_level)}
-                        </div>
-
-                        {/* Class title */}
-                        <div style={{
-                          fontSize: 15, fontWeight: 700, color: "#1a2340",
-                          marginBottom: 6,
-                        }}>
-                          {formatGrade(card.grade_level)} — {card.section ?? "No Section"}
-                        </div>
-
-                        {/* Teacher name */}
-                        <div style={{
-                          fontSize: 12, color: "#4a5568", fontWeight: 500,
-                          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-                        }}>
-                          Adviser: {card.teacher_name}
-                        </div>
-
-                        {/* Student count */}
-                        <div style={{
-                          fontSize: 11, color: "#8a94b2", marginTop: 8,
-                          display: "flex", alignItems: "center", gap: 4,
-                        }}>
-                          <Users size={12} />
-                          {card.student_count ?? 0} student{(card.student_count ?? 0) !== 1 ? "s" : ""}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
+            {!loading && !error && filtered.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
+                {filtered.map(card => {
+                  const bg   = GRADE_BG[card.grade_level]   ?? "#f0f6ff";
+                  const text = GRADE_TEXT[card.grade_level]  ?? "#2c7fc1";
+                  return (
+                    <button
+                      key={card.teacher_id}
+                      onClick={() => setSelected(card)}
+                      style={{
+                        background: "#fff", border: "1.5px solid #e8ecf4",
+                        borderRadius: 14,
+                        boxShadow: "0 2px 12px rgba(44,62,107,.06)",
+                        padding: "20px 24px", cursor: "pointer", textAlign: "left",
+                        width: 280, transition: "box-shadow 0.15s, transform 0.1s, border-color 0.15s",
+                        fontFamily: "Poppins, sans-serif",
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.boxShadow = "0 6px 24px rgba(44,62,107,.14)";
+                        e.currentTarget.style.transform = "translateY(-2px)";
+                        e.currentTarget.style.borderColor = "#c8d0ec";
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.boxShadow = "0 2px 12px rgba(44,62,107,.06)";
+                        e.currentTarget.style.transform = "translateY(0)";
+                        e.currentTarget.style.borderColor = "#e8ecf4";
+                      }}
+                    >
+                      <div style={{
+                        display: "inline-block", background: bg, color: text,
+                        borderRadius: 8, padding: "3px 12px",
+                        fontSize: 12, fontWeight: 700, marginBottom: 10,
+                      }}>
+                        {formatGrade(card.grade_level)}
+                      </div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: "#1a2340", marginBottom: 6 }}>
+                        {formatGrade(card.grade_level)} — {card.section ?? "No Section"}
+                      </div>
+                      <div style={{
+                        fontSize: 12, color: "#4a5568", fontWeight: 500,
+                        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                      }}>
+                        Adviser: {card.teacher_name}
+                      </div>
+                      <div style={{
+                        fontSize: 11, color: "#8a94b2", marginTop: 8,
+                        display: "flex", alignItems: "center", gap: 4,
+                      }}>
+                        <Users size={12} />
+                        {card.student_count ?? 0} student{(card.student_count ?? 0) !== 1 ? "s" : ""}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             )}
           </>
         )}

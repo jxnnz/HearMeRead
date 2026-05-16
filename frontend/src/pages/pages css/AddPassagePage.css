@@ -22,6 +22,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  position: sticky;
+  top: 0;
+  background: #e8edf7;
+  z-index: 10;
+  padding: 24px 0;
+  margin: -24px 0 24px 0;
 }
 
 .ap-topbar__left {
@@ -391,3 +397,116 @@
 .a1-note strong {
   color: #2c3e6b;
 }
+
+/* ── Card header with title + action on same line ──────── */
+.ap-card__header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* ── Upload .txt button ─────────────────────────────────── */
+.ap-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #f0f3fc;
+  border: 1.5px solid #c8d0e4;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #2c3e6b;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.ap-upload-btn:hover {
+  background: #e0e5f8;
+  border-color: #2c3e6b;
+}
+
+/* ── Info banner (English Grade 3 note) ─────────────────── */
+.ap-info-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: #eef3ff;
+  border: 1px solid #c8d5f0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  color: #2c3e6b;
+  line-height: 1.5;
+  font-family: "Poppins", sans-serif;
+}
+
+.ap-info-banner svg {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+/* ── Upload Guide card ──────────────────────────────────── */
+.ap-card--guide {
+  background: #f8f9fd;
+  border: 1.5px dashed #c8d0e4;
+  box-shadow: none;
+  padding: 0;
+}
+
+.ap-guide-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 16px 24px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #2c3e6b;
+  font-family: "Poppins", sans-serif;
+  text-align: left;
+}
+
+.ap-guide-toggle:hover {
+  background: #eef0fb;
+}
+
+.ap-guide-content {
+  padding: 0 24px 20px;
+  font-size: 13px;
+  color: #333;
+  font-family: "Poppins", sans-serif;
+  line-height: 1.6;
+}
+
+.ap-guide-content h4 {
+  margin: 14px 0 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #2c3e6b;
+}
+
+.ap-guide-content p {
+  margin: 0 0 8px;
+}
+
+.ap-guide-example {
+  background: #fff;
+  border: 1px solid #dde2f0;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-family: "Consolas", "Monaco", monospace;
+  color: #555;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+  line-height: 1.6;
+}

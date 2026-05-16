@@ -26,6 +26,7 @@ const ClassRecordPage = React.lazy(() => import("./pages/Student/ClassRecordPage
 const AdminDashboardPage = React.lazy(() => import("./pages/AdminDashboardPage"));
 const AdminTeachersPage = React.lazy(() => import("./pages/AdminTeachersPage"));
 const AdminStudentsPage = React.lazy(() => import("./pages/AdminStudentsPage"));
+const AdminPassagesPage = React.lazy(() => import("./pages/AdminPassagesPage"));
 
 function getRole() {
   return localStorage.getItem("role") || "TEACHER";
@@ -104,6 +105,7 @@ export default function App() {
           <Route path="/admin/dashboard" element={<RequireAdmin><AdminDashboardPage /></RequireAdmin>} />
           <Route path="/admin/teachers" element={<RequireAdmin><AdminTeachersPage /></RequireAdmin>} />
           <Route path="/admin/students" element={<RequireAdmin><AdminStudentsPage /></RequireAdmin>} />
+          <Route path="/admin/passages" element={<RequireAdmin><AdminPassagesPage /></RequireAdmin>} />
 
           <Route path="*" element={<CatchAll />} />
         </Routes>

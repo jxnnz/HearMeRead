@@ -25,6 +25,7 @@ const ADMIN_NAV = [
   { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/admin/teachers",  label: "Teachers",  icon: Users           },
   { to: "/admin/students",  label: "Students",  icon: GraduationCap   },
+  { to: "/admin/passages",  label: "Passages",  icon: BookOpen        },
 ];
 
 export default function Sidebar() {

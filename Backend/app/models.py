@@ -4,7 +4,7 @@ import re
 from sqlalchemy import (
     Column, Integer, String, Float, Text,
     Boolean, ForeignKey, DateTime,
-    Enum as SAEnum, func
+    Enum as SAEnum, func, UniqueConstraint
 )
 from sqlalchemy.orm import relationship, validates
 from sqlalchemy.dialects.postgresql import JSONB
@@ -120,6 +120,7 @@ class Teacher(Base):
     activity_logs = relationship("ActivityLog", foreign_keys="ActivityLog.teacher_id")
     assignments   = relationship("TeacherAssignment", back_populates="teacher",
                                  cascade="all, delete-orphan")
+    student_enrollments = relationship("StudentEnrollment", back_populates="teacher")
 
 
 class EmailVerificationToken(Base):
@@ -177,6 +178,7 @@ class Student(Base):
     # Relationships
     teacher             = relationship("Teacher",           back_populates="students")
     assessment_sessions = relationship("AssessmentSession", back_populates="student")
+    enrollments         = relationship("StudentEnrollment", back_populates="student")
 
 
 class Passage(Base):
@@ -387,3 +389,38 @@ class TeacherAssignment(Base):
         if int(end) != int(start) + 1:
             raise ValueError("school_year end must be exactly one year after start")
         return value
+
+
+class StudentEnrollment(Base):
+    """
+    Links a student to a specific teacher's class for a given school year.
+    Created automatically when a student is added, or when admin re-enrolls
+    students for a new year. Enables year-aware class records.
+    """
+    __tablename__ = "student_enrollments"
+    __table_args__ = (
+        UniqueConstraint("student_id", "teacher_id", "school_year",
+                         name="uq_enrollment_student_teacher_year"),
+    )
+
+    id          = Column(Integer, primary_key=True, index=True)
+    student_id  = Column(Integer, ForeignKey("students.id",  ondelete="CASCADE"), nullable=False, index=True)
+    teacher_id  = Column(Integer, ForeignKey("teachers.id",  ondelete="CASCADE"), nullable=False, index=True)
+    school_id   = Column(Integer, ForeignKey("schools.id",   ondelete="CASCADE"), nullable=False)
+    grade_level = Column(SAEnum(GradeLevel, values_callable=lambda x: [e.value for e in x]), nullable=True)
+    section     = Column(String(100), nullable=True)
+    school_year = Column(String(9), nullable=False)   # e.g. "2025-2026"
+    created_at  = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    student = relationship("Student",  back_populates="enrollments")
+    teacher = relationship("Teacher",  back_populates="student_enrollments")
+    school  = relationship("School")
+
+    @validates("school_year")
+    def validate_school_year(self, key, value):
+        if not _SCHOOL_YEAR_RE.match(value):
+            raise ValueError("school_year must be in YYYY-YYYY format (e.g. 2025-2026)")
+        start, end = value.split("-")
+        if int(end) != int(start) + 1:
+            raise ValueError("school_year end must be exactly one year after start")
+        return value

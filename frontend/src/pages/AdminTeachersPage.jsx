@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Users, Pencil, Archive, X, ChevronLeft,
   ChevronRight, Check, AlertCircle, Activity, CalendarDays,
+  Search, ArrowUpDown,
 } from "lucide-react";
 import Layout from "../components/Layout";
 import TopBar from "../components/TopBar";
@@ -513,6 +514,12 @@ export default function AdminTeachersPage() {
   const [archiveTarget, setArchiveTarget] = useState(null);
   const [archiving,     setArchiving]     = useState(false);
 
+  // Search, sort, pagination
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("name"); // "name" | "grade"
+  const [page,   setPage]   = useState(1);
+  const PAGE_SIZE = 10;
+
   async function load() {
     setLoading(true);
     setError(null);
@@ -528,6 +535,9 @@ export default function AdminTeachersPage() {
 
   useEffect(() => { load(); }, []);
 
+  // Reset page when search changes
+  useEffect(() => { setPage(1); }, [search]);
+
   async function handleArchive() {
     if (!archiveTarget) return;
     setArchiving(true);
@@ -536,11 +546,35 @@ export default function AdminTeachersPage() {
       setArchiveTarget(null);
       load();
     } catch {
-      // keep modal open, let user retry
+      // keep modal open
     } finally {
       setArchiving(false);
     }
   }
+
+  // Filtered + sorted list
+  const filtered = useMemo(() => {
+    let list = [...teachers];
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(t =>
+        `${t.first_name} ${t.last_name}`.toLowerCase().includes(q) ||
+        (t.email || "").toLowerCase().includes(q) ||
+        (t.employee_id || "").toLowerCase().includes(q) ||
+        (t.section || "").toLowerCase().includes(q)
+      );
+    }
+    list.sort((a, b) => {
+      if (sortBy === "grade") {
+        return (a.grade_level || "zzz").localeCompare(b.grade_level || "zzz");
+      }
+      return `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`);
+    });
+    return list;
+  }, [teachers, search, sortBy]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const thStyle = {
     textAlign: "left", padding: "8px 12px",
@@ -552,22 +586,59 @@ export default function AdminTeachersPage() {
     padding: "11px 12px", borderBottom: "1px solid #f0f2f8",
     fontSize: 13, color: "#1a2340", verticalAlign: "middle",
   };
+  const inputStyle = {
+    padding: "8px 12px 8px 34px", border: "1.5px solid #dde1ee", borderRadius: 8,
+    fontSize: 13, fontFamily: "Poppins, sans-serif", outline: "none",
+    background: "#fff", color: "#1a2340", width: 240,
+  };
+  const sortBtnStyle = (active) => ({
+    padding: "7px 12px", border: `1.5px solid ${active ? "#2c3e6b" : "#dde1ee"}`,
+    borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: "pointer",
+    background: active ? "#eef3ff" : "#fff", color: active ? "#2c5fc1" : "#4a5568",
+    display: "flex", alignItems: "center", gap: 4, fontFamily: "Poppins, sans-serif",
+  });
 
   return (
     <Layout>
       <div style={{ fontFamily: "Poppins, sans-serif", width: "100%" }}>
-        <TopBar title="Teachers" />
+        <h1 style={{ fontSize: 28, fontWeight: 700, color: "#1a2340", margin: "0 0 24px", fontFamily: "Poppins, sans-serif" }}>
+          Teachers
+        </h1>
 
         <div style={{
           background: "#fff", borderRadius: 16,
           boxShadow: "0 2px 16px rgba(44,62,107,.09)",
           padding: "24px 28px",
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
-            <Users size={16} color="#2c7fc1" />
-            <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#1a2340" }}>
-              Teachers {!loading && `(${teachers.length})`}
-            </h2>
+          {/* Toolbar: count + search + sort */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Users size={16} color="#2c7fc1" />
+              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#1a2340" }}>
+                Teachers {!loading && `(${filtered.length})`}
+              </h2>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {/* Search */}
+              <div style={{ position: "relative" }}>
+                <Search size={14} color="#8a94b2" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)" }} />
+                <input
+                  style={inputStyle}
+                  placeholder="Search teachers…"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                />
+              </div>
+
+              {/* Sort buttons */}
+              <button style={sortBtnStyle(sortBy === "name")} onClick={() => setSortBy("name")}>
+                <ArrowUpDown size={12} /> Name
+              </button>
+              <button style={sortBtnStyle(sortBy === "grade")} onClick={() => setSortBy("grade")}>
+                <ArrowUpDown size={12} /> Grade
+              </button>
+            </div>
           </div>
 
           {loading && (
@@ -582,13 +653,13 @@ export default function AdminTeachersPage() {
             </div>
           )}
 
-          {!loading && !error && teachers.length === 0 && (
+          {!loading && !error && filtered.length === 0 && (
             <div style={{ padding: "40px 0", textAlign: "center", color: "#8a94b2", fontSize: 13 }}>
-              No teachers have joined your school yet.
+              {search ? "No teachers match your search." : "No teachers have joined your school yet."}
             </div>
           )}
 
-          {!loading && !error && teachers.length > 0 && (
+          {!loading && !error && paginated.length > 0 && (
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
@@ -599,7 +670,7 @@ export default function AdminTeachersPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {teachers.map(t => (
+                  {paginated.map(t => (
                     <tr key={t.id} style={{ opacity: t.is_active ? 1 : 0.5 }}>
                       <td style={{ ...tdStyle, fontWeight: 600 }}>
                         {t.first_name} {t.last_name}
@@ -632,54 +703,18 @@ export default function AdminTeachersPage() {
                       </td>
                       <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>
                         <div style={{ display: "flex", gap: 6 }}>
-                          <button
-                            onClick={() => setAssignTeacher(t)}
-                            title="Assign grade & section"
-                            style={{
-                              background: "#e8f5e9", border: "none", borderRadius: 7,
-                              padding: "5px 8px", cursor: "pointer",
-                              display: "flex", alignItems: "center", gap: 4,
-                              color: "#27ae60", fontSize: 11, fontFamily: "Poppins, sans-serif",
-                            }}
-                          >
+                          <button onClick={() => setAssignTeacher(t)} title="Assign grade & section" style={{ background: "#e8f5e9", border: "none", borderRadius: 7, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, color: "#27ae60", fontSize: 11, fontFamily: "Poppins, sans-serif" }}>
                             <CalendarDays size={13} /> Assign
                           </button>
-                          <button
-                            onClick={() => setLogsTeacher(t)}
-                            title="View activity logs"
-                            style={{
-                              background: "#f0f6ff", border: "none", borderRadius: 7,
-                              padding: "5px 8px", cursor: "pointer",
-                              display: "flex", alignItems: "center", gap: 4,
-                              color: "#2c7fc1", fontSize: 11, fontFamily: "Poppins, sans-serif",
-                            }}
-                          >
+                          <button onClick={() => setLogsTeacher(t)} title="View activity logs" style={{ background: "#f0f6ff", border: "none", borderRadius: 7, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, color: "#2c7fc1", fontSize: 11, fontFamily: "Poppins, sans-serif" }}>
                             <Activity size={13} /> Logs
                           </button>
                           {t.is_active && (
                             <>
-                              <button
-                                onClick={() => setEditTeacher(t)}
-                                title="Edit"
-                                style={{
-                                  background: "#f0f6ff", border: "none", borderRadius: 7,
-                                  padding: "5px 8px", cursor: "pointer",
-                                  display: "flex", alignItems: "center", gap: 4,
-                                  color: "#2c7fc1", fontSize: 11, fontFamily: "Poppins, sans-serif",
-                                }}
-                              >
+                              <button onClick={() => setEditTeacher(t)} title="Edit" style={{ background: "#f0f6ff", border: "none", borderRadius: 7, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, color: "#2c7fc1", fontSize: 11, fontFamily: "Poppins, sans-serif" }}>
                                 <Pencil size={13} /> Edit
                               </button>
-                              <button
-                                onClick={() => setArchiveTarget(t)}
-                                title="Archive"
-                                style={{
-                                  background: "#fff3e0", border: "none", borderRadius: 7,
-                                  padding: "5px 8px", cursor: "pointer",
-                                  display: "flex", alignItems: "center", gap: 4,
-                                  color: "#e65100", fontSize: 11, fontFamily: "Poppins, sans-serif",
-                                }}
-                              >
+                              <button onClick={() => setArchiveTarget(t)} title="Archive" style={{ background: "#fff3e0", border: "none", borderRadius: 7, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, color: "#e65100", fontSize: 11, fontFamily: "Poppins, sans-serif" }}>
                                 <Archive size={13} /> Archive
                               </button>
                             </>
@@ -690,6 +725,26 @@ export default function AdminTeachersPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {!loading && !error && filtered.length > PAGE_SIZE && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16, padding: "10px 0 0", borderTop: "1px solid #eef0f8" }}>
+              <span style={{ fontSize: 12, color: "#8a94b2" }}>
+                Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
+              </span>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 11, color: "#8a94b2" }}>
+                  Page {page} of {totalPages}
+                </span>
+                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={{ border: "1.5px solid #dde1ee", background: "#fff", borderRadius: 6, padding: "4px 8px", cursor: page === 1 ? "not-allowed" : "pointer" }}>
+                  <ChevronLeft size={14} color={page === 1 ? "#c0c8d8" : "#4a5568"} />
+                </button>
+                <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={{ border: "1.5px solid #dde1ee", background: "#fff", borderRadius: 6, padding: "4px 8px", cursor: page === totalPages ? "not-allowed" : "pointer" }}>
+                  <ChevronRight size={14} color={page === totalPages ? "#c0c8d8" : "#4a5568"} />
+                </button>
+              </div>
             </div>
           )}
         </div>

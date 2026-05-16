@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Plus, X } from "lucide-react";
+import { ChevronLeft, Plus, X, Upload, FileText } from "lucide-react";
 
 import Layout from "../../components/Layout";
 import { passagesApi, questionsApi } from "../../services/api";
@@ -168,6 +168,22 @@ export default function AddAssessment2Page() {
           </div>
 
           {/* Content */}
+          <div className="ap-card__header-row" style={{ marginBottom: -8 }}>
+            <span />
+            <button type="button" className="ap-upload-btn" onClick={() => {
+              const input = document.createElement("input");
+              input.type = "file"; input.accept = ".txt";
+              input.onchange = (e) => {
+                const file = e.target.files[0]; if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => updateDetails("content", ev.target.result);
+                reader.readAsText(file);
+              };
+              input.click();
+            }} title="Upload from .txt file">
+              <Upload size={14} /> Upload .txt
+            </button>
+          </div>
           <div className="ap-field">
             <label className="ap-label" htmlFor="a2-content">
               Passage Content:

@@ -33,7 +33,12 @@
    - [Adding an Assessment 1 Passage](#adding-an-assessment-1-passage)
    - [Adding an Assessment 2 Passage](#adding-an-assessment-2-passage)
 7. [How the Pages Connect](#7-how-the-pages-connect)
-8. [Features Prepared but Currently Disabled](#8-features-prepared-but-currently-disabled)
+8. [Admin Side — School Management](#8-admin-side--school-management)
+   - [Admin Dashboard](#admin-dashboard)
+   - [Teacher Management Page](#teacher-management-page)
+   - [Student Records Page](#student-records-page)
+9. [Passage Visibility](#9-passage-visibility)
+10. [Features Prepared but Currently Disabled](#10-features-prepared-but-currently-disabled)
 
 ---
 
@@ -469,7 +474,113 @@ Sidebar (always visible after login)
 
 ---
 
-## 8. Features Prepared but Currently Disabled
+## 8. Admin Side — School Management
+
+The admin interface is a parallel dashboard for school administrators. Admins access the same login page but are redirected to the admin dashboard based on their `role = 'admin'`.
+
+### Admin Dashboard
+
+Shows school-wide statistics:
+
+- **Summary cards** — Total teachers, total students assessed, total sessions, completion rate
+- **Period breakdown** — How many assessments completed per period (Beginning, Middle, End)
+- **School code** — Displayed for teachers to use during registration
+
+**What connects here:**
+- Sidebar links to Teachers, Students, and the Dashboard
+- The dashboard auto-refreshes data from `/admin/dashboard`
+
+---
+
+### Teacher Management Page
+
+Shows all teachers in the school in a searchable, sortable, paginated table.
+
+**The admin can:**
+- **Search** by name, email, employee ID, or section
+- **Sort** by Name (alphabetical) or Grade Level
+- **Paginate** — 10 teachers per page with prev/next controls
+- **Assign** a teacher to a grade + section for a school year (opens Assign modal)
+- **Edit** a teacher's details (opens Edit modal)
+- **Archive** a teacher (soft-delete, sets `is_active = false`)
+- **View Logs** — Activity history for each teacher
+
+**Assign Modal flow:**
+1. Admin selects a school year (e.g. `2025-2026`), grade level, and section
+2. Backend creates a `TeacherAssignment` record and syncs the teacher's convenience columns
+3. If the teacher already has an assignment for that year → `409 Conflict` error
+
+**Edit Modal:**
+- Admin can update the teacher's employee ID, grade level, and section
+- Input fields use transparent backgrounds with dark navy borders
+
+---
+
+### Student Records Page
+
+Shows all classes as formal cards grouped by grade level.
+
+**Class Card layout:**
+- Grade badge (e.g. "Grade 2")
+- Formal title: **Grade 2 — Love**
+- Adviser name
+- Student count
+
+**The admin can:**
+- **Search** classes by section, teacher name, or grade
+- **Filter** by grade level using pill buttons (All Grades, Grade 1, Grade 2, etc.)
+- **Click** a card to open the class record view
+
+**Class Record View (read-only):**
+- Mirrors the teacher-side layout exactly using the same `cr-*` CSS classes
+- Filters: School Year, Period, Language (all on one row)
+- Info bar: Assessment Period, Teacher, Grade Level, Section, Language
+- Table with grouped headers:
+  - **Assessment Part 1** (blue tint): Task 1, Task 2L, Task 2H, Total, Part 1 Level
+  - **Assessment Part 2** (green tint): Story Title, Total Words, Miscues, Words Read, Time, WPM, % Correct, Correct Ans.
+  - Learner Exp., Obs. Level, Reading Profile, Remarks
+- Student names are color-coded by reading profile
+- **No edit/delete buttons** — admin view is strictly read-only
+
+---
+
+### How the Admin Pages Connect
+
+```
+Admin Login
+└── → Admin Dashboard
+      ├── → Teacher Management (via sidebar)
+      │     ├── → Assign Modal (per teacher)
+      │     ├── → Edit Modal (per teacher)
+      │     ├── → Logs Modal (per teacher)
+      │     └── → Archive Confirmation (per teacher)
+      │
+      └── → Student Records (via sidebar)
+            ├── → Class Cards (filtered by grade)
+            └── → Class Record View (click a card)
+                  └── Read-only assessment table
+```
+
+---
+
+## 9. Passage Visibility
+
+Passages have two visibility modes:
+
+| Type | Created by | Visible to | Editable by |
+|------|-----------|------------|-------------|
+| **Private** | Teacher (always) | Only that teacher | Only that teacher |
+| **Public** | Developer (SQL seed) | All teachers at matching grade level | **Nobody** — read-only |
+
+**Teacher's passage list shows:**
+- "My Passages" section — all their private passages (full CRUD)
+- "Public Library" section — public passages matching their assigned grade level (view-only)
+
+**How to seed public passages:** Direct SQL insert or Alembic migration (see BACKEND_DOCS.md §9.7).
+
+---
+
+## 10. Features Prepared but Currently Disabled
 
 These features are built into the code but commented out. They can be enabled by uncommenting the relevant sections.
 
@@ -493,5 +604,5 @@ These features are built into the code but commented out. They can be enabled by
 
 ---
 
-*Last updated: 2026-05-02*
+*Last updated: 2026-05-16*
 *Update this file whenever a new page, step, or flow is added or changed.*

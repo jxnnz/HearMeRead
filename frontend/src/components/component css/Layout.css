@@ -7,7 +7,6 @@
 .layout__main {
   flex: 1;
   padding: 20px 24px;
-  overflow-y: auto;
 }
 
 /* ── Global skeleton shimmer ───────────────────────────── */

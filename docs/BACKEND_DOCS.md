@@ -23,6 +23,7 @@
    - [Questions](#94-question-routes--routesquestionspy)
    - [Sessions](#95-session-routes--routessessionpy)
    - [ASR (Audio)](#96-asr-routes--routesasrpy)
+   - [Admin](#97-admin-routes--routesadminpy)
 10. [Services — `/services`](#10-services--services)
     - [ASR Service](#101-asr-service)
     - [Audio Storage](#102-audio-storage)
@@ -33,6 +34,7 @@
     - [Question Service](#107-question-service)
     - [Session Service](#108-session-service)
     - [Student Service](#109-student-service)
+    - [Log Service](#1010-log-service)
 11. [Utilities — `/utils`](#11-utilities--utils)
 12. [Extended Schemas — `/schemas`](#12-extended-schemas--schemas)
 13. [Security Overview](#13-security-overview)
@@ -60,7 +62,8 @@ backend/
     │   ├── passages.py      # Passage CRUD + file upload
     │   ├── questions.py     # Question CRUD + file upload
     │   ├── session.py       # Assessment session lifecycle
-    │   └── asr.py           # Audio upload + Whisper transcription
+    │   ├── asr.py           # Audio upload + Whisper transcription
+    │   └── admin.py         # Admin dashboard, teacher mgmt, assignments
     ├── services/
     │   ├── asr_service.py         # Whisper model wrapper
     │   ├── audio_storage.py       # Save / retrieve / delete audio files
@@ -70,11 +73,13 @@ backend/
     │   ├── passage_service.py     # Passage business logic
     │   ├── question_service.py    # Question business logic
     │   ├── session_service.py     # Session business logic & scoring
-    │   └── student_service.py     # Student business logic
+    │   ├── student_service.py     # Student business logic
+    │   └── log_service.py         # Activity logging for admin dashboards
     ├── schemas/
     │   └── session_schemas.py     # Extended schemas for scoring payloads
     └── utils/
-        └── docx_parser.py         # .docx / .txt file parser
+        ├── docx_parser.py         # .docx / .txt file parser
+        └── excel_parser.py        # .xlsx student import parser
 ```
 
 ---
@@ -185,6 +190,7 @@ Keeps `main.py` clean. All API endpoints are accessible at `/routes/<subrouter-p
 | `questions` | *(mixed)* | Questions |
 | `sessions` | `/sessions` | Sessions |
 | `asr` | *(session-scoped)* | ASR |
+| `admin` | `/admin` | Admin |
 
 ### Full path example
 `POST /routes/auth/login`
@@ -200,25 +206,32 @@ Defines all SQLAlchemy database table models. These map directly to Supabase Pos
 
 | Enum | Values |
 |---|---|
-| `GradeLevel` | `Grade 1`, `Grade 2`, `Grade 3` |
+| `GradeLevel` | `kindergarten`, `grade_1` through `grade_6` |
 | `Sex` | `female`, `male` |
 | `Language` | `english`, `filipino` |
 | `AssessmentPeriod` | `beginning`, `middle`, `end` |
-| `ReadingProfile` | `Low Emerging`, `High Emerging`, `Developing`, `Transitioning`, `Grade Level` |
+| `ReadingProfile` | `Low Emerging Reader`, `High Emerging Reader`, `Developing Reader`, `Transitioning Reader`, `Reading at Grade Level` |
 | `Part1Classification` | `Full Refresher`, `Moderate Refresher`, `Light Refresher`, `Grade Ready` |
+| `PassageVisibility` | `private`, `public` |
+| `UserRole` | `teacher`, `admin` |
 
 ### Models
 
 #### `Teacher`
-Represents a registered teacher (the app user).
+Represents a registered teacher or admin (the app user).
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | UUID | Primary key |
-| `first_name`, `last_name` | String | — |
+| `id` | Integer | Primary key |
+| `first_name`, `last_name` | String | Encrypted at rest |
 | `email` | String | Unique |
 | `hashed_password` | String | bcrypt hash |
-| `is_active` | Boolean | Always `true` currently |
+| `role` | `UserRole` enum | `teacher` (default) or `admin` |
+| `school_id` | Integer FK | Links teacher to a School |
+| `grade_level` | `GradeLevel` | Convenience — synced from latest assignment |
+| `section` | String | Convenience — synced from latest assignment |
+| `employee_id` | String | Optional DepEd employee ID |
+| `is_active` | Boolean | `false` = archived by admin |
 | `is_verified` | Boolean | Must be `true` to log in |
 | `created_at`, `updated_at` | DateTime | Auto-managed |
 
@@ -250,15 +263,49 @@ A reading text used in assessments.
 
 | Column | Notes |
 |---|---|
-| `id` | UUID |
-| `title` | — |
-| `content` | Full passage text |
+| `id` | Integer |
+| `teacher_id` | FK → Teacher (required; public passages use admin's teacher ID) |
+| `title` | Nullable for Assessment 1 passages |
+| `content` | Full passage text (nullable for Assessment 1) |
 | `language` | `english` or `filipino` |
 | `grade_level` | `GradeLevel` enum |
 | `word_count` | Auto-computed on create/update |
+| `visibility` | `private` (default) or `public` — public = read-only, seeded by developer |
 | `assessment_type` | `1` (with tasks) or `2` (passage reading) |
-| `task1_text`, `task2_text` | For type-1 passages |
+| `task1_content` | Assessment 1: Task 1 reading passage |
+| `task2_words` | Assessment 1: comma-separated word list |
+| `task2_sentences` | Assessment 1: period-separated sentences |
 | `is_archived` | Soft-delete flag |
+
+#### `TeacherAssignment`
+Links a teacher to a grade + section for a specific school year. Managed by admins.
+
+| Column | Notes |
+|---|---|
+| `id` | Integer |
+| `teacher_id` | FK → Teacher |
+| `school_id` | FK → School |
+| `grade_level` | `GradeLevel` enum |
+| `section` | String |
+| `school_year` | String, e.g. `"2025-2026"` |
+| `is_active` | Boolean (default true) |
+| `created_at` | DateTime |
+
+> **Carry-forward logic:** If a teacher isn't reassigned for a new school year, the system falls back to their most recent active assignment.
+
+#### `ActivityLog`
+Records teacher actions for admin activity tracking.
+
+| Column | Notes |
+|---|---|
+| `id` | Integer |
+| `teacher_id` | FK → Teacher |
+| `school_id` | FK → School |
+| `action` | String (e.g. `"uploaded_passage"`, `"completed_session"`) |
+| `entity_type` | String (e.g. `"passage"`, `"session"`) |
+| `entity_id` | Integer — ID of affected record |
+| `metadata` | JSON — additional context |
+| `created_at` | DateTime |
 
 #### `Question`
 A comprehension question linked to a passage.
@@ -845,6 +892,167 @@ All routes are **protected**.
 
 ### 9.6 ASR Routes — `routes/asr.py`
 
+> See existing section below.
+
+---
+
+### 9.7 Admin Routes — `routes/admin.py`
+
+Base path: `/routes/admin`  
+All routes require **admin role** — uses `Depends(require_admin)` which checks `teacher.role == 'admin'`.
+
+---
+
+#### `GET /routes/admin/dashboard`
+**What it does:** Returns school-wide stats: teacher count, students assessed, session counts, completion rate, period breakdown.
+
+**Response (200):**
+```json
+{
+  "school_code": "ABC123",
+  "school_name": "Sample Elementary School",
+  "total_teachers": 12,
+  "total_students_assessed": 340,
+  "total_sessions": 420,
+  "completed_sessions": 380,
+  "completion_rate": 90.5,
+  "period_breakdown": { "beginning": 120, "middle": 130, "end": 130 }
+}
+```
+
+---
+
+#### `GET /routes/admin/teachers`
+**What it does:** Lists all teachers in the admin's school (excluding other admin accounts).
+
+**Response (200):** Array of teacher objects with grade_level, section, employee_id, is_active, is_verified.
+
+---
+
+#### `PATCH /routes/admin/teachers/{teacher_id}`
+**What it does:** Admin edits teacher's grade level, section, or employee ID.
+
+**Request body:**
+```json
+{
+  "grade_level": "grade_2",
+  "section": "Love",
+  "employee_id": "EMP-001"
+}
+```
+
+---
+
+#### `PATCH /routes/admin/teachers/{teacher_id}/archive`
+**What it does:** Soft-archives a teacher by setting `is_active = false`.
+
+---
+
+#### `GET /routes/admin/teachers/{teacher_id}/logs`
+**What it does:** Paginated activity logs for a specific teacher.
+
+**Query params:** `page` (default 1), `page_size` (default 20, max 100)
+
+**Response (200):**
+```json
+{
+  "total": 42,
+  "page": 1,
+  "page_size": 20,
+  "logs": [ { "action": "uploaded_passage", "entity_type": "passage", ... } ]
+}
+```
+
+---
+
+#### `GET /routes/admin/students`
+**What it does:** Returns class cards for all active teachers with grade_level + section in the school.
+
+**Response (200):**
+```json
+[
+  {
+    "teacher_id": 5,
+    "teacher_name": "Jenny Kim",
+    "grade_level": "grade_2",
+    "section": "Love"
+  }
+]
+```
+
+> ⚠️ **Known gap:** Does not return `student_count`. Frontend displays `card.student_count ?? 0` which always shows 0.
+
+---
+
+#### `GET /routes/admin/students/{teacher_id}`
+**What it does:** Returns all students under a teacher with their latest session result for the given school_year and period.
+
+**Query params:** `school_year`, `period`
+
+**Response (200):**
+```json
+{
+  "teacher_id": 5,
+  "teacher_name": "Jenny Kim",
+  "grade_level": "grade_2",
+  "section": "Love",
+  "students": [
+    {
+      "student_id": 1,
+      "first_name": "Liam",
+      "last_name": "Manuel",
+      "lrn": "123578946152",
+      "sex": "female",
+      "reading_profile": null,
+      "cwpm": null,
+      "period": null,
+      "school_year": null,
+      "is_completed": null
+    }
+  ]
+}
+```
+
+> ⚠️ **Known gap:** Does not return `reading_result`, `observation`, `session_date`, or `passage_title` — the frontend class record table expects these fields but they are not present.
+
+---
+
+#### `GET /routes/admin/assignments`
+**What it does:** Lists all teacher assignments for the school, optionally filtered by school_year.
+
+**Query params:** `school_year` (optional)
+
+---
+
+#### `POST /routes/admin/assignments`
+**What it does:** Creates a new assignment for a teacher. Syncs the teacher's convenience columns (`grade_level`, `section`).
+
+**Request body:**
+```json
+{
+  "teacher_id": 5,
+  "grade_level": "grade_2",
+  "section": "Love",
+  "school_year": "2025-2026"
+}
+```
+
+**Errors:**
+- `404` — Teacher not in admin's school
+- `409` — Teacher already has an active assignment for this school year
+
+---
+
+#### `PATCH /routes/admin/assignments/{assignment_id}`
+**What it does:** Updates an existing assignment. Syncs teacher convenience columns if assignment is active.
+
+---
+
+#### `DELETE /routes/admin/assignments/{assignment_id}`
+**What it does:** Hard-deletes an assignment.
+
+---
+
 Session-scoped. All routes are **protected**.
 
 ---
@@ -1056,6 +1264,18 @@ The final reading profile is determined by crossing Part 1 classification, Part 
 
 ---
 
+### 10.10 Log Service
+
+**File:** `services/log_service.py`
+
+| Function | What it does |
+|---|---|
+| `log_activity(db, teacher_id, school_id, action, entity_type, entity_id, metadata)` | Creates an `ActivityLog` entry for admin dashboards |
+
+Called automatically by passage_service (uploads), session_service (completions), and student_service (CRUD).
+
+---
+
 ## 11. Utilities — `/utils`
 
 ### `utils/docx_parser.py`
@@ -1209,6 +1429,17 @@ const api = axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL });
 | Complete assessment | POST | `/sessions/{id}/complete` |
 | Student history | GET | `/students/{id}/sessions` |
 | Play back audio | GET | `/sessions/{id}/audio` |
+| **Admin: Dashboard** | GET | `/admin/dashboard` |
+| **Admin: Teacher list** | GET | `/admin/teachers` |
+| **Admin: Edit teacher** | PATCH | `/admin/teachers/{id}` |
+| **Admin: Archive teacher** | PATCH | `/admin/teachers/{id}/archive` |
+| **Admin: Teacher logs** | GET | `/admin/teachers/{id}/logs` |
+| **Admin: Class cards** | GET | `/admin/students` |
+| **Admin: Class record** | GET | `/admin/students/{teacher_id}` |
+| **Admin: List assignments** | GET | `/admin/assignments` |
+| **Admin: Create assignment** | POST | `/admin/assignments` |
+| **Admin: Update assignment** | PATCH | `/admin/assignments/{id}` |
+| **Admin: Delete assignment** | DELETE | `/admin/assignments/{id}` |
 
 ### Handling the 207 Duplicate Warning
 ```javascript

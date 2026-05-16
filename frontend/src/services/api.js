@@ -170,6 +170,28 @@ export const adminApi = {
     const res = await api.delete(`/admin/assignments/${id}`);
     return res.data;
   },
+
+  // ── Public Passage Management ───────────────────────────────────────────
+
+  listPassages: async (params = {}) => {
+    const res = await api.get("/admin/passages", { params });
+    return res.data;
+  },
+
+  createPassage: async (data) => {
+    const res = await api.post("/admin/passages", data);
+    return res.data;
+  },
+
+  updatePassage: async (id, data) => {
+    const res = await api.patch(`/admin/passages/${id}`, data);
+    return res.data;
+  },
+
+  archivePassage: async (id) => {
+    const res = await api.delete(`/admin/passages/${id}`);
+    return res.data;
+  },
 };
 
 // ── Passages ──────────────────────────────────────────────────────────────────
