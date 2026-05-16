@@ -112,6 +112,7 @@ export default function DashboardPage() {
   const [error,       setError]       = useState(null);
 
   useEffect(() => {
+    console.time("Fetch Dashboard Data");
     Promise.all([
       dashboardApi.getSummary(schoolYear),
       studentsApi.list(),
@@ -136,7 +137,10 @@ export default function DashboardPage() {
           : (detail || e.message || "Failed to load dashboard.");
         setError(typeof msg === "string" ? msg : JSON.stringify(msg));
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        console.timeEnd("Fetch Dashboard Data");
+        setLoading(false);
+      });
   }, [schoolYear]);
 
   function handleExport() {

@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
-from app.models import AssessmentPeriod, GradeLevel, Language, Sex, UserRole
+from app.models import AssessmentPeriod, GradeLevel, Language, PassageVisibility, Sex, UserRole
 
 
 _SCHOOL_YEAR_RE = re.compile(r"^\d{4}-\d{4}$")
@@ -21,7 +21,7 @@ class TeacherRegister(BaseModel):
     deped_school_id:  Optional[str] = Field(None, max_length=20)
     school_name:      Optional[str] = Field(None, max_length=255)
     school_code:      Optional[str] = Field(None, min_length=8, max_length=8)
-    employee_id:      Optional[str] = Field(None, max_length=50)
+    employee_id:      Optional[str] = Field(None, max_length=7)
     agreed_to_terms:  bool          = Field(...)
     agreed_to_privacy: bool         = Field(...)
 
@@ -195,6 +195,7 @@ class PassageResponse(BaseModel):
     title:           Optional[str]        = None
     content:         Optional[str]        = None
     grade_level:     Optional[GradeLevel] = None
+    visibility:      PassageVisibility    = PassageVisibility.private
     task1_content:   Optional[str]        = None
     task2_words:     Optional[str]        = None
     task2_sentences: Optional[str]        = None
@@ -429,9 +430,18 @@ class ExcelImportResponse(BaseModel):
 # ── Admin ─────────────────────────────────────────────────────────────────────
 
 class AdminTeacherUpdateRequest(BaseModel):
-    employee_id: Optional[str] = Field(None, max_length=50)
+    employee_id: Optional[str] = Field(None, max_length=7)
     grade_level: Optional[GradeLevel] = None
     section:     Optional[str] = Field(None, max_length=100)
+
+    @field_validator("employee_id")
+    @classmethod
+    def validate_employee_id(cls, v: Optional[str]) -> Optional[str]:
+        if v is None or v == "":
+            return None
+        if not re.fullmatch(r"\d{7}", v):
+            raise ValueError("Employee ID must be exactly 7 digits")
+        return v
 
 
 class ActivityLogResponse(BaseModel):
@@ -459,6 +469,47 @@ class TeacherAdminView(BaseModel):
     is_verified: bool
     is_active:   bool
     created_at:  datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ── Teacher Assignment ────────────────────────────────────────────────────────
+
+class TeacherAssignmentCreate(BaseModel):
+    teacher_id:  int
+    grade_level: GradeLevel
+    section:     str = Field(..., min_length=1, max_length=100)
+    school_year: str = Field(..., examples=["2025-2026"])
+
+    @field_validator("school_year")
+    @classmethod
+    def validate_school_year(cls, v: str) -> str:
+        return _validate_school_year(v)
+
+
+class TeacherAssignmentUpdate(BaseModel):
+    grade_level: Optional[GradeLevel] = None
+    section:     Optional[str] = Field(None, min_length=1, max_length=100)
+    school_year: Optional[str] = Field(None, examples=["2025-2026"])
+    is_active:   Optional[bool] = None
+
+    @field_validator("school_year")
+    @classmethod
+    def validate_school_year(cls, v: Optional[str]) -> Optional[str]:
+        return _validate_school_year(v)
+
+
+class TeacherAssignmentResponse(BaseModel):
+    id:           int
+    teacher_id:   int
+    school_id:    int
+    grade_level:  GradeLevel
+    section:      str
+    school_year:  str
+    is_active:    bool
+    created_at:   datetime
+    teacher_name: Optional[str] = None  # populated in route
 
     class Config:
         from_attributes = True

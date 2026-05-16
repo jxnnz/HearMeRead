@@ -65,7 +65,7 @@ export default function StudentRecordPage() {
     }).catch(() => {});
   }, []);
 
-  function handleCardClick(grade_level, section) {
+  const handleCardClick = useCallback((grade_level, section) => {
     navigate("/students/class", {
       state: {
         grade:   grade_level,
@@ -74,7 +74,7 @@ export default function StudentRecordPage() {
         period,
       },
     });
-  }
+  }, [navigate, schoolYear, period]);
 
   const periodLabel = PERIOD_OPTIONS.find((p) => p.value === period)?.label ?? period;
 

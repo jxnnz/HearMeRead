@@ -60,6 +60,11 @@ class Part1Classification(str, enum.Enum):
     grade_ready        = "Grade Ready"
 
 
+class PassageVisibility(str, enum.Enum):
+    private = "private"
+    public  = "public"
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 _SCHOOL_YEAR_RE = re.compile(r"^\d{4}-\d{4}$")
@@ -113,6 +118,8 @@ class Teacher(Base):
     administered_school = relationship("School", foreign_keys="School.admin_id",
                                        back_populates="admin", uselist=False)
     activity_logs = relationship("ActivityLog", foreign_keys="ActivityLog.teacher_id")
+    assignments   = relationship("TeacherAssignment", back_populates="teacher",
+                                 cascade="all, delete-orphan")
 
 
 class EmailVerificationToken(Base):
@@ -183,6 +190,7 @@ class Passage(Base):
     grade_level     = Column(SAEnum(GradeLevel), nullable=True)  # nullable: Assessment 1 has no grade level
     word_count      = Column(Integer, nullable=False, default=0)
     is_archived     = Column(Boolean, nullable=False, default=False)
+    visibility      = Column(SAEnum(PassageVisibility), nullable=False, server_default="private")
     assessment_type = Column(Integer, nullable=True)   # 1 = Assessment 1, 2 = Assessment 2
     task1_content   = Column(Text, nullable=True)      # Assessment 1: Task 1 reading passage
     task2_words     = Column(Text, nullable=True)      # Assessment 1: comma-separated word list
@@ -349,3 +357,33 @@ class ActivityLog(Base):
     created_at  = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     teacher = relationship("Teacher", foreign_keys=[teacher_id])
+
+
+class TeacherAssignment(Base):
+    """
+    Records which teacher is assigned to which grade + section for a given
+    school year.  Admin-managed; one active assignment per teacher per year.
+    If the admin doesn't reassign, the previous active assignment carries forward.
+    """
+    __tablename__ = "teacher_assignments"
+
+    id          = Column(Integer, primary_key=True, index=True)
+    teacher_id  = Column(Integer, ForeignKey("teachers.id", ondelete="CASCADE"), nullable=False, index=True)
+    school_id   = Column(Integer, ForeignKey("schools.id",  ondelete="CASCADE"), nullable=False, index=True)
+    grade_level = Column(SAEnum(GradeLevel, values_callable=lambda x: [e.value for e in x]), nullable=False)
+    section     = Column(String(100), nullable=False)
+    school_year = Column(String(9), nullable=False)           # e.g. "2025-2026"
+    is_active   = Column(Boolean, default=True, nullable=False)
+    created_at  = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    teacher = relationship("Teacher", back_populates="assignments")
+    school  = relationship("School")
+
+    @validates("school_year")
+    def validate_school_year(self, key, value):
+        if not _SCHOOL_YEAR_RE.match(value):
+            raise ValueError("school_year must be in YYYY-YYYY format (e.g. 2025-2026)")
+        start, end = value.split("-")
+        if int(end) != int(start) + 1:
+            raise ValueError("school_year end must be exactly one year after start")
+        return value

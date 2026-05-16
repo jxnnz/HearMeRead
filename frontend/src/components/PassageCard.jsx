@@ -6,8 +6,9 @@
 //   onClick    — open detail drawer
 //   onEdit     — open edit modal
 //   onArchive  — archive the passage
+//   readOnly   — if true, hide edit/remove buttons (for public passages)
 // ============================================================
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Globe, Lock } from "lucide-react";
 import "./component css/PassageCard.css";
 
 function formatGrade(gl) {
@@ -16,9 +17,10 @@ function formatGrade(gl) {
   return `Grade ${gl.replace("grade_", "")}`;
 }
 
-export default function PassageCard({ passage, onClick, onEdit, onRemove }) {
+export default function PassageCard({ passage, onClick, onEdit, onRemove, readOnly = false }) {
   const isArchived = passage.is_archived;
   const isA1 = passage.assessment_type === 1;
+  const isPublic = passage.visibility === "public";
   const lang = passage.language === "filipino" ? "Filipino" : "English";
 
   const words =
@@ -28,7 +30,7 @@ export default function PassageCard({ passage, onClick, onEdit, onRemove }) {
 
   return (
     <div
-      className={`p-card${isArchived ? " p-card--archived" : ""}`}
+      className={`p-card${isArchived ? " p-card--archived" : ""}${isPublic ? " p-card--public" : ""}`}
       onClick={onClick}
       role="button"
       tabIndex={0}
@@ -46,6 +48,16 @@ export default function PassageCard({ passage, onClick, onEdit, onRemove }) {
         )}
         <span className="p-card__dot">·</span>
         <span className="p-card__lang">{lang}</span>
+        {/* Visibility badge */}
+        {isPublic ? (
+          <span className="p-card__badge p-card__badge--public">
+            <Globe size={10} style={{ marginRight: 3 }} />Public
+          </span>
+        ) : (
+          <span className="p-card__badge p-card__badge--private">
+            <Lock size={10} style={{ marginRight: 3 }} />My Passage
+          </span>
+        )}
       </div>
 
       {/* ── Title ── */}
@@ -59,28 +71,30 @@ export default function PassageCard({ passage, onClick, onEdit, onRemove }) {
         {((isA1 ? passage.task1_content : passage.content)?.length ?? 0) > 160 ? "…" : ""}
       </p>
 
-      {/* ── Action buttons (visible on hover) ── */}
-      <div className="p-card__actions" onClick={(e) => e.stopPropagation()}>
-        <button
-          className="p-card__btn"
-          title="Edit passage"
-          onClick={(e) => onEdit(passage, e)}
-          aria-label="Edit passage"
-        >
-          <Pencil size={13} />
-          Edit
-        </button>
+      {/* ── Action buttons (visible on hover, hidden for public/readOnly) ── */}
+      {!readOnly && !isPublic && (
+        <div className="p-card__actions" onClick={(e) => e.stopPropagation()}>
+          <button
+            className="p-card__btn"
+            title="Edit passage"
+            onClick={(e) => onEdit(passage, e)}
+            aria-label="Edit passage"
+          >
+            <Pencil size={13} />
+            Edit
+          </button>
 
-        <button
-          className="p-card__btn p-card__btn--danger"
-          title="Remove passage"
-          onClick={(e) => onRemove(passage, e)}
-          aria-label="Remove passage"
-        >
-          <Trash2 size={13} />
-          Remove
-        </button>
-      </div>
+          <button
+            className="p-card__btn p-card__btn--danger"
+            title="Remove passage"
+            onClick={(e) => onRemove(passage, e)}
+            aria-label="Remove passage"
+          >
+            <Trash2 size={13} />
+            Remove
+          </button>
+        </div>
+      )}
     </div>
   );
 }

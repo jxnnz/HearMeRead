@@ -7,13 +7,17 @@ from sqlalchemy.orm import selectinload
 
 from app.db import get_db
 from app.dependencies import require_admin
+from app.core.encryption import decrypt
 from app.models import (
     Teacher, School, Student, AssessmentSession,
-    ReadingResult, ActivityLog, UserRole, GradeLevel
+    ReadingResult, ActivityLog, UserRole, GradeLevel,
+    TeacherAssignment,
 )
 from app.schema import (
     AdminDashboardResponse, TeacherResponse,
     AdminTeacherUpdateRequest, ActivityLogResponse,
+    TeacherAssignmentCreate, TeacherAssignmentUpdate,
+    TeacherAssignmentResponse,
 )
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
@@ -268,6 +272,16 @@ async def get_teacher_class_record(
     )
     students = students_result.scalars().all()
 
+    # Decrypt PII without triggering SQLAlchemy dirty-tracking
+    for s in students:
+        d = s.__dict__
+        if d.get("first_name"):
+            d["first_name"] = decrypt(d["first_name"])
+        if d.get("last_name"):
+            d["last_name"] = decrypt(d["last_name"])
+        if d.get("lrn"):
+            d["lrn"] = decrypt(d["lrn"])
+
     # For each student, fetch their session matching school_year + period if given
     student_records = []
     for student in students:
@@ -307,3 +321,166 @@ async def get_teacher_class_record(
         "section": teacher.section,
         "students": student_records,
     }
+
+
+# ── Teacher Assignments ───────────────────────────────────────────────────────
+
+@router.get("/assignments", summary="List all teacher assignments for the school")
+async def list_assignments(
+    school_year: Optional[str] = Query(None),
+    current_admin: Teacher = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    query = (
+        select(TeacherAssignment)
+        .where(TeacherAssignment.school_id == current_admin.school_id)
+        .order_by(TeacherAssignment.grade_level, TeacherAssignment.section)
+    )
+    if school_year:
+        query = query.where(TeacherAssignment.school_year == school_year)
+
+    result = await db.execute(query)
+    assignments = result.scalars().all()
+
+    # Enrich with teacher name
+    response = []
+    for a in assignments:
+        teacher_result = await db.execute(
+            select(Teacher).where(Teacher.id == a.teacher_id)
+        )
+        teacher = teacher_result.scalar_one_or_none()
+        response.append({
+            "id": a.id,
+            "teacher_id": a.teacher_id,
+            "school_id": a.school_id,
+            "grade_level": a.grade_level.value if a.grade_level else None,
+            "section": a.section,
+            "school_year": a.school_year,
+            "is_active": a.is_active,
+            "created_at": a.created_at,
+            "teacher_name": f"{teacher.first_name} {teacher.last_name}" if teacher else None,
+        })
+    return response
+
+
+@router.post("/assignments", status_code=status.HTTP_201_CREATED, summary="Assign a teacher to a grade + section")
+async def create_assignment(
+    payload: TeacherAssignmentCreate,
+    current_admin: Teacher = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    # Verify teacher belongs to admin's school
+    teacher_result = await db.execute(
+        select(Teacher).where(
+            Teacher.id == payload.teacher_id,
+            Teacher.school_id == current_admin.school_id,
+        )
+    )
+    teacher = teacher_result.scalar_one_or_none()
+    if not teacher:
+        raise HTTPException(status_code=404, detail="Teacher not found in your school")
+
+    # Check for existing active assignment in the same school year
+    existing_result = await db.execute(
+        select(TeacherAssignment).where(
+            TeacherAssignment.teacher_id == payload.teacher_id,
+            TeacherAssignment.school_year == payload.school_year,
+            TeacherAssignment.is_active == True,
+        )
+    )
+    existing = existing_result.scalar_one_or_none()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Teacher already has an active assignment for {payload.school_year}. "
+                   f"Update or deactivate the existing one first.",
+        )
+
+    assignment = TeacherAssignment(
+        teacher_id=payload.teacher_id,
+        school_id=current_admin.school_id,
+        grade_level=payload.grade_level,
+        section=payload.section,
+        school_year=payload.school_year,
+        is_active=True,
+    )
+    db.add(assignment)
+
+    # Sync the teacher's convenience columns
+    teacher.grade_level = payload.grade_level
+    teacher.section = payload.section
+
+    await db.commit()
+    await db.refresh(assignment)
+    return {
+        "id": assignment.id,
+        "teacher_id": assignment.teacher_id,
+        "school_id": assignment.school_id,
+        "grade_level": assignment.grade_level.value if assignment.grade_level else None,
+        "section": assignment.section,
+        "school_year": assignment.school_year,
+        "is_active": assignment.is_active,
+        "created_at": assignment.created_at,
+        "teacher_name": f"{teacher.first_name} {teacher.last_name}",
+    }
+
+
+@router.patch("/assignments/{assignment_id}", summary="Update a teacher assignment")
+async def update_assignment(
+    assignment_id: int,
+    payload: TeacherAssignmentUpdate,
+    current_admin: Teacher = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(TeacherAssignment).where(
+            TeacherAssignment.id == assignment_id,
+            TeacherAssignment.school_id == current_admin.school_id,
+        )
+    )
+    assignment = result.scalar_one_or_none()
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+
+    if payload.grade_level is not None:
+        assignment.grade_level = payload.grade_level
+    if payload.section is not None:
+        assignment.section = payload.section
+    if payload.school_year is not None:
+        assignment.school_year = payload.school_year
+    if payload.is_active is not None:
+        assignment.is_active = payload.is_active
+
+    # Sync the teacher's convenience columns if this is the active assignment
+    if assignment.is_active:
+        teacher_result = await db.execute(
+            select(Teacher).where(Teacher.id == assignment.teacher_id)
+        )
+        teacher = teacher_result.scalar_one_or_none()
+        if teacher:
+            teacher.grade_level = assignment.grade_level
+            teacher.section = assignment.section
+
+    await db.commit()
+    await db.refresh(assignment)
+    return assignment
+
+
+@router.delete("/assignments/{assignment_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete a teacher assignment")
+async def delete_assignment(
+    assignment_id: int,
+    current_admin: Teacher = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(TeacherAssignment).where(
+            TeacherAssignment.id == assignment_id,
+            TeacherAssignment.school_id == current_admin.school_id,
+        )
+    )
+    assignment = result.scalar_one_or_none()
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+
+    await db.delete(assignment)
+    await db.commit()
