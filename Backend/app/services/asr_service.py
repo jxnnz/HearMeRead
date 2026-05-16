@@ -57,6 +57,7 @@ async def transcribe_audio(
     language: str,
     content_type: Optional[str] = None,
     filename: Optional[str] = None,
+    prompt: Optional[str] = None,
 ) -> dict:
     """
     Transcribe audio bytes using the Groq Whisper API (whisper-large-v3).
@@ -108,8 +109,22 @@ async def transcribe_audio(
 
     logger.info(
         f"Transcribing audio via Groq API | lang={whisper_lang} | "
-        f"size={len(audio_bytes)} bytes | ext={ext}"
+        f"size={len(audio_bytes)} bytes | ext={ext} | "
+        f"prompt={'yes' if prompt else 'no'}"
     )
+
+    request_data = {
+        "model": "whisper-large-v3",
+        "language": whisper_lang,
+        "response_format": "verbose_json",
+        "timestamp_granularities[]": "word",
+        "temperature": "0.0",
+    }
+    # Providing the reference passage as a prompt anchors Whisper to the
+    # expected vocabulary and significantly reduces hallucinations on silence
+    # or unclear audio (e.g. "Thank you for watching!" artifacts).
+    if prompt and prompt.strip():
+        request_data["prompt"] = prompt.strip()
 
     try:
         async with httpx.AsyncClient(timeout=120.0) as client:
@@ -121,13 +136,7 @@ async def transcribe_audio(
                 files={
                     "file": (upload_filename, audio_bytes, content_type or "audio/webm"),
                 },
-                data={
-                    "model": "whisper-large-v3",
-                    "language": whisper_lang,
-                    "response_format": "verbose_json",
-                    "timestamp_granularities[]": "word",
-                    "temperature": "0.0",
-                },
+                data=request_data,
             )
 
         if response.status_code != 200:

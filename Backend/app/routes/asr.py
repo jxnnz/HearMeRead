@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
+from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, File, status
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -24,6 +24,7 @@ MAX_AUDIO_SIZE_BYTES = 25 * 1024 * 1024
 async def transcribe_session_audio(
     session_id: int,
     audio: UploadFile = File(..., description="Audio recording of the student reading"),
+    prompt: str = Form(None, description="Reference passage text to guide Whisper and reduce hallucinations"),
     db: AsyncSession = Depends(get_db),
     current_teacher: Teacher = Depends(get_current_teacher),
 ):
@@ -69,6 +70,7 @@ async def transcribe_session_audio(
             language=lang_code,
             content_type=audio.content_type,
             filename=audio.filename,
+            prompt=prompt,
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))

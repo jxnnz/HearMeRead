@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -6,8 +6,6 @@ import {
   BookOpen,
   UserRound,
   LogOut,
-  ChevronLeft,
-  ChevronRight,
   Users,
   GraduationCap,
   ShieldCheck,
@@ -27,15 +25,17 @@ const ADMIN_NAV = [
   { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/admin/teachers",  label: "Teachers",  icon: Users           },
   { to: "/admin/students",  label: "Students",  icon: GraduationCap   },
+  { to: "/admin/passages",  label: "Passages",  icon: BookOpen        },
 ];
 
 export default function Sidebar() {
-  const navigate  = useNavigate();
+  const navigate     = useNavigate();
   const [showLogout, setShowLogout] = useState(false);
-  const [collapsed, setCollapsed]   = useState(false);
+  const [collapsed, setCollapsed]   = useState(true);
+  const sidebarRef   = useRef(null);
 
-  const isAdmin   = localStorage.getItem("role") === "ADMIN";
-  const navItems  = isAdmin ? ADMIN_NAV : TEACHER_NAV;
+  const isAdmin  = localStorage.getItem("role") === "ADMIN";
+  const navItems = isAdmin ? ADMIN_NAV : TEACHER_NAV;
 
   function handleLogout() {
     localStorage.removeItem("token");
@@ -43,23 +43,31 @@ export default function Sidebar() {
     navigate("/login");
   }
 
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (showLogout) return;
+      if (sidebarRef.current && !sidebarRef.current.contains(e.target)) {
+        setCollapsed(true);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showLogout]);
+
   return (
     <>
-      <aside className={`sidebar${collapsed ? " sidebar--collapsed" : ""}`}>
+      <aside
+        ref={sidebarRef}
+        className={`sidebar${collapsed ? " sidebar--collapsed" : ""}`}
+        onMouseEnter={() => setCollapsed(false)}
+      >
 
-        {/* Logo + toggle */}
+        {/* Logo */}
         <div className="sidebar__header">
           <div className="sidebar__logo-box">
             <img src={HmrLogo} alt="HMR" className="sidebar__logo-img" />
             <span className="sidebar__logo-text">HearMeRead</span>
           </div>
-          <button
-            className="sidebar__toggle"
-            onClick={() => setCollapsed((c) => !c)}
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {collapsed ? <ChevronRight size={15} /> : <ChevronLeft size={15} />}
-          </button>
         </div>
 
         {/* Admin badge */}

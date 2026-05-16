@@ -1,28 +1,32 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import SessionExpiredModal from "./modals/SessionExpiredModal";
-import LandingPage      from "./pages/LandingPage";
-import LoadingPage      from "./pages/LoadingPage";
-import LoginPage           from "./pages/LoginPage";
-import SignupPage          from "./pages/SignupPage";
-import ForgotPasswordPage  from "./pages/ForgotPasswordPage";
-import ResetPasswordPage   from "./pages/ResetPasswordPage";
-import DashboardPage    from "./pages/DashboardPage";
-import PassagePage      from "./pages/passages/PassagePage";
-import AddAssessment1Page  from "./pages/passages/AddAssessment1Page";
-import AddAssessment2Page  from "./pages/passages/AddAssessment2Page";
-import EditAssessment1Page from "./pages/passages/EditAssessment1Page";
-import EditAssessment2Page from "./pages/passages/EditAssessment2Page";
-import StudentRecordPage from "./pages/Student/StudentRecordPage";
-import AddStudentPage   from "./pages/Student/AddStudentPage";
-import AssessmentPage   from "./pages/Assessment/AssessmentPage";
-import StudentInfoPage  from "./pages/Student/StudentInfoPage";
-import ClassRecordPage  from "./pages/Student/ClassRecordPage";
-import SignupSuccessPage   from "./pages/SignupSuccessPage";
-import AdminDashboardPage  from "./pages/AdminDashboardPage";
-import AdminTeachersPage   from "./pages/AdminTeachersPage";
-import AdminStudentsPage   from "./pages/AdminStudentsPage";
+import LoadingPage from "./pages/LoadingPage";
 
+// Lazy-loaded pages
+const LandingPage = React.lazy(() => import("./pages/LandingPage"));
+const LoginPage = React.lazy(() => import("./pages/LoginPage"));
+const SignupPage = React.lazy(() => import("./pages/SignupPage"));
+const ForgotPasswordPage = React.lazy(() => import("./pages/ForgotPasswordPage"));
+const ResetPasswordPage = React.lazy(() => import("./pages/ResetPasswordPage"));
+const SignupSuccessPage = React.lazy(() => import("./pages/SignupSuccessPage"));
+
+const DashboardPage = React.lazy(() => import("./pages/DashboardPage"));
+const PassagePage = React.lazy(() => import("./pages/passages/PassagePage"));
+const AddAssessment1Page = React.lazy(() => import("./pages/passages/AddAssessment1Page"));
+const AddAssessment2Page = React.lazy(() => import("./pages/passages/AddAssessment2Page"));
+const EditAssessment1Page = React.lazy(() => import("./pages/passages/EditAssessment1Page"));
+const EditAssessment2Page = React.lazy(() => import("./pages/passages/EditAssessment2Page"));
+const StudentRecordPage = React.lazy(() => import("./pages/Student/StudentRecordPage"));
+const AddStudentPage = React.lazy(() => import("./pages/Student/AddStudentPage"));
+const AssessmentPage = React.lazy(() => import("./pages/Assessment/AssessmentPage"));
+const StudentInfoPage = React.lazy(() => import("./pages/Student/StudentInfoPage"));
+const ClassRecordPage = React.lazy(() => import("./pages/Student/ClassRecordPage"));
+
+const AdminDashboardPage = React.lazy(() => import("./pages/AdminDashboardPage"));
+const AdminTeachersPage = React.lazy(() => import("./pages/AdminTeachersPage"));
+const AdminStudentsPage = React.lazy(() => import("./pages/AdminStudentsPage"));
+const AdminPassagesPage = React.lazy(() => import("./pages/AdminPassagesPage"));
 
 function getRole() {
   return localStorage.getItem("role") || "TEACHER";
@@ -72,39 +76,40 @@ export default function App() {
   if (!appReady) return <LoadingPage />;
 
   return (
-    <>
-    <SessionExpiredModal isOpen={sessionExpired} />
     <BrowserRouter>
-      <Routes>
-        {/* ── Public ── */}
-        <Route path="/"       element={<LandingPage />} />
-        <Route path="/login"            element={<RequireGuest><LoginPage /></RequireGuest>} />
-        <Route path="/signup"           element={<RequireGuest><SignupPage /></RequireGuest>} />
-        <Route path="/forgot-password"  element={<ForgotPasswordPage />} />
-        <Route path="/reset-password"   element={<ResetPasswordPage />} />
-        <Route path="/signup/success"   element={<SignupSuccessPage />} />
+      <SessionExpiredModal isOpen={sessionExpired} onLogin={() => setSessionExpired(false)} />
+      <Suspense fallback={<LoadingPage />}>
+        <Routes>
+          {/* ── Public ── */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<RequireGuest><LoginPage /></RequireGuest>} />
+          <Route path="/signup" element={<RequireGuest><SignupPage /></RequireGuest>} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/signup/success" element={<SignupSuccessPage />} />
 
-        {/* ── Teacher-only ── */}
-        <Route path="/dashboard"   element={<RequireTeacher><DashboardPage /></RequireTeacher>} />
-        <Route path="/assessment"  element={<RequireTeacher><AssessmentPage /></RequireTeacher>} />
-        <Route path="/passages"                  element={<RequireTeacher><PassagePage /></RequireTeacher>} />
-        <Route path="/passages/add-assessment-1"      element={<RequireTeacher><AddAssessment1Page /></RequireTeacher>} />
-        <Route path="/passages/add-assessment-2"      element={<RequireTeacher><AddAssessment2Page /></RequireTeacher>} />
-        <Route path="/passages/edit-assessment-1/:id" element={<RequireTeacher><EditAssessment1Page /></RequireTeacher>} />
-        <Route path="/passages/edit-assessment-2/:id" element={<RequireTeacher><EditAssessment2Page /></RequireTeacher>} />
-        <Route path="/students"              element={<RequireTeacher><StudentRecordPage /></RequireTeacher>} />
-        <Route path="/students/add"          element={<RequireTeacher><AddStudentPage /></RequireTeacher>} />
-        <Route path="/students/class"        element={<RequireTeacher><ClassRecordPage /></RequireTeacher>} />
-        <Route path="/students/:id"          element={<RequireTeacher><StudentInfoPage /></RequireTeacher>} />
+          {/* ── Teacher-only ── */}
+          <Route path="/dashboard" element={<RequireTeacher><DashboardPage /></RequireTeacher>} />
+          <Route path="/assessment" element={<RequireTeacher><AssessmentPage /></RequireTeacher>} />
+          <Route path="/passages" element={<RequireTeacher><PassagePage /></RequireTeacher>} />
+          <Route path="/passages/add-assessment-1" element={<RequireTeacher><AddAssessment1Page /></RequireTeacher>} />
+          <Route path="/passages/add-assessment-2" element={<RequireTeacher><AddAssessment2Page /></RequireTeacher>} />
+          <Route path="/passages/edit-assessment-1/:id" element={<RequireTeacher><EditAssessment1Page /></RequireTeacher>} />
+          <Route path="/passages/edit-assessment-2/:id" element={<RequireTeacher><EditAssessment2Page /></RequireTeacher>} />
+          <Route path="/students" element={<RequireTeacher><StudentRecordPage /></RequireTeacher>} />
+          <Route path="/students/add" element={<RequireTeacher><AddStudentPage /></RequireTeacher>} />
+          <Route path="/students/class" element={<RequireTeacher><ClassRecordPage /></RequireTeacher>} />
+          <Route path="/students/:id" element={<RequireTeacher><StudentInfoPage /></RequireTeacher>} />
 
-        {/* ── Admin-only ── */}
-        <Route path="/admin/dashboard" element={<RequireAdmin><AdminDashboardPage /></RequireAdmin>} />
-        <Route path="/admin/teachers"  element={<RequireAdmin><AdminTeachersPage /></RequireAdmin>} />
-        <Route path="/admin/students"  element={<RequireAdmin><AdminStudentsPage /></RequireAdmin>} />
+          {/* ── Admin-only ── */}
+          <Route path="/admin/dashboard" element={<RequireAdmin><AdminDashboardPage /></RequireAdmin>} />
+          <Route path="/admin/teachers" element={<RequireAdmin><AdminTeachersPage /></RequireAdmin>} />
+          <Route path="/admin/students" element={<RequireAdmin><AdminStudentsPage /></RequireAdmin>} />
+          <Route path="/admin/passages" element={<RequireAdmin><AdminPassagesPage /></RequireAdmin>} />
 
-        <Route path="*" element={<CatchAll />} />
-      </Routes>
+          <Route path="*" element={<CatchAll />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
-    </>
   );
 }

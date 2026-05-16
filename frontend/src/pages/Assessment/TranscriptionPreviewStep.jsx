@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronRight, Volume2, Pencil, RotateCcw } from "lucide-react";
+import { ChevronRight, Volume2, Pencil, RotateCcw, Upload } from "lucide-react";
 import EditTranscriptionModal from "../../modals/EditTranscriptionModal";
 
 function alignWords(refText, transText) {
@@ -86,18 +86,15 @@ export default function TranscriptionPreviewStep({
   const correctCount = aligned.filter((a) => a.correct).length;
   const wrongCount   = totalRefWords - correctCount;
 
-  // Annotate each word with time-limit context (A2 only)
-  const displayWords = (() => {
-    let tIdx = -1;
-    return aligned.map((a) => {
-      if (a.source !== "missed") tIdx++;
-      return {
-        ...a,
-        isCutoff:    showHighlight && a.source !== "missed" && tIdx === cutoffIdx,
-        isPastLimit: showHighlight && a.source !== "missed" && tIdx > cutoffIdx,
-      };
-    });
-  })();
+  // Only show transcript words (matches + extras); missed reference words are
+  // already captured in the wrong count and would confuse the edit modal comparison.
+  const displayWords = aligned
+    .filter((a) => a.source !== "missed")
+    .map((a, tIdx) => ({
+      ...a,
+      isCutoff:    showHighlight && tIdx === cutoffIdx,
+      isPastLimit: showHighlight && tIdx > cutoffIdx,
+    }));
 
   const stats = [
     { label: "Total Words", value: totalRefWords,                     color: "#1a2340" },
@@ -114,10 +111,10 @@ export default function TranscriptionPreviewStep({
         {/* Title row + Retake button */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h2 className="asp-preview-card__title" style={{ margin: 0 }}>Transcription Preview</h2>
-          {recordingMode === "live" && onRetakeRecording && (
+          {onRetakeRecording && (
             <button className="asp-retake-btn" onClick={onRetakeRecording}>
-              <RotateCcw size={14} />
-              Retake
+              {recordingMode === "upload" ? <Upload size={14} /> : <RotateCcw size={14} />}
+              {recordingMode === "upload" ? "Re-upload" : "Retake"}
             </button>
           )}
         </div>

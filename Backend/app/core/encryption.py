@@ -1,7 +1,7 @@
 import hashlib
 import hmac
 
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, InvalidToken
 
 from app.core.config import settings
 
@@ -17,7 +17,10 @@ def encrypt(value: str | None) -> str | None:
 def decrypt(value: str | None) -> str | None:
     if not value:
         return value
-    return _fernet.decrypt(value.encode()).decode()
+    try:
+        return _fernet.decrypt(value.encode()).decode()
+    except InvalidToken:
+        return value
 
 
 def hash_lrn(lrn: str | None) -> str | None:

@@ -1,11 +1,16 @@
+import { useNavigate } from "react-router-dom";
 import { LogIn, Lock } from "lucide-react";
 import "./SessionExpiredModal.css";
 
-export default function SessionExpiredModal({ isOpen }) {
+export default function SessionExpiredModal({ isOpen, onLogin }) {
+  const navigate = useNavigate();
   if (!isOpen) return null;
 
   function handleRelogin() {
-    window.location.href = "/login";
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    onLogin?.();
+    navigate("/login");
   }
 
   return (

@@ -23,13 +23,39 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const url = error.config?.url ?? "";
+    const isUnauthRoute =
+      url.includes("/auth/login") ||
+      url.includes("/auth/register") ||
+      url.includes("/auth/forgot-password") ||
+      url.includes("/auth/reset-password") ||
+      url.includes("/auth/resend-verification") ||
+      url.includes("/auth/school-lookup");
+
+    if (error.response?.status === 401 && !isUnauthRoute) {
       localStorage.removeItem("token");
       window.dispatchEvent(new CustomEvent("session-expired"));
     }
     return Promise.reject(error);
   }
 );
+
+// ── In-Memory Cache Helper ──────────────────────────────────────────────────
+const apiCache = new Map();
+
+async function withCache(key, fetcher, ttl = 300000) { // Default 5 min TTL
+  const cached = apiCache.get(key);
+  if (cached && Date.now() - cached.timestamp < ttl) {
+    return cached.data;
+  }
+  const data = await fetcher();
+  apiCache.set(key, { data, timestamp: Date.now() });
+  return data;
+}
+
+export function clearApiCache() {
+  apiCache.clear();
+}
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 export const authApi = {
@@ -87,7 +113,83 @@ export const authApi = {
 // ── Admin ─────────────────────────────────────────────────────────────────────
 export const adminApi = {
   getDashboard: async () => {
-    const res = await api.get("/admin/dashboard");
+    return withCache("admin_dashboard", async () => {
+      const res = await api.get("/admin/dashboard");
+      return res.data;
+    });
+  },
+
+  getTeachers: async () => {
+    const res = await api.get("/admin/teachers");
+    return res.data;
+  },
+
+  updateTeacher: async (teacherId, data) => {
+    const res = await api.patch(`/admin/teachers/${teacherId}`, data);
+    return res.data;
+  },
+
+  archiveTeacher: async (teacherId) => {
+    const res = await api.patch(`/admin/teachers/${teacherId}/archive`);
+    return res.data;
+  },
+
+  getTeacherLogs: async (teacherId, params = {}) => {
+    const res = await api.get(`/admin/teachers/${teacherId}/logs`, { params });
+    return res.data;
+  },
+
+  getClassCards: async () => {
+    const res = await api.get("/admin/students");
+    return res.data;
+  },
+
+  getClassRecord: async (teacherId, params = {}) => {
+    const res = await api.get(`/admin/students/${teacherId}`, { params });
+    return res.data;
+  },
+
+  // ── Teacher Assignments ──────────────────────────────────────────────────
+
+  getAssignments: async (params = {}) => {
+    const res = await api.get("/admin/assignments", { params });
+    return res.data;
+  },
+
+  createAssignment: async (data) => {
+    const res = await api.post("/admin/assignments", data);
+    return res.data;
+  },
+
+  updateAssignment: async (id, data) => {
+    const res = await api.patch(`/admin/assignments/${id}`, data);
+    return res.data;
+  },
+
+  deleteAssignment: async (id) => {
+    const res = await api.delete(`/admin/assignments/${id}`);
+    return res.data;
+  },
+
+  // ── Public Passage Management ───────────────────────────────────────────
+
+  listPassages: async (params = {}) => {
+    const res = await api.get("/admin/passages", { params });
+    return res.data;
+  },
+
+  createPassage: async (data) => {
+    const res = await api.post("/admin/passages", data);
+    return res.data;
+  },
+
+  updatePassage: async (id, data) => {
+    const res = await api.patch(`/admin/passages/${id}`, data);
+    return res.data;
+  },
+
+  archivePassage: async (id) => {
+    const res = await api.delete(`/admin/passages/${id}`);
     return res.data;
   },
 };
@@ -205,13 +307,17 @@ export const studentsApi = {
   },
 
   listClasses: async () => {
-    const res = await api.get("/students/classes");
-    return res.data;
+    return withCache("students_classes", async () => {
+      const res = await api.get("/students/classes");
+      return res.data;
+    });
   },
 
   listSchoolYears: async () => {
-    const res = await api.get("/students/school-years");
-    return res.data;
+    return withCache("students_school_years", async () => {
+      const res = await api.get("/students/school-years");
+      return res.data;
+    });
   },
 
   get: async (id) => {
@@ -349,9 +455,11 @@ export const dashboardApi = {
    *            fluency_accuracy, fluency_wpm }
    */
   getSummary: async (schoolYear) => {
-    const params = schoolYear ? { school_year: schoolYear } : {};
-    const res = await api.get("/dashboard/summary", { params });
-    return res.data;
+    return withCache(`dashboard_summary_${schoolYear || 'current'}`, async () => {
+      const params = schoolYear ? { school_year: schoolYear } : {};
+      const res = await api.get("/dashboard/summary", { params });
+      return res.data;
+    });
   },
 };
 

@@ -137,3 +137,43 @@
   background: #fdecea;
   border-color: #e8c8c5;
 }
+
+/* ── Public passage variant ──────────────────────────── */
+.p-card--public {
+  background: #f8faff;
+  border-color: #d4def4;
+}
+.p-card--public:hover,
+.p-card--public:focus-visible {
+  border-color: #a8bae8;
+  box-shadow: 0 6px 20px rgba(44, 80, 180, 0.10);
+}
+
+/* ── Visibility badges ───────────────────────────────── */
+.p-card__badge--public {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 20px;
+  padding: 2px 9px;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  background: #e3ecfa;
+  color: #2c5fc1;
+  display: inline-flex;
+  align-items: center;
+}
+
+.p-card__badge--private {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 20px;
+  padding: 2px 9px;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  background: #f0f1f5;
+  color: #6b7280;
+  display: inline-flex;
+  align-items: center;
+}

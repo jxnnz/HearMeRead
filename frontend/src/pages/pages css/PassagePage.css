@@ -170,3 +170,34 @@
 .ph-skeleton-ptitle { height: 16px; width: 80%; }
 .ph-skeleton-line   { height: 12px; width: 100%; }
 .ph-skeleton-line--short { width: 65%; }
+
+/* ── Section labels (My Passages / Public Library) ──── */
+.ph-section-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #4a5568;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 8px;
+  padding-bottom: 2px;
+  border-bottom: 2px solid #e8ecf4;
+  font-family: "Poppins", sans-serif;
+}
+
+.ph-section-label--public {
+  color: #2c5fc1;
+  border-bottom-color: #d4def4;
+  margin-top: 32px;
+}
+
+.ph-section-hint {
+  font-size: 11px;
+  font-weight: 400;
+  color: #8a94b2;
+  letter-spacing: 0;
+  text-transform: none;
+  margin-left: 4px;
+}

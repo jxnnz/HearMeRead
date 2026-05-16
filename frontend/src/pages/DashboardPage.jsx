@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { Plus, Download } from "lucide-react";
 
 import Layout                    from "../components/Layout";
+import TopBar                   from "../components/TopBar";
 import DashboardStatCard         from "../components/DashboardStatCard";
 import ReadingProfileChart       from "../components/ReadingProfileChart";
 import FluencyComprehensionChart from "../components/FluencyComprehensionChart";
@@ -111,6 +112,7 @@ export default function DashboardPage() {
   const [error,       setError]       = useState(null);
 
   useEffect(() => {
+    console.time("Fetch Dashboard Data");
     Promise.all([
       dashboardApi.getSummary(schoolYear),
       studentsApi.list(),
@@ -135,7 +137,10 @@ export default function DashboardPage() {
           : (detail || e.message || "Failed to load dashboard.");
         setError(typeof msg === "string" ? msg : JSON.stringify(msg));
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        console.timeEnd("Fetch Dashboard Data");
+        setLoading(false);
+      });
   }, [schoolYear]);
 
   function handleExport() {
@@ -147,9 +152,7 @@ export default function DashboardPage() {
     return (
       <Layout>
         <div className="db-page">
-          <div className="db-header">
-            <h1 className="db-title">Dashboard</h1>
-          </div>
+          <TopBar title="Dashboard" />
 
           {/* Stat cards skeleton */}
           <div className="db-stats-row">
@@ -190,9 +193,7 @@ export default function DashboardPage() {
     return (
       <Layout>
         <div className="db-page">
-          <div className="db-header">
-            <h1 className="db-title">Dashboard</h1>
-          </div>
+          <TopBar title="Dashboard" />
           <p style={{ color: "#e74c3c", textAlign: "center", padding: "64px 0" }}>
             ⚠ {error}
           </p>
@@ -209,26 +210,23 @@ export default function DashboardPage() {
       <div className="db-page">
 
         {/* ── Page header ── */}
-        <div className="db-header">
-          <h1 className="db-title">Dashboard</h1>
-          <div className="db-header__actions">
-            <button
-              className="db-btn db-btn--new"
-              onClick={() => navigate("/assessment")}
-            >
-              <Plus size={15} />
-              New Session
-            </button>
-            <button
-              className="db-btn db-btn--export"
-              onClick={handleExport}
-              disabled={students.length === 0}
-            >
-              <Download size={15} />
-              Export
-            </button>
-          </div>
-        </div>
+        <TopBar title="Dashboard">
+          <button
+            className="db-btn db-btn--new"
+            onClick={() => navigate("/assessment")}
+          >
+            <Plus size={15} />
+            New Session
+          </button>
+          <button
+            className="db-btn db-btn--export"
+            onClick={handleExport}
+            disabled={students.length === 0}
+          >
+            <Download size={15} />
+            Export
+          </button>
+        </TopBar>
 
         {/* ── School year indicator ── */}
         <p className="db-school-year">School Year: {schoolYear}</p>
