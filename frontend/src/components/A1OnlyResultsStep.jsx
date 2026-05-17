@@ -125,7 +125,7 @@ export default function A1OnlyResultsStep({
             Assessment 1 Complete
           </div>
           <div className="asp-res-header__actions">
-            <button className="asp-res-action-btn" onClick={() => window.print()}>🖨 Print</button>
+            <button className="asp-res-action-btn" onClick={() => window.print()}>↓ Save as PDF</button>
             <button className="asp-res-action-btn" onClick={handleExport}>↓ Export Excel</button>
           </div>
         </div>

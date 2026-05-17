@@ -22,6 +22,7 @@ const AddStudentPage = React.lazy(() => import("./pages/Student/AddStudentPage")
 const AssessmentPage = React.lazy(() => import("./pages/Assessment/AssessmentPage"));
 const StudentInfoPage = React.lazy(() => import("./pages/Student/StudentInfoPage"));
 const ClassRecordPage = React.lazy(() => import("./pages/Student/ClassRecordPage"));
+const ProfilePage = React.lazy(() => import("./pages/ProfilePage"));
 
 const AdminDashboardPage = React.lazy(() => import("./pages/AdminDashboardPage"));
 const AdminTeachersPage = React.lazy(() => import("./pages/AdminTeachersPage"));
@@ -30,6 +31,12 @@ const AdminPassagesPage = React.lazy(() => import("./pages/AdminPassagesPage"));
 
 function getRole() {
   return localStorage.getItem("role") || "TEACHER";
+}
+
+function RequireAuth({ children }) {
+  const token = localStorage.getItem("token");
+  if (!token) return <Navigate to="/login" replace />;
+  return children;
 }
 
 function RequireTeacher({ children }) {
@@ -106,6 +113,9 @@ export default function App() {
           <Route path="/admin/teachers" element={<RequireAdmin><AdminTeachersPage /></RequireAdmin>} />
           <Route path="/admin/students" element={<RequireAdmin><AdminStudentsPage /></RequireAdmin>} />
           <Route path="/admin/passages" element={<RequireAdmin><AdminPassagesPage /></RequireAdmin>} />
+
+          {/* ── Shared ── */}
+          <Route path="/profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
 
           <Route path="*" element={<CatchAll />} />
         </Routes>

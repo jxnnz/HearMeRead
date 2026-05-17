@@ -61,15 +61,15 @@ export default function UploadModal({ onClose, onUpload, defaultType = 2, eng3 =
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#666" }}><X size={20} /></button>
         </div>
 
-        <div style={{ padding: "24px", overflowY: "auto" }}>
+        <div className="cr-modal-body" style={{ padding: "24px", overflowY: "auto" }}>
           
           <div style={{ display: "flex", gap: 16, marginBottom: 20 }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 14, fontWeight: 500, color: selectedType === 1 ? "#2c3e6b" : "#666" }}>
-              <input type="radio" name="uploadType" checked={selectedType === 1} onChange={() => setSelectedType(1)} style={{ accentColor: "#2c3e6b" }} />
+            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 14, fontWeight: selectedType === 1 ? 700 : 500, color: selectedType === 1 ? "#2c3e6b" : "#666" }}>
+              <input type="radio" className="custom-radio" name="uploadType" checked={selectedType === 1} onChange={() => setSelectedType(1)} />
               Assessment 1 Format
             </label>
-            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 14, fontWeight: 500, color: selectedType === 2 ? "#2c3e6b" : "#666" }}>
-              <input type="radio" name="uploadType" checked={selectedType === 2} onChange={() => setSelectedType(2)} style={{ accentColor: "#2c3e6b" }} />
+            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 14, fontWeight: selectedType === 2 ? 700 : 500, color: selectedType === 2 ? "#2c3e6b" : "#666" }}>
+              <input type="radio" className="custom-radio" name="uploadType" checked={selectedType === 2} onChange={() => setSelectedType(2)} />
               Assessment 2 Format
             </label>
           </div>

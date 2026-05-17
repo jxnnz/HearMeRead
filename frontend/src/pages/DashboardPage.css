@@ -244,8 +244,8 @@
 
 /* ── Dashboard Avatar Button ─────────────────────────── */
 .db-avatar-btn {
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   border: 2px solid #e0e4f0;
   background: #f1f3f8;
@@ -272,7 +272,7 @@
 }
 
 .db-avatar-initials {
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 700;
   color: #8a94b2;
   text-transform: uppercase;
@@ -281,10 +281,10 @@
 
 @media (min-width: 768px) {
   .db-avatar-btn {
-    width: 48px;
-    height: 48px;
+    width: 36px;
+    height: 36px;
   }
   .db-avatar-initials {
-    font-size: 17px;
+    font-size: 13px;
   }
 }

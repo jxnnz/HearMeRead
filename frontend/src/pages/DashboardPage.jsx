@@ -14,7 +14,6 @@ import ReadingProfileChart       from "../components/ReadingProfileChart";
 import FluencyComprehensionChart from "../components/FluencyComprehensionChart";
 import * as XLSX from "xlsx";
 import { dashboardApi, studentsApi, authApi } from "../services/api";
-import TeacherProfileModal from "../components/TeacherProfileModal";
 
 import "./DashboardPage.css";
 
@@ -110,7 +109,6 @@ export default function DashboardPage() {
   const [fluencyWpm,  setFluencyWpm]  = useState([]);
   const [students,    setStudents]    = useState([]);
   const [user,        setUser]        = useState(null);
-  const [showProfile, setShowProfile] = useState(false);
   const [loading,     setLoading]     = useState(true);
   const [error,       setError]       = useState(null);
 
@@ -217,7 +215,7 @@ export default function DashboardPage() {
           {user && (
             <button 
               className="db-avatar-btn" 
-              onClick={() => setShowProfile(true)}
+              onClick={() => navigate("/profile")}
               title="My Profile"
             >
               {user.profile_picture_url ? (
@@ -239,22 +237,22 @@ export default function DashboardPage() {
           <DashboardStatCard
             value={stats.totalStudents}
             label="Total Students"
-            color={getScoreColor(stats.totalStudents, "sessions")}
+            color="#1a2340"
           />
           <DashboardStatCard
             value={stats.classAvgAccuracy != null ? `${stats.classAvgAccuracy}%` : "—"}
             label="Class Average Accuracy"
-            color={getScoreColor(stats.classAvgAccuracy, "percent")}
+            color="#1a2340"
           />
           <DashboardStatCard
             value={stats.totalAssessed}
             label="Total Assessed"
-            color={getScoreColor(stats.totalAssessed, "sessions")}
+            color="#1a2340"
           />
           <DashboardStatCard
             value={stats.avgErrorRate != null ? `${stats.avgErrorRate}%` : "—"}
             label="Average Error Rate"
-            color={getScoreColor(stats.avgErrorRate, "error")}
+            color="#1a2340"
           />
         </div>
 
@@ -287,13 +285,6 @@ export default function DashboardPage() {
         )}
 
       </div>
-      {showProfile && user && (
-        <TeacherProfileModal 
-          user={user} 
-          onClose={() => setShowProfile(false)} 
-          onProfileUpdated={setUser} 
-        />
-      )}
     </Layout>
   );
 }

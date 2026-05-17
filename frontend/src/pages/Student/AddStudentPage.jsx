@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 
 import Layout                              from "../../components/Layout";
 import StudentDetailsForm, { currentSchoolYear } from "../../components/StudentDetailsForm";
-import { studentsApi }                    from "../../services/api";
+import { studentsApi, authApi }                    from "../../services/api";
 
 import "../pages css/AddStudentPage.css";
 
@@ -24,6 +24,18 @@ export default function AddStudentPage() {
   const [form, setForm]   = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState(null);
+
+  useEffect(() => {
+    authApi.me().then((user) => {
+      setForm((prev) => ({
+        ...prev,
+        grade_level: user.grade_level || prev.grade_level,
+        section: user.section || prev.section,
+      }));
+    }).catch((err) => {
+      console.error("Failed to load teacher profile for autofill", err);
+    });
+  }, []);
 
   // ── Validation ───────────────────────────────────────────
   function validate() {

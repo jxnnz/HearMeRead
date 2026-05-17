@@ -9,6 +9,7 @@ import {
   Users,
   GraduationCap,
   ShieldCheck,
+  CircleUserRound
 } from "lucide-react";
 import HmrLogo from "../assets/HMR-LOGO.png";
 import ConfirmModal from "../modals/ConfirmModal";
@@ -19,6 +20,7 @@ const TEACHER_NAV = [
   { to: "/assessment", label: "Assessment",     icon: ClipboardList   },
   { to: "/passages",   label: "Passages",       icon: BookOpen        },
   { to: "/students",   label: "Student Record", icon: UserRound       },
+  { to: "/profile",    label: "My Profile",     icon: CircleUserRound },
 ];
 
 const ADMIN_NAV = [
@@ -26,6 +28,7 @@ const ADMIN_NAV = [
   { to: "/admin/teachers",  label: "Teachers",  icon: Users           },
   { to: "/admin/students",  label: "Students",  icon: GraduationCap   },
   { to: "/admin/passages",  label: "Passages",  icon: BookOpen        },
+  { to: "/profile",         label: "My Profile", icon: CircleUserRound },
 ];
 
 export default function Sidebar() {

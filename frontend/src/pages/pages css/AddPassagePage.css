@@ -509,4 +509,51 @@
   word-break: break-word;
   margin: 0;
   line-height: 1.6;
+}
+
+/* ── Custom Modal Scrollbar ───────────────────────────────── */
+.cr-modal-body::-webkit-scrollbar {
+  width: 8px;
+}
+.cr-modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.cr-modal-body::-webkit-scrollbar-thumb {
+  background: #c8d0e4;
+  border-radius: 4px;
+}
+.cr-modal-body::-webkit-scrollbar-thumb:hover {
+  background: #aab4cc;
+}
+
+/* ── Custom Radio Buttons ───────────────────────────────── */
+.custom-radio {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #666;
+  border-radius: 50%;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+  margin: 0;
+}
+
+.custom-radio:checked {
+  border-color: #2c3e6b;
+}
+
+.custom-radio:checked::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #2c3e6b;
 }

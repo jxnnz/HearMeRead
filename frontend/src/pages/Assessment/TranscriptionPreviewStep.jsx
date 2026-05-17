@@ -158,7 +158,6 @@ export default function TranscriptionPreviewStep({
                   <span style={{ color: "#1a2340" }}>● Correct</span>
                   <span style={{ color: "#c0392b" }}>● Wrong</span>
                   {showHighlight && <span style={{ color: "#2c7fc1" }}>● Last in Limit</span>}
-                  {showHighlight && <span style={{ color: "#b8bdd4" }}>● Past Limit</span>}
                 </span>
               )}
               <button className="asp-edit-btn" onClick={() => setShowEditModal(true)} title="Edit transcription">
@@ -174,8 +173,6 @@ export default function TranscriptionPreviewStep({
                 if (a.isCutoff) {
                   color = "#2c7fc1"; fontWeight = 700;
                   background = "#d6ecfb"; borderRadius = "3px"; padding = "0 3px";
-                } else if (a.isPastLimit) {
-                  color = "#b8bdd4";
                 } else if (a.correct) {
                   color = "#1a2340";
                 } else {

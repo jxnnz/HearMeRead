@@ -20,22 +20,19 @@ export async function parseFile(file) {
   }
 }
 
-export function parseDocument(text, type, eng3) {
+export function parseDocument(rawText, type, eng3) {
+  const text = (rawText || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
   const result = {};
 
   // ── Extract Language & Grade Level metadata ──
-  const langMatch = text.match(/Language[\s:-]+(.+?)(?:\n|$)/i);
+  const langMatch = text.match(/Language[\s:-]+(filipino|english)/i);
   if (langMatch) {
-    const raw = langMatch[1].trim().toLowerCase();
-    if (raw === "english" || raw === "filipino") result.language = raw;
+    result.language = langMatch[1].toLowerCase();
   }
 
-  const gradeMatch = text.match(/Grade\s*Level[\s:-]+(.+?)(?:\n|$)/i);
+  const gradeMatch = text.match(/Grade\s*Level[\s:-]+(?:grade[\s:-]*)?([123])/i);
   if (gradeMatch) {
-    const raw = gradeMatch[1].trim().toLowerCase().replace(/\s+/g, "");
-    if (raw === "1" || raw === "grade1" || raw === "grade_1") result.grade_level = "grade_1";
-    else if (raw === "2" || raw === "grade2" || raw === "grade_2") result.grade_level = "grade_2";
-    else if (raw === "3" || raw === "grade3" || raw === "grade_3") result.grade_level = "grade_3";
+    result.grade_level = `grade_${gradeMatch[1]}`;
   }
 
   if (type === 1) {
@@ -58,7 +55,7 @@ export function parseDocument(text, type, eng3) {
       result.task1 = text.trim();
     }
   } else {
-    const titleMatch = text.match(/Title[\s:-]+(.*?)(\n|$)/i);
+    const titleMatch = text.match(/Title[\s:-]+([^\n]+)/i);
     if (titleMatch) result.title = titleMatch[1].trim();
 
     const contentMatch = text.match(/Content[\s:-]+([\s\S]*?)(?:Questions[\s:-]|$)/i);

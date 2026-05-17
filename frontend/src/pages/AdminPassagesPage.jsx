@@ -165,13 +165,35 @@ export default function AdminPassagesPage() {
 
   function update(field, val) { setForm((prev) => ({ ...prev, [field]: val })); }
 
-  function startAdd(type) {
+  function startAdd(type, parsedData = null) {
     setAssType(type);
     setEditId(null);
-    setForm(type === 1
+    
+    let initForm = type === 1
       ? { language: "filipino", grade_level: "grade_1", task1_content: "", task2_words: "", task2_sentences: "" }
-      : { title: "", language: "filipino", grade_level: "grade_2", content: "" });
-    setQuestions(type === 2 ? [{ id: crypto.randomUUID(), question: "", answer: "" }] : []);
+      : { title: "", language: "filipino", grade_level: "grade_2", content: "" };
+      
+    if (parsedData) {
+      if (parsedData.language) initForm.language = parsedData.language;
+      if (parsedData.grade_level) initForm.grade_level = parsedData.grade_level;
+      if (type === 1) {
+        initForm.task1_content = parsedData.task1 || "";
+        initForm.task2_words = parsedData.task2Words || "";
+        initForm.task2_sentences = parsedData.task2Sentences || "";
+      } else {
+        initForm.title = parsedData.title || "";
+        initForm.content = parsedData.content || "";
+      }
+    }
+    
+    setForm(initForm);
+    
+    if (parsedData && parsedData.questions && parsedData.questions.length > 0) {
+      setQuestions(parsedData.questions);
+    } else {
+      setQuestions(type === 2 ? [{ id: crypto.randomUUID(), question: "", answer: "" }] : []);
+    }
+    
     setError(null);
     setView("add");
   }
@@ -382,31 +404,8 @@ export default function AdminPassagesPage() {
             eng3={false}
             onClose={() => setGlobalUploadOpen(false)}
             onUpload={(type, parsedData) => {
-              // Redirect to Add Assessment with parsed content prefilled
-              startAdd(type);
-              // Apply language & grade level if parsed from the document
-              const metaOverrides = {};
-              if (parsedData.language) metaOverrides.language = parsedData.language;
-              if (parsedData.grade_level) metaOverrides.grade_level = parsedData.grade_level;
-              if (type === 1) {
-                setForm(f => ({
-                  ...f,
-                  ...metaOverrides,
-                  task1_content: parsedData.task1 || "",
-                  task2_words: parsedData.task2Words || "",
-                  task2_sentences: parsedData.task2Sentences || ""
-                }));
-              } else {
-                setForm(f => ({
-                  ...f,
-                  ...metaOverrides,
-                  title: parsedData.title || "",
-                  content: parsedData.content || ""
-                }));
-                if (parsedData.questions && parsedData.questions.length > 0) {
-                  setQuestions(parsedData.questions);
-                }
-              }
+              // startAdd now handles all the parsing logic directly
+              startAdd(type, parsedData);
             }}
           />
         )}

@@ -66,12 +66,12 @@ export default function ResultsStep({
   const statCards = [
     { label: "Story",                                           value: storyNumber,                                    color: "#1a2340" },
     { label: "Total Reading Miscues",                          value: totalMiscues,                                   color: "#e63b2e" },
-    { label: `Words read within ${timeLimitLabel(a2TimeLimit)}`, value: wordsWithinTime,                             color: "#9b59b6" },
-    { label: "Total Time Used",                                value: totalTimeUsed,                                  color: "#e67e22" },
-    { label: "Words Per Minute (WPM)",                         value: wpm,                                           color: "#27ae60" },
-    { label: "Total Correct Answers",                          value: totalQuestions ? `${correctAnswers}/${totalQuestions}` : "—", color: "#2c7fc1" },
-    { label: "Learner Experience",                             value: learnerExp,                                    color: "#8e44ad" },
-    { label: "Observation Level",                             value: obsLevelDisplay,                               color: "#16a085" },
+    { label: `Words read within ${timeLimitLabel(a2TimeLimit)}`, value: wordsWithinTime,                             color: "#1a2340" },
+    { label: "Total Time Used",                                value: totalTimeUsed,                                  color: "#1a2340" },
+    { label: "Words Per Minute (WPM)",                         value: wpm,                                           color: "#1a2340" },
+    { label: "Total Correct Answers",                          value: totalQuestions ? `${correctAnswers}/${totalQuestions}` : "—", color: "#1a2340" },
+    { label: "Learner Experience",                             value: learnerExp,                                    color: "#1a2340" },
+    { label: "Observation Level",                             value: obsLevelDisplay,                               color: "#1a2340" },
   ];
 
   // ── Excel export ─────────────────────────────────────────────────────────
@@ -155,7 +155,9 @@ export default function ResultsStep({
             <span className="asp-res-badge asp-res-badge--lang">
               {form.language === "filipino" ? "Filipino" : "English"}
             </span>
-            <span className="asp-res-badge asp-res-badge--grade">Grade {form.grade_level}</span>
+            <span className="asp-res-badge asp-res-badge--grade">
+              Grade {String(form.grade_level || "").replace("grade_", "")}
+            </span>
             <span className="asp-res-badge asp-res-badge--period">{form.assessment_type}</span>
           </div>
           <p className="asp-res-header__sub">
@@ -168,7 +170,7 @@ export default function ResultsStep({
             Assessment Complete
           </div>
           <div className="asp-res-header__actions">
-            <button className="asp-res-action-btn" onClick={() => window.print()}>🖨 Print</button>
+            <button className="asp-res-action-btn" onClick={() => window.print()}>↓ Save as PDF</button>
             <button className="asp-res-action-btn" onClick={handleExport}>↓ Export Excel</button>
           </div>
         </div>
