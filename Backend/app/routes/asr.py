@@ -58,7 +58,11 @@ async def transcribe_session_audio(
         )
 
     # 4. Persist audio to R2
-    r2_key = await upload_audio(audio_bytes, audio.filename or "audio.webm", str(session_id))
+    try:
+        r2_key = await upload_audio(audio_bytes, audio.filename or "audio.webm", str(session_id))
+    except Exception as e:
+        logger.error(f"Failed to upload audio to R2 for session {session_id}: {e}")
+        r2_key = None
     
     from datetime import datetime, timezone, timedelta
     expires_at = datetime.now(timezone.utc) + timedelta(days=7)

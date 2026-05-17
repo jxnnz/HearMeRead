@@ -40,8 +40,10 @@ def _make_key(folder: str, filename: str) -> str:
 
 async def upload_audio(file_bytes: bytes, filename: str, session_id: str) -> str:
     """Upload assessment audio recording."""
+    from fastapi.concurrency import run_in_threadpool
     key = f"audio/sessions/{session_id}/{uuid.uuid4().hex[:8]}_{filename}"
-    _get_client().put_object(
+    await run_in_threadpool(
+        _get_client().put_object,
         Bucket=BUCKET,
         Key=key,
         Body=file_bytes,
