@@ -3,7 +3,7 @@ import { Plus, Search, BookOpen, Pencil, Trash2, X, ChevronLeft, ChevronRight, E
 import Layout from "../components/Layout";
 import ConfirmModal from "../modals/ConfirmModal";
 import UploadModal from "../components/UploadModal";
-import { adminApi } from "../services/api";
+import { adminApi, questionsApi } from "../services/api";
 import "./pages css/AddPassagePage.css";
 
 const GRADES = [
@@ -176,13 +176,30 @@ export default function AdminPassagesPage() {
     setView("add");
   }
 
-  function startEdit(p) {
+  async function startEdit(p) {
     setAssType(p.assessment_type);
     setEditId(p.id);
     setForm(p.assessment_type === 1
       ? { language: p.language, grade_level: p.grade_level, task1_content: p.task1_content || "", task2_words: p.task2_words || "", task2_sentences: p.task2_sentences || "" }
       : { title: p.title || "", language: p.language, grade_level: p.grade_level, content: p.content || "" });
-    setQuestions([]); // admin doesn't manage questions for now
+    
+    if (p.assessment_type === 2) {
+      try {
+        const qRes = await questionsApi.list(p.id);
+        const fetchedQs = qRes.questions || qRes || [];
+        const mappedQs = fetchedQs.map(q => ({
+          id: q.id,
+          question: q.text,
+          answer: q.answer_key || ""
+        }));
+        setQuestions(mappedQs.length > 0 ? mappedQs : [{ id: crypto.randomUUID(), question: "", answer: "" }]);
+      } catch (e) {
+        setQuestions([{ id: crypto.randomUUID(), question: "", answer: "" }]);
+      }
+    } else {
+      setQuestions([]);
+    }
+    
     setError(null);
     setView("edit");
   }
@@ -207,19 +224,49 @@ export default function AdminPassagesPage() {
     try {
       const payload = { ...form, assessment_type: assType };
       if (assType === 1 && eng3) payload.task2_sentences = "";
+      
+      let passageId = editId;
       if (editId) {
         await adminApi.updatePassage(editId, payload);
       } else {
         const created = await adminApi.createPassage(payload);
-        if (assType === 2 && questions.length > 0) {
-          for (const q of questions) {
-            if (!q.question?.trim()) continue;
-            try {
-              await adminApi.createPassageQuestion?.(created.id, { text: q.question.trim(), answer_key: q.answer?.trim() || null });
-            } catch { /* ignore */ }
+        passageId = created.id;
+      }
+      
+      // Handle questions for Assessment 2
+      if (assType === 2) {
+        let existingQs = [];
+        if (editId) {
+          try {
+            const qRes = await questionsApi.list(editId);
+            existingQs = qRes.questions || qRes || [];
+          } catch(e) {}
+        }
+        
+        const keepIds = questions.map(q => q.id).filter(id => typeof id === "number");
+        
+        // Archive removed questions
+        for (const eq of existingQs) {
+          if (!keepIds.includes(eq.id)) {
+            await questionsApi.archive(eq.id).catch(()=>{});
           }
         }
+        
+        // Create or update remaining questions
+        for (let i = 0; i < questions.length; i++) {
+          const q = questions[i];
+          if (!q.question?.trim()) continue;
+          try {
+            const qPayload = { text: q.question.trim(), answer_key: q.answer?.trim() || null, order: i };
+            if (typeof q.id === "number") {
+              await questionsApi.update(q.id, qPayload);
+            } else {
+              await questionsApi.create(passageId, qPayload);
+            }
+          } catch { /* ignore */ }
+        }
       }
+      
       setView("list");
       load();
     } catch (err) {

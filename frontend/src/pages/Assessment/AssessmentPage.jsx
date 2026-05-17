@@ -11,6 +11,7 @@ import {
   studentsApi,
   passagesApi,
   sessionsApi,
+  questionsApi,
 } from "../../services/api";
 import {
   PERIOD_MAP,
@@ -621,8 +622,17 @@ export default function AssessmentPage() {
     setStep(STEPS.A2_SELECT);
   }
 
-  function handleSelectA2Passage(passage) {
-    setA2Passage(passage);
+  async function handleSelectA2Passage(passage) {
+    let updatedPassage = { ...passage };
+    if (!updatedPassage.questions || updatedPassage.questions.length === 0) {
+      try {
+        const questions = await questionsApi.list(updatedPassage.id);
+        updatedPassage.questions = questions || [];
+      } catch (e) {
+        console.error("Failed to fetch questions:", e);
+      }
+    }
+    setA2Passage(updatedPassage);
     resetRecording();
     setShowChoiceModal(true);
     setStep(STEPS.A2);
