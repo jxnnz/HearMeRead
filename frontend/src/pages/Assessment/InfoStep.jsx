@@ -23,7 +23,6 @@ export default function InfoStep({
         <StudentInfoForm
           form={form}
           setForm={setForm}
-          availableGrades={availableGrades}
           students={students}
           passages={allPassages}
           loadingStudents={loadingStudents}

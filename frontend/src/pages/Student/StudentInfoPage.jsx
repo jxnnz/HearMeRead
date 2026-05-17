@@ -17,6 +17,12 @@ import "../pages css/StudentInfoPage.css";
 
 const PERIOD_MAP = { beginning: "BoSY", middle: "MoSY", end: "EoSY" };
 
+function storyLabel(t) {
+  if (!t) return null;
+  const m = t.match(/^Story\s*(\d+)\s*:/i);
+  return m ? `Story ${m[1]}` : t;
+}
+
 function formatTime(seconds) {
   if (seconds == null) return null;
   const m = Math.floor(seconds / 60);
@@ -47,7 +53,7 @@ function sessionToRecord(session) {
     reading_profile: rr?.reading_profile ?? null,
 
     // Assessment 2 (Part 2)
-    story_number: session.passage?.title ?? null,
+    story_number: storyLabel(session.passage?.title),
     num_miscues: rr?.miscue_count ?? null,
     words_read: rr?.total_words ?? null,
     wpm: rr?.cwpm != null ? Math.round(rr.cwpm) : null,

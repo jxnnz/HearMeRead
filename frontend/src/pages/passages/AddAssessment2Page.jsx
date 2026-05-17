@@ -22,10 +22,17 @@ function blankQuestion() {
   };
 }
 
+function parseStoryTitle(t) {
+  if (!t) return { num: "1", title: "" };
+  const m = t.match(/^Story\s*(\d+)\s*:\s*(.+)$/i);
+  return m ? { num: m[1], title: m[2] } : { num: "1", title: t };
+}
+
 export default function AddAssessment2Page() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const [storyNum, setStoryNum] = useState("1");
   const [details, setDetails] = useState(() => {
     const parsed = location.state?.parsedData;
     if (parsed) {
@@ -74,7 +81,7 @@ export default function AddAssessment2Page() {
   }
 
   function validate() {
-    if (!details.title.trim())   { setError("Passage title is required.");   return false; }
+    if (!details.title.trim())   { setError("Story title is required.");   return false; }
     if (!details.content.trim()) { setError("Passage content is required."); return false; }
     for (let i = 0; i < questions.length; i++) {
       if (!questions[i].question.trim()) {
@@ -91,7 +98,7 @@ export default function AddAssessment2Page() {
     setSaving(true);
     try {
       const passage = await passagesApi.create({
-        title:           details.title.trim(),
+        title:           `Story ${storyNum}: ${details.title.trim()}`,
         content:         details.content.trim(),
         language:        details.language,
         grade_level:     details.grade_level,
@@ -145,17 +152,31 @@ export default function AddAssessment2Page() {
           <h2 className="ap-card__title">Passage Details</h2>
           <p className="ap-card__subtitle">Enter the passage details.</p>
 
-          {/* Title */}
-          <div className="ap-field">
-            <label className="ap-label" htmlFor="a2-title">Passage Title:</label>
-            <input
-              id="a2-title"
-              type="text"
-              className="ap-input"
-              value={details.title}
-              onChange={(e) => updateDetails("title", e.target.value)}
-              placeholder="e.g. Ang Pagong at ang Matsing"
-            />
+          {/* Story Number + Title */}
+          <div className="ap-row">
+            <div className="ap-field" style={{ flex: "0 0 auto", minWidth: 130 }}>
+              <label className="ap-label" htmlFor="a2-story-num">Story Number:</label>
+              <select
+                id="a2-story-num"
+                className="ap-input"
+                value={storyNum}
+                onChange={(e) => setStoryNum(e.target.value)}
+              >
+                <option value="1">Story 1</option>
+                <option value="2">Story 2</option>
+              </select>
+            </div>
+            <div className="ap-field" style={{ flex: 1 }}>
+              <label className="ap-label" htmlFor="a2-title">Story Title:</label>
+              <input
+                id="a2-title"
+                type="text"
+                className="ap-input"
+                value={details.title}
+                onChange={(e) => updateDetails("title", e.target.value)}
+                placeholder="e.g. Ang Pagong at ang Matsing"
+              />
+            </div>
           </div>
 
           {/* Grade Level + Language side by side */}

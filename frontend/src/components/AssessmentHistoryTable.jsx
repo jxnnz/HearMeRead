@@ -51,7 +51,7 @@ const COLUMNS = [
   { key: "task2h_sentences",     label: "Task 2H Sentences"         },
   { key: "total_score",          label: "Total Score"               },
   { key: "part1_reading_level",  label: "Part 1 Reading Level"      },
-  { key: "story_number",         label: "Story Title"               },
+  { key: "story_number",         label: "Story #"                   },
   { key: "num_miscues",          label: "No. of Miscues"            },
   { key: "words_read",           label: "Words Read"                },
   { key: "total_time",           label: "Time (min:sec)"            },

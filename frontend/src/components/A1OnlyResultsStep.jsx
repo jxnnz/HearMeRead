@@ -108,7 +108,7 @@ export default function A1OnlyResultsStep({
           </div>
           <div className="asp-res-header__badges">
             <span className="asp-res-badge asp-res-badge--lang">
-              {form.language === "filipino" ? "🇵🇭 Filipino" : "🇬🇧 English"}
+              {form.language === "filipino" ? "Filipino" : "English"}
             </span>
             <span className="asp-res-badge asp-res-badge--grade">
               {gradeLabel(form.grade_level)}
@@ -125,8 +125,8 @@ export default function A1OnlyResultsStep({
             Assessment 1 Complete
           </div>
           <div className="asp-res-header__actions">
-            <button className="asp-res-action-btn" onClick={() => window.print()}>↓ Save as PDF</button>
-            <button className="asp-res-action-btn" onClick={handleExport}>↓ Export Excel</button>
+            <button className="asp-res-action-btn" onClick={() => window.print()}>Save as PDF</button>
+            <button className="asp-res-action-btn" onClick={handleExport}>Export Excel</button>
           </div>
         </div>
       </div>
@@ -134,25 +134,25 @@ export default function A1OnlyResultsStep({
       {/* ── Score stat cards ── */}
       <div className="asp-res-stats asp-res-stats--4">
         <div className="asp-res-stat-card">
-          <span className="asp-res-stat-card__value" style={{ color: "#2c7fc1" }}>
+          <span className="asp-res-stat-card__value">
             {task1Correct !== "—" ? `${task1Correct}/10` : "—"}
           </span>
           <span className="asp-res-stat-card__label">Task 1 — Words Correct</span>
         </div>
         <div className="asp-res-stat-card">
-          <span className="asp-res-stat-card__value" style={{ color: "#9b59b6" }}>
+          <span className="asp-res-stat-card__value">
             {task2Correct !== "—" ? `${task2Correct}/10` : "—"}
           </span>
           <span className="asp-res-stat-card__label">Task 2 — Words Correct</span>
         </div>
         <div className="asp-res-stat-card">
-          <span className="asp-res-stat-card__value" style={{ color: "#27ae60" }}>
+          <span className="asp-res-stat-card__value">
             {totalScore !== "—" ? `${totalScore}/20` : "—"}
           </span>
           <span className="asp-res-stat-card__label">Total Part 1 Score</span>
         </div>
         <div className="asp-res-stat-card">
-          <span className="asp-res-stat-card__value" style={{ color: "#e63b2e" }}>
+          <span className="asp-res-stat-card__value">
             {totalWrong}
           </span>
           <span className="asp-res-stat-card__label">Total Wrong Words</span>

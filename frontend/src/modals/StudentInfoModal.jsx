@@ -196,9 +196,16 @@ export default function StudentInfoModal({ sessionId, onClose }) {
               {/* ── Part 2 ── */}
               <div className="sim-section">
                 <h3 className="sim-section-title">Assessment Part 2</h3>
-                {session.passage?.title && (
-                  <p className="sim-story-title">{session.passage.title}</p>
-                )}
+                {session.passage?.title && (() => {
+                  const m = session.passage.title.match(/^Story\s*(\d+)\s*:\s*(.+)$/i);
+                  return m ? (
+                    <p className="sim-story-title">
+                      <span style={{ fontWeight: 700 }}>Story {m[1]}:</span>{" "}{m[2]}
+                    </p>
+                  ) : (
+                    <p className="sim-story-title">{session.passage.title}</p>
+                  );
+                })()}
                 <div className="sim-stat-grid">
                   <div className="sim-stat">
                     <span className="sim-stat__val">{d(rr?.total_words)}</span>

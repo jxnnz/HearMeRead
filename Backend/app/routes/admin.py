@@ -1,8 +1,10 @@
 from typing import Optional, List
+from datetime import datetime
 import sqlalchemy as sa
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, func, and_, update
 from sqlalchemy.orm import selectinload
 
 from app.db import get_db
@@ -11,7 +13,7 @@ from app.core.encryption import decrypt
 from app.models import (
     Teacher, School, Student, AssessmentSession,
     ReadingResult, SessionObservation, Passage,
-    ActivityLog, UserRole, GradeLevel,
+    ActivityLog, UserRole, GradeLevel, Sex,
     TeacherAssignment, StudentEnrollment,
 )
 from app.schema import (
@@ -23,6 +25,12 @@ from app.schema import (
 )
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
+
+
+def _current_school_year() -> str:
+    now = datetime.now()
+    y = now.year
+    return f"{y-1}-{y}" if now.month < 6 else f"{y}-{y+1}"
 
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────
@@ -70,17 +78,70 @@ async def admin_dashboard(
     total_sessions = row[0] or 0
     completed_sessions = row[1] or 0
 
-    # Period breakdown
+    # Period breakdown — completed session counts grouped by period and student sex
     period_breakdown_result = await db.execute(
-        select(AssessmentSession.period, func.count(AssessmentSession.id))
+        select(
+            AssessmentSession.period,
+            Student.sex,
+            func.count(func.distinct(AssessmentSession.student_id)),
+        )
         .join(Teacher, Teacher.id == AssessmentSession.teacher_id)
+        .join(Student, Student.id == AssessmentSession.student_id)
         .where(
             Teacher.school_id == current_admin.school_id,
             AssessmentSession.is_completed == True,
         )
-        .group_by(AssessmentSession.period)
+        .group_by(AssessmentSession.period, Student.sex)
     )
-    period_breakdown = {row.period.value: row[1] for row in period_breakdown_result}
+
+    raw_pb: dict[str, dict[str, int]] = {}
+    for row in period_breakdown_result:
+        p   = row[0].value
+        sex = row[1].value if row[1] else "unknown"
+        cnt = row[2]
+        bucket = raw_pb.setdefault(p, {"female": 0, "male": 0, "total": 0})
+        if sex in ("female", "male"):
+            bucket[sex] += cnt
+        bucket["total"] += cnt
+
+    period_breakdown = {
+        p: raw_pb.get(p, {"female": 0, "male": 0, "total": 0})
+        for p in ("beginning", "middle", "end")
+    }
+
+    # Reading profile distribution per period (% of assessed students per profile)
+    profile_period_result = await db.execute(
+        select(
+            AssessmentSession.period,
+            ReadingResult.reading_profile,
+            func.count(func.distinct(AssessmentSession.student_id)),
+        )
+        .join(Teacher, Teacher.id == AssessmentSession.teacher_id)
+        .join(ReadingResult, ReadingResult.session_id == AssessmentSession.id)
+        .where(
+            Teacher.school_id == current_admin.school_id,
+            AssessmentSession.is_completed == True,
+            ReadingResult.reading_profile != None,
+        )
+        .group_by(AssessmentSession.period, ReadingResult.reading_profile)
+    )
+
+    # Build {period: {profile: pct}} structure
+    raw_profile_period: dict[str, dict[str, int]] = {}
+    for row in profile_period_result:
+        p = row[0].value
+        profile = row[1]
+        count = row[2]
+        raw_profile_period.setdefault(p, {})[profile] = count
+
+    profile_by_period: dict[str, dict[str, float]] = {}
+    for period_key in ("beginning", "middle", "end"):
+        counts = raw_profile_period.get(period_key, {})
+        total_in_period = sum(counts.values()) or 1
+        profile_by_period[period_key] = {
+            profile: round(cnt / total_in_period * 100, 1)
+            for profile, cnt in counts.items()
+        }
 
     return {
         "school_code": school.school_code,
@@ -96,6 +157,7 @@ async def admin_dashboard(
             "middle": period_breakdown.get("middle", 0),
             "end": period_breakdown.get("end", 0),
         },
+        "profile_by_period": profile_by_period,
     }
 
 
@@ -148,6 +210,34 @@ async def update_teacher(
         teacher.section = payload.section
     if payload.employee_id is not None:
         teacher.employee_id = payload.employee_id
+
+    # Sync TeacherAssignment so passage filtering reflects the new grade
+    if teacher.grade_level and teacher.section:
+        current_year = _current_school_year()
+        asgn_res = await db.execute(
+            select(TeacherAssignment)
+            .where(
+                TeacherAssignment.teacher_id == teacher_id,
+                TeacherAssignment.is_active == True,
+            )
+            .order_by(TeacherAssignment.school_year.desc())
+            .limit(1)
+        )
+        existing_asgn = asgn_res.scalar_one_or_none()
+        if existing_asgn and existing_asgn.school_year == current_year:
+            existing_asgn.grade_level = teacher.grade_level
+            existing_asgn.section = teacher.section
+        else:
+            if existing_asgn:
+                existing_asgn.is_active = False
+            db.add(TeacherAssignment(
+                teacher_id=teacher_id,
+                school_id=current_admin.school_id,
+                grade_level=teacher.grade_level,
+                section=teacher.section,
+                school_year=current_year,
+                is_active=True,
+            ))
 
     await db.commit()
     await db.refresh(teacher)
@@ -234,41 +324,103 @@ async def list_class_cards(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Returns a list of teachers (with grade_level, section, and student_count).
-    Frontend renders one card per teacher. Clicking a card calls /admin/students/{teacher_id}.
-    Only teachers with grade_level AND section set are returned.
+    Returns one card per TeacherAssignment (all history) PLUS a current-year card for
+    any active teacher whose current grade_level/section is not already covered.
+    Sorted by school_year desc. Student count is per (teacher_id, grade_level, section).
     """
-    result = await db.execute(
+    current_year = _current_school_year()
+
+    # ── 1. TeacherAssignment-based cards (all history) ──
+    asgn_result = await db.execute(
+        select(TeacherAssignment)
+        .join(Teacher, TeacherAssignment.teacher_id == Teacher.id)
+        .where(
+            TeacherAssignment.school_id == current_admin.school_id,
+            Teacher.is_active == True,
+        )
+        .order_by(
+            TeacherAssignment.school_year.desc(),
+            TeacherAssignment.grade_level,
+            TeacherAssignment.section,
+        )
+    )
+    assignments = asgn_result.scalars().all()
+
+    # ── 2. All active teachers with grade/section set (for current-year fallback) ──
+    cur_result = await db.execute(
         select(Teacher).where(
             Teacher.school_id == current_admin.school_id,
             Teacher.role == UserRole.teacher,
+            Teacher.is_active == True,
             Teacher.grade_level != None,
             Teacher.section != None,
-            Teacher.is_active == True,
-        ).order_by(Teacher.grade_level, Teacher.section)
+        )
     )
-    teachers = result.scalars().all()
+    current_teachers = cur_result.scalars().all()
 
-    # Batch-fetch student counts per teacher
-    teacher_ids = [t.id for t in teachers]
-    count_result = await db.execute(
-        select(Student.teacher_id, func.count(Student.id))
-        .where(Student.teacher_id.in_(teacher_ids))
-        .group_by(Student.teacher_id)
+    # Build unified teacher ID set for batch queries
+    all_teacher_ids = list(
+        {a.teacher_id for a in assignments} | {t.id for t in current_teachers}
     )
-    count_map = {row[0]: row[1] for row in count_result}
+    if not all_teacher_ids:
+        return []
+
+    teacher_res = await db.execute(select(Teacher).where(Teacher.id.in_(all_teacher_ids)))
+    teacher_map = {t.id: t for t in teacher_res.scalars().all()}
+
+    # Batch-fetch student counts per (teacher_id, grade_level, section)
+    count_result = await db.execute(
+        select(Student.teacher_id, Student.grade_level, Student.section, func.count(Student.id))
+        .where(Student.teacher_id.in_(all_teacher_ids))
+        .group_by(Student.teacher_id, Student.grade_level, Student.section)
+    )
+    count_map = {(r[0], r[1], r[2]): r[3] for r in count_result}
 
     cards = []
-    for t in teachers:
+    seen = set()  # (teacher_id, grade_level, section, school_year)
+
+    # Cards from TeacherAssignment history
+    for asgn in assignments:
+        t = teacher_map.get(asgn.teacher_id)
+        if not t:
+            continue
+        key = (asgn.teacher_id, asgn.grade_level, asgn.section, asgn.school_year)
+        if key in seen:
+            continue
+        seen.add(key)
         first = decrypt(t.first_name) if t.first_name else ""
-        last = decrypt(t.last_name) if t.last_name else ""
+        last  = decrypt(t.last_name)  if t.last_name  else ""
+        grade = asgn.grade_level.value if asgn.grade_level else None
         cards.append({
-            "teacher_id": t.id,
-            "teacher_name": f"{first} {last}",
-            "grade_level": t.grade_level.value if t.grade_level else None,
-            "section": t.section,
-            "student_count": count_map.get(t.id, 0),
+            "teacher_id":    t.id,
+            "teacher_name":  f"{first} {last}".strip(),
+            "grade_level":   grade,
+            "section":       asgn.section,
+            "school_year":   asgn.school_year,
+            "student_count": count_map.get((t.id, asgn.grade_level, asgn.section), 0),
         })
+
+    # Current-year cards for any teacher whose current grade/section isn't in seen yet
+    for t in current_teachers:
+        if not t.grade_level or not t.section:
+            continue
+        key = (t.id, t.grade_level, t.section, current_year)
+        if key in seen:
+            continue
+        seen.add(key)
+        first = decrypt(t.first_name) if t.first_name else ""
+        last  = decrypt(t.last_name)  if t.last_name  else ""
+        cards.append({
+            "teacher_id":    t.id,
+            "teacher_name":  f"{first} {last}".strip(),
+            "grade_level":   t.grade_level.value,
+            "section":       t.section,
+            "school_year":   current_year,
+            "student_count": count_map.get((t.id, t.grade_level, t.section), 0),
+        })
+
+    # Sort: latest school_year first, then grade, then section
+    cards.sort(key=lambda c: (c["school_year"] or "", c["grade_level"] or "", c["section"] or ""), reverse=True)
     return cards
 
 
@@ -278,13 +430,15 @@ async def get_teacher_class_record(
     school_year: Optional[str] = Query(None),
     period: Optional[str] = Query(None),
     language: Optional[str] = Query(None),
+    grade_level: Optional[str] = Query(None),
+    section: Optional[str] = Query(None),
     current_admin: Teacher = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Returns all students under the given teacher with full reading_result,
-    observation, session_date, and passage_title for the admin class record view.
-    Filtered by school_year, period, and language if provided.
+    Returns students under the given teacher for the admin class record view.
+    Filtered by school_year, period, language, and optionally grade_level + section
+    so that clicking a specific class card only shows that class's students.
     """
     teacher_result = await db.execute(
         select(Teacher).where(
@@ -300,6 +454,16 @@ async def get_teacher_class_record(
     teacher_first = decrypt(teacher.first_name) if teacher.first_name else ""
     teacher_last = decrypt(teacher.last_name) if teacher.last_name else ""
 
+    # Build grade/section filters to scope the query to the specific class card
+    grade_filter = []
+    if grade_level:
+        try:
+            grade_filter.append(Student.grade_level == GradeLevel(grade_level))
+        except ValueError:
+            pass
+    if section:
+        grade_filter.append(Student.section == section)
+
     # Fetch students — use enrollments for year-aware queries
     if school_year:
         # Only students enrolled for this teacher + school year
@@ -314,6 +478,7 @@ async def get_teacher_class_record(
             students_result = await db.execute(
                 select(Student).where(
                     Student.id.in_(enrolled_ids),
+                    *grade_filter,
                 ).order_by(Student.last_name, Student.first_name)
             )
         else:
@@ -321,6 +486,7 @@ async def get_teacher_class_record(
             students_result = await db.execute(
                 select(Student).where(
                     Student.teacher_id == teacher_id,
+                    *grade_filter,
                 ).order_by(Student.last_name, Student.first_name)
             )
     else:
@@ -328,6 +494,7 @@ async def get_teacher_class_record(
         students_result = await db.execute(
             select(Student).where(
                 Student.teacher_id == teacher_id,
+                *grade_filter,
             ).order_by(Student.last_name, Student.first_name)
         )
     students = students_result.scalars().all()
@@ -719,3 +886,43 @@ async def archive_public_passage(
     passage.is_archived = True
     await db.commit()
     return {"detail": "Passage archived successfully"}
+
+
+# ── Student Reassignment ──────────────────────────────────────────────────────
+
+class ReassignStudentsRequest(BaseModel):
+    from_teacher_id: int
+    grade_level: str
+    section: str
+    to_teacher_id: int
+
+
+@router.post("/students/reassign", summary="Reassign a class of students to a different teacher")
+async def reassign_students(
+    payload: ReassignStudentsRequest,
+    current_admin: Teacher = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    # Validate both teachers belong to admin's school
+    for tid in [payload.from_teacher_id, payload.to_teacher_id]:
+        res = await db.execute(
+            select(Teacher).where(
+                Teacher.id == tid,
+                Teacher.school_id == current_admin.school_id,
+            )
+        )
+        if not res.scalar_one_or_none():
+            raise HTTPException(status_code=404, detail=f"Teacher {tid} not found in your school")
+
+    grade = GradeLevel(payload.grade_level)
+    await db.execute(
+        update(Student)
+        .where(
+            Student.teacher_id == payload.from_teacher_id,
+            Student.grade_level == grade,
+            Student.section == payload.section,
+        )
+        .values(teacher_id=payload.to_teacher_id)
+    )
+    await db.commit()
+    return {"detail": "Students reassigned successfully"}

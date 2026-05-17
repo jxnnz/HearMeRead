@@ -501,7 +501,7 @@ function LogsDrawer({ teacher, onClose }) {
             <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#1a2340" }}>
               Activity Logs
             </h2>
-            <p style={{ margin: "2px 0 0", fontSize: 13, color: "#8a94b2" }}>
+            <p style={{ margin: "2px 0 0", fontSize: 13, color: "#4a5568" }}>
               {teacher.first_name} {teacher.last_name} · {filtered.length} of {total} entries
             </p>
           </div>
@@ -553,12 +553,12 @@ function LogsDrawer({ teacher, onClose }) {
         {/* Log list */}
         <div style={{ flex: 1, overflowY: "auto", padding: "16px 28px" }}>
           {loading && (
-            <div style={{ textAlign: "center", padding: "60px 0", color: "#8a94b2", fontSize: 14 }}>
+            <div style={{ textAlign: "center", padding: "60px 0", color: "#4a5568", fontSize: 14 }}>
               Loading…
             </div>
           )}
           {!loading && filtered.length === 0 && (
-            <div style={{ textAlign: "center", padding: "60px 0", color: "#8a94b2", fontSize: 14 }}>
+            <div style={{ textAlign: "center", padding: "60px 0", color: "#4a5568", fontSize: 14 }}>
               {search || dayFilter !== "all" ? "No logs match your search or filter." : "No activity recorded yet."}
             </div>
           )}
@@ -569,13 +569,13 @@ function LogsDrawer({ teacher, onClose }) {
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
                 <ActionBadge action={log.action} />
-                <span style={{ fontSize: 11, color: "#8a94b2", flexShrink: 0 }}>
+                <span style={{ fontSize: 11, color: "#1a2340", flexShrink: 0, fontWeight: 500 }}>
                   {formatTs(log.created_at)}
                 </span>
               </div>
               {log.log_metadata && Object.keys(log.log_metadata).length > 0 && (
                 <div style={{
-                  marginTop: 8, fontSize: 12, color: "#4a5568",
+                  marginTop: 8, fontSize: 12, color: "#1a2340",
                   background: "#f8f9fd", borderRadius: 8, padding: "8px 12px",
                 }}>
                   {Object.entries(log.log_metadata).map(([k, v]) => (
@@ -596,11 +596,11 @@ function LogsDrawer({ teacher, onClose }) {
             display: "flex", alignItems: "center", justifyContent: "space-between",
             flexShrink: 0,
           }}>
-            <span style={{ fontSize: 12, color: "#8a94b2" }}>
+            <span style={{ fontSize: 12, color: "#1a2340", fontWeight: 500 }}>
               Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
             </span>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 11, color: "#8a94b2" }}>
+              <span style={{ fontSize: 11, color: "#1a2340", fontWeight: 500 }}>
                 Page {page} of {totalPages}
               </span>
               <button
@@ -709,7 +709,7 @@ export default function AdminTeachersPage() {
 
   const thStyle = {
     textAlign: "left", padding: "8px 12px",
-    color: "#8a94b2", fontWeight: 600,
+    color: "#1a2340", fontWeight: 700,
     fontSize: 11, textTransform: "uppercase", letterSpacing: ".5px",
     borderBottom: "2px solid #e8eaf2", whiteSpace: "nowrap",
   };

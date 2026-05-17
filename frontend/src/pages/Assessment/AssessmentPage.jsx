@@ -8,6 +8,7 @@ import ResultsStep          from "../../components/ResultsStep";
 import Toast               from "../../modals/Toast";
 import useToast            from "../../hooks/Usetoast";
 import {
+  authApi,
   studentsApi,
   passagesApi,
   sessionsApi,
@@ -19,6 +20,7 @@ import {
   EXPERIENCE_OPTIONS,
 } from "../../data/assessmentConstants";
 
+import RhymeScoringStep         from "../../components/RhymeScoringStep";
 import InfoStep                 from "./InfoStep";
 import ReadingStep              from "./ReadingStep";
 import TranscriptionPreviewStep from "./TranscriptionPreviewStep";
@@ -38,6 +40,8 @@ const STEPS = {
   A1_G1_LOADING: "a1_g1_loading",
   A1_G1_PREVIEW: "a1_g1_preview",
   A1_G1_RESULT:  "a1_g1_result",
+  // Assessment 1 — Task 2L rhymes (Grade 1 Filipino teacher-input)
+  A1_G2_RHYME:   "a1_g2_rhyme",
   // Assessment 1 — Task 2 (words 2L or sentences 2H)
   A1_G2:         "a1_g2",
   A1_G2_LOADING: "a1_g2_loading",
@@ -75,6 +79,14 @@ const GRADE_TIME_LIMITS = { 1: 60, 2: 120, 3: 180 };
 function getGradeNum(gradeLevel) {
   const n = parseInt(String(gradeLevel).replace(/\D/g, ""), 10);
   return isNaN(n) ? 1 : Math.min(3, Math.max(1, n));
+}
+
+function parseRhymePairs(str) {
+  if (!str || !str.includes("|")) return [];
+  return str.split("\n").filter((l) => l.includes("|")).map((line, i) => {
+    const last = line.lastIndexOf("|");
+    return { id: i, pair: line.slice(0, last).trim(), answer: line.slice(last + 1).trim() || "Oo" };
+  });
 }
 
 function initForm() {
@@ -130,6 +142,9 @@ export default function AssessmentPage() {
   const [g2Transcript, setG2Transcript] = useState("");
   const [a2Transcript, setA2Transcript] = useState("");
   const [a2Words,      setA2Words]      = useState([]);
+
+  // Rhyme scoring (Grade 1 Filipino task_2L)
+  const [rhymeDetails, setRhymeDetails] = useState(null);
 
   // Scoring results from backend
   const [task1ScoreResult, setTask1ScoreResult] = useState(null); // from score-task1
@@ -197,7 +212,21 @@ export default function AssessmentPage() {
     }
   }, [recordingTime, step, isRecording, isPaused, timeLimitReached, form.grade_level]);
 
-  //  Fetch available grade levels on mount 
+  // ── Teacher profile — used to pre-fill grade/section ─────────────────────
+  const [teacherProfile, setTeacherProfile] = useState(null);
+
+  useEffect(() => {
+    authApi.me().then((teacher) => {
+      setTeacherProfile(teacher);
+      setForm((prev) => ({
+        ...prev,
+        grade_level: teacher.grade_level ?? "",
+        section:     teacher.section     ?? "",
+      }));
+    }).catch(() => {});
+  }, []);
+
+  //  Fetch available grade levels on mount
   const GRADE_ORDER = ["grade_1", "grade_2", "grade_3"];
   useEffect(() => {
     studentsApi.listClasses()
@@ -598,8 +627,21 @@ export default function AssessmentPage() {
   function handleProceedToG2(freshScoreResult) {
     // freshScoreResult is passed directly from handleConfirmG1Preview to avoid
     // reading stale task1ScoreResult React state (which hasn't flushed yet).
-    const p       = form.selected_passage;
-    const route   = freshScoreResult?.route; // "task_2L" or "task_2H"
+    const p     = form.selected_passage;
+    const route = freshScoreResult?.route; // "task_2L" or "task_2H"
+
+    // Grade 1 Filipino + task_2L → teacher-input rhyme scoring (no recording)
+    const isRhymeRoute =
+      route === "task_2L" &&
+      form.language === "filipino" &&
+      getGradeNum(form.grade_level) === 1 &&
+      (p?.task2_words ?? "").includes("|");
+
+    if (isRhymeRoute) {
+      setStep(STEPS.A1_G2_RHYME);
+      return;
+    }
+
     const content = route === "task_2L"
       ? (p?.task2_words     ?? "")
       : (p?.task2_sentences ?? "");
@@ -614,6 +656,36 @@ export default function AssessmentPage() {
     // Show the choice modal again for Task 2
     setShowChoiceModal(true);
     setStep(STEPS.A1_G2);
+  }
+
+  // ── Rhyme scoring complete (Grade 1 Filipino task_2L) ────────────────────
+  async function handleRhymeComplete(score, details) {
+    setRhymeDetails(details);
+    setIsScoring(true);
+    setScoreError(null);
+
+    const p            = form.selected_passage;
+    const expectedText = details.map((d) => d.expected).join(" ");
+    const givenText    = details.map((d) => d.given).join(" ");
+
+    setG2Transcript(givenText);
+
+    try {
+      const result = await sessionsApi.scorePart1(session.id, {
+        task1_reference_text:   p?.task1_content ?? "",
+        task1_transcribed_text: g1Transcript,
+        task2_reference_text:   expectedText,
+        task2_transcribed_text: givenText,
+        language:               form.language || "filipino",
+        grade_level:            getGradeNum(form.grade_level),
+      });
+      setPart1Result(result);
+      setStep(STEPS.LEARNER_EXP);
+    } catch (e) {
+      setScoreError(e.response?.data?.detail || e.message || "Scoring failed.");
+    } finally {
+      setIsScoring(false);
+    }
   }
 
   // ── A1 G2 result — proceed to A2 or finish ──────────────────────────────
@@ -647,9 +719,12 @@ export default function AssessmentPage() {
     const p        = form.selected_passage;
     const gradeNum = getGradeNum(form.grade_level);
     const route    = part1Result?.route ?? task1ScoreResult?.route ?? "";
-    const task2Ref = route === "task_2L"
-      ? (p?.task2_words     ?? "")
-      : (p?.task2_sentences ?? "");
+    // For rhyme sessions, use the encoded expected answers as task2 reference
+    const task2Ref = rhymeDetails
+      ? rhymeDetails.map((d) => d.expected).join(" ")
+      : route === "task_2L"
+        ? (p?.task2_words     ?? "")
+        : (p?.task2_sentences ?? "");
 
     const reachedA2   = !!a2Passage;
     const compCorrect = Object.values(answers).filter((v) => v === "Correct").length;
@@ -698,7 +773,11 @@ export default function AssessmentPage() {
 
   function handleReset() {
     setStep(STEPS.INFO);
-    setForm(initForm());
+    setForm({
+      ...initForm(),
+      grade_level: teacherProfile?.grade_level ?? "",
+      section:     teacherProfile?.section     ?? "",
+    });
     setA1Passages([]);
     setA2Passages([]);
     setG2Passage(null);
@@ -709,6 +788,7 @@ export default function AssessmentPage() {
     setTask1ScoreResult(null);
     setPart1Result(null);
     setFinalResult(null);
+    setRhymeDetails(null);
     setG1RecordingTime(0);
     setG2RecordingTime(0);
     setA2RecordingTime(0);
@@ -873,6 +953,22 @@ export default function AssessmentPage() {
           onConfirm={handleConfirmG1Preview}
         />
         {scoreError && <p className="asp-error" style={{ textAlign: "center" }}>⚠ {scoreError}</p>}
+      </Layout>
+    );
+  }
+
+  if (step === STEPS.A1_G2_RHYME) {
+    const rhymePairs = parseRhymePairs(form.selected_passage?.task2_words ?? "");
+    return (
+      <Layout>
+        <RhymeScoringStep
+          rhymePairs={rhymePairs}
+          onComplete={handleRhymeComplete}
+        />
+        {isScoring && <LoadingScreen message="Submitting scores…" />}
+        {scoreError && (
+          <p className="asp-error" style={{ textAlign: "center" }}>⚠ {scoreError}</p>
+        )}
       </Layout>
     );
   }

@@ -23,11 +23,11 @@
   align-items: center;
   justify-content: space-between;
   position: sticky;
-  top: 0;
+  top: -20px;
   background: #e8edf7;
   z-index: 10;
-  padding: 24px 0;
-  margin: -24px 0 24px 0;
+  padding: 20px 0;
+  margin: -20px 0 24px 0;
 }
 
 .ap-topbar__left {
@@ -524,6 +524,80 @@
 }
 .cr-modal-body::-webkit-scrollbar-thumb:hover {
   background: #aab4cc;
+}
+
+/* ── Themed Scrollbar (content preview areas) ─────────────── */
+.ap-scrollbar::-webkit-scrollbar { width: 6px; }
+.ap-scrollbar::-webkit-scrollbar-track { background: #eef1fc; border-radius: 6px; }
+.ap-scrollbar::-webkit-scrollbar-thumb { background: #2c3e6b; border-radius: 6px; }
+.ap-scrollbar::-webkit-scrollbar-thumb:hover { background: #1a2340; }
+
+.ap-textarea::-webkit-scrollbar { width: 6px; }
+.ap-textarea::-webkit-scrollbar-track { background: #eef1fc; border-radius: 6px; }
+.ap-textarea::-webkit-scrollbar-thumb { background: #2c3e6b; border-radius: 6px; }
+.ap-textarea::-webkit-scrollbar-thumb:hover { background: #1a2340; }
+
+/* ── Rhyme Pair Editor (Grade 1 Filipino) ─────────────── */
+.rhyme-edit-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rhyme-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rhyme-edit-num {
+  font-size: 13px;
+  font-weight: 600;
+  color: #8a94b2;
+  min-width: 22px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.rhyme-edit-pair {
+  flex: 1;
+  min-width: 0;
+}
+
+.rhyme-edit-choices {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.rhyme-edit-btn {
+  padding: 7px 14px;
+  border-radius: 7px;
+  border: 1.5px solid #dde1ee;
+  background: #f8f9fd;
+  font-family: "Poppins", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #4a5568;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.rhyme-edit-btn:hover {
+  border-color: #b0bacc;
+}
+
+.rhyme-edit-btn--oo.rhyme-edit-btn--active {
+  background: #e8f5e9;
+  border-color: #4caf50;
+  color: #2e7d32;
+}
+
+.rhyme-edit-btn--hindi.rhyme-edit-btn--active {
+  background: #fde8e8;
+  border-color: #ef5350;
+  color: #c62828;
 }
 
 /* ── Custom Radio Buttons ───────────────────────────────── */

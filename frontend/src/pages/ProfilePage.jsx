@@ -102,8 +102,34 @@ export default function ProfilePage() {
       <Layout>
         <div className="pp-page">
           <TopBar title="My Profile" />
-          <div style={{ textAlign: "center", padding: "64px" }}>
-            <Loader className="spin" size={32} />
+          <div className="pp-content">
+            <div className="pp-card">
+              <div className="sk pp-skel-avatar" />
+              <div className="pp-skel-row">
+                <div className="pp-skel-field">
+                  <div className="sk sk-h2" style={{ width: "45%" }} />
+                  <div className="sk sk-row" />
+                </div>
+                <div className="pp-skel-field">
+                  <div className="sk sk-h2" style={{ width: "45%" }} />
+                  <div className="sk sk-row" />
+                </div>
+              </div>
+              <div className="pp-skel-field" style={{ marginBottom: 16 }}>
+                <div className="sk sk-h2" style={{ width: "35%" }} />
+                <div className="sk sk-row" />
+              </div>
+              <div className="sk" style={{ height: 1, marginBottom: 14, background: "#e0e4f0", borderRadius: 0 }} />
+              <div className="sk sk-h1" style={{ width: "45%", marginBottom: 14 }} />
+              <div className="pp-readonly-grid">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <div className="sk sk-h2" style={{ width: "55%" }} />
+                    <div className="sk sk-text" style={{ width: "70%" }} />
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </Layout>

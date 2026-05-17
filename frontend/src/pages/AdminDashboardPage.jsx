@@ -4,6 +4,10 @@ import {
   Copy, Check, School, Users, GraduationCap,
   ClipboardList, CheckCircle, BarChart3,
 } from "lucide-react";
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, Legend,
+  LabelList, ResponsiveContainer,
+} from "recharts";
 import Layout from "../components/Layout";
 import TopBar from "../components/TopBar";
 import { adminApi } from "../services/api";
@@ -13,6 +17,47 @@ const PERIOD_COLORS = {
   middle:    { bg: "#e3f2fd", color: "#1565c0", label: "Middle"    },
   end:       { bg: "#f3e5f5", color: "#6a1b9a", label: "End"       },
 };
+
+const PROFILE_COLORS = {
+  "Low Emerging Reader":    "#c0392b",
+  "High Emerging Reader":   "#e67e22",
+  "Developing Reader":      "#f1c40f",
+  "Transitioning Reader":   "#2c3e6b",
+  "Reading at Grade Level": "#27ae60",
+};
+const PROFILES = Object.keys(PROFILE_COLORS);
+
+function currentSchoolYear() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth() + 1;
+  return m >= 6 ? `${y}-${y + 1}` : `${y - 1}-${y}`;
+}
+
+// Return only periods that have already started in the Philippine school calendar
+function visiblePeriods() {
+  const m = new Date().getMonth() + 1; // 1-12
+  if (m >= 6 && m <= 9)  return ["beginning"];
+  if (m >= 10 || m === 1) return ["beginning", "middle"];
+  return ["beginning", "middle", "end"]; // Feb–May
+}
+
+function ProfileTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{
+      background: "#fff", border: "1px solid #eee",
+      borderRadius: 8, padding: "8px 12px", fontSize: 12,
+    }}>
+      <p style={{ fontWeight: 700, marginBottom: 4 }}>{label}</p>
+      {payload.map((p) => (
+        <p key={p.name} style={{ color: p.fill, margin: "2px 0" }}>
+          {p.name}: {p.value}%
+        </p>
+      ))}
+    </div>
+  );
+}
 
 function StatCard({ icon: Icon, iconColor, label, value, sub }) {
   return (
@@ -100,7 +145,9 @@ export default function AdminDashboardPage() {
     );
   }
 
-  const pb = data?.period_breakdown ?? {};
+  const pb  = data?.period_breakdown   ?? {};
+  const pbp = data?.profile_by_period  ?? {};
+  const shown = visiblePeriods();
 
   return (
     <Layout>
@@ -193,34 +240,143 @@ export default function AdminDashboardPage() {
           />
         </div>
 
-        {/* ── Period breakdown ──────────────────────────────────── */}
+        {/* ── Period breakdown (past + current only) ────────────── */}
+        <div style={{
+          background: "#fff",
+          borderRadius: 16,
+          boxShadow: "0 2px 16px rgba(44,62,107,.09)",
+          padding: "22px 28px",
+          marginBottom: 20,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+            <BarChart3 size={16} color="#2c7fc1" />
+            <span style={{ fontSize: 14, fontWeight: 700, color: "#1a2340" }}>
+              Completed Sessions by Period
+            </span>
+          </div>
+          <p style={{ fontSize: 11, color: "#8a94b2", margin: "0 0 16px 0" }}>
+            {currentSchoolYear()}
+          </p>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart
+              data={shown.map((key) => ({
+                period: PERIOD_COLORS[key].label,
+                Female: pb[key]?.female ?? 0,
+                Male:   pb[key]?.male   ?? 0,
+                Total:  pb[key]?.total  ?? 0,
+              }))}
+              margin={{ top: 16, right: 16, left: -16, bottom: 0 }}
+              barCategoryGap="20%"
+              barGap={2}
+            >
+              <XAxis
+                dataKey="period"
+                tick={{ fontSize: 12, fontFamily: "Poppins" }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                allowDecimals={false}
+                tick={{ fontSize: 11, fontFamily: "Poppins" }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <Tooltip
+                contentStyle={{ fontSize: 12, fontFamily: "Poppins", borderRadius: 8 }}
+              />
+              <Legend
+                wrapperStyle={{ fontSize: 11, fontFamily: "Poppins", paddingTop: 8 }}
+                iconType="circle"
+                iconSize={8}
+              />
+              <Bar dataKey="Female" fill="#e07070" radius={[3,3,0,0]} maxBarSize={36}>
+                <LabelList dataKey="Female" position="insideTop"
+                  formatter={(v) => (v > 0 ? v : "")}
+                  style={{ fill: "#fff", fontSize: 9, fontFamily: "Poppins", fontWeight: 700 }} />
+              </Bar>
+              <Bar dataKey="Male" fill="#4a6fa5" radius={[3,3,0,0]} maxBarSize={36}>
+                <LabelList dataKey="Male" position="insideTop"
+                  formatter={(v) => (v > 0 ? v : "")}
+                  style={{ fill: "#fff", fontSize: 9, fontFamily: "Poppins", fontWeight: 700 }} />
+              </Bar>
+              <Bar dataKey="Total" fill="#2c7fc1" radius={[3,3,0,0]} maxBarSize={36}>
+                <LabelList dataKey="Total" position="insideTop"
+                  formatter={(v) => (v > 0 ? v : "")}
+                  style={{ fill: "#fff", fontSize: 9, fontFamily: "Poppins", fontWeight: 700 }} />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* ── Reading Profile % per Assessment Period ────────────── */}
         <div style={{
           background: "#fff",
           borderRadius: 16,
           boxShadow: "0 2px 16px rgba(44,62,107,.09)",
           padding: "22px 28px",
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
             <BarChart3 size={16} color="#2c7fc1" />
             <span style={{ fontSize: 14, fontWeight: 700, color: "#1a2340" }}>
-              Completed Sessions by Period
+              Percentage of Students Assessed by Reading Profile
             </span>
           </div>
-          <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
-            {Object.entries(PERIOD_COLORS).map(([key, { bg, color, label }]) => (
-              <div key={key} style={{
-                flex: "1 1 120px",
-                background: bg,
-                borderRadius: 12,
-                padding: "16px 20px",
-                textAlign: "center",
-              }}>
-                <div style={{ fontSize: 28, fontWeight: 700, color }}>{pb[key] ?? 0}</div>
-                <div style={{ fontSize: 11, color, fontWeight: 600, marginTop: 2 }}>{label}</div>
-              </div>
-            ))}
-          </div>
+          <p style={{ fontSize: 11, color: "#8a94b2", margin: "0 0 16px 0" }}>
+            Per assessment period — {currentSchoolYear()}
+          </p>
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart
+              data={shown.map((key) => ({
+                period: PERIOD_COLORS[key].label,
+                ...PROFILES.reduce((acc, p) => {
+                  acc[p] = pbp[key]?.[p] ?? 0;
+                  return acc;
+                }, {}),
+              }))}
+              margin={{ top: 16, right: 16, left: -16, bottom: 0 }}
+              barCategoryGap="20%"
+              barGap={2}
+            >
+              <XAxis
+                dataKey="period"
+                tick={{ fontSize: 12, fontFamily: "Poppins" }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 11, fontFamily: "Poppins" }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => `${v}%`}
+                domain={[0, 100]}
+              />
+              <Tooltip content={<ProfileTooltip />} />
+              <Legend
+                wrapperStyle={{ fontSize: 11, fontFamily: "Poppins", paddingTop: 8 }}
+                iconType="circle"
+                iconSize={8}
+              />
+              {PROFILES.map((profile) => (
+                <Bar
+                  key={profile}
+                  dataKey={profile}
+                  name={profile}
+                  fill={PROFILE_COLORS[profile]}
+                  radius={[3, 3, 0, 0]}
+                  maxBarSize={36}
+                >
+                  <LabelList
+                    dataKey={profile}
+                    position="insideTop"
+                    formatter={(v) => (v > 0 ? `${v}%` : "")}
+                    style={{ fill: "#fff", fontSize: 9, fontFamily: "Poppins", fontWeight: 700 }}
+                  />
+                </Bar>
+              ))}
+            </BarChart>
+          </ResponsiveContainer>
         </div>
+
       </div>
     </Layout>
   );

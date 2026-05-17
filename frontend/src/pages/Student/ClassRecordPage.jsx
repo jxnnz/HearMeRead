@@ -48,6 +48,12 @@ function d(val) {
   return val !== null && val !== undefined ? val : "—";
 }
 
+function storyLabel(t) {
+  if (!t) return "—";
+  const m = t.match(/^Story\s*(\d+)\s*:/i);
+  return m ? `Story ${m[1]}` : t;
+}
+
 export default function ClassRecordPage() {
   const { toasts, removeToast, showError } = useToast();
   const navigate = useNavigate();
@@ -193,7 +199,7 @@ export default function ClassRecordPage() {
   const EXPORT_HEADERS = [
     "#", "LRN", "Student Name", "Sex", "Date",
     "Task 1", "Task 2L Words", "Task 2H Sent.", "Total Score", "Part 1 Level",
-    "Story Title", "Total Words", "Miscues", "Words Read", "Total Time", "WPM", "% Correct", "Correct Ans.",
+    "Story #", "Total Words", "Miscues", "Words Read", "Total Time", "WPM", "% Correct", "Correct Ans.",
     "Learner Exp.", "Obs. Level", "Reading Profile", "Remarks",
   ];
 
@@ -222,7 +228,7 @@ export default function ClassRecordPage() {
         task2L, task2H,
         rr?.part1_total_score ?? "—",
         rr?.part1_classification ?? "—",
-        sess?.passage?.title ?? "—",
+        sess?.passage?.title ? storyLabel(sess.passage.title) : "—",
         totalWords ?? "—",
         miscues ?? "—",
         wordsRead ?? "—",
@@ -414,7 +420,7 @@ export default function ClassRecordPage() {
                     <th className="cr-th cr-th--sub cr-th--group1">Task 2H Sent.</th>
                     <th className="cr-th cr-th--sub cr-th--group1">Total Score</th>
                     <th className="cr-th cr-th--sub cr-th--group1">Part 1 Level</th>
-                    <th className="cr-th cr-th--sub cr-th--group2">Story Title</th>
+                    <th className="cr-th cr-th--sub cr-th--group2">Story #</th>
                     <th className="cr-th cr-th--sub cr-th--group2">Total Words</th>
                     <th className="cr-th cr-th--sub cr-th--group2">Miscues</th>
                     <th className="cr-th cr-th--sub cr-th--group2">Words Read</th>
@@ -480,7 +486,7 @@ export default function ClassRecordPage() {
                           <td className="cr-td cr-td--center cr-td--g1">{d(rr?.part1_total_score)}</td>
                           <td className="cr-td cr-td--g1">{rr?.part1_classification ?? "—"}</td>
                           {/* Part 2 */}
-                          <td className="cr-td cr-td--g2">{sess?.passage?.title ?? "—"}</td>
+                          <td className="cr-td cr-td--g2">{sess?.passage?.title ? storyLabel(sess.passage.title) : "—"}</td>
                           <td className="cr-td cr-td--center cr-td--g2">{d(totalWords)}</td>
                           <td className="cr-td cr-td--center cr-td--g2">{d(miscues)}</td>
                           <td className="cr-td cr-td--center cr-td--g2">{d(wordsRead)}</td>

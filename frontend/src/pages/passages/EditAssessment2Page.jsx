@@ -6,10 +6,17 @@ import Layout from "../../components/Layout";
 import { passagesApi, questionsApi } from "../../services/api";
 import "../pages css/AddPassagePage.css";
 
+function parseStoryTitle(t) {
+  if (!t) return { num: "1", title: "" };
+  const m = t.match(/^Story\s*(\d+)\s*:\s*(.+)$/i);
+  return m ? { num: m[1], title: m[2] } : { num: "1", title: t };
+}
+
 export default function EditAssessment2Page() {
   const navigate = useNavigate();
   const { id } = useParams();
 
+  const [storyNum, setStoryNum] = useState("1");
   const [details, setDetails] = useState({
     title: "", grade_level: "grade_2", language: "filipino", content: "",
   });
@@ -23,8 +30,10 @@ export default function EditAssessment2Page() {
     passagesApi
       .get(id)
       .then((p) => {
+        const { num, title } = parseStoryTitle(p.title ?? "");
+        setStoryNum(num);
         setDetails({
-          title:       p.title       ?? "",
+          title,
           grade_level: p.grade_level ?? "grade_2",
           language:    p.language    ?? "filipino",
           content:     p.content     ?? "",
@@ -87,7 +96,7 @@ export default function EditAssessment2Page() {
     setSaving(true);
     try {
       await passagesApi.update(id, {
-        title:       details.title.trim(),
+        title:       `Story ${storyNum}: ${details.title.trim()}`,
         content:     details.content.trim(),
         language:    details.language,
         grade_level: details.grade_level,
@@ -158,16 +167,30 @@ export default function EditAssessment2Page() {
           <h2 className="ap-card__title">Passage Details</h2>
           <p className="ap-card__subtitle">Update the passage details.</p>
 
-          <div className="ap-field">
-            <label className="ap-label" htmlFor="a2-title">Passage Title:</label>
-            <input
-              id="a2-title"
-              type="text"
-              className="ap-input"
-              value={details.title}
-              onChange={(e) => updateDetails("title", e.target.value)}
-              placeholder="e.g. Ang Pagong at ang Matsing"
-            />
+          <div className="ap-row">
+            <div className="ap-field" style={{ flex: "0 0 auto", minWidth: 130 }}>
+              <label className="ap-label" htmlFor="a2-story-num">Story Number:</label>
+              <select
+                id="a2-story-num"
+                className="ap-input"
+                value={storyNum}
+                onChange={(e) => setStoryNum(e.target.value)}
+              >
+                <option value="1">Story 1</option>
+                <option value="2">Story 2</option>
+              </select>
+            </div>
+            <div className="ap-field" style={{ flex: 1 }}>
+              <label className="ap-label" htmlFor="a2-title">Story Title:</label>
+              <input
+                id="a2-title"
+                type="text"
+                className="ap-input"
+                value={details.title}
+                onChange={(e) => updateDetails("title", e.target.value)}
+                placeholder="e.g. Ang Pagong at ang Matsing"
+              />
+            </div>
           </div>
 
           <div className="ap-row">

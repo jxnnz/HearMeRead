@@ -38,7 +38,6 @@ function gradeLabel(gl) {
 export default function StudentInfoForm({
   form,
   setForm,
-  availableGrades = [],
   students        = [],
   passages        = [],
   loadingStudents = false,
@@ -212,52 +211,6 @@ export default function StudentInfoForm({
         </div>
       </div>
 
-      {/* ── Row 3: Grade Level (filter) + Section (auto-filled) ── */}
-      <div className="si-row">
-        <div className="si-field">
-          <label className="si-label" htmlFor="si-grade-level">Grade Level:</label>
-          <select
-            id="si-grade-level"
-            className={`si-input${hasStudent ? " si-input--filled" : ""}`}
-            value={form.grade_level}
-            disabled={hasStudent}
-            onChange={(e) => {
-              const newGrade = e.target.value;
-              setForm((prev) => ({
-                ...prev,
-                grade_level:      newGrade,
-                student_id:       null,
-                first_name:       "",
-                last_name:        "",
-                section:          "",
-                passage_id:       null,
-                passage_title:    "",
-                passage_content:  "",
-                word_count:       0,
-                selected_passage: null,
-              }));
-              setStudentSearch("");
-            }}
-          >
-            <option value="">— Select grade —</option>
-            {availableGrades.map((g) => (
-              <option key={g} value={g}>{gradeLabel(g)}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="si-field">
-          <label className="si-label">Section:</label>
-          <input
-            type="text"
-            className="si-input si-input--readonly"
-            value={form.section}
-            placeholder="Auto-filled"
-            readOnly
-          />
-        </div>
-      </div>
-
       {/* ── Language tab toggle ── */}
       <div className="si-field si-field--full">
         <label className="si-label">Reading Profile (Language):</label>
@@ -294,7 +247,7 @@ export default function StudentInfoForm({
         </label>
         {!form.grade_level ? (
           <div className="si-input si-input--readonly si-input--disabled">
-            Select a grade level first
+            No grade level assigned — contact your admin
           </div>
         ) : !hasStudent ? (
           <div className="si-input si-input--readonly si-input--disabled">

@@ -6,6 +6,28 @@ import UploadModal from "../components/UploadModal";
 import { adminApi, questionsApi } from "../services/api";
 import "./pages css/AddPassagePage.css";
 
+// ── Rhyme pair helpers ────────────────────────────────────────────────────────
+function makeEmptyRhymePairs() {
+  return Array.from({ length: 10 }, (_, i) => ({ id: i, pair: "", answer: "Oo" }));
+}
+
+function parseRhymePairs(str) {
+  if (!str || !str.includes("|")) return makeEmptyRhymePairs();
+  const lines = str.split("\n").filter((l) => l.includes("|"));
+  const pairs = lines.map((line, i) => {
+    const last = line.lastIndexOf("|");
+    return { id: i, pair: line.slice(0, last).trim(), answer: line.slice(last + 1).trim() || "Oo" };
+  });
+  while (pairs.length < 10) pairs.push({ id: pairs.length, pair: "", answer: "Oo" });
+  return pairs;
+}
+
+function serializeRhymePairs(pairs) {
+  return pairs.filter((p) => p.pair.trim()).map((p) => `${p.pair}|${p.answer}`).join("\n");
+}
+
+function isG1Filipino(form) { return form.language === "filipino" && form.grade_level === "grade_1"; }
+
 const GRADES = [
   { value: "", label: "All Grades" },
   { value: "grade_1", label: "Grade 1" },
@@ -21,44 +43,101 @@ function isEng3(form) { return form.language === "english" && form.grade_level =
 
 
 /* ═══════════════════ Assessment 1 Form ═══════════════════ */
-function A1Form({ form, update, eng3 }) {
+function A1Form({ form, update, eng3, rhymePairs, setRhymePairs }) {
+  const g1fil = isG1Filipino(form);
+
+  function updatePair(i, field, val) {
+    setRhymePairs((prev) => prev.map((p, j) => (j === i ? { ...p, [field]: val } : p)));
+  }
+
   return (
     <>
       <div className="ap-card">
         <div className="ap-card__header-row">
-          <h2 className="ap-card__title">{eng3 ? "Task 1 — Words" : "Task 1"}</h2>
+          <h2 className="ap-card__title">{eng3 ? "Task 1 — Words" : g1fil ? "Gawain 1 — Mga Titik" : "Task 1"}</h2>
         </div>
         {eng3 && <p className="ap-card__subtitle">Separate each word with a comma (e.g. cat, dog, bird).</p>}
+        {g1fil && <p className="ap-card__subtitle">Enter the 10 letters separated by spaces (e.g. b ng T e p s H G u L).</p>}
         <div className="ap-field">
           <label className="ap-label">{eng3 ? "Words:" : "Content:"}</label>
           <textarea className="ap-textarea" value={form.task1_content} onChange={(e) => update("task1_content", e.target.value)}
-            placeholder={eng3 ? "e.g. cat, dog, bird, fish" : "Type or paste the reading passage…"} rows={eng3 ? 4 : 6} />
+            placeholder={eng3 ? "e.g. cat, dog, bird, fish" : g1fil ? "e.g. b ng T e p s H G u L" : "Type or paste the reading passage…"} rows={eng3 ? 4 : 3} />
         </div>
       </div>
-      <div className="ap-card">
-        <div className="ap-card__header-row">
-          <h2 className="ap-card__title">Task 2 — Words</h2>
+
+      {g1fil ? (
+        <div className="ap-card">
+          <div className="ap-card__header-row">
+            <h2 className="ap-card__title">Gawain 2L — Rhyming Word Pairs</h2>
+          </div>
+          <p className="ap-card__subtitle">
+            Enter 10 word pairs. The teacher reads each pair aloud; mark <strong>Oo</strong> if they rhyme, <strong>Hindi</strong> if they don't.
+          </p>
+          <div className="rhyme-edit-grid">
+            {rhymePairs.map((rp, i) => (
+              <div key={i} className="rhyme-edit-row">
+                <span className="rhyme-edit-num">{i + 1}.</span>
+                <input
+                  className="ap-input rhyme-edit-pair"
+                  value={rp.pair}
+                  onChange={(e) => updatePair(i, "pair", e.target.value)}
+                  placeholder="e.g. sanay, tunay"
+                />
+                <div className="rhyme-edit-choices">
+                  {["Oo", "Hindi"].map((opt) => (
+                    <button
+                      key={opt}
+                      type="button"
+                      className={`rhyme-edit-btn${rp.answer === opt ? ` rhyme-edit-btn--${opt === "Oo" ? "oo" : "hindi"} rhyme-edit-btn--active` : ""}`}
+                      onClick={() => updatePair(i, "answer", opt)}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-        <p className="ap-card__subtitle">Separate each word with a comma.</p>
-        <div className="ap-field">
-          <textarea className="ap-textarea" value={form.task2_words} onChange={(e) => update("task2_words", e.target.value)}
-            placeholder={eng3 ? "e.g. sun, moon, star" : "e.g. aso, bata, pusa"} rows={4} />
+      ) : (
+        <div className="ap-card">
+          <div className="ap-card__header-row">
+            <h2 className="ap-card__title">Task 2 — Words</h2>
+          </div>
+          <p className="ap-card__subtitle">Separate each word with a comma.</p>
+          <div className="ap-field">
+            <textarea className="ap-textarea" value={form.task2_words} onChange={(e) => update("task2_words", e.target.value)}
+              placeholder={eng3 ? "e.g. sun, moon, star" : "e.g. aso, bata, pusa"} rows={4} />
+          </div>
         </div>
-      </div>
+      )}
+
       {!eng3 && (
         <div className="ap-card">
           <div className="ap-card__header-row">
-            <h2 className="ap-card__title">Task 2 — Sentences</h2>
+            <h2 className="ap-card__title">{g1fil ? "Gawain 2H — Mga Pangungusap" : "Task 2 — Sentences"}</h2>
           </div>
           <p className="ap-card__subtitle">Separate each sentence with a period.</p>
           <div className="ap-field">
             <textarea className="ap-textarea" value={form.task2_sentences} onChange={(e) => update("task2_sentences", e.target.value)}
-              placeholder="e.g. Ang bata ay masaya. Mahal ko ang aking pamilya." rows={4} />
+              placeholder={g1fil ? "e.g. Ang bata ay masaya. Siya ay mabait." : "e.g. Ang bata ay masaya. Mahal ko ang aking pamilya."} rows={4} />
           </div>
         </div>
       )}
     </>
   );
+}
+
+function parseStoryTitle(t) {
+  if (!t) return { num: "1", title: "" };
+  const m = t.match(/^Story\s*(\d+)\s*:\s*(.+)$/i);
+  return m ? { num: m[1], title: m[2] } : { num: "1", title: t };
+}
+
+function storyLabel(t) {
+  if (!t) return "—";
+  const m = t.match(/^Story\s*(\d+)\s*:/i);
+  return m ? `Story ${m[1]}` : t;
 }
 
 /* ═══════════════════ Assessment 2 Form ═══════════════════ */
@@ -74,10 +153,19 @@ function A2Form({ form, update, questions, setQuestions }) {
         <div className="ap-card__header-row">
           <h2 className="ap-card__title">Passage Content</h2>
         </div>
-        <div className="ap-field">
-          <label className="ap-label">Title: *</label>
-          <input className="ap-input" value={form.title} onChange={(e) => update("title", e.target.value)}
-            placeholder="e.g. Ang Pagong at ang Matsing" />
+        <div className="ap-row">
+          <div className="ap-field" style={{ flex: "0 0 auto", minWidth: 130 }}>
+            <label className="ap-label">Story Number: *</label>
+            <select className="ap-input" value={form.story_number || "1"} onChange={(e) => update("story_number", e.target.value)}>
+              <option value="1">Story 1</option>
+              <option value="2">Story 2</option>
+            </select>
+          </div>
+          <div className="ap-field" style={{ flex: 1 }}>
+            <label className="ap-label">Story Title: *</label>
+            <input className="ap-input" value={form.title} onChange={(e) => update("title", e.target.value)}
+              placeholder="e.g. Ang Pagong at ang Matsing" />
+          </div>
         </div>
         <div className="ap-field">
           <label className="ap-label">Content: <span className="ap-word-count">{wc} words</span></label>
@@ -134,6 +222,9 @@ export default function AdminPassagesPage() {
   const [previewTarget, setPreviewTarget] = useState(null);
   const [editId, setEditId] = useState(null);
 
+  // Rhyme pairs for Grade 1 Filipino A1 passages
+  const [rhymePairs, setRhymePairs] = useState(makeEmptyRhymePairs);
+
   // Archive modal state
   const [archiveTarget, setArchiveTarget] = useState(null);
   const [archiving, setArchiving] = useState(false);
@@ -171,8 +262,8 @@ export default function AdminPassagesPage() {
     
     let initForm = type === 1
       ? { language: "filipino", grade_level: "grade_1", task1_content: "", task2_words: "", task2_sentences: "" }
-      : { title: "", language: "filipino", grade_level: "grade_2", content: "" };
-      
+      : { title: "", story_number: "1", language: "filipino", grade_level: "grade_2", content: "" };
+
     if (parsedData) {
       if (parsedData.language) initForm.language = parsedData.language;
       if (parsedData.grade_level) initForm.grade_level = parsedData.grade_level;
@@ -181,19 +272,32 @@ export default function AdminPassagesPage() {
         initForm.task2_words = parsedData.task2Words || "";
         initForm.task2_sentences = parsedData.task2Sentences || "";
       } else {
-        initForm.title = parsedData.title || "";
+        const { num, title } = parseStoryTitle(parsedData.title || "");
+        initForm.story_number = num;
+        initForm.title = title;
         initForm.content = parsedData.content || "";
       }
     }
     
     setForm(initForm);
-    
+
+    // Init rhyme pairs for Grade 1 Filipino Assessment 1
+    if (type === 1 && initForm.language === "filipino" && initForm.grade_level === "grade_1") {
+      if (parsedData?.task2Rhymes?.length > 0) {
+        const pairs = parsedData.task2Rhymes.map((rp, i) => ({ id: i, pair: rp.pair, answer: rp.answer }));
+        while (pairs.length < 10) pairs.push({ id: pairs.length, pair: "", answer: "Oo" });
+        setRhymePairs(pairs);
+      } else {
+        setRhymePairs(makeEmptyRhymePairs());
+      }
+    }
+
     if (parsedData && parsedData.questions && parsedData.questions.length > 0) {
       setQuestions(parsedData.questions);
     } else {
       setQuestions(type === 2 ? [{ id: crypto.randomUUID(), question: "", answer: "" }] : []);
     }
-    
+
     setError(null);
     setView("add");
   }
@@ -201,10 +305,20 @@ export default function AdminPassagesPage() {
   async function startEdit(p) {
     setAssType(p.assessment_type);
     setEditId(p.id);
-    setForm(p.assessment_type === 1
-      ? { language: p.language, grade_level: p.grade_level, task1_content: p.task1_content || "", task2_words: p.task2_words || "", task2_sentences: p.task2_sentences || "" }
-      : { title: p.title || "", language: p.language, grade_level: p.grade_level, content: p.content || "" });
+    if (p.assessment_type === 1) {
+      setForm({ language: p.language, grade_level: p.grade_level, task1_content: p.task1_content || "", task2_words: p.task2_words || "", task2_sentences: p.task2_sentences || "" });
+    } else {
+      const { num, title } = parseStoryTitle(p.title || "");
+      setForm({ title, story_number: num, language: p.language, grade_level: p.grade_level, content: p.content || "" });
+    }
     
+    // Parse rhyme pairs for Grade 1 Filipino Assessment 1
+    if (p.assessment_type === 1 && p.grade_level === "grade_1" && p.language === "filipino") {
+      setRhymePairs(parseRhymePairs(p.task2_words ?? ""));
+    } else {
+      setRhymePairs(makeEmptyRhymePairs());
+    }
+
     if (p.assessment_type === 2) {
       try {
         const qRes = await questionsApi.list(p.id);
@@ -228,24 +342,30 @@ export default function AdminPassagesPage() {
 
   async function handleSave() {
     setError(null);
+    const g1fil = isG1Filipino(form);
     if (assType === 1) {
-      if (eng3) {
-        if (!form.task1_content?.trim()) { setError("Task 1 Words is required."); return; }
+      if (!form.task1_content?.trim()) { setError("Task 1 content is required."); return; }
+      if (g1fil) {
+        const serialized = serializeRhymePairs(rhymePairs);
+        if (!serialized) { setError("Please enter at least one rhyming word pair."); return; }
+        if (!form.task2_sentences?.trim()) { setError("Gawain 2H sentences are required."); return; }
+      } else if (eng3) {
         if (!form.task2_words?.trim()) { setError("Task 2 Words is required."); return; }
       } else {
-        if (!form.task1_content?.trim()) { setError("Task 1 content is required."); return; }
         if (!form.task2_words?.trim()) { setError("Task 2 Words is required."); return; }
         if (!form.task2_sentences?.trim()) { setError("Task 2 Sentences is required."); return; }
       }
     } else {
-      if (!form.title?.trim()) { setError("Title is required."); return; }
+      if (!form.title?.trim()) { setError("Story title is required."); return; }
       if (!form.content?.trim()) { setError("Passage content is required."); return; }
     }
 
     setSaving(true);
     try {
       const payload = { ...form, assessment_type: assType };
+      if (assType === 1 && g1fil) payload.task2_words = serializeRhymePairs(rhymePairs);
       if (assType === 1 && eng3) payload.task2_sentences = "";
+      if (assType === 2) payload.title = `Story ${form.story_number || "1"}: ${(form.title || "").trim()}`;
       
       let passageId = editId;
       if (editId) {
@@ -361,7 +481,7 @@ export default function AdminPassagesPage() {
             </div>
 
             {assType === 1
-              ? <A1Form form={form} update={update} eng3={eng3} />
+              ? <A1Form form={form} update={update} eng3={eng3} rhymePairs={rhymePairs} setRhymePairs={setRhymePairs} />
               : <A2Form form={form} update={update} questions={questions} setQuestions={setQuestions} />
             }
           </div>
@@ -457,15 +577,25 @@ export default function AdminPassagesPage() {
                     <thead>
                       <tr style={{ background: "#f1f3f8" }}>
                         {["#", "Title", "Type", "Grade", "Lang", "Words", "Actions"].map((h, i) => (
-                          <th key={i} style={{ padding: "12px 14px", fontWeight: 700, color: "#1a2340", textAlign: i === 0 || i === 6 ? "center" : "left", borderBottom: "2px solid #dde2f0", whiteSpace: "nowrap" }}>{h}</th>
+                          <th key={i} style={{ padding: "12px 14px", fontWeight: 700, color: "#1a2340", textAlign: "left", borderBottom: "2px solid #dde2f0", whiteSpace: "nowrap" }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {paginated.map((p, idx) => (
                         <tr key={p.id} onClick={() => setPreviewTarget(p)} style={{ borderBottom: "1px solid #eee", background: "#fff", cursor: "pointer" }}>
-                          <td style={{ padding: "12px 14px", textAlign: "center", color: "#888" }}>{(page - 1) * PER + idx + 1}</td>
-                          <td style={{ padding: "12px 14px", fontWeight: 600, color: "#1a2340" }}>{p.title || "(Assessment 1)"}</td>
+                          <td style={{ padding: "12px 14px", color: "#888" }}>{(page - 1) * PER + idx + 1}</td>
+                          <td style={{ padding: "12px 14px", fontWeight: 600, color: "#1a2340" }}>
+                            {p.assessment_type === 2 ? (() => {
+                              const { num, title } = parseStoryTitle(p.title);
+                              return num ? (
+                                <>
+                                  <span style={{ fontSize: 11, color: "#2c3e6b", fontWeight: 700, marginRight: 6 }}>Story {num}:</span>
+                                  <span style={{ fontWeight: 400, color: "#555" }}>{title}</span>
+                                </>
+                              ) : (p.title || "—");
+                            })() : (p.title || "(Assessment 1)")}
+                          </td>
                           <td style={{ padding: "12px 14px" }}>
                             <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 6, background: p.assessment_type === 1 ? "#e0edff" : "#e8f5e9", color: p.assessment_type === 1 ? "#1e40af" : "#166534", fontWeight: 600 }}>
                               Assessment {p.assessment_type}
@@ -473,9 +603,9 @@ export default function AdminPassagesPage() {
                           </td>
                           <td style={{ padding: "12px 14px" }}>{fmtGrade(p.grade_level)}</td>
                           <td style={{ padding: "12px 14px", textTransform: "capitalize" }}>{p.language}</td>
-                          <td style={{ padding: "12px 14px", textAlign: "center" }}>{p.word_count}</td>
-                          <td style={{ padding: "12px 14px", textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
-                            <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
+                          <td style={{ padding: "12px 14px" }}>{p.word_count}</td>
+                          <td style={{ padding: "12px 14px" }} onClick={(e) => e.stopPropagation()}>
+                            <div style={{ display: "flex", gap: 6 }}>
                               <button onClick={() => startEdit(p)} title="Edit" style={{ background: "#f8f9fd", border: "1px solid #dde2f0", borderRadius: 6, padding: "6px 8px", cursor: "pointer" }}><Pencil size={14} color="#555" /></button>
                               <button onClick={() => handleArchive(p)} title="Archive" style={{ background: "#fdf2f2", border: "1px solid #f9caca", borderRadius: 6, padding: "6px 8px", cursor: "pointer" }}><Trash2 size={14} color="#c44" /></button>
                             </div>
@@ -500,7 +630,12 @@ export default function AdminPassagesPage() {
             <div className="cr-modal-overlay" onClick={() => setPreviewTarget(null)} style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999 }}>
               <div className="cr-modal" onClick={(e) => e.stopPropagation()} style={{ background: "#fff", borderRadius: 12, padding: 24, width: "100%", maxWidth: 650, maxHeight: "85vh", overflow: "auto", boxShadow: "0 8px 32px rgba(0,0,0,.15)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                  <h3 style={{ margin: 0, fontSize: 18, color: "#1a2340" }}>{pv.title || "Assessment 1 Passage"}</h3>
+                  <h3 style={{ margin: 0, fontSize: 18, color: "#1a2340" }}>
+                    {pv.assessment_type === 2 && pv.title ? (() => {
+                      const { num, title } = parseStoryTitle(pv.title);
+                      return num ? <><span style={{ color: "#2c3e6b" }}>Story {num}:</span> {title}</> : pv.title;
+                    })() : (pv.title || "Assessment 1 Passage")}
+                  </h3>
                   <button onClick={() => setPreviewTarget(null)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={18} color="#666" /></button>
                 </div>
                 <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
@@ -509,7 +644,7 @@ export default function AdminPassagesPage() {
                   <span style={{ fontSize: 11, padding: "4px 12px", borderRadius: 20, background: pv.assessment_type === 1 ? "#e0edff" : "#e8f5e9", color: pv.assessment_type === 1 ? "#1e40af" : "#166534", fontWeight: 600 }}>Assessment {pv.assessment_type} · {pv.word_count} words</span>
                 </div>
                 {pv.assessment_type === 2 && pv.content && (
-                  <div style={{ background: "#f9fafb", border: "1px solid #eaecf8", padding: 20, borderRadius: 10, whiteSpace: "pre-wrap", fontSize: 14, lineHeight: 1.8, color: "#333", maxHeight: 400, overflow: "auto" }}>{pv.content}</div>
+                  <div className="ap-scrollbar" style={{ background: "#f9fafb", border: "1px solid #eaecf8", padding: 20, borderRadius: 10, whiteSpace: "pre-wrap", fontSize: 14, lineHeight: 1.8, color: "#333", maxHeight: 400, overflow: "auto" }}>{pv.content}</div>
                 )}
                 {pv.assessment_type === 1 && (
                   <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>

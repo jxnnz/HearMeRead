@@ -88,7 +88,7 @@ export default function StudentRecordPage() {
             <Upload size={15} />
             Import Records
           </AppButton>
-          <AppButton variant="teal" onClick={() => navigate("/students/add")}>
+          <AppButton variant="primary" onClick={() => navigate("/students/add")}>
             <Plus size={15} />
             Add Student
           </AppButton>
@@ -158,7 +158,7 @@ export default function StudentRecordPage() {
           <div className="sr-state">
             <Users size={42} strokeWidth={1.2} />
             <p>No classes yet. Add a student to get started.</p>
-            <AppButton variant="teal" onClick={() => navigate("/students/add")}>
+            <AppButton variant="primary" onClick={() => navigate("/students/add")}>
               <Plus size={15} /> Add Student
             </AppButton>
           </div>

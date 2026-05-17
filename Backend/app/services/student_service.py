@@ -127,6 +127,10 @@ async def get_students(
 
 
 async def get_class_summaries(db: AsyncSession, teacher_id: int):
+    # Filter by teacher's current handle grade so old classes don't bleed through
+    t_res = await db.execute(select(Teacher).where(Teacher.id == teacher_id))
+    teacher = t_res.scalar_one_or_none()
+
     query = (
         select(
             Student.grade_level,
@@ -134,9 +138,13 @@ async def get_class_summaries(db: AsyncSession, teacher_id: int):
             func.count(Student.id).label("student_count")
         )
         .where(Student.teacher_id == teacher_id)
-        .group_by(Student.grade_level, Student.section)
-        .order_by(Student.grade_level, Student.section)
     )
+    if teacher and teacher.grade_level:
+        query = query.where(Student.grade_level == teacher.grade_level)
+    if teacher and teacher.section:
+        query = query.where(Student.section == teacher.section)
+
+    query = query.group_by(Student.grade_level, Student.section).order_by(Student.grade_level, Student.section)
     result = await db.execute(query)
 
     classes = []

@@ -19,10 +19,22 @@ function isEnglishGrade3(form) {
   return form.language === "english" && form.grade_level === "grade_3";
 }
 
+function isG1Filipino(form) {
+  return form.language === "filipino" && form.grade_level === "grade_1";
+}
+
+function makeEmptyRhymePairs() {
+  return Array.from({ length: 10 }, (_, i) => ({ id: i, pair: "", answer: "Oo" }));
+}
+
+function serializeRhymePairs(pairs) {
+  return pairs.filter((p) => p.pair.trim()).map((p) => `${p.pair}|${p.answer}`).join("\n");
+}
+
 export default function AddAssessment1Page() {
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   const [form, setForm] = useState(() => {
     const parsed = location.state?.parsedData;
     if (parsed) {
@@ -38,21 +50,31 @@ export default function AddAssessment1Page() {
     return EMPTY_FORM;
   });
 
+  const [rhymePairs, setRhymePairs] = useState(() => {
+    const parsed = location.state?.parsedData;
+    if (parsed?.task2Rhymes?.length > 0) {
+      const pairs = parsed.task2Rhymes.map((rp, i) => ({ id: i, pair: rp.pair, answer: rp.answer }));
+      while (pairs.length < 10) pairs.push({ id: pairs.length, pair: "", answer: "Oo" });
+      return pairs;
+    }
+    return makeEmptyRhymePairs();
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
   const eng3 = isEnglishGrade3(form);
+  const g1fil = isG1Filipino(form);
 
-  function update(field, val) {
-    setForm((prev) => ({ ...prev, [field]: val }));
-  }
+  function update(field, val) { setForm((prev) => ({ ...prev, [field]: val })); }
 
   function validate() {
-    if (eng3) {
-      if (!form.task1_content.trim()) { setError("Task 1 Words is required."); return false; }
-      if (!form.task2_words.trim())   { setError("Task 2 Words is required."); return false; }
+    if (!form.task1_content.trim()) { setError("Task 1 content is required."); return false; }
+    if (g1fil) {
+      if (!serializeRhymePairs(rhymePairs)) { setError("Please enter at least one rhyming word pair."); return false; }
+      if (!form.task2_sentences.trim()) { setError("Gawain 2H sentences are required."); return false; }
+    } else if (eng3) {
+      if (!form.task2_words.trim()) { setError("Task 2 Words is required."); return false; }
     } else {
-      if (!form.task1_content.trim())   { setError("Task 1 content is required.");      return false; }
       if (!form.task2_words.trim())     { setError("Task 2 Words content is required."); return false; }
       if (!form.task2_sentences.trim()) { setError("Task 2 Sentences content is required."); return false; }
     }
@@ -69,7 +91,7 @@ export default function AddAssessment1Page() {
         grade_level:     form.grade_level,
         assessment_type: 1,
         task1_content:   form.task1_content.trim(),
-        task2_words:     form.task2_words.trim(),
+        task2_words:     g1fil ? serializeRhymePairs(rhymePairs) : form.task2_words.trim(),
         task2_sentences: eng3 ? "" : form.task2_sentences.trim(),
       });
       navigate("/passages");
@@ -146,49 +168,88 @@ export default function AddAssessment1Page() {
           {/* ── Task 1 Card ── */}
           <div className="ap-card">
             <div className="ap-card__header-row">
-              <h2 className="ap-card__title">{eng3 ? "Task 1 — Words" : "Task 1"}</h2>
+              <h2 className="ap-card__title">{eng3 ? "Task 1 — Words" : g1fil ? "Gawain 1 — Mga Titik" : "Task 1"}</h2>
             </div>
             {eng3 && <p className="ap-card__subtitle">Separate each word with a comma (e.g. cat, dog, bird).</p>}
+            {g1fil && <p className="ap-card__subtitle">Enter the 10 letters separated by spaces (e.g. b ng T e p s H G u L).</p>}
             <div className="ap-field">
               <label className="ap-label" htmlFor="a1-task1">{eng3 ? "Words:" : "Content:"}</label>
               <textarea id="a1-task1" className="ap-textarea" value={form.task1_content}
                 onChange={(e) => update("task1_content", e.target.value)}
-                placeholder={eng3 ? "e.g. cat, dog, bird, fish, house" : "Type or paste the reading passage for Task 1…"}
-                rows={eng3 ? 4 : 6}
+                placeholder={eng3 ? "e.g. cat, dog, bird, fish, house" : g1fil ? "e.g. b ng T e p s H G u L" : "Type or paste the reading passage for Task 1…"}
+                rows={eng3 || g1fil ? 3 : 6}
               />
             </div>
           </div>
 
-          {/* ── Task 2 Words Card ── */}
-          <div className="ap-card">
-            <div className="ap-card__header-row">
-              <h2 className="ap-card__title">Task 2 — Words</h2>
+          {/* ── Task 2 — Rhyme pairs (Grade 1 Filipino) or Words (others) ── */}
+          {g1fil ? (
+            <div className="ap-card">
+              <div className="ap-card__header-row">
+                <h2 className="ap-card__title">Gawain 2L — Rhyming Word Pairs</h2>
+              </div>
+              <p className="ap-card__subtitle">
+                Enter 10 word pairs. The teacher reads each pair aloud; mark <strong>Oo</strong> if they rhyme, <strong>Hindi</strong> if they don't.
+              </p>
+              <div className="rhyme-edit-grid">
+                {rhymePairs.map((rp, i) => (
+                  <div key={i} className="rhyme-edit-row">
+                    <span className="rhyme-edit-num">{i + 1}.</span>
+                    <input
+                      className="ap-input rhyme-edit-pair"
+                      value={rp.pair}
+                      onChange={(e) => {
+                        setRhymePairs((prev) => prev.map((p, j) => j === i ? { ...p, pair: e.target.value } : p));
+                      }}
+                      placeholder="e.g. sanay, tunay"
+                    />
+                    <div className="rhyme-edit-choices">
+                      {["Oo", "Hindi"].map((opt) => (
+                        <button
+                          key={opt}
+                          type="button"
+                          className={`rhyme-edit-btn${rp.answer === opt ? ` rhyme-edit-btn--${opt === "Oo" ? "oo" : "hindi"} rhyme-edit-btn--active` : ""}`}
+                          onClick={() => setRhymePairs((prev) => prev.map((p, j) => j === i ? { ...p, answer: opt } : p))}
+                        >
+                          {opt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <p className="ap-card__subtitle">
-              Separate each word with a comma (e.g. {eng3 ? "sun, moon, star" : "aso, bata, pusa"}).
-            </p>
-            <div className="ap-field">
-              <label className="ap-label" htmlFor="a1-words">Words:</label>
-              <textarea id="a1-words" className="ap-textarea" value={form.task2_words}
-                onChange={(e) => update("task2_words", e.target.value)}
-                placeholder={eng3 ? "e.g. sun, moon, star, tree, house" : "e.g. aso, bata, pusa, bahay, tubig"}
-                rows={4}
-              />
+          ) : (
+            <div className="ap-card">
+              <div className="ap-card__header-row">
+                <h2 className="ap-card__title">Task 2 — Words</h2>
+              </div>
+              <p className="ap-card__subtitle">
+                Separate each word with a comma (e.g. {eng3 ? "sun, moon, star" : "aso, bata, pusa"}).
+              </p>
+              <div className="ap-field">
+                <label className="ap-label" htmlFor="a1-words">Words:</label>
+                <textarea id="a1-words" className="ap-textarea" value={form.task2_words}
+                  onChange={(e) => update("task2_words", e.target.value)}
+                  placeholder={eng3 ? "e.g. sun, moon, star, tree, house" : "e.g. aso, bata, pusa, bahay, tubig"}
+                  rows={4}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* ── Task 2 Sentences Card (hidden for English Grade 3) ── */}
+          {/* ── Task 2H / Sentences (hidden for English Grade 3) ── */}
           {!eng3 && (
             <div className="ap-card">
               <div className="ap-card__header-row">
-                <h2 className="ap-card__title">Task 2 — Sentences</h2>
+                <h2 className="ap-card__title">{g1fil ? "Gawain 2H — Mga Pangungusap" : "Task 2 — Sentences"}</h2>
               </div>
-              <p className="ap-card__subtitle">Separate each sentence with a period (e.g. Ang bata ay masaya. Siya ay mabait.).</p>
+              <p className="ap-card__subtitle">Separate each sentence with a period.</p>
               <div className="ap-field">
                 <label className="ap-label" htmlFor="a1-sentences">Sentences:</label>
                 <textarea id="a1-sentences" className="ap-textarea" value={form.task2_sentences}
                   onChange={(e) => update("task2_sentences", e.target.value)}
-                  placeholder="e.g. Ang bata ay masaya. Mahal ko ang aking pamilya."
+                  placeholder={g1fil ? "e.g. Ang bata ay masaya. Siya ay mabait." : "e.g. Ang bata ay masaya. Mahal ko ang aking pamilya."}
                   rows={4}
                 />
               </div>

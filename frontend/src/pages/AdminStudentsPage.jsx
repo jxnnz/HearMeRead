@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  GraduationCap, ChevronLeft, ChevronRight, Users,
-  Search, ArrowUpDown, FileText, FileSpreadsheet, Pencil, Trash2,
+  GraduationCap, ChevronLeft, Users,
+  Search, FileText, UserCheck,
 } from "lucide-react";
 import Layout from "../components/Layout";
 import { adminApi } from "../services/api";
@@ -13,6 +13,7 @@ import "../pages/pages css/ClassRecordPage.css";
 
 function formatGrade(gl) {
   if (!gl) return "—";
+  if (gl === "kindergarten") return "Kindergarten";
   return `Grade ${gl.replace("grade_", "")}`;
 }
 
@@ -39,6 +40,12 @@ function d(val) {
   return val !== null && val !== undefined ? val : "—";
 }
 
+function storyLabel(t) {
+  if (!t) return "—";
+  const m = t.match(/^Story\s*(\d+)\s*:/i);
+  return m ? `Story ${m[1]}` : t;
+}
+
 const PROFILE_COLORS = {
   "Reading at Grade Level": "#639922",
   "Transitioning Reader":   "#378ADD",
@@ -49,19 +56,140 @@ const PROFILE_COLORS = {
 
 const GRADE_BG = {
   grade_1: "#e3f2fd", grade_2: "#fce4ec", grade_3: "#fff3e0",
+  kindergarten: "#f3e5f5",
 };
 const GRADE_TEXT = {
   grade_1: "#1565c0", grade_2: "#880e4f", grade_3: "#e65100",
+  kindergarten: "#6a1b9a",
 };
 
 const PERIOD_LABELS = { beginning: "Beginning", middle: "Middle", end: "End" };
+
+// ── Reassign Modal ────────────────────────────────────────────────────────────
+
+function ReassignModal({ card, onClose, onSuccess }) {
+  const [teachers, setTeachers] = useState([]);
+  const [toTeacherId, setToTeacherId] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    adminApi.getTeachers()
+      .then(data => {
+        const others = (data.teachers || data || []).filter(
+          t => t.id !== card.teacher_id
+        );
+        setTeachers(others);
+        if (others.length > 0) setToTeacherId(String(others[0].id));
+      })
+      .catch(() => setError("Failed to load teachers."));
+  }, [card.teacher_id]);
+
+  async function handleReassign() {
+    if (!toTeacherId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await adminApi.reassignStudents({
+        from_teacher_id: card.teacher_id,
+        grade_level: card.grade_level,
+        section: card.section,
+        to_teacher_id: parseInt(toTeacherId, 10),
+      });
+      onSuccess();
+      onClose();
+    } catch (err) {
+      setError(err.response?.data?.detail || "Failed to reassign students.");
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div
+      style={{
+        position: "fixed", inset: 0, background: "rgba(0,0,0,.45)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        zIndex: 2000, fontFamily: "Poppins, sans-serif",
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          background: "#fff", borderRadius: 14, width: "100%", maxWidth: 420,
+          padding: "28px 28px 24px", boxShadow: "0 8px 32px rgba(0,0,0,.18)",
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        <h2 style={{ margin: "0 0 6px", fontSize: 16, fontWeight: 700, color: "#1a2340" }}>
+          Reassign Students
+        </h2>
+        <p style={{ margin: "0 0 20px", fontSize: 13, color: "#6b7280" }}>
+          Move all students in{" "}
+          <strong>{formatGrade(card.grade_level)} — {card.section}</strong>{" "}
+          ({card.school_year}) to another teacher.
+        </p>
+
+        {error && (
+          <div style={{ background: "#fdf0f0", color: "#e74c3c", borderRadius: 8, padding: "10px 14px", fontSize: 13, marginBottom: 16 }}>
+            {error}
+          </div>
+        )}
+
+        <label style={{ fontSize: 12, fontWeight: 600, color: "#8a94b2", textTransform: "uppercase", letterSpacing: ".4px" }}>
+          New Adviser
+        </label>
+        <select
+          value={toTeacherId}
+          onChange={e => setToTeacherId(e.target.value)}
+          style={{
+            width: "100%", marginTop: 6, marginBottom: 24,
+            padding: "10px 12px", border: "1.5px solid #1a2340",
+            borderRadius: 8, fontSize: 14, fontFamily: "Poppins, sans-serif",
+            color: "#1a2340", background: "#fff",
+          }}
+        >
+          {teachers.map(t => (
+            <option key={t.id} value={t.id}>{t.first_name} {t.last_name}</option>
+          ))}
+        </select>
+
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+          <button
+            onClick={onClose}
+            disabled={loading}
+            style={{
+              padding: "9px 20px", borderRadius: 8, border: "1.5px solid #dde1ee",
+              background: "#fff", color: "#4a5568", fontSize: 13, fontWeight: 600,
+              cursor: "pointer", fontFamily: "Poppins, sans-serif",
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleReassign}
+            disabled={loading || !toTeacherId}
+            style={{
+              padding: "9px 20px", borderRadius: 8, border: "none",
+              background: "#1a2340", color: "#fff", fontSize: 13, fontWeight: 600,
+              cursor: loading || !toTeacherId ? "not-allowed" : "pointer",
+              opacity: loading || !toTeacherId ? 0.7 : 1,
+              fontFamily: "Poppins, sans-serif",
+            }}
+          >
+            {loading ? "Reassigning…" : "Reassign"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ── Class Record sub-view (reuses teacher-side cr-* CSS classes) ──────────────
 
 function ClassRecordView({ card, onBack }) {
   const [record,     setRecord]     = useState(null);
   const [loading,    setLoading]    = useState(true);
-  const [schoolYear, setSchoolYear] = useState(currentSchoolYear());
+  const [schoolYear, setSchoolYear] = useState(card.school_year || currentSchoolYear());
   const [period,     setPeriod]     = useState("beginning");
   const [language,   setLanguage]   = useState("filipino");
   const [selectedSessionId, setSelectedSessionId] = useState(null);
@@ -78,6 +206,8 @@ function ClassRecordView({ card, onBack }) {
       if (schoolYear) params.school_year = schoolYear;
       if (period) params.period = period;
       if (language) params.language = language;
+      if (card.grade_level) params.grade_level = card.grade_level;
+      if (card.section) params.section = card.section;
       const data = await adminApi.getClassRecord(card.teacher_id, params);
       setRecord(data);
     } catch {
@@ -190,7 +320,7 @@ function ClassRecordView({ card, onBack }) {
                   <th className="cr-th cr-th--sub cr-th--group1">Task 2H</th>
                   <th className="cr-th cr-th--sub cr-th--group1">Total</th>
                   <th className="cr-th cr-th--sub cr-th--group1">Part 1 Level</th>
-                  <th className="cr-th cr-th--sub cr-th--group2">Story Title</th>
+                  <th className="cr-th cr-th--sub cr-th--group2">Story #</th>
                   <th className="cr-th cr-th--sub cr-th--group2">Total Words</th>
                   <th className="cr-th cr-th--sub cr-th--group2">Miscues</th>
                   <th className="cr-th cr-th--sub cr-th--group2">Words Read</th>
@@ -235,7 +365,7 @@ function ClassRecordView({ card, onBack }) {
                       <td className="cr-td cr-td--center cr-td--g1">{task2H}</td>
                       <td className="cr-td cr-td--center cr-td--g1">{d(rr?.part1_total_score)}</td>
                       <td className="cr-td cr-td--g1">{rr?.part1_classification ?? "—"}</td>
-                      <td className="cr-td cr-td--g2">{s.passage_title ?? "—"}</td>
+                      <td className="cr-td cr-td--g2">{s.passage_title ? storyLabel(s.passage_title) : "—"}</td>
                       <td className="cr-td cr-td--center cr-td--g2">{d(totalWords)}</td>
                       <td className="cr-td cr-td--center cr-td--g2">{d(miscues)}</td>
                       <td className="cr-td cr-td--center cr-td--g2">{d(wordsRead)}</td>
@@ -279,25 +409,29 @@ export default function AdminStudentsPage() {
   const [loading,  setLoading]  = useState(true);
   const [error,    setError]    = useState(null);
   const [selected, setSelected] = useState(null);
+  const [reassignCard, setReassignCard] = useState(null);
 
   // Search and grade filter
-  const [search, setSearch]     = useState("");
+  const [search, setSearch]         = useState("");
   const [gradeFilter, setGradeFilter] = useState("all");
 
-  useEffect(() => {
+  const loadCards = useCallback(() => {
+    setLoading(true);
     adminApi.getClassCards()
       .then(setCards)
       .catch(() => setError("Failed to load class data. Please refresh."))
       .finally(() => setLoading(false));
   }, []);
 
-  // Unique grade levels for filter
+  useEffect(() => { loadCards(); }, [loadCards]);
+
+  // Unique grade levels for filter pills
   const gradeOptions = useMemo(() => {
     const grades = [...new Set(cards.map(c => c.grade_level))].sort();
     return grades;
   }, [cards]);
 
-  // Filtered list
+  // Filtered list (search + grade filter)
   const filtered = useMemo(() => {
     let list = [...cards];
     if (gradeFilter !== "all") {
@@ -313,6 +447,22 @@ export default function AdminStudentsPage() {
     }
     return list;
   }, [cards, search, gradeFilter]);
+
+  // Group filtered cards by school_year (sorted latest first)
+  const grouped = useMemo(() => {
+    const map = {};
+    for (const card of filtered) {
+      const year = card.school_year || "Unknown";
+      if (!map[year]) map[year] = [];
+      map[year].push(card);
+    }
+    return map;
+  }, [filtered]);
+
+  const sortedYears = useMemo(
+    () => Object.keys(grouped).sort((a, b) => b.localeCompare(a)),
+    [grouped]
+  );
 
   const inputStyle = {
     padding: "8px 12px 8px 34px", border: "1.5px solid #dde1ee", borderRadius: 8,
@@ -379,7 +529,7 @@ export default function AdminStudentsPage() {
             {loading && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginTop: 4 }}>
                 {[1, 2, 3, 4].map(i => (
-                  <div key={i} className="sk-card" style={{ width: 280, height: 120, borderRadius: 14 }} />
+                  <div key={i} className="sk-card" style={{ width: 280, height: 140, borderRadius: 14 }} />
                 ))}
               </div>
             )}
@@ -395,70 +545,130 @@ export default function AdminStudentsPage() {
               }}>
                 <GraduationCap size={44} strokeWidth={1.2} />
                 <p style={{ margin: 0, fontSize: 13 }}>
-                  {search || gradeFilter !== "all" ? "No classes match your filter." : "No class cards yet. Assign grade levels and sections to teachers first."}
+                  {search || gradeFilter !== "all"
+                    ? "No classes match your filter."
+                    : "No class cards yet. Assign grade levels and sections to teachers first."}
                 </p>
               </div>
             )}
 
+            {/* ── Cards grouped by school year ── */}
             {!loading && !error && filtered.length > 0 && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
-                {filtered.map(card => {
-                  const bg   = GRADE_BG[card.grade_level]   ?? "#f0f6ff";
-                  const text = GRADE_TEXT[card.grade_level]  ?? "#2c7fc1";
-                  return (
-                    <button
-                      key={card.teacher_id}
-                      onClick={() => setSelected(card)}
-                      style={{
-                        background: "#fff", border: "1.5px solid #e8ecf4",
-                        borderRadius: 14,
-                        boxShadow: "0 2px 12px rgba(44,62,107,.06)",
-                        padding: "20px 24px", cursor: "pointer", textAlign: "left",
-                        width: 280, transition: "box-shadow 0.15s, transform 0.1s, border-color 0.15s",
-                        fontFamily: "Poppins, sans-serif",
-                      }}
-                      onMouseEnter={e => {
-                        e.currentTarget.style.boxShadow = "0 6px 24px rgba(44,62,107,.14)";
-                        e.currentTarget.style.transform = "translateY(-2px)";
-                        e.currentTarget.style.borderColor = "#c8d0ec";
-                      }}
-                      onMouseLeave={e => {
-                        e.currentTarget.style.boxShadow = "0 2px 12px rgba(44,62,107,.06)";
-                        e.currentTarget.style.transform = "translateY(0)";
-                        e.currentTarget.style.borderColor = "#e8ecf4";
-                      }}
-                    >
-                      <div style={{
-                        display: "inline-block", background: bg, color: text,
-                        borderRadius: 8, padding: "3px 12px",
-                        fontSize: 12, fontWeight: 700, marginBottom: 10,
+              <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+                {sortedYears.map(year => (
+                  <div key={year}>
+                    {/* Year header */}
+                    <div style={{
+                      display: "flex", alignItems: "center", gap: 10, marginBottom: 14,
+                    }}>
+                      <span style={{
+                        fontSize: 12, fontWeight: 700, color: "#8a94b2",
+                        textTransform: "uppercase", letterSpacing: ".7px",
                       }}>
-                        {formatGrade(card.grade_level)}
-                      </div>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: "#1a2340", marginBottom: 6 }}>
-                        {formatGrade(card.grade_level)} — {card.section ?? "No Section"}
-                      </div>
-                      <div style={{
-                        fontSize: 12, color: "#4a5568", fontWeight: 500,
-                        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-                      }}>
-                        Adviser: {card.teacher_name}
-                      </div>
-                      <div style={{
-                        fontSize: 11, color: "#8a94b2", marginTop: 8,
-                        display: "flex", alignItems: "center", gap: 4,
-                      }}>
-                        <Users size={12} />
-                        {card.student_count ?? 0} student{(card.student_count ?? 0) !== 1 ? "s" : ""}
-                      </div>
-                    </button>
-                  );
-                })}
+                        S.Y. {year}
+                      </span>
+                      <div style={{ flex: 1, height: 1, background: "#e8ecf4" }} />
+                    </div>
+
+                    {/* Card grid */}
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
+                      {grouped[year].map(card => {
+                        const bg   = GRADE_BG[card.grade_level]   ?? "#f0f6ff";
+                        const text = GRADE_TEXT[card.grade_level]  ?? "#2c7fc1";
+                        const cardKey = `${card.teacher_id}-${card.grade_level}-${card.section}-${year}`;
+                        return (
+                          <div
+                            key={cardKey}
+                            style={{
+                              background: "#fff", border: "1.5px solid #e8ecf4",
+                              borderRadius: 14, boxShadow: "0 2px 12px rgba(44,62,107,.06)",
+                              padding: "20px 24px", width: 280,
+                              fontFamily: "Poppins, sans-serif",
+                              display: "flex", flexDirection: "column", gap: 0,
+                            }}
+                          >
+                            {/* Grade badge */}
+                            <div style={{ marginBottom: 10 }}>
+                              <span style={{
+                                display: "inline-block", background: bg, color: text,
+                                borderRadius: 8, padding: "3px 12px",
+                                fontSize: 12, fontWeight: 700,
+                              }}>
+                                {formatGrade(card.grade_level)}
+                              </span>
+                            </div>
+
+                            {/* Clickable area */}
+                            <button
+                              onClick={() => setSelected(card)}
+                              style={{
+                                all: "unset", cursor: "pointer", display: "block",
+                              }}
+                            >
+                              <div style={{ fontSize: 15, fontWeight: 700, color: "#1a2340", marginBottom: 4 }}>
+                                {formatGrade(card.grade_level)} — {card.section ?? "No Section"}
+                              </div>
+                              <div style={{
+                                fontSize: 12, color: "#4a5568", fontWeight: 500,
+                                whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                                marginBottom: 2,
+                              }}>
+                                Adviser: {card.teacher_name}
+                              </div>
+                              <div style={{ fontSize: 11, color: "#8a94b2", marginBottom: 8 }}>
+                                S.Y. {card.school_year}
+                              </div>
+                              <div style={{
+                                fontSize: 11, color: "#8a94b2",
+                                display: "flex", alignItems: "center", gap: 4,
+                              }}>
+                                <Users size={12} />
+                                {card.student_count ?? 0} student{(card.student_count ?? 0) !== 1 ? "s" : ""}
+                              </div>
+                            </button>
+
+                            {/* Reassign button */}
+                            <button
+                              onClick={() => setReassignCard(card)}
+                              style={{
+                                marginTop: 12, padding: "6px 0", borderRadius: 7,
+                                border: "1.5px solid #dde1ee", background: "#f7f9ff",
+                                color: "#2c3e6b", fontSize: 12, fontWeight: 600,
+                                cursor: "pointer", fontFamily: "Poppins, sans-serif",
+                                display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                                transition: "background 0.15s, border-color 0.15s",
+                              }}
+                              onMouseEnter={e => {
+                                e.currentTarget.style.background = "#eef3ff";
+                                e.currentTarget.style.borderColor = "#c8d0ec";
+                              }}
+                              onMouseLeave={e => {
+                                e.currentTarget.style.background = "#f7f9ff";
+                                e.currentTarget.style.borderColor = "#dde1ee";
+                              }}
+                            >
+                              <UserCheck size={13} />
+                              Reassign
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </>
         )}
       </div>
+
+      {reassignCard && (
+        <ReassignModal
+          card={reassignCard}
+          onClose={() => setReassignCard(null)}
+          onSuccess={loadCards}
+        />
+      )}
     </Layout>
   );
 }

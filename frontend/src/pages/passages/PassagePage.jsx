@@ -14,6 +14,7 @@ import { passagesApi } from "../../services/api";
 import { parseApiError } from "../../utils/apiError";
 
 import "../pages css/PassagePage.css";
+import "../pages css/AddPassagePage.css";
 
 export default function PassagePage() {
   const navigate = useNavigate();
@@ -117,28 +118,15 @@ export default function PassagePage() {
       <div className="ph-page">
 
         <TopBar title="Reading Passages">
-          <AppButton
-            variant="outline"
-            onClick={() => setUploadOpen(true)}
-            style={{ display: "flex", alignItems: "center", gap: "6px", background: "#fff", borderColor: "#c8d0e4", color: "#1a2340", padding: "8px 16px", borderRadius: "8px", border: "1.5px solid #c8d0e4", fontWeight: 600, fontSize: "13px", cursor: "pointer" }}
-          >
-            <Upload size={15} />
-            Upload
-          </AppButton>
-          <AppButton
-            variant="teal"
-            onClick={() => navigate("/passages/add-assessment-1")}
-          >
-            <Plus size={15} />
-            Add Assessment 1
-          </AppButton>
-          <AppButton
-            variant="teal"
-            onClick={() => navigate("/passages/add-assessment-2")}
-          >
-            <Plus size={15} />
-            Add Assessment 2
-          </AppButton>
+          <button className="ap-save-btn" onClick={() => setUploadOpen(true)} style={{ display: "flex", alignItems: "center", gap: 6, background: "#fff", borderColor: "#c8d0e4" }}>
+            <Upload size={15} /> Upload
+          </button>
+          <button className="ap-save-btn" onClick={() => navigate("/passages/add-assessment-1")} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <Plus size={15} /> Add Assessment 1
+          </button>
+          <button className="ap-save-btn" onClick={() => navigate("/passages/add-assessment-2")} style={{ display: "flex", alignItems: "center", gap: 6, background: "#2c3e6b", color: "#fff", borderColor: "#2c3e6b" }}>
+            <Plus size={15} /> Add Assessment 2
+          </button>
         </TopBar>
 
         {loading && (

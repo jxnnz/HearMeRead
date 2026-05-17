@@ -109,25 +109,43 @@ export default function UploadModal({ onClose, onUpload, defaultType = 2, eng3 =
               whiteSpace: "pre-wrap"
             }}>
               {selectedType === 1 ? (
-                <>
-                  <div style={{ color: "#9333ea", fontWeight: 700 }}>Language:</div>
-                  <div>{eng3 ? "English" : "Filipino"}</div>
-                  <div style={{ color: "#9333ea", fontWeight: 700, marginTop: 4 }}>Grade Level:</div>
-                  <div>{eng3 ? "3" : "1"}</div>
-                  <br/>
-                  <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Task 1:</div>
-                  <div>{eng3 ? "cat, dog, bird, fish" : "Isang araw, si Maria ay naglalakad sa bukid."}</div>
-                  <br/>
-                  <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Task 2 Words:</div>
-                  <div>{eng3 ? "sun, moon, star" : "aso, bata, pusa"}</div>
-                  {!eng3 && (
-                    <>
-                      <br/>
-                      <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Task 2 Sentences:</div>
-                      <div>Ang bata ay masaya. Siya ay mabait.</div>
-                    </>
-                  )}
-                </>
+                eng3 ? (
+                  <>
+                    <div style={{ color: "#9333ea", fontWeight: 700 }}>Language:</div>
+                    <div>English</div>
+                    <div style={{ color: "#9333ea", fontWeight: 700, marginTop: 4 }}>Grade Level:</div>
+                    <div>3</div>
+                    <br/>
+                    <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Task 1:</div>
+                    <div>cat, dog, bird, fish, house, tree, sun, moon, star, run</div>
+                    <br/>
+                    <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Task 2 Words:</div>
+                    <div>sun, moon, star, tree, house, run, ball, cat, fish, bird</div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ color: "#9333ea", fontWeight: 700 }}>Language:</div>
+                    <div>Filipino</div>
+                    <div style={{ color: "#9333ea", fontWeight: 700, marginTop: 4 }}>Grade:</div>
+                    <div>1</div>
+                    <br/>
+                    <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Task 1:</div>
+                    <div>b, ng, T, e, p, s, H, G, u, L</div>
+                    <br/>
+                    <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Task 2:</div>
+                    <br/>
+                    <div><span style={{ color: "#d97706", fontWeight: 600 }}>W:</span> sanay, tunay</div>
+                    <div><span style={{ color: "#059669", fontWeight: 600 }}>R:</span> Yes</div>
+                    <div><span style={{ color: "#d97706", fontWeight: 600 }}>W:</span> ulam, anim</div>
+                    <div><span style={{ color: "#059669", fontWeight: 600 }}>R:</span> No</div>
+                    <div><span style={{ color: "#d97706", fontWeight: 600 }}>W:</span> hinog, lamig</div>
+                    <div><span style={{ color: "#059669", fontWeight: 600 }}>R:</span> No</div>
+                    <div style={{ color: "#888", fontSize: 12, marginTop: 4 }}>… (10 pairs total)</div>
+                    <br/>
+                    <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Task 2 Sentences:</div>
+                    <div>Ang bata ay masaya. Siya ay mabait.</div>
+                  </>
+                )
               ) : (
                 <>
                   <div style={{ color: "#9333ea", fontWeight: 700 }}>Language:</div>

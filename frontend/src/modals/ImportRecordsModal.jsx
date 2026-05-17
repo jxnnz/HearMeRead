@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { X, Upload, FileSpreadsheet, CheckCircle, AlertCircle } from "lucide-react";
 import { studentsApi } from "../services/api";
 import "./ImportRecordsModal.css";
@@ -15,16 +15,35 @@ function currentSchoolYear() {
   return now.getMonth() < 5 ? `${y - 1}-${y}` : `${y}-${y + 1}`;
 }
 
+function defaultYears() {
+  const now = new Date();
+  const cy = now.getMonth() < 5 ? now.getFullYear() - 1 : now.getFullYear();
+  return [`${cy}-${cy + 1}`, `${cy - 1}-${cy}`, `${cy - 2}-${cy - 1}`];
+}
+
 export default function ImportRecordsModal({ isOpen, onClose, onSuccess }) {
   const fileInputRef = useRef(null);
 
-  const [file, setFile]           = useState(null);
-  const [schoolYear, setSchoolYear] = useState(currentSchoolYear());
-  const [period, setPeriod]       = useState("beginning");
-  const [dragging, setDragging]   = useState(false);
-  const [loading, setLoading]     = useState(false);
-  const [result, setResult]       = useState(null);
-  const [error, setError]         = useState(null);
+  const [file, setFile]               = useState(null);
+  const [schoolYear, setSchoolYear]   = useState(currentSchoolYear());
+  const [schoolYears, setSchoolYears] = useState(defaultYears());
+  const [period, setPeriod]           = useState("beginning");
+  const [dragging, setDragging]       = useState(false);
+  const [loading, setLoading]         = useState(false);
+  const [result, setResult]           = useState(null);
+  const [error, setError]             = useState(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    studentsApi.listSchoolYears()
+      .then((data) => {
+        const apiYears = data.school_years || [];
+        const merged = [...new Set([...apiYears, ...defaultYears()])].sort((a, b) => b.localeCompare(a));
+        setSchoolYears(merged);
+        if (!merged.includes(schoolYear)) setSchoolYear(merged[0]);
+      })
+      .catch(() => {});
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -144,14 +163,16 @@ export default function ImportRecordsModal({ isOpen, onClose, onSuccess }) {
           <div className="im-fields">
             <div className="im-field">
               <label htmlFor="im-year">School Year</label>
-              <input
+              <select
                 id="im-year"
-                type="text"
                 className="im-input"
                 value={schoolYear}
                 onChange={(e) => setSchoolYear(e.target.value)}
-                placeholder="e.g. 2024-2025"
-              />
+              >
+                {schoolYears.map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
             </div>
             <div className="im-field">
               <label htmlFor="im-period">Assessment Period</label>

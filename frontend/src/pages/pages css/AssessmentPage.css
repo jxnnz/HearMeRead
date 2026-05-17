@@ -777,6 +777,14 @@ select.si-input {
   background: #e8f3fc;
 }
 
+.asp-a2-card__num {
+  font-size: 11px;
+  font-weight: 700;
+  color: #2c3e6b;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+
 .asp-a2-card__title {
   font-size: 14px;
   font-weight: 700;

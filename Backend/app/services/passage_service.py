@@ -21,10 +21,18 @@ async def _get_teacher_assigned_grade(
     db: AsyncSession, teacher_id: int
 ) -> Optional[GradeLevel]:
     """
-    Return the grade level from the teacher's most recent active assignment.
-    Falls back across school years if no current-year assignment exists
-    (carry-forward behaviour).
+    Return the teacher's current assigned grade level from Teacher.grade_level,
+    which is the admin-maintained field and always reflects the latest assignment.
+    Falls back to the most recent active TeacherAssignment if grade_level is unset.
     """
+    result = await db.execute(
+        select(Teacher.grade_level).where(Teacher.id == teacher_id)
+    )
+    grade = result.scalar_one_or_none()
+    if grade:
+        return grade
+
+    # Fallback: TeacherAssignment carry-forward for teachers with no grade set directly
     result = await db.execute(
         select(TeacherAssignment.grade_level)
         .where(
@@ -34,8 +42,7 @@ async def _get_teacher_assigned_grade(
         .order_by(TeacherAssignment.school_year.desc())
         .limit(1)
     )
-    row = result.scalar_one_or_none()
-    return row
+    return result.scalar_one_or_none()
 
 
 async def _get_teacher_school_id(

@@ -159,6 +159,11 @@ export const adminApi = {
     return res.data;
   },
 
+  reassignStudents: async (payload) => {
+    const res = await api.post("/admin/students/reassign", payload);
+    return res.data;
+  },
+
   // ── Teacher Assignments ──────────────────────────────────────────────────
 
   getAssignments: async (params = {}) => {
