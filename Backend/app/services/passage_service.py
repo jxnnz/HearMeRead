@@ -101,8 +101,10 @@ async def get_passages(
     )
     total = count_result.scalar_one()
 
+    from sqlalchemy.orm import selectinload
     result = await db.execute(
         select(Passage)
+        .options(selectinload(Passage.questions))
         .where(and_(*common_filters))
         .order_by(Passage.created_at.desc())
         .offset((page - 1) * page_size)
@@ -120,8 +122,11 @@ async def get_passage_by_id(
     - The teacher owns it, OR
     - It's a public passage in the same school
     """
+    from sqlalchemy.orm import selectinload
     result = await db.execute(
-        select(Passage).where(Passage.id == passage_id)
+        select(Passage)
+        .options(selectinload(Passage.questions))
+        .where(Passage.id == passage_id)
     )
     passage = result.scalar_one_or_none()
     if not passage:

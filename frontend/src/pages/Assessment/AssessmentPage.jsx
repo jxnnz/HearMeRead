@@ -278,6 +278,7 @@ export default function AssessmentPage() {
 
   // ── Session creation ─────────────────────────────────────────────────────
   async function handleContinue() {
+    if (creating) return;
     setCreateError(null);
     if (!form.student_id)  { setCreateError("Please select a student."); return; }
     if (!form.passage_id)  { setCreateError("Please select a passage."); return; }
