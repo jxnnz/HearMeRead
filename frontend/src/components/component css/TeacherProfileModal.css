@@ -1,0 +1,238 @@
+.tpm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.tpm-modal {
+  background: #ffffff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 480px;
+  padding: 32px;
+  position: relative;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  animation: modal-pop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes modal-pop {
+  0% { transform: scale(0.9); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.tpm-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  color: #8a94b2;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  transition: all 0.2s;
+}
+
+.tpm-close:hover {
+  background: #f1f3f8;
+  color: #1a233a;
+}
+
+.tpm-title {
+  margin: 0 0 24px 0;
+  color: #1a233a;
+  font-size: 20px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.tpm-error {
+  background: #fdf0f0;
+  color: #e74c3c;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.tpm-avatar-section {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 32px;
+}
+
+.tpm-avatar-wrapper {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: #f1f3f8;
+  border: 2px solid #e0e4f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tpm-avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.tpm-avatar-initials {
+  font-size: 32px;
+  font-weight: 700;
+  color: #8a94b2;
+}
+
+.tpm-avatar-loading {
+  color: #4a6ee0;
+}
+.spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
+.tpm-avatar-edit-btn {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #4a6ee0;
+  color: white;
+  border: 2px solid white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.tpm-avatar-edit-btn:hover:not(:disabled) {
+  background: #3a5bcf;
+}
+.tpm-avatar-edit-btn:disabled {
+  background: #8a94b2;
+  cursor: not-allowed;
+}
+
+.tpm-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tpm-form-row {
+  display: flex;
+  gap: 16px;
+}
+
+.tpm-field {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.tpm-field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8a94b2;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tpm-field input {
+  padding: 10px 14px;
+  border: 1.5px solid #1a233a;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1a233a;
+  background: transparent;
+  transition: all 0.2s;
+}
+
+.tpm-field input:focus {
+  outline: none;
+  border-color: #4a6ee0;
+  box-shadow: 0 0 0 3px rgba(74, 110, 224, 0.1);
+}
+
+.tpm-field input::placeholder {
+  color: #aab3c5;
+}
+
+.tpm-divider {
+  border: none;
+  border-top: 1px solid #e0e4f0;
+  margin: 8px 0;
+}
+
+.tpm-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a233a;
+  margin: 0;
+}
+
+.tpm-readonly-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.tpm-readonly-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.tpm-ro-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #8a94b2;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.tpm-ro-value {
+  font-size: 14px;
+  color: #1a233a;
+  font-weight: 500;
+}
+
+.tpm-actions {
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.tpm-btn {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.tpm-btn-primary {
+  background: #4a6ee0;
+  color: white;
+}
+.tpm-btn-primary:hover:not(:disabled) {
+  background: #3a5bcf;
+}
+.tpm-btn-primary:disabled {
+  background: #aab6eb;
+  cursor: not-allowed;
+}

@@ -108,7 +108,13 @@ class TeacherResponse(BaseModel):
     role:        UserRole       = UserRole.teacher
     school_id:   Optional[int] = None
     school_code: Optional[str] = None
+    school_name: Optional[str] = None
+    deped_school_id: Optional[str] = None
+    grade_level: Optional[GradeLevel] = None
+    section:     Optional[str] = None
     is_verified: bool           = False
+    profile_picture_url: Optional[str] = None
+    employee_id: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -121,6 +127,36 @@ class SchoolLookupResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class TeacherProfileUpdate(BaseModel):
+    first_name:  Optional[str] = Field(None, min_length=1, max_length=75)
+    last_name:   Optional[str] = Field(None, min_length=1, max_length=75)
+    employee_id: Optional[str] = Field(None, max_length=7)
+    profile_picture_url: Optional[str] = None
+
+    @field_validator("first_name", "last_name")
+    @classmethod
+    def no_special_chars(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        if not re.match(r"^[A-Za-zÀ-ÖØ-öø-ÿ\s'\-]+$", v.strip()):
+            raise ValueError("Name contains invalid characters")
+        return v.strip()
+
+    @field_validator("employee_id")
+    @classmethod
+    def validate_employee_id(cls, v: Optional[str]) -> Optional[str]:
+        if v is None or v == "":
+            return None
+        if not re.fullmatch(r"\d{7}", v):
+            raise ValueError("Employee ID must be exactly 7 digits")
+        return v
+
+
+class ProfilePictureUrlResponse(BaseModel):
+    presigned_url: str
+    key: str
 
 
 class AdminDashboardResponse(BaseModel):

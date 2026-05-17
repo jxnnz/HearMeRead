@@ -26,6 +26,13 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     RESEND_API_KEY: str
+
+    # Cloudflare R2 (optional — leave blank in dev if not yet configured)
+    R2_ACCOUNT_ID: str = ""
+    R2_ACCESS_KEY_ID: str = ""
+    R2_SECRET_ACCESS_KEY: str = ""
+    R2_BUCKET_NAME: str = ""
+    R2_PUBLIC_URL: str = ""
     EMAIL_ADDRESS: str
     EMAIL_NAME: str
     FRONTEND_URL: str = "http://localhost:5173"

@@ -156,12 +156,6 @@ export default function SignupForm({ onSubmit, loading }) {
             <input id="signup-lastname" type="text" className="auth-input" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder=" " required autoComplete="family-name" />
             <label className="auth-label-float" htmlFor="signup-lastname">Last Name</label>
           </div>
-          {/* Employee ID — commented out pending confirmation
-          <div className="auth-field-float">
-            <input id="signup-employee-id" type="text" className="auth-input" placeholder=" " autoComplete="off" />
-            <label className="auth-label-float" htmlFor="signup-employee-id">Employee ID</label>
-          </div>
-          */}
         </div>
 
         {/* ══ TEACHER school fields ══════════════════════════════════════════ */}

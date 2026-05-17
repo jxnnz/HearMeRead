@@ -110,6 +110,11 @@ export default function UploadModal({ onClose, onUpload, defaultType = 2, eng3 =
             }}>
               {selectedType === 1 ? (
                 <>
+                  <div style={{ color: "#9333ea", fontWeight: 700 }}>Language:</div>
+                  <div>{eng3 ? "English" : "Filipino"}</div>
+                  <div style={{ color: "#9333ea", fontWeight: 700, marginTop: 4 }}>Grade Level:</div>
+                  <div>{eng3 ? "3" : "1"}</div>
+                  <br/>
                   <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Task 1:</div>
                   <div>{eng3 ? "cat, dog, bird, fish" : "Isang araw, si Maria ay naglalakad sa bukid."}</div>
                   <br/>
@@ -125,6 +130,11 @@ export default function UploadModal({ onClose, onUpload, defaultType = 2, eng3 =
                 </>
               ) : (
                 <>
+                  <div style={{ color: "#9333ea", fontWeight: 700 }}>Language:</div>
+                  <div>Filipino</div>
+                  <div style={{ color: "#9333ea", fontWeight: 700, marginTop: 4 }}>Grade Level:</div>
+                  <div>2</div>
+                  <br/>
                   <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Title:</div>
                   <div>Ang Pagong at Matsing</div>
                   <br/>

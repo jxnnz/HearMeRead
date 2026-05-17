@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronLeft, Info } from "lucide-react";
 
 import Layout from "../../components/Layout";
@@ -21,7 +21,23 @@ function isEnglishGrade3(form) {
 
 export default function AddAssessment1Page() {
   const navigate = useNavigate();
-  const [form, setForm] = useState(EMPTY_FORM);
+  const location = useLocation();
+  
+  const [form, setForm] = useState(() => {
+    const parsed = location.state?.parsedData;
+    if (parsed) {
+      return {
+        ...EMPTY_FORM,
+        language: parsed.language || EMPTY_FORM.language,
+        grade_level: parsed.grade_level || EMPTY_FORM.grade_level,
+        task1_content: parsed.task1 || "",
+        task2_words: parsed.task2Words || "",
+        task2_sentences: parsed.task2Sentences || "",
+      };
+    }
+    return EMPTY_FORM;
+  });
+
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 

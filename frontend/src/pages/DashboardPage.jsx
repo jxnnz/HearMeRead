@@ -13,7 +13,8 @@ import DashboardStatCard         from "../components/DashboardStatCard";
 import ReadingProfileChart       from "../components/ReadingProfileChart";
 import FluencyComprehensionChart from "../components/FluencyComprehensionChart";
 import * as XLSX from "xlsx";
-import { dashboardApi, studentsApi } from "../services/api";
+import { dashboardApi, studentsApi, authApi } from "../services/api";
+import TeacherProfileModal from "../components/TeacherProfileModal";
 
 import "./DashboardPage.css";
 
@@ -108,16 +109,18 @@ export default function DashboardPage() {
   const [fluencyAcc,  setFluencyAcc]  = useState([]);
   const [fluencyWpm,  setFluencyWpm]  = useState([]);
   const [students,    setStudents]    = useState([]);
+  const [user,        setUser]        = useState(null);
+  const [showProfile, setShowProfile] = useState(false);
   const [loading,     setLoading]     = useState(true);
   const [error,       setError]       = useState(null);
 
   useEffect(() => {
-    console.time("Fetch Dashboard Data");
     Promise.all([
       dashboardApi.getSummary(schoolYear),
       studentsApi.list(),
+      authApi.me(),
     ])
-      .then(([summary, studentData]) => {
+      .then(([summary, studentData, userData]) => {
         setStats({
           totalStudents:    summary.stats.total_students,
           totalAssessed:    summary.stats.total_assessed,
@@ -129,6 +132,7 @@ export default function DashboardPage() {
         setFluencyAcc(summary.fluency_accuracy);
         setFluencyWpm(summary.fluency_wpm);
         setStudents(studentData.students ?? []);
+        setUser(userData);
       })
       .catch((e) => {
         const detail = e.response?.data?.detail;
@@ -138,7 +142,6 @@ export default function DashboardPage() {
         setError(typeof msg === "string" ? msg : JSON.stringify(msg));
       })
       .finally(() => {
-        console.timeEnd("Fetch Dashboard Data");
         setLoading(false);
       });
   }, [schoolYear]);
@@ -211,21 +214,21 @@ export default function DashboardPage() {
 
         {/* ── Page header ── */}
         <TopBar title="Dashboard">
-          <button
-            className="db-btn db-btn--new"
-            onClick={() => navigate("/assessment")}
-          >
-            <Plus size={15} />
-            New Session
-          </button>
-          <button
-            className="db-btn db-btn--export"
-            onClick={handleExport}
-            disabled={students.length === 0}
-          >
-            <Download size={15} />
-            Export
-          </button>
+          {user && (
+            <button 
+              className="db-avatar-btn" 
+              onClick={() => setShowProfile(true)}
+              title="My Profile"
+            >
+              {user.profile_picture_url ? (
+                <img src={user.profile_picture_url} alt="Profile" className="db-avatar-img" />
+              ) : (
+                <span className="db-avatar-initials">
+                  {(user.first_name?.[0] || "") + (user.last_name?.[0] || "")}
+                </span>
+              )}
+            </button>
+          )}
         </TopBar>
 
         {/* ── School year indicator ── */}
@@ -284,6 +287,13 @@ export default function DashboardPage() {
         )}
 
       </div>
+      {showProfile && user && (
+        <TeacherProfileModal 
+          user={user} 
+          onClose={() => setShowProfile(false)} 
+          onProfileUpdated={setUser} 
+        />
+      )}
     </Layout>
   );
 }

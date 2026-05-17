@@ -22,6 +22,22 @@ export async function parseFile(file) {
 
 export function parseDocument(text, type, eng3) {
   const result = {};
+
+  // ── Extract Language & Grade Level metadata ──
+  const langMatch = text.match(/Language[\s:-]+(.+?)(?:\n|$)/i);
+  if (langMatch) {
+    const raw = langMatch[1].trim().toLowerCase();
+    if (raw === "english" || raw === "filipino") result.language = raw;
+  }
+
+  const gradeMatch = text.match(/Grade\s*Level[\s:-]+(.+?)(?:\n|$)/i);
+  if (gradeMatch) {
+    const raw = gradeMatch[1].trim().toLowerCase().replace(/\s+/g, "");
+    if (raw === "1" || raw === "grade1" || raw === "grade_1") result.grade_level = "grade_1";
+    else if (raw === "2" || raw === "grade2" || raw === "grade_2") result.grade_level = "grade_2";
+    else if (raw === "3" || raw === "grade3" || raw === "grade_3") result.grade_level = "grade_3";
+  }
+
   if (type === 1) {
     const task1Match = text.match(/Task 1[\s:-]+([\s\S]*?)(?:Task 2|$)/i);
     if (task1Match) result.task1 = task1Match[1].trim();

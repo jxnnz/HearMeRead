@@ -17,7 +17,7 @@ from app.schema import (
     TeacherRegister, LoginRequest, TokenResponse,
     TeacherResponse, ResendVerificationRequest,
     ForgotPasswordRequest, ResetPasswordRequest,
-    SchoolLookupResponse,
+    SchoolLookupResponse, TeacherProfileUpdate, ProfilePictureUrlResponse
 )
 from app.services.email_service import (
     send_verification_email, send_password_reset_email, send_admin_welcome_email,
@@ -375,8 +375,96 @@ async def login(request: Request, data: LoginRequest, db: AsyncSession = Depends
     response_model=TeacherResponse,
     summary="Get the currently authenticated teacher",
 )
-async def get_me(current_teacher: Teacher = Depends(get_current_teacher)):
-    return current_teacher
+async def get_me(
+    db: AsyncSession = Depends(get_db),
+    current_teacher: Teacher = Depends(get_current_teacher),
+):
+    from app.services.storage_service import get_presigned_url
+    
+    # Eagerly load school relationship
+    if current_teacher.school_id:
+        school_result = await db.execute(
+            select(School).where(School.id == current_teacher.school_id)
+        )
+        school = school_result.scalar_one_or_none()
+    else:
+        school = None
+
+    response_data = TeacherResponse.model_validate(current_teacher)
+    if school:
+        response_data.school_name = school.name
+        response_data.school_code = school.school_code
+        response_data.deped_school_id = school.deped_school_id
+    if current_teacher.profile_picture_url:
+        response_data.profile_picture_url = get_presigned_url(current_teacher.profile_picture_url, expires_in=3600)
+    return response_data
+
+
+@router.patch(
+    "/me",
+    response_model=TeacherResponse,
+    summary="Update the currently authenticated teacher's profile",
+)
+async def update_me(
+    data: TeacherProfileUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_teacher: Teacher = Depends(get_current_teacher),
+):
+    from app.services.storage_service import get_presigned_url
+    
+    if data.first_name is not None:
+        current_teacher.first_name = data.first_name
+    if data.last_name is not None:
+        current_teacher.last_name = data.last_name
+    if data.employee_id is not None:
+        current_teacher.employee_id = data.employee_id
+    if data.profile_picture_url is not None:
+        current_teacher.profile_picture_url = data.profile_picture_url
+
+    await db.commit()
+    await db.refresh(current_teacher)
+    
+    # Eagerly load school relationship
+    if current_teacher.school_id:
+        school_result = await db.execute(
+            select(School).where(School.id == current_teacher.school_id)
+        )
+        school = school_result.scalar_one_or_none()
+    else:
+        school = None
+
+    response_data = TeacherResponse.model_validate(current_teacher)
+    if school:
+        response_data.school_name = school.name
+        response_data.school_code = school.school_code
+        response_data.deped_school_id = school.deped_school_id
+    if current_teacher.profile_picture_url:
+        response_data.profile_picture_url = get_presigned_url(current_teacher.profile_picture_url, expires_in=3600)
+    return response_data
+
+
+@router.get(
+    "/me/profile-picture-url",
+    response_model=ProfilePictureUrlResponse,
+    summary="Get a presigned URL to upload a profile picture",
+)
+async def get_profile_picture_upload_url(
+    content_type: str = Query(..., description="MIME type of the image, e.g. image/jpeg or image/png"),
+    current_teacher: Teacher = Depends(get_current_teacher),
+):
+    if content_type not in ["image/jpeg", "image/png", "image/webp"]:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="Unsupported image format. Allowed: image/jpeg, image/png, image/webp"
+        )
+        
+    from app.services.storage_service import _make_key, generate_presigned_put_url
+    import os
+    ext = content_type.split("/")[-1]
+    key = _make_key(f"profiles/{current_teacher.id}", f"profile.{ext}")
+    
+    url = generate_presigned_put_url(key, content_type=content_type, expires_in=300)
+    return ProfilePictureUrlResponse(presigned_url=url, key=key)
 
 
 # ── School lookup ─────────────────────────────────────────────────────────────

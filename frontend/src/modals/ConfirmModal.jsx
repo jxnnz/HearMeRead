@@ -52,9 +52,6 @@ export default function ConfirmModal({
   return (
     <div className="cm-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="cm-title">
       <div className={`cm-modal cm-modal--${variant}`} onClick={(e) => e.stopPropagation()}>
-        <button className="cm-close" onClick={onClose} aria-label="Close">
-          <X size={18} />
-        </button>
 
         <div className={`cm-icon cm-icon--${variant}`}>
           {iconMap[variant] ?? iconMap.default}

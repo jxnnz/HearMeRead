@@ -6,6 +6,8 @@
 
 .layout__main {
   flex: 1;
+  min-width: 0;
+  overflow-x: hidden;
   padding: 20px 24px;
 }
 

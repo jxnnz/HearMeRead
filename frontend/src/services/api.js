@@ -86,6 +86,16 @@ export const authApi = {
     return res.data;
   },
 
+  updateProfile: async (data) => {
+    const res = await api.patch("/auth/me", data);
+    return res.data;
+  },
+
+  getProfilePictureUploadUrl: async (contentType) => {
+    const res = await api.get("/auth/me/profile-picture-url", { params: { content_type: contentType } });
+    return res.data;
+  },
+
   resendVerification: async (email) => {
     const res = await api.post("/auth/resend-verification", { email });
     return res.data;

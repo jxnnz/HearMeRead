@@ -211,8 +211,27 @@
 
 /* ── Table wrapper ───────────────────────────────────── */
 .cr-table-wrapper {
-  overflow-x: auto;
+  overflow: auto;
   -webkit-overflow-scrolling: touch;
+  max-height: calc(100vh - 300px);
+}
+
+.cr-table-wrapper::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+.cr-table-wrapper::-webkit-scrollbar-track {
+  background: #f4f6fb;
+}
+.cr-table-wrapper::-webkit-scrollbar-thumb {
+  background: #c5cde8;
+  border-radius: 10px;
+}
+.cr-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #8fa3d4;
+}
+.cr-table-wrapper::-webkit-scrollbar-corner {
+  background: #f4f6fb;
 }
 
 /* ── Assessment table ────────────────────────────────── */
@@ -225,6 +244,9 @@
 }
 
 .cr-th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   background: #f4f6fb;
   color: #080808;
   font-weight: 600;

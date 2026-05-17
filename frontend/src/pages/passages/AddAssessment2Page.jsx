@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronLeft, Plus, X, Upload, FileText } from "lucide-react";
 
 import Layout from "../../components/Layout";
@@ -24,9 +24,34 @@ function blankQuestion() {
 
 export default function AddAssessment2Page() {
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [details, setDetails]     = useState(EMPTY_DETAILS);
-  const [questions, setQuestions] = useState([blankQuestion()]);
+  const [details, setDetails] = useState(() => {
+    const parsed = location.state?.parsedData;
+    if (parsed) {
+      return {
+        ...EMPTY_DETAILS,
+        language: parsed.language || EMPTY_DETAILS.language,
+        grade_level: parsed.grade_level || EMPTY_DETAILS.grade_level,
+        title: parsed.title || "",
+        content: parsed.content || "",
+      };
+    }
+    return EMPTY_DETAILS;
+  });
+  
+  const [questions, setQuestions] = useState(() => {
+    const parsed = location.state?.parsedData;
+    if (parsed?.questions?.length > 0) {
+      return parsed.questions.map(q => ({
+        id: crypto.randomUUID(),
+        question: q.question || "",
+        answer: q.answer || ""
+      }));
+    }
+    return [blankQuestion()];
+  });
+  
   const [saving, setSaving]       = useState(false);
   const [error, setError]         = useState(null);
 

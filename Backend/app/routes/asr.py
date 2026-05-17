@@ -9,7 +9,7 @@ from sqlalchemy import select
 from app.db import get_db
 from app.models import Teacher, ReadingResult, Language
 from app.services.asr_service import transcribe_audio, SUPPORTED_EXTENSIONS
-from app.services.audio_storage import save_audio, get_audio_path, get_audio_media_type
+from app.services.storage_service import upload_audio, get_presigned_url
 from app.services.session_service import get_session_by_id
 from app.dependencies import get_current_teacher
 
@@ -57,8 +57,11 @@ async def transcribe_session_audio(
             detail="Uploaded audio file is empty.",
         )
 
-    # 4. Persist audio to disk
-    audio_path, expires_at = save_audio(audio_bytes, session_id, ext)
+    # 4. Persist audio to R2
+    r2_key = await upload_audio(audio_bytes, audio.filename or "audio.webm", str(session_id))
+    
+    from datetime import datetime, timezone, timedelta
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
 
     # 5. Determine language code
     lang_code = "fil" if session.language == Language.filipino else "en"
@@ -87,12 +90,12 @@ async def transcribe_session_audio(
     )
     reading_result = rr_query.scalar_one_or_none()
     if reading_result:
-        reading_result.audio_path = audio_path
+        reading_result.audio_path = r2_key
         reading_result.audio_expires_at = expires_at
     else:
         reading_result = ReadingResult(
             session_id=session_id,
-            audio_path=audio_path,
+            audio_path=r2_key,
             audio_expires_at=expires_at,
         )
         db.add(reading_result)
@@ -130,18 +133,12 @@ async def get_session_audio(
             detail="No audio recording found for this session.",
         )
 
-    # 3. Resolve file on disk
-    file_path = get_audio_path(reading_result.audio_path)
-    if not file_path:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Audio file not found on disk.",
-        )
-
-    # 4. Stream the file
-    media_type = get_audio_media_type(reading_result.audio_path)
-    headers = {"Content-Disposition": f'inline; filename="{file_path.name}"'}
-    if reading_result.audio_expires_at:
-        headers["X-Audio-Expires-At"] = reading_result.audio_expires_at.isoformat()
-
-    return FileResponse(path=str(file_path), media_type=media_type, headers=headers)
+    # 3. Stream the file directly from R2, or return a presigned URL.
+    # Since the frontend might expect an audio stream, we can either return a RedirectResponse to the presigned URL,
+    # or return a JSON with the URL. If the client uses an <audio src="/sessions/X/audio"> tag, 
+    # a RedirectResponse to the R2 URL works perfectly.
+    
+    presigned_url = get_presigned_url(reading_result.audio_path, expires_in=3600)
+    
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url=presigned_url)

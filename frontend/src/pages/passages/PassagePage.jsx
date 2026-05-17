@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, FileText, Globe, Lock } from "lucide-react";
+import { Plus, FileText, Globe, Lock, Upload } from "lucide-react";
 
 import Layout from "../../components/Layout";
 import TopBar from "../../components/TopBar";
@@ -8,6 +8,7 @@ import PassageCard from "../../components/PassageCard";
 import AppButton from "../../components/AppButton";
 import ConfirmModal from "../../modals/ConfirmModal";
 import Toast from "../../modals/Toast";
+import UploadModal from "../../components/UploadModal";
 import useToast from "../../hooks/Usetoast";
 import { passagesApi } from "../../services/api";
 import { parseApiError } from "../../utils/apiError";
@@ -27,6 +28,8 @@ export default function PassagePage() {
 
   // View-only modal for public passages
   const [viewPassage, setViewPassage] = useState(null);
+
+  const [uploadOpen, setUploadOpen] = useState(false);
 
   useEffect(() => {
     passagesApi
@@ -115,6 +118,14 @@ export default function PassagePage() {
 
         <TopBar title="Reading Passages">
           <AppButton
+            variant="outline"
+            onClick={() => setUploadOpen(true)}
+            style={{ display: "flex", alignItems: "center", gap: "6px", background: "#fff", borderColor: "#c8d0e4", color: "#1a2340", padding: "8px 16px", borderRadius: "8px", border: "1.5px solid #c8d0e4", fontWeight: 600, fontSize: "13px", cursor: "pointer" }}
+          >
+            <Upload size={15} />
+            Upload
+          </AppButton>
+          <AppButton
             variant="teal"
             onClick={() => navigate("/passages/add-assessment-1")}
           >
@@ -181,20 +192,28 @@ export default function PassagePage() {
             )}
 
             {/* ── My Passages (private, full CRUD) ── */}
-            <div className="ph-section-label">
-              <Lock size={14} color="#6b7280" />
-              <span>My Passages</span>
-            </div>
-            <AssessmentSection
-              label="Assessment 1"
-              list={myA1}
-              icon={null}
-            />
-            <AssessmentSection
-              label="Assessment 2"
-              list={myA2}
-              icon={null}
-            />
+            {(myA1.length > 0 || myA2.length > 0) && (
+              <>
+                <div className="ph-section-label">
+                  <Lock size={14} color="#6b7280" />
+                  <span>My Passages</span>
+                </div>
+                {myA1.length > 0 && (
+                  <AssessmentSection
+                    label="Assessment 1"
+                    list={myA1}
+                    icon={null}
+                  />
+                )}
+                {myA2.length > 0 && (
+                  <AssessmentSection
+                    label="Assessment 2"
+                    list={myA2}
+                    icon={null}
+                  />
+                )}
+              </>
+            )}
           </>
         )}
 
@@ -250,13 +269,17 @@ export default function PassagePage() {
                 ✕
               </button>
             </div>
-            <div style={{
-              fontSize: 14, lineHeight: 1.8, color: "#1a2340",
-              whiteSpace: "pre-wrap", marginTop: 12,
-            }}>
-              {viewPassage.assessment_type === 1
-                ? viewPassage.task1_content
-                : viewPassage.content}
+            <div style={{ marginTop: 12 }}>
+              {viewPassage.assessment_type === 2 && viewPassage.content && (
+                <div style={{ background: "#f9fafb", border: "1px solid #eaecf8", padding: 20, borderRadius: 10, whiteSpace: "pre-wrap", fontSize: 14, lineHeight: 1.8, color: "#333" }}>{viewPassage.content}</div>
+              )}
+              {viewPassage.assessment_type === 1 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  {viewPassage.task1_content && <div><strong style={{ fontSize: 13, color: "#2c3e6b" }}>Task 1:</strong><div style={{ background: "#f9fafb", border: "1px solid #eaecf8", padding: 16, borderRadius: 10, marginTop: 6, fontSize: 14, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{viewPassage.task1_content}</div></div>}
+                  {viewPassage.task2_words && <div><strong style={{ fontSize: 13, color: "#2c3e6b" }}>Task 2 — Words:</strong><div style={{ background: "#f9fafb", border: "1px solid #eaecf8", padding: 16, borderRadius: 10, marginTop: 6, fontSize: 14, whiteSpace: "pre-wrap" }}>{viewPassage.task2_words}</div></div>}
+                  {viewPassage.task2_sentences && <div><strong style={{ fontSize: 13, color: "#2c3e6b" }}>Task 2 — Sentences:</strong><div style={{ background: "#f9fafb", border: "1px solid #eaecf8", padding: 16, borderRadius: 10, marginTop: 6, fontSize: 14, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{viewPassage.task2_sentences}</div></div>}
+                </div>
+              )}
             </div>
             {viewPassage.questions && viewPassage.questions.length > 0 && (
               <div style={{ marginTop: 20, borderTop: "1px solid #eef0f8", paddingTop: 16 }}>
@@ -275,6 +298,21 @@ export default function PassagePage() {
       )}
 
       <Toast toasts={toasts} onRemove={removeToast} />
+
+      {uploadOpen && (
+        <UploadModal 
+          defaultType={2}
+          eng3={false}
+          onClose={() => setUploadOpen(false)}
+          onUpload={(type, parsedData) => {
+            if (type === 1) {
+              navigate("/passages/add-assessment-1", { state: { parsedData } });
+            } else {
+              navigate("/passages/add-assessment-2", { state: { parsedData } });
+            }
+          }}
+        />
+      )}
     </Layout>
   );
 }

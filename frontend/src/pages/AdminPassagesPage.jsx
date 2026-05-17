@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Plus, Search, BookOpen, Pencil, Trash2, X, ChevronLeft, ChevronRight, Eye, Upload, FileText, Info } from "lucide-react";
 import Layout from "../components/Layout";
+import ConfirmModal from "../modals/ConfirmModal";
 import UploadModal from "../components/UploadModal";
 import { adminApi } from "../services/api";
 import "./pages css/AddPassagePage.css";
@@ -133,6 +134,10 @@ export default function AdminPassagesPage() {
   const [previewTarget, setPreviewTarget] = useState(null);
   const [editId, setEditId] = useState(null);
 
+  // Archive modal state
+  const [archiveTarget, setArchiveTarget] = useState(null);
+  const [archiving, setArchiving] = useState(false);
+
   // Upload modal state
   const [uploadTargetField, setUploadTargetField] = useState(null);
   const [globalUploadOpen, setGlobalUploadOpen] = useState(false);
@@ -224,9 +229,22 @@ export default function AdminPassagesPage() {
     }
   }
 
-  async function handleArchive(id) {
-    if (!confirm("Archive this passage? Teachers will no longer see it.")) return;
-    try { await adminApi.archivePassage(id); load(); } catch { /* ignore */ }
+  function handleArchive(p) {
+    setArchiveTarget(p);
+  }
+
+  async function handleArchiveConfirm() {
+    if (!archiveTarget) return;
+    setArchiving(true);
+    try {
+      await adminApi.archivePassage(archiveTarget.id);
+      load();
+    } catch {
+      // ignore
+    } finally {
+      setArchiving(false);
+      setArchiveTarget(null);
+    }
   }
 
   /* ── Editor view (add / edit) ── */
@@ -234,7 +252,7 @@ export default function AdminPassagesPage() {
     return (
       <Layout>
         <div style={{ maxWidth: 680, margin: "0 auto", padding: "0 20px 40px", fontFamily: "'Poppins', sans-serif" }}>
-          
+
           {/* Sticky Topbar */}
           <div className="ap-topbar">
             <div className="ap-topbar__left">
@@ -291,7 +309,7 @@ export default function AdminPassagesPage() {
   return (
     <Layout>
       <div style={{ fontFamily: "'Poppins', sans-serif", width: "100%" }}>
-        
+
         {/* Topbar matching other nav pages */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 24 }}>
           <h1 style={{ fontSize: 28, fontWeight: 700, color: "#1a2340", margin: 0, fontFamily: "Poppins, sans-serif" }}>
@@ -312,25 +330,31 @@ export default function AdminPassagesPage() {
 
         {/* Global Upload Modal */}
         {globalUploadOpen && (
-          <UploadModal 
+          <UploadModal
             defaultType={2}
             eng3={false}
             onClose={() => setGlobalUploadOpen(false)}
             onUpload={(type, parsedData) => {
               // Redirect to Add Assessment with parsed content prefilled
               startAdd(type);
+              // Apply language & grade level if parsed from the document
+              const metaOverrides = {};
+              if (parsedData.language) metaOverrides.language = parsedData.language;
+              if (parsedData.grade_level) metaOverrides.grade_level = parsedData.grade_level;
               if (type === 1) {
-                setForm(f => ({ 
-                  ...f, 
+                setForm(f => ({
+                  ...f,
+                  ...metaOverrides,
                   task1_content: parsedData.task1 || "",
                   task2_words: parsedData.task2Words || "",
                   task2_sentences: parsedData.task2Sentences || ""
                 }));
               } else {
-                setForm(f => ({ 
-                  ...f, 
+                setForm(f => ({
+                  ...f,
+                  ...metaOverrides,
                   title: parsedData.title || "",
-                  content: parsedData.content || "" 
+                  content: parsedData.content || ""
                 }));
                 if (parsedData.questions && parsedData.questions.length > 0) {
                   setQuestions(parsedData.questions);
@@ -341,7 +365,7 @@ export default function AdminPassagesPage() {
         )}
 
         <div>
-          
+
           {/* Filters with clear labels */}
           <div style={{ display: "flex", gap: 16, marginBottom: 20, flexWrap: "wrap", alignItems: "flex-end" }}>
             <div style={{ position: "relative", flex: "1 1 220px", maxWidth: 300 }}>
@@ -350,7 +374,7 @@ export default function AdminPassagesPage() {
               <input type="text" placeholder="Search by title or content..." value={search}
                 onChange={(e) => { setSearch(e.target.value); setPage(1); }} className="ap-input" style={{ paddingLeft: 32 }} />
             </div>
-            
+
             <div>
               <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 6 }}>Grade Level</label>
               <select value={gradeF} onChange={(e) => { setGradeF(e.target.value); setPage(1); }} className="ap-input" style={{ minWidth: 140 }}>
@@ -375,61 +399,60 @@ export default function AdminPassagesPage() {
 
           {/* Table */}
           {loading ? <div style={{ textAlign: "center", padding: 40, color: "#888" }}>Loading…</div>
-           : filtered.length === 0 ? (
-            <div style={{ textAlign: "center", padding: 60, color: "#888", border: "1px dashed #ccc", borderRadius: 12 }}>
-              <BookOpen size={40} style={{ marginBottom: 8, opacity: 0.4 }} />
-              <p>No public passages found. Adjust your filters or click an <strong>Add</strong> button above.</p>
-            </div>
-          ) : (
-            <>
-              <div style={{ overflowX: "auto", borderRadius: 10, border: "1px solid #e5e7eb" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                  <thead>
-                    <tr style={{ background: "#f1f3f8" }}>
-                      {["#", "Title", "Type", "Grade", "Lang", "Words", "Actions"].map((h, i) => (
-                        <th key={i} style={{ padding: "12px 14px", fontWeight: 700, color: "#1a2340", textAlign: i === 0 || i === 6 ? "center" : "left", borderBottom: "2px solid #dde2f0", whiteSpace: "nowrap" }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginated.map((p, idx) => (
-                      <tr key={p.id} style={{ borderBottom: "1px solid #eee", background: "#fff" }}>
-                        <td style={{ padding: "12px 14px", textAlign: "center", color: "#888" }}>{(page - 1) * PER + idx + 1}</td>
-                        <td style={{ padding: "12px 14px", fontWeight: 600, color: "#1a2340" }}>{p.title || "(Assessment 1)"}</td>
-                        <td style={{ padding: "12px 14px" }}>
-                          <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 6, background: p.assessment_type === 1 ? "#e0edff" : "#e8f5e9", color: p.assessment_type === 1 ? "#1e40af" : "#166534", fontWeight: 600 }}>
-                            Assessment {p.assessment_type}
-                          </span>
-                        </td>
-                        <td style={{ padding: "12px 14px" }}>{fmtGrade(p.grade_level)}</td>
-                        <td style={{ padding: "12px 14px", textTransform: "capitalize" }}>{p.language}</td>
-                        <td style={{ padding: "12px 14px", textAlign: "center" }}>{p.word_count}</td>
-                        <td style={{ padding: "12px 14px", textAlign: "center" }}>
-                          <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
-                            <button onClick={() => setPreviewTarget(p)} title="View" style={{ background: "#f8f9fd", border: "1px solid #dde2f0", borderRadius: 6, padding: "6px 8px", cursor: "pointer" }}><Eye size={14} color="#555" /></button>
-                            <button onClick={() => startEdit(p)} title="Edit" style={{ background: "#f8f9fd", border: "1px solid #dde2f0", borderRadius: 6, padding: "6px 8px", cursor: "pointer" }}><Pencil size={14} color="#555" /></button>
-                            <button onClick={() => handleArchive(p.id)} title="Archive" style={{ background: "#fdf2f2", border: "1px solid #f9caca", borderRadius: 6, padding: "6px 8px", cursor: "pointer" }}><Trash2 size={14} color="#c44" /></button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            : filtered.length === 0 ? (
+              <div style={{ textAlign: "center", padding: 60, color: "#888", border: "1px dashed #ccc", borderRadius: 12 }}>
+                <BookOpen size={40} style={{ marginBottom: 8, opacity: 0.4 }} />
+                <p>No public passages found. Adjust your filters or click an <strong>Add</strong> button above.</p>
               </div>
-              {totalPages > 1 && (
-                <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12, marginTop: 20 }}>
-                  <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="ap-back-btn" style={{ width: 32, height: 32 }}><ChevronLeft size={16} /></button>
-                  <span style={{ fontSize: 13, color: "#555", fontWeight: 600 }}>Page {page} of {totalPages}</span>
-                  <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="ap-back-btn" style={{ width: 32, height: 32 }}><ChevronRight size={16} /></button>
+            ) : (
+              <>
+                <div style={{ overflowX: "auto", borderRadius: 10, border: "1px solid #e5e7eb" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                    <thead>
+                      <tr style={{ background: "#f1f3f8" }}>
+                        {["#", "Title", "Type", "Grade", "Lang", "Words", "Actions"].map((h, i) => (
+                          <th key={i} style={{ padding: "12px 14px", fontWeight: 700, color: "#1a2340", textAlign: i === 0 || i === 6 ? "center" : "left", borderBottom: "2px solid #dde2f0", whiteSpace: "nowrap" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginated.map((p, idx) => (
+                        <tr key={p.id} onClick={() => setPreviewTarget(p)} style={{ borderBottom: "1px solid #eee", background: "#fff", cursor: "pointer" }}>
+                          <td style={{ padding: "12px 14px", textAlign: "center", color: "#888" }}>{(page - 1) * PER + idx + 1}</td>
+                          <td style={{ padding: "12px 14px", fontWeight: 600, color: "#1a2340" }}>{p.title || "(Assessment 1)"}</td>
+                          <td style={{ padding: "12px 14px" }}>
+                            <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 6, background: p.assessment_type === 1 ? "#e0edff" : "#e8f5e9", color: p.assessment_type === 1 ? "#1e40af" : "#166534", fontWeight: 600 }}>
+                              Assessment {p.assessment_type}
+                            </span>
+                          </td>
+                          <td style={{ padding: "12px 14px" }}>{fmtGrade(p.grade_level)}</td>
+                          <td style={{ padding: "12px 14px", textTransform: "capitalize" }}>{p.language}</td>
+                          <td style={{ padding: "12px 14px", textAlign: "center" }}>{p.word_count}</td>
+                          <td style={{ padding: "12px 14px", textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+                            <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
+                              <button onClick={() => startEdit(p)} title="Edit" style={{ background: "#f8f9fd", border: "1px solid #dde2f0", borderRadius: 6, padding: "6px 8px", cursor: "pointer" }}><Pencil size={14} color="#555" /></button>
+                              <button onClick={() => handleArchive(p)} title="Archive" style={{ background: "#fdf2f2", border: "1px solid #f9caca", borderRadius: 6, padding: "6px 8px", cursor: "pointer" }}><Trash2 size={14} color="#c44" /></button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              )}
-            </>
-          )}
+                {totalPages > 1 && (
+                  <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12, marginTop: 20 }}>
+                    <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="ap-back-btn" style={{ width: 32, height: 32 }}><ChevronLeft size={16} /></button>
+                    <span style={{ fontSize: 13, color: "#555", fontWeight: 600 }}>Page {page} of {totalPages}</span>
+                    <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="ap-back-btn" style={{ width: 32, height: 32 }}><ChevronRight size={16} /></button>
+                  </div>
+                )}
+              </>
+            )}
 
           {/* Preview modal */}
           {pv && (
-            <div className="cr-modal-overlay" onClick={() => setPreviewTarget(null)}>
-              <div className="cr-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 650, maxHeight: "85vh", overflow: "auto" }}>
+            <div className="cr-modal-overlay" onClick={() => setPreviewTarget(null)} style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999 }}>
+              <div className="cr-modal" onClick={(e) => e.stopPropagation()} style={{ background: "#fff", borderRadius: 12, padding: 24, width: "100%", maxWidth: 650, maxHeight: "85vh", overflow: "auto", boxShadow: "0 8px 32px rgba(0,0,0,.15)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                   <h3 style={{ margin: 0, fontSize: 18, color: "#1a2340" }}>{pv.title || "Assessment 1 Passage"}</h3>
                   <button onClick={() => setPreviewTarget(null)} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={18} color="#666" /></button>
@@ -449,12 +472,19 @@ export default function AdminPassagesPage() {
                     {pv.task2_sentences && <div><strong style={{ fontSize: 13, color: "#2c3e6b" }}>Task 2 — Sentences:</strong><div style={{ background: "#f9fafb", border: "1px solid #eaecf8", padding: 16, borderRadius: 10, marginTop: 6, fontSize: 14, lineHeight: 1.7 }}>{pv.task2_sentences}</div></div>}
                   </div>
                 )}
-                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 24 }}>
-                  <button onClick={() => setPreviewTarget(null)} className="ap-save-btn">Close</button>
-                </div>
               </div>
             </div>
           )}
+
+          <ConfirmModal
+            isOpen={!!archiveTarget}
+            title="Archive Passage"
+            message={`Are you sure you want to archive "${archiveTarget?.title || 'this passage'}"? Teachers will no longer see it.`}
+            confirmLabel={archiving ? "Archiving..." : "Archive"}
+            variant="danger"
+            onConfirm={handleArchiveConfirm}
+            onClose={() => !archiving && setArchiveTarget(null)}
+          />
         </div>
       </div>
     </Layout>

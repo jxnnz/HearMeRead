@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import Layout from "../components/Layout";
 import TopBar from "../components/TopBar";
+import ConfirmModal from "../modals/ConfirmModal";
 import { adminApi } from "../services/api";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -904,51 +905,20 @@ export default function AdminTeachersPage() {
       )}
 
       {/* ── Archive confirm ── */}
-      {archiveTarget && (
-        <div style={{
-          position: "fixed", inset: 0, background: "rgba(0,0,0,.45)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          zIndex: 1000, padding: 16, fontFamily: "Poppins, sans-serif",
-        }}>
-          <div style={{
-            background: "#fff", borderRadius: 16, maxWidth: 380, width: "100%",
-            padding: "28px 28px 24px", boxShadow: "0 8px 32px rgba(0,0,0,.18)",
-          }}>
-            <h3 style={{ margin: "0 0 10px", fontSize: 15, fontWeight: 700, color: "#1a2340" }}>
-              Archive Teacher?
-            </h3>
-            <p style={{ margin: "0 0 20px", fontSize: 13, color: "#4a5568", lineHeight: 1.6 }}>
-              <strong>{archiveTarget.first_name} {archiveTarget.last_name}</strong> will be
-              deactivated and will no longer be able to log in. This can be undone by contacting support.
-            </p>
-            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-              <button
-                onClick={() => setArchiveTarget(null)}
-                style={{
-                  padding: "9px 18px", borderRadius: 8,
-                  border: "1.5px solid #dde1ee", background: "#fff",
-                  cursor: "pointer", fontSize: 13, fontFamily: "Poppins, sans-serif",
-                  color: "#4a5568",
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleArchive}
-                disabled={archiving}
-                style={{
-                  padding: "9px 18px", borderRadius: 8, border: "none",
-                  background: archiving ? "#e0a880" : "#e65100",
-                  color: "#fff", cursor: archiving ? "not-allowed" : "pointer",
-                  fontSize: 13, fontFamily: "Poppins, sans-serif", fontWeight: 600,
-                }}
-              >
-                {archiving ? "Archiving…" : "Archive"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={!!archiveTarget}
+        title="Archive Teacher?"
+        message={archiveTarget ? (
+          <>
+            <strong>{archiveTarget.first_name} {archiveTarget.last_name}</strong> will be
+            deactivated and will no longer be able to log in. This can be undone by contacting support.
+          </>
+        ) : ""}
+        confirmLabel={archiving ? "Archiving..." : "Archive"}
+        variant="danger"
+        onConfirm={handleArchive}
+        onClose={() => !archiving && setArchiveTarget(null)}
+      />
 
       {/* ── Logs drawer ── */}
       {logsTeacher && (
