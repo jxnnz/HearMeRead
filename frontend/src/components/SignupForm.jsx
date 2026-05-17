@@ -183,7 +183,7 @@ export default function SignupForm({ onSubmit, loading }) {
           </button>
         </div>
 
-        {/* ── First Name + Last Name ─────────────────────────────────────── */}
+        {/* ── First Name + Last Name (+ Employee ID — pending confirmation) ── */}
         <div className="auth-form__row">
           <div className="auth-field">
             <label className="auth-label" htmlFor="signup-firstname">First Name</label>
@@ -211,78 +211,36 @@ export default function SignupForm({ onSubmit, loading }) {
               autoComplete="family-name"
             />
           </div>
+          {/* Employee ID — commented out pending confirmation
+          <div className="auth-field">
+            <label className="auth-label" htmlFor="signup-employee-id">Employee ID</label>
+            <input
+              id="signup-employee-id"
+              type="text"
+              className="auth-input"
+              placeholder="Employee ID"
+              autoComplete="off"
+            />
+          </div>
+          */}
         </div>
-
-        {/* ── Email ─────────────────────────────────────────────────────── */}
-        <div className="auth-field">
-          <label className="auth-label" htmlFor="signup-email">Email</label>
-          <input
-            id="signup-email"
-            type="email"
-            className="auth-input"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Enter your email"
-            required
-            autoComplete="email"
-          />
-        </div>
-
-        {/* ══ ADMIN school fields ════════════════════════════════════════════ */}
-        {role === "admin" && (
-          <>
-            <div className="auth-field">
-              <label className="auth-label" htmlFor="admin-deped-id">School ID (DepEd)</label>
-              <input
-                id="admin-deped-id"
-                type="text"
-                className="auth-input"
-                value={adminDepedId}
-                onChange={(e) => setAdminDepedId(e.target.value)}
-                placeholder="Official DepEd School ID"
-                required
-                autoComplete="off"
-              />
-              <span className="auth-field-hint">
-                The official government-issued school identifier from DepEd.
-              </span>
-            </div>
-
-            <div className="auth-field">
-              <label className="auth-label" htmlFor="admin-school-name">School Name</label>
-              <input
-                id="admin-school-name"
-                type="text"
-                className="auth-input"
-                value={adminSchoolName}
-                onChange={(e) => setAdminSchoolName(e.target.value)}
-                placeholder="Enter your school's full name"
-                required
-                autoComplete="organization"
-              />
-              <span className="auth-field-hint">
-                A unique school code will be generated and emailed to you.
-              </span>
-            </div>
-          </>
-        )}
 
         {/* ══ TEACHER school fields ══════════════════════════════════════════ */}
         {role === "teacher" && (
           <>
-            <div className="auth-field">
-              <label className="auth-label" htmlFor="signup-school-name">School Name</label>
-              <input
-                id="signup-school-name"
-                type="text"
-                className={`auth-input${schoolName ? " auth-input--success" : ""}`}
-                value={schoolName}
-                placeholder="Auto-filled when school is found"
-                readOnly
-              />
-            </div>
-
+            {/* Row: School Name | School ID */}
             <div className="auth-form__row">
+              <div className="auth-field">
+                <label className="auth-label" htmlFor="signup-school-name">School Name</label>
+                <input
+                  id="signup-school-name"
+                  type="text"
+                  className={`auth-input${schoolName ? " auth-input--success" : ""}`}
+                  value={schoolName}
+                  placeholder="Auto-filled when school is found"
+                  readOnly
+                />
+              </div>
               <div className="auth-field">
                 <label className="auth-label" htmlFor="teacher-deped-id">School ID (DepEd)</label>
                 <input
@@ -298,11 +256,12 @@ export default function SignupForm({ onSubmit, loading }) {
                   autoComplete="off"
                 />
               </div>
+            </div>
 
+            {/* Row: School Code | Email */}
+            <div className="auth-form__row">
               <div className="auth-field">
-                <label className="auth-label" htmlFor="signup-school-code">
-                  School Code
-                </label>
+                <label className="auth-label" htmlFor="signup-school-code">School Code</label>
                 <input
                   id="signup-school-code"
                   type="text"
@@ -312,14 +271,75 @@ export default function SignupForm({ onSubmit, loading }) {
                   }`}
                   value={schoolCode}
                   onChange={handleSchoolCodeChange}
-                  placeholder="AB12CD34"
+                  placeholder="e.g. AB12CD34"
                   maxLength={8}
+                  autoComplete="off"
+                />
+                <SchoolStatus />
+              </div>
+              <div className="auth-field">
+                <label className="auth-label" htmlFor="signup-email">Email</label>
+                <input
+                  id="signup-email"
+                  type="email"
+                  className="auth-input"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  required
+                  autoComplete="email"
+                />
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ══ ADMIN school fields ════════════════════════════════════════════ */}
+        {role === "admin" && (
+          <>
+            <div className="auth-form__row">
+              <div className="auth-field">
+                <label className="auth-label" htmlFor="admin-school-name">School Name</label>
+                <input
+                  id="admin-school-name"
+                  type="text"
+                  className="auth-input"
+                  value={adminSchoolName}
+                  onChange={(e) => setAdminSchoolName(e.target.value)}
+                  placeholder="Enter your school's full name"
+                  required
+                  autoComplete="organization"
+                />
+              </div>
+              <div className="auth-field">
+                <label className="auth-label" htmlFor="admin-deped-id">School ID (DepEd)</label>
+                <input
+                  id="admin-deped-id"
+                  type="text"
+                  className="auth-input"
+                  value={adminDepedId}
+                  onChange={(e) => setAdminDepedId(e.target.value)}
+                  placeholder="Official DepEd School ID"
+                  required
                   autoComplete="off"
                 />
               </div>
             </div>
 
-            <SchoolStatus />
+            {/* Email — full width for admin */}
+            <div className="auth-field">
+              <label className="auth-label" htmlFor="signup-email">Email</label>
+              <input
+                id="signup-email"
+                type="email"
+                className="auth-input"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                required
+                autoComplete="email"
+              />
+            </div>
           </>
         )}
 

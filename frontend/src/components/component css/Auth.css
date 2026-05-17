@@ -139,14 +139,14 @@
   padding: 12px 24px 40px;
 }
 
-/* ── White card (single-column form only) ──────────────── */
+/* ── White card ────────────────────────────────────────── */
 .auth-card {
   width: 100%;
-  max-width: 460px;
+  max-width: 680px;
   background: #fff;
   border-radius: 20px;
   box-shadow: 0 8px 40px rgba(44, 62, 107, 0.18);
-  padding: 40px 44px;
+  padding: 36px 48px;
   box-sizing: border-box;
 }
 
@@ -180,7 +180,7 @@
 .auth-form {
   display: flex;
   flex-direction: column;
-  gap: 13px;
+  gap: 11px;
 }
 
 .auth-form__row {
@@ -454,23 +454,37 @@
 .pw-match--error { color: #c0392b; }
 
 /* ── Responsive ────────────────────────────────────────── */
-@media (max-width: 580px) {
+
+/* Tablet / large phone (≤ 720px) */
+@media (max-width: 720px) {
+  .auth-card-wrap {
+    padding: 12px 16px 32px;
+    align-items: flex-start;
+  }
   .auth-card {
-    flex-direction: column;
-    min-height: unset;
-    padding: 16px;
-    gap: 16px;
+    max-width: 100%;
+    border-radius: 16px;
+    padding: 28px 24px;
   }
-  .auth-card__left {
-    width: 100%;
-    min-height: 180px;
-    border-radius: 12px;
+}
+
+/* Phone (≤ 520px) — stack all 2-col rows to 1 col */
+@media (max-width: 520px) {
+  .auth-card-wrap {
+    padding: 8px 10px 24px;
   }
-  .auth-card__right {
-    padding: 8px 12px 20px;
+  .auth-card {
+    padding: 24px 16px;
+    border-radius: 14px;
   }
   .auth-form__row {
     grid-template-columns: 1fr;
+  }
+  .auth-form {
+    gap: 10px;
+  }
+  .auth-heading {
+    font-size: 22px;
   }
 }
 
