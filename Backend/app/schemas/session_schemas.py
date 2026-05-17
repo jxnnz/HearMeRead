@@ -136,6 +136,8 @@ class Task1ScoreIn(BaseModel):
     """Payload for POST /sessions/{id}/score-task1."""
     task1_reference_text:   str
     task1_transcribed_text: str
+    language:               Optional[str] = "filipino"
+    grade_level:            Optional[int] = 1
 
 
 class Task1ScoreOut(BaseModel):
@@ -153,6 +155,8 @@ class Part1ScoreIn(BaseModel):
     task1_transcribed_text: str
     task2_reference_text:   str
     task2_transcribed_text: str
+    language:               Optional[str] = "filipino"
+    grade_level:            Optional[int] = 1
 
 
 class ObservationIn(BaseModel):

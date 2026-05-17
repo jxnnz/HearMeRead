@@ -19,33 +19,35 @@ export default function LoginForm({ onSubmit, loading }) {
  
       {/* ── Email ── */}
       <div className="auth-field">
-        <label className="auth-label" htmlFor="login-email">Email:</label>
-        <input
-          id="login-email"
-          type="email"
-          className="auth-input"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Enter your email"
-          required
-          autoComplete="email"
-        />
+        <div className="auth-field-float">
+          <input
+            id="login-email"
+            type="email"
+            className="auth-input"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder=" "
+            required
+            autoComplete="email"
+          />
+          <label className="auth-label-float" htmlFor="login-email">Email</label>
+        </div>
       </div>
  
       {/* ── Password ── */}
       <div className="auth-field">
-        <label className="auth-label" htmlFor="login-password">Password:</label>
-        <div className="auth-password-wrap">
+        <div className="auth-field-float">
           <input
             id="login-password"
             type={showPassword ? "text" : "password"}
-            className="auth-input"
+            className="auth-input auth-input--has-toggle"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter your password"
+            placeholder=" "
             required
             autoComplete="current-password"
           />
+          <label className="auth-label-float" htmlFor="login-password">Password</label>
           <button
             type="button"
             className="auth-password-toggle"

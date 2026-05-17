@@ -8,7 +8,7 @@
 //   onArchive  — archive the passage
 //   readOnly   — if true, hide edit/remove buttons (for public passages)
 // ============================================================
-import { Pencil, Trash2, Globe, Lock } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import "./component css/PassageCard.css";
 
 function formatGrade(gl) {
@@ -48,16 +48,6 @@ export default function PassageCard({ passage, onClick, onEdit, onRemove, readOn
         )}
         <span className="p-card__dot">·</span>
         <span className="p-card__lang">{lang}</span>
-        {/* Visibility badge */}
-        {isPublic ? (
-          <span className="p-card__badge p-card__badge--public">
-            <Globe size={10} style={{ marginRight: 3 }} />Public
-          </span>
-        ) : (
-          <span className="p-card__badge p-card__badge--private">
-            <Lock size={10} style={{ marginRight: 3 }} />My Passage
-          </span>
-        )}
       </div>
 
       {/* ── Title ── */}

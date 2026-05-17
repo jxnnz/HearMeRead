@@ -13,7 +13,6 @@ import "../pages/pages css/ClassRecordPage.css";
 
 function formatGrade(gl) {
   if (!gl) return "—";
-  if (gl === "kindergarten") return "Kindergarten";
   return `Grade ${gl.replace("grade_", "")}`;
 }
 
@@ -49,12 +48,10 @@ const PROFILE_COLORS = {
 };
 
 const GRADE_BG = {
-  kindergarten: "#e8f5e9", grade_1: "#e3f2fd", grade_2: "#fce4ec",
-  grade_3: "#fff3e0", grade_4: "#f3e5f5", grade_5: "#e0f2f1", grade_6: "#e8eaf6",
+  grade_1: "#e3f2fd", grade_2: "#fce4ec", grade_3: "#fff3e0",
 };
 const GRADE_TEXT = {
-  kindergarten: "#2e7d32", grade_1: "#1565c0", grade_2: "#880e4f",
-  grade_3: "#e65100", grade_4: "#6a1b9a", grade_5: "#00695c", grade_6: "#283593",
+  grade_1: "#1565c0", grade_2: "#880e4f", grade_3: "#e65100",
 };
 
 const PERIOD_LABELS = { beginning: "Beginning", middle: "Middle", end: "End" };

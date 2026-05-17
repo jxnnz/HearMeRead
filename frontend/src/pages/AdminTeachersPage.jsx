@@ -11,14 +11,10 @@ import { adminApi } from "../services/api";
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const GRADE_OPTIONS = [
-  { value: "",             label: "Not set"      },
-  { value: "kindergarten", label: "Kindergarten" },
-  { value: "grade_1",      label: "Grade 1"      },
-  { value: "grade_2",      label: "Grade 2"      },
-  { value: "grade_3",      label: "Grade 3"      },
-  { value: "grade_4",      label: "Grade 4"      },
-  { value: "grade_5",      label: "Grade 5"      },
-  { value: "grade_6",      label: "Grade 6"      },
+  { value: "",        label: "Not set" },
+  { value: "grade_1", label: "Grade 1" },
+  { value: "grade_2", label: "Grade 2" },
+  { value: "grade_3", label: "Grade 3" },
 ];
 
 function formatGrade(gl) {
@@ -362,97 +358,232 @@ function EditTeacherModal({ teacher, onClose, onSaved }) {
 
 // ── Logs Drawer ───────────────────────────────────────────────────────────────
 
-function LogsDrawer({ teacher, onClose }) {
-  const [logs,    setLogs]    = useState([]);
-  const [total,   setTotal]   = useState(0);
-  const [page,    setPage]    = useState(1);
-  const [loading, setLoading] = useState(true);
+const DAY_FILTERS = [
+  { key: "all",        label: "All" },
+  { key: "today",      label: "Today" },
+  { key: "yesterday",  label: "Yesterday" },
+  { key: "this_week",  label: "This Week" },
+  { key: "last_week",  label: "Last Week" },
+];
 
+function getDateRange(filterKey) {
+  const now = new Date();
+  const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const endOfDay   = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+
+  switch (filterKey) {
+    case "today":
+      return [startOfDay(now), endOfDay(now)];
+    case "yesterday": {
+      const y = new Date(now);
+      y.setDate(y.getDate() - 1);
+      return [startOfDay(y), endOfDay(y)];
+    }
+    case "this_week": {
+      const d = new Date(now);
+      const day = d.getDay(); // 0=Sun
+      d.setDate(d.getDate() - (day === 0 ? 6 : day - 1)); // Monday
+      return [startOfDay(d), endOfDay(now)];
+    }
+    case "last_week": {
+      const d = new Date(now);
+      const day = d.getDay();
+      const thisMonday = new Date(d);
+      thisMonday.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+      const lastMonday = new Date(thisMonday);
+      lastMonday.setDate(thisMonday.getDate() - 7);
+      const lastSunday = new Date(thisMonday);
+      lastSunday.setDate(thisMonday.getDate() - 1);
+      return [startOfDay(lastMonday), endOfDay(lastSunday)];
+    }
+    default:
+      return null; // "all"
+  }
+}
+
+function LogsDrawer({ teacher, onClose }) {
+  const [allLogs,   setAllLogs]   = useState([]);
+  const [total,     setTotal]     = useState(0);
+  const [loading,   setLoading]   = useState(true);
+
+  // Search & filter state
+  const [search,    setSearch]    = useState("");
+  const [dayFilter, setDayFilter] = useState("all");
+
+  // Display pagination
+  const [page, setPage] = useState(1);
   const PAGE_SIZE = 20;
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await adminApi.getTeacherLogs(teacher.id, { page, page_size: PAGE_SIZE });
-      setLogs(data.logs ?? []);
+      // Fetch a large batch for client-side search/filter
+      const data = await adminApi.getTeacherLogs(teacher.id, { page: 1, page_size: 100 });
+      setAllLogs(data.logs ?? []);
       setTotal(data.total ?? 0);
     } catch {
-      // silently ignore — drawer stays with empty state
+      // silently ignore
     } finally {
       setLoading(false);
     }
-  }, [teacher.id, page]);
+  }, [teacher.id]);
 
   useEffect(() => { load(); }, [load]);
 
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  // Reset page when search or filter changes
+  useEffect(() => { setPage(1); }, [search, dayFilter]);
+
+  // Filtered logs
+  const filtered = useMemo(() => {
+    let list = [...allLogs];
+
+    // Day filter
+    const range = getDateRange(dayFilter);
+    if (range) {
+      const [start, end] = range;
+      list = list.filter(log => {
+        const d = new Date(log.created_at);
+        return d >= start && d <= end;
+      });
+    }
+
+    // Search filter — matches activity, date string, time string, and metadata
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(log => {
+        const action = formatAction(log.action).toLowerCase();
+        const ts = formatTs(log.created_at).toLowerCase();
+        const meta = log.log_metadata
+          ? Object.entries(log.log_metadata).map(([k, v]) => `${k} ${v}`).join(" ").toLowerCase()
+          : "";
+        return action.includes(q) || ts.includes(q) || meta.includes(q);
+      });
+    }
+
+    return list;
+  }, [allLogs, search, dayFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  const filterBtnStyle = (active) => ({
+    padding: "6px 14px", borderRadius: 20, border: "none",
+    fontSize: 12, fontWeight: 600, cursor: "pointer",
+    fontFamily: "Poppins, sans-serif",
+    background: active ? "#2c3e6b" : "#f0f2f8",
+    color: active ? "#fff" : "#4a5568",
+    transition: "all .15s ease",
+    whiteSpace: "nowrap",
+  });
 
   return (
     <div style={{
       position: "fixed", inset: 0, zIndex: 900,
-      display: "flex", justifyContent: "flex-end",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      padding: 24,
     }}>
       {/* Overlay */}
       <div
         onClick={onClose}
-        style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.3)" }}
+        style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.45)" }}
       />
-      {/* Panel */}
+      {/* Full-screen Panel */}
       <div style={{
         position: "relative", zIndex: 1,
-        background: "#fff", width: "min(480px, 100vw)",
-        height: "100%", display: "flex", flexDirection: "column",
-        boxShadow: "-4px 0 24px rgba(0,0,0,.15)",
+        background: "#fff", width: "100%", height: "100%",
+        maxWidth: 1200, maxHeight: "100%",
+        borderRadius: 16,
+        display: "flex", flexDirection: "column",
+        boxShadow: "0 8px 40px rgba(0,0,0,.2)",
         fontFamily: "Poppins, sans-serif",
+        overflow: "hidden",
       }}>
         {/* Header */}
         <div style={{
-          padding: "20px 24px", borderBottom: "1px solid #eef0f8",
+          padding: "20px 28px", borderBottom: "1px solid #eef0f8",
           display: "flex", justifyContent: "space-between", alignItems: "center",
+          flexShrink: 0,
         }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#1a2340" }}>
+            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#1a2340" }}>
               Activity Logs
             </h2>
-            <p style={{ margin: "2px 0 0", fontSize: 12, color: "#8a94b2" }}>
-              {teacher.first_name} {teacher.last_name} · {total} entries
+            <p style={{ margin: "2px 0 0", fontSize: 13, color: "#8a94b2" }}>
+              {teacher.first_name} {teacher.last_name} · {filtered.length} of {total} entries
             </p>
           </div>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer" }}>
-            <X size={18} color="#8a94b2" />
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 6 }}>
+            <X size={20} color="#8a94b2" />
           </button>
         </div>
 
+        {/* Search + Day filters toolbar */}
+        <div style={{
+          padding: "14px 28px", borderBottom: "1px solid #eef0f8",
+          display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
+          flexShrink: 0,
+        }}>
+          {/* Search bar */}
+          <div style={{ position: "relative", flex: "1 1 220px", maxWidth: 360 }}>
+            <Search size={14} color="#8a94b2" style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)" }} />
+            <input
+              style={{
+                width: "100%", padding: "8px 12px 8px 34px",
+                border: "1.5px solid #dde1ee", borderRadius: 8,
+                fontSize: 13, fontFamily: "Poppins, sans-serif",
+                outline: "none", background: "#fff", color: "#1a2340",
+                boxSizing: "border-box",
+              }}
+              placeholder="Search activity, date, or time…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+
+          {/* Day filter pills */}
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {DAY_FILTERS.map(f => (
+              <button
+                key={f.key}
+                style={filterBtnStyle(dayFilter === f.key)}
+                onClick={() => setDayFilter(f.key)}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Log list */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "12px 24px" }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: "16px 28px" }}>
           {loading && (
-            <div style={{ textAlign: "center", padding: "40px 0", color: "#8a94b2", fontSize: 13 }}>
+            <div style={{ textAlign: "center", padding: "60px 0", color: "#8a94b2", fontSize: 14 }}>
               Loading…
             </div>
           )}
-          {!loading && logs.length === 0 && (
-            <div style={{ textAlign: "center", padding: "40px 0", color: "#8a94b2", fontSize: 13 }}>
-              No activity recorded yet.
+          {!loading && filtered.length === 0 && (
+            <div style={{ textAlign: "center", padding: "60px 0", color: "#8a94b2", fontSize: 14 }}>
+              {search || dayFilter !== "all" ? "No logs match your search or filter." : "No activity recorded yet."}
             </div>
           )}
-          {!loading && logs.map(log => (
+          {!loading && paginated.map(log => (
             <div key={log.id} style={{
               borderBottom: "1px solid #f0f2f8",
-              padding: "12px 0",
+              padding: "14px 0",
             }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
                 <ActionBadge action={log.action} />
-                <span style={{ fontSize: 10, color: "#8a94b2", flexShrink: 0 }}>
+                <span style={{ fontSize: 11, color: "#8a94b2", flexShrink: 0 }}>
                   {formatTs(log.created_at)}
                 </span>
               </div>
               {log.log_metadata && Object.keys(log.log_metadata).length > 0 && (
                 <div style={{
-                  marginTop: 6, fontSize: 11, color: "#4a5568",
-                  background: "#f8f9fd", borderRadius: 6, padding: "6px 10px",
+                  marginTop: 8, fontSize: 12, color: "#4a5568",
+                  background: "#f8f9fd", borderRadius: 8, padding: "8px 12px",
                 }}>
                   {Object.entries(log.log_metadata).map(([k, v]) => (
-                    <span key={k} style={{ marginRight: 12 }}>
+                    <span key={k} style={{ marginRight: 16 }}>
                       <strong>{k}:</strong> {v ?? "—"}
                     </span>
                   ))}
@@ -463,15 +594,19 @@ function LogsDrawer({ teacher, onClose }) {
         </div>
 
         {/* Pagination */}
-        {total > PAGE_SIZE && (
+        {filtered.length > PAGE_SIZE && (
           <div style={{
-            padding: "12px 24px", borderTop: "1px solid #eef0f8",
+            padding: "14px 28px", borderTop: "1px solid #eef0f8",
             display: "flex", alignItems: "center", justifyContent: "space-between",
+            flexShrink: 0,
           }}>
-            <span style={{ fontSize: 11, color: "#8a94b2" }}>
-              Page {page} of {totalPages}
+            <span style={{ fontSize: 12, color: "#8a94b2" }}>
+              Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
             </span>
-            <div style={{ display: "flex", gap: 6 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 11, color: "#8a94b2" }}>
+                Page {page} of {totalPages}
+              </span>
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page === 1}

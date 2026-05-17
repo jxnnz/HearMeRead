@@ -1,6 +1,7 @@
 # HearMeRead — Backend Documentation
 
-> **Stack:** Python · FastAPI · SQLAlchemy (async) · PostgreSQL (Supabase) · Whisper ASR · JWT Auth  
+> **Stack:** Python · FastAPI · SQLAlchemy (async) · PostgreSQL (Supabase) · Whisper ASR · JWT Auth
+> **Supported grades:** Grade 1, Grade 2, and Grade 3 only (Filipino and English)
 > **Base URL (dev):** `http://localhost:8000`  
 > **All routes are prefixed with:** `/routes`
 
@@ -30,11 +31,12 @@
     - [Cleanup Scheduler](#103-cleanup-scheduler)
     - [Email Service](#104-email-service)
     - [Levenshtein Scoring](#105-levenshtein-scoring-service)
-    - [Passage Service](#106-passage-service)
-    - [Question Service](#107-question-service)
-    - [Session Service](#108-session-service)
-    - [Student Service](#109-student-service)
-    - [Log Service](#1010-log-service)
+    - [Letter Sound Normalizer](#106-letter-sound-normalizer)
+    - [Passage Service](#107-passage-service)
+    - [Question Service](#108-question-service)
+    - [Session Service](#109-session-service)
+    - [Student Service](#1010-student-service)
+    - [Log Service](#1011-log-service)
 11. [Utilities — `/utils`](#11-utilities--utils)
 12. [Extended Schemas — `/schemas`](#12-extended-schemas--schemas)
 13. [Security Overview](#13-security-overview)
@@ -70,6 +72,7 @@ backend/
     │   ├── cleanup.py             # APScheduler daily audio cleanup
     │   ├── email_service.py       # Resend email API integration
     │   ├── levenshtein_service.py # Miscue analysis & reading profile scoring
+    │   ├── letter_normalizer.py   # Grade 1 letter sound normalization
     │   ├── passage_service.py     # Passage business logic
     │   ├── question_service.py    # Question business logic
     │   ├── session_service.py     # Session business logic & scoring
@@ -206,7 +209,7 @@ Defines all SQLAlchemy database table models. These map directly to Supabase Pos
 
 | Enum | Values |
 |---|---|
-| `GradeLevel` | `kindergarten`, `grade_1` through `grade_6` |
+| `GradeLevel` | `grade_1`, `grade_2`, `grade_3` |
 | `Sex` | `female`, `male` |
 | `Language` | `english`, `filipino` |
 | `AssessmentPeriod` | `beginning`, `middle`, `end` |
@@ -814,17 +817,39 @@ All routes are **protected**.
 **Request body:**
 ```json
 {
-  "reference_text": "Ang bata ay...",
-  "transcribed_text": "ang bata ay"
+  "task1_reference_text": "b, ng, t, e, p, s, h, g, u, l",
+  "task1_transcribed_text": "b ng t e p s h g u l",
+  "language": "filipino",
+  "grade_level": 1
 }
 ```
+
+> **Note:** `language` and `grade_level` are optional (default: `"filipino"`, `1`). When the content is Grade 1 letter sounds, the backend automatically applies letter normalization before scoring.
 
 **How the frontend uses it:** Show live Task 1 miscue analysis before the teacher moves to Task 2.
 
 ---
 
 #### `POST /routes/sessions/{session_id}/score-part1`
-**What it does:** Runs scoring for both Task 1 and Task 2, returns routing decision (`task_2L` or `task_2H`). Does **not** save to DB.
+**What it does:** Runs scoring for both Task 1 and Task 2, returns routing decision (`task_2L` or `task_2H`) and classification. Uses language-aware, route-dependent classification bands. Does **not** save to DB.
+
+**Request body:**
+```json
+{
+  "task1_reference_text": "Ang bata ay...",
+  "task1_transcribed_text": "ang bata ay",
+  "task2_reference_text": "aso, bata, pusa",
+  "task2_transcribed_text": "aso bata pusa",
+  "language": "filipino",
+  "grade_level": 2
+}
+```
+
+**Classification behavior:**
+- **Filipino:** Route-dependent — 2L path uses different bands than 2H path
+- **English:** Single scale regardless of route
+
+See [Section 10.5](#105-levenshtein-scoring-service) for full band tables.
 
 ---
 
@@ -1176,10 +1201,12 @@ This is the core assessment engine. It computes reading accuracy by comparing th
 ##### `align_words(reference, transcribed)`
 Runs Levenshtein distance on tokenized word lists. Returns a list of `WordAlignment` objects, each tagged with a `MiscueType`.
 
-##### `score_part1(task1_ref, task1_trans, task2_ref, task2_trans)`
-Scores both Task 1 (short word/phrase list) and Task 2 (sentences). Determines routing:
-- Task 1 score low → `task_2L` (low route)
-- Task 1 score high → `task_2H` (high route)
+##### `score_part1(task1_ref, task1_trans, task2_ref, task2_trans, language, grade_level, threshold)`
+Scores both Task 1 and Task 2. Determines routing:
+- **Filipino:** Task 1 score ≤ threshold (default 6) → `task_2L` (low route), else `task_2H` (high route)
+- **English:** Task 1 score = 0 → assessment ends; ≥ 1 → `task_2L` (always words)
+
+Automatically applies letter normalization for Grade 1 content (detected via `is_letter_content()`).
 
 Returns `Part1Result` with scores, route, classification, and word alignments.
 
@@ -1191,20 +1218,59 @@ Scores the passage reading. Computes:
 
 Returns `Part2Result` with all metrics.
 
-#### Part 1 Classification
-| Score Range | Classification |
+#### Part 1 Classification Bands
+
+Classification is **language-aware** and **route-dependent**:
+
+**Filipino (route-dependent):**
+
+| Route | Full Refresher | Moderate Refresher | Light Refresher | Grade Ready |
+|---|---|---|---|---|
+| Task 2L | 0–14 | 15–20 | — | — |
+| Task 2H | — | — | 7–16 | 17–20 |
+
+**English (single scale):**
+
+| Score | Classification |
 |---|---|
-| 0–49% | Full Refresher |
-| 50–74% | Moderate Refresher |
-| 75–89% | Light Refresher |
-| 90–100% | Grade Ready |
+| 0 | Full Refresher |
+| 1–6 | Moderate Refresher |
+| 8–16 | Light Refresher |
+| 17–20 | Grade Ready |
 
 #### Reading Profile Matrix
 The final reading profile is determined by crossing Part 1 classification, Part 2 accuracy rate, and comprehension score.
 
 ---
 
-### 10.6 Passage Service
+### 10.6 Letter Sound Normalizer
+
+**File:** `services/letter_normalizer.py`
+
+Post-processing service for Grade 1 Task 1 (letter sounds). When Whisper transcribes individual letters spoken aloud, it outputs syllables (e.g. "ba" for "b", "nga" for "ng"). This normalizer maps them back to canonical letter forms.
+
+#### Key Functions
+
+| Function | What it does |
+|---|---|
+| `normalize_letter_transcript(transcript, reference_letters)` | Takes a full transcript and a list of expected letters, maps each word to its canonical letter |
+| `normalize_single_token(token)` | Looks up a single token in the syllable→letter mapping table |
+| `is_letter_content(task1_content)` | Auto-detects if content is a letter list (short tokens, ≤10 items) vs normal sentences |
+
+#### Syllable Mapping (subset)
+| Whisper output | Normalized letter |
+|---|---|
+| `ba`, `bi` | `b` |
+| `nga`, `nag` | `ng` |
+| `te`, `ti` | `t` |
+| `oo`, `ou` | `u` |
+| `la`, `el` | `l` |
+
+The normalizer is automatically invoked by `levenshtein_service.score_part1()` when it detects letter-style content.
+
+---
+
+### 10.7 Passage Service
 
 **File:** `services/passage_service.py`
 
@@ -1219,7 +1285,7 @@ The final reading profile is determined by crossing Part 1 classification, Part 
 
 ---
 
-### 10.7 Question Service
+### 10.8 Question Service
 
 **File:** `services/question_service.py`
 
@@ -1234,7 +1300,7 @@ The final reading profile is determined by crossing Part 1 classification, Part 
 
 ---
 
-### 10.8 Session Service
+### 10.9 Session Service
 
 **File:** `services/session_service.py`
 
@@ -1250,7 +1316,7 @@ The final reading profile is determined by crossing Part 1 classification, Part 
 
 ---
 
-### 10.9 Student Service
+### 10.10 Student Service
 
 **File:** `services/student_service.py`
 
@@ -1264,7 +1330,7 @@ The final reading profile is determined by crossing Part 1 classification, Part 
 
 ---
 
-### 10.10 Log Service
+### 10.11 Log Service
 
 **File:** `services/log_service.py`
 
@@ -1361,8 +1427,8 @@ Used for both Task 1 and Task 2 scoring inputs.
 
 | Schema | Purpose |
 |---|---|
-| `Task1ScoreIn` / `Task1ScoreOut` | Score Task 1 only without saving |
-| `Part1ScoreIn` | Score both Part 1 tasks without saving |
+| `Task1ScoreIn` / `Task1ScoreOut` | Score Task 1 only without saving. Accepts optional `language` (str) and `grade_level` (int) |
+| `Part1ScoreIn` | Score both Part 1 tasks without saving. Accepts optional `language` (str) and `grade_level` (int) |
 
 ---
 

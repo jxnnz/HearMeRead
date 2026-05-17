@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import Layout               from "../../components/Layout";
 import LoadingScreen        from "../../components/LoadingScreen";
 import ComprehensionStep    from "../../components/ComprehensionStep";
+import CountdownOverlay     from "../../components/CountdownOverlay";
 import ResultsStep          from "../../components/ResultsStep";
 import Toast               from "../../modals/Toast";
 import useToast            from "../../hooks/Usetoast";
@@ -380,31 +381,49 @@ export default function AssessmentPage() {
     }
   }
 
+  // ── Countdown state ──────────────────────────────────────────────────
+  const [countdown, setCountdown] = useState(0);
+  const countdownTimerRef = useRef(null);
+  const pendingStreamRef  = useRef(null);
+
   async function handleStartRecording() {
     try {
       audioChunksRef.current = [];
-      const stream   = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-      const recorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = recorder;
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      pendingStreamRef.current = stream;
 
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) audioChunksRef.current.push(e.data);
-      };
-      recorder.onstop = () => {
-        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        setAudioFile(new File([blob], "recording.webm", { type: "audio/webm" }));
-        stream.getTracks().forEach((t) => t.stop());
-        streamRef.current = null;
-      };
-
-      recorder.start();
-      setIsRecording(true);
-      setIsPaused(false);
-      setTimeLimitReached(false);
+      // Start 3-second countdown
+      setCountdown(3);
     } catch {
       setCreateError("Microphone access denied. Please allow access and try again.");
     }
+  }
+
+  // Called when CountdownOverlay finishes (reaches 0)
+  function handleCountdownDone() {
+    setCountdown(0);
+    const stream = pendingStreamRef.current;
+    if (!stream) return;
+    pendingStreamRef.current = null;
+
+    streamRef.current = stream;
+    const recorder = new MediaRecorder(stream);
+    mediaRecorderRef.current = recorder;
+
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) audioChunksRef.current.push(e.data);
+    };
+    recorder.onstop = () => {
+      const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+      setAudioFile(new File([blob], "recording.webm", { type: "audio/webm" }));
+      stream.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    };
+
+    recorder.start();
+    setIsRecording(true);
+    setIsPaused(false);
+    setTimeLimitReached(false);
   }
 
   function handlePauseRecording() {
@@ -466,6 +485,12 @@ export default function AssessmentPage() {
     setAudioFile(null);
     setShowRetakeModal(false);
     setRecordingTime(0);
+    setCountdown(0);
+    // Clean up any pending stream from countdown
+    if (pendingStreamRef.current) {
+      pendingStreamRef.current.getTracks().forEach((t) => t.stop());
+      pendingStreamRef.current = null;
+    }
     if (mediaRecorderRef.current?.state !== "inactive") {
       mediaRecorderRef.current?.stop();
     }
@@ -516,6 +541,8 @@ export default function AssessmentPage() {
       const result = await sessionsApi.scoreTask1(session.id, {
         task1_reference_text:   form.selected_passage?.task1_content ?? "",
         task1_transcribed_text: editedText,
+        language:               form.language || "filipino",
+        grade_level:            getGradeNum(form.grade_level),
       });
       setTask1ScoreResult(result);
       // Pass fresh result directly — state update above is async and would be
@@ -546,6 +573,8 @@ export default function AssessmentPage() {
         task1_transcribed_text: g1Transcript,
         task2_reference_text:   task2Ref,
         task2_transcribed_text: editedText,
+        language:               form.language || "filipino",
+        grade_level:            getGradeNum(form.grade_level),
       });
       setPart1Result(result);
       if (result.route === "task_2H") handleProceedToA2();
@@ -776,6 +805,9 @@ export default function AssessmentPage() {
     return (
       <Layout>
         {fileInput}
+        {countdown > 0 && (
+          <CountdownOverlay count={countdown} onDone={handleCountdownDone} />
+        )}
         <ReadingStep
           stepLabel={STEP_LABELS[step]}
           step={step}

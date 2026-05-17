@@ -1,0 +1,188 @@
+/* ── RhymeScoringStep.css ───────────────────────────────────────────── */
+
+.rhyme-page {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 32px 20px 40px;
+  font-family: "Poppins", sans-serif;
+}
+
+/* ── Header ────────────────────────────────────────────────────────── */
+
+.rhyme-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.rhyme-header__title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a2340;
+  margin: 12px 0 8px;
+}
+
+.rhyme-header__sub {
+  font-size: 13px;
+  color: #6b7a99;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── Pairs list ────────────────────────────────────────────────────── */
+
+.rhyme-pairs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rhyme-pair {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  background: #fff;
+  border: 1.5px solid #e8ecf4;
+  border-radius: 12px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.rhyme-pair:hover {
+  border-color: #c8d0ec;
+  box-shadow: 0 2px 12px rgba(44, 62, 107, 0.06);
+}
+
+.rhyme-pair__info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rhyme-pair__num {
+  font-size: 14px;
+  font-weight: 700;
+  color: #8a94b2;
+  min-width: 24px;
+}
+
+.rhyme-pair__words {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rhyme-pair__icon {
+  color: #2c7fc1;
+  flex-shrink: 0;
+}
+
+.rhyme-pair__text {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1a2340;
+  letter-spacing: 0.3px;
+}
+
+/* ── Choices ───────────────────────────────────────────────────────── */
+
+.rhyme-pair__choices {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.rhyme-choice {
+  padding: 8px 20px;
+  border-radius: 8px;
+  border: 1.5px solid #dde1ee;
+  background: #f8f9fd;
+  font-family: "Poppins", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: #4a5568;
+}
+
+.rhyme-choice:hover {
+  border-color: #b0bacc;
+}
+
+/* Oo (correct/rhymes) — green */
+.rhyme-choice--oo.rhyme-choice--active {
+  background: #e8f5e9;
+  border-color: #4caf50;
+  color: #2e7d32;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.15);
+}
+
+/* Hindi (doesn't rhyme) — red-ish */
+.rhyme-choice--hindi.rhyme-choice--active {
+  background: #fde8e8;
+  border-color: #ef5350;
+  color: #c62828;
+  box-shadow: 0 0 0 2px rgba(239, 83, 80, 0.15);
+}
+
+/* ── Footer ────────────────────────────────────────────────────────── */
+
+.rhyme-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.rhyme-back-btn {
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: 1.5px solid #dde1ee;
+  background: #fff;
+  font-family: "Poppins", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4a5568;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.rhyme-back-btn:hover {
+  background: #f8f9fd;
+  border-color: #b0bacc;
+}
+
+/* ── Progress indicator ────────────────────────────────────────────── */
+
+.rhyme-progress {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #8a94b2;
+}
+
+/* ── Mobile ────────────────────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+  .rhyme-pair {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+
+  .rhyme-pair__choices {
+    justify-content: stretch;
+  }
+
+  .rhyme-choice {
+    flex: 1;
+    text-align: center;
+  }
+
+  .rhyme-pair__text {
+    font-size: 15px;
+  }
+}

@@ -1,0 +1,88 @@
+/* ── CountdownOverlay.css ───────────────────────────────────────────────── */
+
+.countdown-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 20, 40, 0.82);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: cdOverlayIn 0.25s ease-out;
+}
+
+@keyframes cdOverlayIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.countdown-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+/* ── The large number ─────────────────────────────────────────────────── */
+
+.countdown-number {
+  font-family: "Poppins", sans-serif;
+  font-size: 140px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1;
+  text-shadow: 0 0 40px rgba(100, 160, 255, 0.35);
+  animation: cdPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes cdPop {
+  0%   { transform: scale(0.3); opacity: 0; }
+  60%  { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ── Label ────────────────────────────────────────────────────────────── */
+
+.countdown-label {
+  font-family: "Poppins", sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+/* ── Progress dots ────────────────────────────────────────────────────── */
+
+.countdown-dots {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.countdown-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transition: background 0.3s, transform 0.3s;
+}
+
+.countdown-dot--active {
+  background: #64a0ff;
+  transform: scale(1.25);
+  box-shadow: 0 0 10px rgba(100, 160, 255, 0.5);
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+  .countdown-number {
+    font-size: 100px;
+  }
+  .countdown-label {
+    font-size: 15px;
+  }
+}

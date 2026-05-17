@@ -162,6 +162,24 @@ export default function PassagePage() {
 
         {!loading && !pageError && (
           <>
+            {/* ── Public Passages (read-only, shown first) ── */}
+            {publicA1.length > 0 && (
+              <AssessmentSection
+                label="Assessment 1"
+                list={publicA1}
+                readOnly
+                icon={null}
+              />
+            )}
+            {publicA2.length > 0 && (
+              <AssessmentSection
+                label="Assessment 2"
+                list={publicA2}
+                readOnly
+                icon={null}
+              />
+            )}
+
             {/* ── My Passages (private, full CRUD) ── */}
             <div className="ph-section-label">
               <Lock size={14} color="#6b7280" />
@@ -177,33 +195,6 @@ export default function PassagePage() {
               list={myA2}
               icon={null}
             />
-
-            {/* ── Public Passages (read-only) ── */}
-            {(publicA1.length > 0 || publicA2.length > 0) && (
-              <>
-                <div className="ph-section-label ph-section-label--public">
-                  <Globe size={14} color="#2c5fc1" />
-                  <span>Public Library</span>
-                  <span className="ph-section-hint">View only — shared passages for your grade level</span>
-                </div>
-                {publicA1.length > 0 && (
-                  <AssessmentSection
-                    label="Assessment 1 — Public"
-                    list={publicA1}
-                    readOnly
-                    icon={null}
-                  />
-                )}
-                {publicA2.length > 0 && (
-                  <AssessmentSection
-                    label="Assessment 2 — Public"
-                    list={publicA2}
-                    readOnly
-                    icon={null}
-                  />
-                )}
-              </>
-            )}
           </>
         )}
 
@@ -241,14 +232,7 @@ export default function PassagePage() {
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
               <div>
-                <span style={{
-                  fontSize: 10, fontWeight: 700, background: "#e3ecfa", color: "#2c5fc1",
-                  borderRadius: 20, padding: "2px 9px", display: "inline-flex",
-                  alignItems: "center", gap: 3, marginBottom: 8,
-                }}>
-                  <Globe size={10} /> Public Passage
-                </span>
-                <h2 style={{ margin: "8px 0 0", fontSize: 18, fontWeight: 700, color: "#1a2340", fontFamily: "Georgia, serif" }}>
+                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#1a2340", fontFamily: "Georgia, serif" }}>
                   {viewPassage.title || "Untitled"}
                 </h2>
                 <div style={{ display: "flex", gap: 8, marginTop: 6, fontSize: 12, color: "#8a94b2" }}>

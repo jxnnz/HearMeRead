@@ -1,6 +1,7 @@
 # HearMeRead — App Flow Documentation
 
 > This document tracks how the app works from the teacher's perspective — screen by screen, step by step.
+> **Supported grades:** Grade 1, Grade 2, and Grade 3 only (Filipino and English).
 > **Update this file every time a new feature is added or an existing flow changes.**
 
 ---
@@ -38,7 +39,8 @@
    - [Teacher Management Page](#teacher-management-page)
    - [Student Records Page](#student-records-page)
 9. [Passage Visibility](#9-passage-visibility)
-10. [Features Prepared but Currently Disabled](#10-features-prepared-but-currently-disabled)
+10. [Grade-Level Assessment Differences](#10-grade-level-assessment-differences)
+11. [Features Prepared but Currently Disabled](#11-features-prepared-but-currently-disabled)
 
 ---
 
@@ -136,13 +138,16 @@ Once the teacher hits the start button, the session is created on the backend an
 
 The screen shifts to a full reading interface showing the Task 1 text. The student reads this aloud while the teacher records.
 
+**3-Second Countdown:** Before every live recording starts, a fullscreen overlay counts down **3 → 2 → 1** with a "Get ready to read…" message. The microphone is activated during the countdown, but the actual recording only begins after the countdown finishes. This gives the student time to prepare and standardizes all recordings across the system.
+
 **The teacher has two ways to record:**
-- **Live Recording** — Hit record, let the student read, then stop. While recording, a red indicator and a pause button appear. Pausing stops the timer without ending the recording; resuming continues both. The timer itself is not shown on screen — it runs in the background so the student is not pressured.
+- **Live Recording** — Hit record, wait for the countdown, then the student reads. While recording, a red indicator and a pause button appear. Pausing stops the timer without ending the recording; resuming continues both. The timer itself is not shown on screen — the student is not pressured.
 - **Upload a File** — If the recording was done separately, the teacher can upload the audio file. Uploading skips the recording screen and goes directly to the processing step.
 
 After stopping, the teacher sees a quick prompt asking if they want to keep the recording or retake it.
 
 > **Note:** Assessment 1 has no time limit. The timer only runs internally and is never shown to the student.
+> **Note:** For Grade 1 Filipino, Task 1 content is a list of 10 letter sounds (e.g. "b, ng, t, e, p, s, h, g, u, l"). The student reads all letters in one continuous recording. The backend automatically normalizes Whisper's syllable output (e.g. "ba" → "b", "nga" → "ng") to match the canonical letters.
 
 **What connects here:**
 - The Task 1 text shown on screen comes from the passage selected in Step 1
@@ -168,16 +173,23 @@ Once the teacher confirms the transcript, the app compares it to the original Ta
 
 The teacher sees a breakdown of how the student did on Task 1:
 
-- Total words in the passage
-- How many words were read correctly
+- Total words/items in the passage
+- How many were read correctly
 - Total time taken
 
-The app uses this score to decide what version of Task 2 the student should take. This decision happens automatically based on the backend's scoring — the teacher does not need to do anything.
+The app uses this score to decide what version of Task 2 the student should take. This decision is **language-aware** and happens automatically:
+
+**Filipino (Grades 1–3):**
+- Task 1 score ≤ 6 → Task 2 will be a simple word list (lower route, Task 2L)
+- Task 1 score > 6 → Task 2 will be a set of sentences (higher route, Task 2H)
+
+**English (Grade 3):**
+- Task 1 score = 0 → Assessment ends immediately (student does not proceed)
+- Task 1 score ≥ 1 → Task 2 will always be a word list (no sentence route for English)
 
 **What connects here:**
-- Task 1 score ≤ 6 → Task 2 will be a simple rhyme/word list (lower route, Task 2L)
-- Task 1 score > 6 → Task 2 will be a set of sentences (higher route, Task 2H)
 - The teacher clicks Continue to proceed to Task 2
+- For Grade 1 Filipino Task 2L, routing leads to the Rhyme Scoring step (teacher-led, see Step 5a)
 
 ---
 
@@ -187,7 +199,22 @@ Same recording interface as Task 1, but the content is different based on the ro
 - **Lower route (Task 2L):** The student reads a list of individual words
 - **Higher route (Task 2H):** The student reads a set of sentences
 
-The recording process is the same — live record or upload, with the option to retake.
+The recording process is the same — 3-second countdown, then live record or upload, with the option to retake.
+
+> **Grade 1 Filipino Task 2L (Rhyming Words):** Instead of a recording, this step uses a **teacher-led rhyme scoring interface**. The teacher reads each word pair aloud (e.g. "bata — mata") and marks whether the student correctly identified if the pair rhymes (**Oo**) or not (**Hindi**). The system compares the teacher's marks against the answer key and calculates the score automatically.
+
+---
+
+### Step 5a: Rhyme Scoring (Grade 1 Task 2L only)
+
+This step appears only for Grade 1 Filipino students who scored ≤ 6 on Task 1. Instead of reading sentences, the teacher:
+
+1. Sees a list of word pairs (e.g. "bata — mata", "puso — laso")
+2. Reads each pair aloud to the student
+3. Marks the student's response as **Oo** (rhymes) or **Hindi** (doesn't rhyme)
+4. The system scores the answers against the answer key
+
+This is a fully automated scoring step — the teacher inputs, and the system grades.
 
 ---
 
@@ -211,10 +238,19 @@ The teacher sees the Task 2 results and the combined Assessment 1 summary:
   - **Light Refresher**
   - **Grade Ready**
 
+**Classification is language-aware and route-dependent:**
+
+| Language | Route | Full Refresher | Moderate Refresher | Light Refresher | Grade Ready |
+|---|---|---|---|---|---|
+| Filipino | Task 2L | 0–14 | 15–20 | — | — |
+| Filipino | Task 2H | — | — | 7–16 | 17–20 |
+| English | Single scale | 0 | 1–6 | 8–16 | 17–20 |
+
 The app then determines whether the student qualifies to continue to Assessment 2.
 
 - **Students on the higher route (Task 2H)** who score well enough are eligible for Assessment 2
 - **Students on the lower route (Task 2L)** do not proceed to Assessment 2
+- **English Grade 3** students with Task 1 score = 0 end the assessment entirely
 
 **What connects here:**
 - Eligible students → Step 8 (Story Selection for Assessment 2)
@@ -234,13 +270,15 @@ A grid of story cards appears, showing available Assessment 2 passages filtered 
 
 ### Step 9: Assessment 2 — Reading the Story
 
-The student reads the full story aloud while the teacher records. This step has a time limit based on the student's grade level:
+The student reads the full story aloud while the teacher records. The same 3-second countdown overlay appears before recording starts.
 
-| Grade | Time Limit |
-|---|---|
-| Grade 1 | 60 seconds |
-| Grade 2 | 120 seconds |
-| Grade 3 | 180 seconds |
+This step has a time limit based on the student's grade level and language:
+
+| Grade | Filipino | English |
+|---|---|---|
+| Grade 1 | 60 seconds | — |
+| Grade 2 | 120 seconds | — |
+| Grade 3 | 180 seconds | 120 seconds |
 
 When the time limit is reached, a message pops up asking the teacher to either let the student continue or stop and submit what was recorded. The timer pauses while this message is open.
 
@@ -580,7 +618,55 @@ Passages have two visibility modes:
 
 ---
 
-## 10. Features Prepared but Currently Disabled
+## 10. Grade-Level Assessment Differences
+
+The system adapts its behavior based on the student's grade level and assessment language. The central configuration for this is in `frontend/src/data/gradeAssessmentConfig.js`.
+
+### Grade 1 — Filipino
+
+| Feature | Behavior |
+|---|---|
+| Task 1 content | 10 letter sounds (e.g. b, ng, t, e, p, s, h, g, u, l) |
+| Task 1 recording | One continuous recording for all 10 letters |
+| ASR post-processing | Backend normalizes syllables → canonical letters ("ba" → "b", "nga" → "ng") |
+| Task 2L | Rhyming word pairs — teacher marks Oo/Hindi per pair |
+| Task 2H | Sentences — student reads aloud |
+| Routing threshold | ≤ 6 → Task 2L, > 6 → Task 2H |
+| Part 2 time limit | 60 seconds |
+
+### Grade 2 — Filipino
+
+| Feature | Behavior |
+|---|---|
+| Task 1 content | Sentences / passage text |
+| Task 2L | Word list — student reads aloud |
+| Task 2H | Sentences — student reads aloud |
+| Routing threshold | ≤ 6 → Task 2L, > 6 → Task 2H |
+| Part 2 time limit | 120 seconds |
+
+### Grade 3 — Filipino
+
+| Feature | Behavior |
+|---|---|
+| Task 1 content | Sentences / passage text |
+| Task 2L | Word list — student reads aloud |
+| Task 2H | Sentences — student reads aloud |
+| Routing threshold | ≤ 6 → Task 2L, > 6 → Task 2H |
+| Part 2 time limit | 180 seconds |
+
+### Grade 3 — English
+
+| Feature | Behavior |
+|---|---|
+| Task 1 content | Word list (comma-separated) |
+| Task 2 | Always a word list (no sentence route) |
+| Routing | Score = 0 → end assessment; ≥ 1 → proceed to Task 2 |
+| Classification | Single scale (not route-dependent) |
+| Part 2 time limit | 120 seconds |
+
+---
+
+## 11. Features Prepared but Currently Disabled
 
 These features are built into the code but commented out. They can be enabled by uncommenting the relevant sections.
 
@@ -604,5 +690,5 @@ These features are built into the code but commented out. They can be enabled by
 
 ---
 
-*Last updated: 2026-05-16*
+*Last updated: 2026-05-17*
 *Update this file whenever a new page, step, or flow is added or changed.*

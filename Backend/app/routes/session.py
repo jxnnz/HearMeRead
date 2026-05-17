@@ -153,14 +153,37 @@ async def score_session_task1(
     current_teacher: Teacher      = Depends(get_current_teacher),
 ):
     from app.services.levenshtein_service import preprocess, align_words, Part1Route
+    from app.services.letter_normalizer import normalize_letter_transcript, is_letter_content
     await session_service.get_session_by_id(db, session_id, current_teacher.id)
 
     ref1 = preprocess(payload.task1_reference_text)
-    hyp1 = preprocess(payload.task1_transcribed_text)
+
+    # Normalize letter sounds for Grade 1 Filipino
+    hyp1_text = payload.task1_transcribed_text
+    if is_letter_content(payload.task1_reference_text):
+        hyp1_text = normalize_letter_transcript(hyp1_text, ref1)
+
+    hyp1 = preprocess(hyp1_text)
     lev1 = align_words(ref1, hyp1)
 
-    route     = Part1Route.TASK_2L if lev1.correct_words <= 6 else Part1Route.TASK_2H
-    task2_type = "rhymes" if route == Part1Route.TASK_2L else "sentences"
+    language = (payload.language or "filipino").lower()
+    grade = payload.grade_level or 1
+    threshold = 6
+
+    # English: score=0 ends assessment, ≥1 always goes to Words
+    if language == "english":
+        if lev1.correct_words == 0:
+            route = Part1Route.TASK_2L
+            task2_type = "words"
+        else:
+            route = Part1Route.TASK_2L
+            task2_type = "words"
+    else:
+        route = Part1Route.TASK_2L if lev1.correct_words <= threshold else Part1Route.TASK_2H
+        if route == Part1Route.TASK_2L:
+            task2_type = "rhymes" if grade == 1 else "words"
+        else:
+            task2_type = "sentences"
 
     return Task1ScoreOut(
         task1_correct=lev1.correct_words,
@@ -198,6 +221,8 @@ async def score_session_part1(
         task1_transcribed_text=payload.task1_transcribed_text,
         task2_reference_text=payload.task2_reference_text,
         task2_transcribed_text=payload.task2_transcribed_text,
+        language=payload.language or "filipino",
+        grade_level=payload.grade_level or 1,
     )
 
     return Part1ResultOut(

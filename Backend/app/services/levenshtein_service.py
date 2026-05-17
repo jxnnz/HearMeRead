@@ -43,10 +43,10 @@ class Part1Route(str, Enum):
 
 
 class Part1Classification(str, Enum):
-    FULL_REFRESHER     = "Full Refresher"      # 0–10
-    MODERATE_REFRESHER = "Moderate Refresher"  # 11–16
-    LIGHT_REFRESHER    = "Light Refresher"     # 17–26
-    GRADE_READY        = "Grade Ready"         # 27–30
+    FULL_REFRESHER     = "Full Refresher"      # Filipino 2L: 0–14 | English: 0
+    MODERATE_REFRESHER = "Moderate Refresher"  # Filipino 2L: 15–20 | English: 1–6
+    LIGHT_REFRESHER    = "Light Refresher"     # Filipino 2H: 7–16 | English: 8–16
+    GRADE_READY        = "Grade Ready"         # Filipino 2H: 17–20 | English: 17–20
 
 
 class ReadingProfile(str, Enum):
@@ -257,15 +257,44 @@ def align_words(reference: list[str], transcribed: list[str]) -> LevenshteinResu
 # Part 1 — Word Recognition & Sentence Reading
 # ---------------------------------------------------------------------------
 
-def _classify_part1(total_score: int) -> Part1Classification:
-    if total_score <= 10:
-        return Part1Classification.FULL_REFRESHER
-    elif total_score <= 16:
-        return Part1Classification.MODERATE_REFRESHER
-    elif total_score <= 26:
-        return Part1Classification.LIGHT_REFRESHER
+def _classify_part1(
+    total_score: int,
+    route: Part1Route,
+    language: str = "filipino",
+) -> Part1Classification:
+    """
+    Classify Part 1 result based on total score, route taken, and language.
+
+    Filipino (route-dependent, max total = 20):
+      - Rhyme/Word path (2L): 0–14 → Full Refresher, 15–20 → Moderate Refresher
+      - Sentence path (2H):   7–16 → Light Refresher, 17–20 → Grade Ready
+
+    English (single scale, max total = 20):
+      - 0 → Full Refresher, 1–6 → Moderate, 8–16 → Light, 17–20 → Ready
+    """
+    if language == "english":
+        if total_score == 0:
+            return Part1Classification.FULL_REFRESHER
+        elif total_score <= 6:
+            return Part1Classification.MODERATE_REFRESHER
+        elif total_score <= 16:
+            return Part1Classification.LIGHT_REFRESHER
+        else:
+            return Part1Classification.GRADE_READY
+
+    # Filipino — route-dependent classification
+    if route == Part1Route.TASK_2L:
+        # Rhymes / Words path
+        if total_score <= 14:
+            return Part1Classification.FULL_REFRESHER
+        else:
+            return Part1Classification.MODERATE_REFRESHER
     else:
-        return Part1Classification.GRADE_READY
+        # Sentences path (2H)
+        if total_score <= 16:
+            return Part1Classification.LIGHT_REFRESHER
+        else:
+            return Part1Classification.GRADE_READY
 
 
 def score_part1(
@@ -273,28 +302,47 @@ def score_part1(
     task1_transcribed_text: str,
     task2_reference_text: str,
     task2_transcribed_text: str,
+    language: str = "filipino",
+    grade_level: int = 1,
+    threshold: int = 6,
 ) -> Part1Result:
     """
     Score Assessment Part 1 (Word Recognition & Sentence Reading).
 
     Parameters
     ----------
-    task1_reference_text    : The 10-word reference list for Task 1
+    task1_reference_text    : The reference content for Task 1
+                              (letters for G1 Filipino, words/sentences for others)
     task1_transcribed_text  : Whisper transcript for Task 1
     task2_reference_text    : Reference text for whichever Task 2 was given
-                              (Rhymes for 2L, Sentences for 2H)
+                              (Rhymes for G1 2L, Words for G2-3 2L, Sentences for 2H)
     task2_transcribed_text  : Whisper transcript for Task 2
+    language                : "filipino" or "english"
+    grade_level             : Student grade level (1, 2, or 3)
+    threshold               : Task 1 score cutoff for routing (default 6)
 
     Returns
     -------
     Part1Result with full breakdown, routing decision, and classification.
     """
+    from app.services.letter_normalizer import (
+        normalize_letter_transcript,
+        is_letter_content,
+    )
+
     result = Part1Result()
 
     # --- Task 1 ---
-    ref1  = preprocess(task1_reference_text)
-    hyp1  = preprocess(task1_transcribed_text)
-    lev1  = align_words(ref1, hyp1)
+    ref1 = preprocess(task1_reference_text)
+    hyp1_text = task1_transcribed_text
+
+    # If Task 1 content is individual letters (Grade 1 Filipino),
+    # normalize the Whisper transcript before alignment
+    if is_letter_content(task1_reference_text):
+        hyp1_text = normalize_letter_transcript(hyp1_text, ref1)
+
+    hyp1 = preprocess(hyp1_text)
+    lev1 = align_words(ref1, hyp1)
 
     result.task1_reference_words   = ref1
     result.task1_transcribed_words = hyp1
@@ -303,12 +351,28 @@ def score_part1(
     result.task1_miscues           = lev1.total_miscues
 
     # --- Routing ---
-    if result.task1_correct <= 6:
-        result.route     = Part1Route.TASK_2L
-        result.task2_type = "rhymes"
+    # English Grade 3: score=0 → end assessment (no Task 2)
+    # English Grade 3: score≥1 → always Task 2 Words (no 2L/2H split)
+    if language == "english":
+        if result.task1_correct == 0:
+            # End assessment — no Task 2
+            result.route = Part1Route.TASK_2L
+            result.task2_type = "words"
+            result.total_score = 0
+            result.classification = Part1Classification.FULL_REFRESHER
+            return result
+        else:
+            result.route = Part1Route.TASK_2L
+            result.task2_type = "words"
     else:
-        result.route     = Part1Route.TASK_2H
-        result.task2_type = "sentences"
+        # Filipino: standard routing based on threshold
+        if result.task1_correct <= threshold:
+            result.route = Part1Route.TASK_2L
+            # Grade 1 → "rhymes", Grades 2-3 → "words"
+            result.task2_type = "rhymes" if grade_level == 1 else "words"
+        else:
+            result.route = Part1Route.TASK_2H
+            result.task2_type = "sentences"
 
     # --- Task 2 ---
     ref2 = preprocess(task2_reference_text)
@@ -323,7 +387,7 @@ def score_part1(
 
     # --- Totals ---
     result.total_score    = result.task1_correct + result.task2_correct
-    result.classification = _classify_part1(result.total_score)
+    result.classification = _classify_part1(result.total_score, result.route, language)
 
     return result
 

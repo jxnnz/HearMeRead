@@ -10,9 +10,6 @@ const GRADES = [
   { value: "grade_1", label: "Grade 1" },
   { value: "grade_2", label: "Grade 2" },
   { value: "grade_3", label: "Grade 3" },
-  { value: "grade_4", label: "Grade 4" },
-  { value: "grade_5", label: "Grade 5" },
-  { value: "grade_6", label: "Grade 6" },
 ];
 const LANGS = [{ value: "", label: "All Languages" }, { value: "filipino", label: "Filipino" }, { value: "english", label: "English" }];
 const TYPES = [{ value: "", label: "All Types" }, { value: "1", label: "Assessment 1" }, { value: "2", label: "Assessment 2" }];

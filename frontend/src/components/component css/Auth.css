@@ -150,6 +150,10 @@
   box-sizing: border-box;
 }
 
+.auth-card.auth-card--login {
+  max-width: 480px;
+}
+
 /* ── Page heading ──────────────────────────────────────── */
 .auth-heading {
   font-size: 26px;
@@ -192,7 +196,7 @@
 .auth-field {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
 }
 
 .auth-label {
@@ -241,6 +245,62 @@
   font-family: "Poppins", sans-serif;
 }
 
+/* ── Floating Label Fields ─────────────────────────────── */
+.auth-field-float {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-field-float .auth-input {
+  /* Extra padding top to make room for the floating label */
+  padding: 16px 12px 6px; 
+}
+
+/* When focused or when there's input (placeholder is no longer showing) */
+.auth-field-float .auth-input:focus,
+.auth-field-float .auth-input:not(:placeholder-shown) {
+  padding: 16px 12px 6px; /* Ensure padding stays the same */
+}
+
+/* For password toggle button */
+.auth-field-float .auth-input--has-toggle {
+  padding-right: 42px;
+}
+
+.auth-label-float {
+  position: absolute;
+  left: 12px;
+  top: 13px;
+  color: #9ca3af;
+  font-size: 13px;
+  pointer-events: none;
+  transition: all 0.2s ease;
+  font-family: "Poppins", sans-serif;
+  transform-origin: left top;
+}
+
+/* When focused or when there's input (placeholder is no longer showing) */
+.auth-field-float .auth-input:focus ~ .auth-label-float,
+.auth-field-float .auth-input:not(:placeholder-shown) ~ .auth-label-float {
+  top: 4px;
+  font-size: 10px;
+  color: #6b7280;
+}
+
+.auth-field-float .auth-input:focus ~ .auth-label-float {
+  color: #2c3e6b;
+}
+
+.auth-field-float .auth-input--error:not(:focus) ~ .auth-label-float {
+  color: #c0392b;
+}
+
+.auth-field-float .auth-input--success:not(:focus) ~ .auth-label-float {
+  color: #27ae60;
+}
+
 /* ── Password wrapper ──────────────────────────────────── */
 .auth-password-wrap {
   position: relative;
@@ -255,6 +315,8 @@
 .auth-password-toggle {
   position: absolute;
   right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
   background: none;
   border: none;
   cursor: pointer;
@@ -455,38 +517,127 @@
 
 /* ── Responsive ────────────────────────────────────────── */
 
-/* Tablet / large phone (≤ 720px) */
-@media (max-width: 720px) {
+/* Tablet (≤ 780px) — tighten card, keep 2-col rows */
+@media (max-width: 780px) {
   .auth-card-wrap {
-    padding: 12px 16px 32px;
+    padding: 20px 24px 40px;
     align-items: flex-start;
   }
   .auth-card {
-    max-width: 100%;
-    border-radius: 16px;
-    padding: 28px 24px;
+    max-width: 540px;
+    border-radius: 18px;
+    padding: 32px 36px;
+  }
+  .auth-card.auth-card--login {
+    max-width: 480px;
   }
 }
 
-/* Phone (≤ 520px) — stack all 2-col rows to 1 col */
-@media (max-width: 520px) {
+/* ── Mobile View (≤ 600px) ─────────────────────────────── */
+/* Centralized mobile styles for easier management */
+@media (max-width: 600px) {
   .auth-card-wrap {
-    padding: 8px 10px 24px;
+    padding: 12px 10px;
+    align-items: center; /* Center the card horizontally/vertically */
   }
-  .auth-card {
-    padding: 24px 16px;
-    border-radius: 14px;
+  
+  .auth-card, .auth-card.auth-card--login {
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 18px 14px;
+    border-radius: 12px;
   }
-  .auth-form__row {
-    grid-template-columns: 1fr;
-  }
-  .auth-form {
-    gap: 10px;
-  }
+
   .auth-heading {
-    font-size: 22px;
+    font-size: 20px;
+    margin-bottom: 2px;
+  }
+
+  .auth-subheading {
+    font-size: 11.5px;
+    margin-bottom: 14px;
+  }
+
+  /* Form & Layout Adjustments */
+  .auth-form {
+    gap: 8px;
+  }
+
+  .auth-form__row {
+    grid-template-columns: 1fr 1fr; /* Keep 2 columns on mobile */
+    gap: 8px;
+  }
+
+  /* Compact Input Fields */
+  .auth-field-float .auth-input {
+    padding: 12px 8px 4px; 
+    font-size: 11.5px;
+    border-radius: 6px;
+  }
+
+  .auth-field-float .auth-input:focus,
+  .auth-field-float .auth-input:not(:placeholder-shown) {
+    padding: 12px 8px 4px;
+  }
+
+  .auth-label-float {
+    font-size: 11.5px;
+    top: 9px;
+    left: 8px;
+  }
+
+  .auth-field-float .auth-input:focus ~ .auth-label-float,
+  .auth-field-float .auth-input:not(:placeholder-shown) ~ .auth-label-float {
+    font-size: 8.5px;
+    top: 2px;
+    left: 8px;
+  }
+
+  /* Password Toggle */
+  .auth-field-float .auth-input--has-toggle {
+    padding-right: 28px;
+  }
+  .auth-password-toggle {
+    right: 8px;
+  }
+  .auth-password-toggle svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* Role Toggle */
+  .auth-role-toggle {
+    margin-bottom: 10px;
+  }
+
+  .auth-role-toggle__btn {
+    padding: 6px;
+    font-size: 11.5px;
+  }
+
+  /* Buttons & Checkboxes */
+  .auth-submit {
+    padding: 9px;
+    font-size: 13px;
+    margin-top: 4px;
+  }
+
+  .auth-checkbox-label {
+    font-size: 10.5px;
+  }
+  
+  .auth-field--checkbox input[type="checkbox"] {
+    width: 12px;
+    height: 12px;
+    margin-top: 2px;
+  }
+
+  .pw-match, .pw-rule, .pw-strength__label {
+    font-size: 10px;
   }
 }
+
 
 /* ── Role toggle ───────────────────────────────────────── */
 .auth-role-toggle {

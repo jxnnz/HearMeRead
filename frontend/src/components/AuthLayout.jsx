@@ -18,7 +18,7 @@ export default function AuthLayout({ children, page }) {
 
       {/* ── Card ── */}
       <div className="auth-card-wrap">
-        <div className="auth-card">
+        <div className={`auth-card${page === "login" ? " auth-card--login" : ""}`}>
           {children}
         </div>
       </div>
