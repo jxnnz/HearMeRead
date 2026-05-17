@@ -467,15 +467,7 @@ function LogsDrawer({ teacher, onClose }) {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const filterBtnStyle = (active) => ({
-    padding: "6px 14px", borderRadius: 20, border: "none",
-    fontSize: 12, fontWeight: 600, cursor: "pointer",
-    fontFamily: "Poppins, sans-serif",
-    background: active ? "#2c3e6b" : "#f0f2f8",
-    color: active ? "#fff" : "#4a5568",
-    transition: "all .15s ease",
-    whiteSpace: "nowrap",
-  });
+
 
   return (
     <div style={{
@@ -541,18 +533,21 @@ function LogsDrawer({ teacher, onClose }) {
             />
           </div>
 
-          {/* Day filter pills */}
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {/* Day filter dropdown */}
+          <select
+            value={dayFilter}
+            onChange={(e) => setDayFilter(e.target.value)}
+            style={{
+              padding: "8px 12px", border: "1.5px solid #dde1ee", borderRadius: 8,
+              fontSize: 13, fontFamily: "Poppins, sans-serif", fontWeight: 600,
+              outline: "none", background: "#fff", color: "#1a2340",
+              cursor: "pointer",
+            }}
+          >
             {DAY_FILTERS.map(f => (
-              <button
-                key={f.key}
-                style={filterBtnStyle(dayFilter === f.key)}
-                onClick={() => setDayFilter(f.key)}
-              >
-                {f.label}
-              </button>
+              <option key={f.key} value={f.key}>{f.label}</option>
             ))}
-          </div>
+          </select>
         </div>
 
         {/* Log list */}

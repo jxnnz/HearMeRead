@@ -81,7 +81,19 @@ app.include_router(api_router)
 
 @app.middleware("http")
 async def security_headers(request: Request, call_next):
-    response = await call_next(request)
+    try:
+        response = await call_next(request)
+    except Exception:
+        # Return a generic 500 so CORS middleware can still attach its
+        # headers — without this, the error would propagate and the
+        # browser would see a CORS failure instead of the real error.
+        import traceback, logging
+        logging.getLogger("uvicorn.error").error(
+            "Unhandled exception in middleware chain:\n%s",
+            traceback.format_exc(),
+        )
+        detail = "Internal server error"
+        response = JSONResponse(status_code=500, content={"detail": detail})
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"

@@ -38,10 +38,15 @@ async def _verify_student_ownership(db: AsyncSession, student_id: int, teacher_i
 
 
 async def _verify_passage_ownership(db: AsyncSession, passage_id: int, teacher_id: int) -> None:
+    from sqlalchemy import or_
+    from app.models import PassageVisibility
     result = await db.execute(
         select(Passage).where(
             Passage.id == passage_id,
-            Passage.teacher_id == teacher_id,
+            or_(
+                Passage.teacher_id == teacher_id,
+                Passage.visibility == PassageVisibility.public
+            ),
             Passage.is_archived == False,
         )
     )

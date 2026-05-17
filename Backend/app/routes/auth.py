@@ -109,10 +109,23 @@ async def register(request: Request, data: TeacherRegister, db: AsyncSession = D
 
     if data.role == UserRole.admin:
         # ── Admin path ──────────────────────────────────────────────────────
+        # Guard: check if a school with this DepEd School ID already exists
+        deped_id = data.deped_school_id.strip() if data.deped_school_id else None
+        if deped_id:
+            existing = await db.execute(
+                select(School).where(School.deped_school_id == deped_id)
+            )
+            if existing.scalar_one_or_none():
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="A school with this DepEd School ID is already registered. "
+                           "If you are a teacher, please register with a Teacher account instead.",
+                )
+
         school_code_out = await _generate_unique_school_code(db)
         school = School(
             school_code=school_code_out,
-            deped_school_id=data.deped_school_id.strip() if data.deped_school_id else None,
+            deped_school_id=deped_id,
             name=data.school_name,
             admin_id=None,
         )
