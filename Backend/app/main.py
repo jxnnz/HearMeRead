@@ -55,18 +55,15 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# localhost is always allowed — it can never be reached from outside the machine
+# Always allow the known frontend origins
 _cors_origins = [
     settings.FRONTEND_URL,
     "http://localhost:5173",
     "http://localhost:3000",
+    "https://hearmeread.pages.dev",
+    "https://www.hearmeread.site",
+    "https://hearmeread.site",
 ]
-if not settings.is_production:
-    _cors_origins += [
-        "https://hearmeread.pages.dev",
-        "https://www.hearmeread.site",
-        "https://hearmeread.site",
-    ]
 
 app.add_middleware(
     CORSMiddleware,

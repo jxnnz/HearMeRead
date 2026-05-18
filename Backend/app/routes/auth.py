@@ -484,11 +484,21 @@ async def get_profile_picture_upload_url(
         )
         
     from app.services.storage_service import _make_key, generate_presigned_put_url
-    import os
+    from app.core.config import settings as _s
+    if not _s.R2_ACCOUNT_ID:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Profile picture upload is not available in this environment.",
+        )
     ext = content_type.split("/")[-1]
     key = _make_key(f"profiles/{current_teacher.id}", f"profile.{ext}")
-    
-    url = generate_presigned_put_url(key, content_type=content_type, expires_in=300)
+    try:
+        url = generate_presigned_put_url(key, content_type=content_type, expires_in=300)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Storage service is unavailable. Please try again later.",
+        )
     return ProfilePictureUrlResponse(presigned_url=url, key=key)
 
 
