@@ -31,7 +31,7 @@ export default function TeacherPrivacyContent() {
       <h3>2. Types of Personal Information Collected</h3>
       <p>We collect and process the following categories of personal information:</p>
 
-      <h4>2.1 Teacher Information (Data Subject: You)</h4>
+      <h3>2.1 Teacher Information (Data Subject: You)</h3>
       <ul>
         <li>Full name (first name, last name)</li>
         <li>Email address</li>
@@ -41,7 +41,7 @@ export default function TeacherPrivacyContent() {
         <li>Date of registration and last login</li>
       </ul>
 
-      <h4>2.2 Student Information (Data Subject: Students, represented by Parents/Guardians)</h4>
+      <h3>2.2 Student Information (Data Subject: Students, represented by Parents/Guardians)</h3>
       <ul>
         <li>Full name (first name, last name) — <em>encrypted at rest using Fernet symmetric encryption</em></li>
         <li>Learner Reference Number (LRN) — <em>encrypted at rest using Fernet symmetric encryption</em></li>
@@ -50,7 +50,7 @@ export default function TeacherPrivacyContent() {
         <li>School year</li>
       </ul>
 
-      <h4>2.3 Assessment Data</h4>
+      <h3>2.3 Assessment Data</h3>
       <ul>
         <li>Oral reading assessment scores</li>
         <li>Correct Words Per Minute (CWPM) results</li>
@@ -60,7 +60,7 @@ export default function TeacherPrivacyContent() {
         <li>ASR-generated transcriptions</li>
       </ul>
 
-      <h4>2.4 Technical Data (Automatically Collected)</h4>
+      <h3>2.4 Technical Data (Automatically Collected)</h3>
       <ul>
         <li>IP address and browser user-agent (for security and access logging)</li>
         <li>Session tokens and authentication metadata</li>
@@ -211,7 +211,7 @@ export default function TeacherPrivacyContent() {
         in compliance with RA 10173 and NPC Circular No. 2016-01:
       </p>
 
-      <h4>9.1 Technical Measures</h4>
+      <h3>9.1 Technical Measures</h3>
       <ul>
         <li><strong>Encryption at Rest:</strong> Student names and LRN are encrypted using Fernet
           symmetric encryption (AES-128-CBC with HMAC-SHA256).</li>
@@ -224,7 +224,7 @@ export default function TeacherPrivacyContent() {
           to prevent injection attacks.</li>
       </ul>
 
-      <h4>9.2 Organizational Measures</h4>
+      <h3>9.2 Organizational Measures</h3>
       <ul>
         <li>Role-based access control ensuring teachers can only access data within their assigned sections;</li>
         <li>School-code-based registration that restricts teacher onboarding to authorized schools;</li>

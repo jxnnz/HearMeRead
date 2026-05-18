@@ -40,7 +40,7 @@ export default function AdminPrivacyContent() {
         The following categories of data are collected and processed within your school&rsquo;s account:
       </p>
 
-      <h4>2.1 Administrator Information (Data Subject: You)</h4>
+      <h3>2.1 Administrator Information (Data Subject: You)</h3>
       <ul>
         <li>Full name (first name, last name)</li>
         <li>Email address</li>
@@ -51,7 +51,7 @@ export default function AdminPrivacyContent() {
         <li>Date of registration and last login</li>
       </ul>
 
-      <h4>2.2 Teacher Information (Data Subjects: Teachers in Your School)</h4>
+      <h3>2.2 Teacher Information (Data Subjects: Teachers in Your School)</h3>
       <ul>
         <li>Full name (first name, last name)</li>
         <li>Email address</li>
@@ -60,7 +60,7 @@ export default function AdminPrivacyContent() {
         <li>Assigned sections and grade levels</li>
       </ul>
 
-      <h4>2.3 Student Information (Data Subjects: Students, represented by Parents/Guardians)</h4>
+      <h3>2.3 Student Information (Data Subjects: Students, represented by Parents/Guardians)</h3>
       <ul>
         <li>Full name (first name, last name) — <em>encrypted at rest using Fernet symmetric encryption</em></li>
         <li>Learner Reference Number (LRN) — <em>encrypted at rest using Fernet symmetric encryption</em></li>
@@ -69,7 +69,7 @@ export default function AdminPrivacyContent() {
         <li>School year</li>
       </ul>
 
-      <h4>2.4 Assessment Data</h4>
+      <h3>2.4 Assessment Data</h3>
       <ul>
         <li>Oral reading assessment scores</li>
         <li>Correct Words Per Minute (CWPM) results</li>
@@ -80,7 +80,7 @@ export default function AdminPrivacyContent() {
         <li>School-wide aggregate analytics and reports</li>
       </ul>
 
-      <h4>2.5 Technical Data (Automatically Collected)</h4>
+      <h3>2.5 Technical Data (Automatically Collected)</h3>
       <ul>
         <li>IP address and browser user-agent (for security and access logging)</li>
         <li>Session tokens and authentication metadata</li>
@@ -293,7 +293,7 @@ export default function AdminPrivacyContent() {
         in compliance with RA 10173 and NPC Circular No. 2016-01:
       </p>
 
-      <h4>10.1 Technical Measures</h4>
+      <h3>10.1 Technical Measures</h3>
       <ul>
         <li><strong>Encryption at Rest:</strong> Student names and LRN are encrypted using Fernet
           symmetric encryption (AES-128-CBC with HMAC-SHA256).</li>
@@ -308,7 +308,7 @@ export default function AdminPrivacyContent() {
           inputs to prevent injection attacks.</li>
       </ul>
 
-      <h4>10.2 Organizational Measures</h4>
+      <h3>10.2 Organizational Measures</h3>
       <ul>
         <li>Role-based access control with distinct permission levels for Administrators and Teachers;</li>
         <li>Administrators can view school-wide data; Teachers can only access data within their assigned sections;</li>
@@ -394,7 +394,7 @@ export default function AdminPrivacyContent() {
         subjects, the following procedures apply:
       </p>
 
-      <h4>15.1 HearMeRead&rsquo;s Obligations</h4>
+      <h3>15.1 HearMeRead&rsquo;s Obligations</h3>
       <ul>
         <li>Notify the <strong>National Privacy Commission (NPC)</strong> within <strong>seventy-two (72)
           hours</strong> of becoming aware of the breach, as required by RA 10173 and NPC Circular No. 2016-03;</li>
@@ -404,7 +404,7 @@ export default function AdminPrivacyContent() {
         <li>Document all breaches, including those that do not meet the notification threshold.</li>
       </ul>
 
-      <h4>15.2 Administrator&rsquo;s Obligations</h4>
+      <h3>15.2 Administrator&rsquo;s Obligations</h3>
       <ul>
         <li>Report any actual or suspected breach to HearMeRead at <strong>hearmeread.dpo@gmail.com</strong>{" "}
           within <strong>twenty-four (24) hours</strong> of discovery;</li>
