@@ -213,14 +213,18 @@ export default function ProfilePage() {
                   <span className="pp-ro-label">School Name</span>
                   <span className="pp-ro-value">{user?.school_name || "N/A"}</span>
                 </div>
-                <div className="pp-readonly-item">
-                  <span className="pp-ro-label">Grade Level</span>
-                  <span className="pp-ro-value">{user?.grade_level ? user.grade_level.replace("_", " ").toUpperCase() : "Unassigned"}</span>
-                </div>
-                <div className="pp-readonly-item">
-                  <span className="pp-ro-label">Section</span>
-                  <span className="pp-ro-value">{user?.section || "Unassigned"}</span>
-                </div>
+                {user?.role !== "admin" && (
+                  <>
+                    <div className="pp-readonly-item">
+                      <span className="pp-ro-label">Grade Level</span>
+                      <span className="pp-ro-value">{user?.grade_level ? user.grade_level.replace("_", " ").toUpperCase() : "Unassigned"}</span>
+                    </div>
+                    <div className="pp-readonly-item">
+                      <span className="pp-ro-label">Section</span>
+                      <span className="pp-ro-value">{user?.section || "Unassigned"}</span>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="pp-actions">

@@ -209,6 +209,15 @@ async def update_teacher(
     if payload.section is not None:
         teacher.section = payload.section
     if payload.employee_id is not None:
+        if payload.employee_id:
+            conflict = await db.execute(
+                select(Teacher).where(
+                    Teacher.employee_id == payload.employee_id,
+                    Teacher.id != teacher_id,
+                )
+            )
+            if conflict.scalar_one_or_none():
+                raise HTTPException(status_code=409, detail="This Employee ID is already assigned to another teacher.")
         teacher.employee_id = payload.employee_id
 
     # Sync TeacherAssignment so passage filtering reflects the new grade

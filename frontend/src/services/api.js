@@ -322,17 +322,13 @@ export const studentsApi = {
   },
 
   listClasses: async () => {
-    return withCache("students_classes", async () => {
-      const res = await api.get("/students/classes");
-      return res.data;
-    });
+    const res = await api.get("/students/classes");
+    return res.data;
   },
 
   listSchoolYears: async () => {
-    return withCache("students_school_years", async () => {
-      const res = await api.get("/students/school-years");
-      return res.data;
-    });
+    const res = await api.get("/students/school-years");
+    return res.data;
   },
 
   get: async (id) => {

@@ -218,7 +218,7 @@ export default function TeacherPrivacyContent() {
         <li><strong>Encryption in Transit:</strong> All data is transmitted over HTTPS (TLS 1.2+).</li>
         <li><strong>Password Security:</strong> Passwords are hashed using bcrypt with a computational
           cost factor and are never stored in plaintext.</li>
-        <li><strong>Access Tokens:</strong> JWT-based access tokens expire after sixty (60) minutes.
+        <li><strong>Access Tokens:</strong> JWT-based access tokens expire after sixty (240) minutes.
           Refresh tokens are rotated on each use.</li>
         <li><strong>Input Validation:</strong> Server-side validation and sanitization of all user inputs
           to prevent injection attacks.</li>

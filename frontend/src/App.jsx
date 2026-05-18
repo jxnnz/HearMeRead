@@ -1,6 +1,5 @@
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import SessionExpiredModal from "./modals/SessionExpiredModal";
 import LoadingPage from "./pages/LoadingPage";
 
 // Lazy-loaded pages
@@ -65,26 +64,52 @@ function CatchAll() {
   return <Navigate to={getRole() === "ADMIN" ? "/admin/dashboard" : "/dashboard"} replace />;
 }
 
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+
+function forceLogout() {
+  localStorage.removeItem("token");
+  localStorage.removeItem("role");
+  window.location.replace("/login");
+}
+
 export default function App() {
   const [appReady, setAppReady] = useState(false);
-  const [sessionExpired, setSessionExpired] = useState(false);
+  const idleTimer = useRef(null);
 
   useEffect(() => {
     const t = setTimeout(() => setAppReady(true), 1200);
     return () => clearTimeout(t);
   }, []);
 
+  // Silently redirect to login on 401 — no modal
   useEffect(() => {
-    const handler = () => setSessionExpired(true);
+    const handler = () => forceLogout();
     window.addEventListener("session-expired", handler);
     return () => window.removeEventListener("session-expired", handler);
+  }, []);
+
+  // Idle timeout — log out after 30 min of no activity
+  useEffect(() => {
+    function resetIdleTimer() {
+      if (!localStorage.getItem("token")) return;
+      clearTimeout(idleTimer.current);
+      idleTimer.current = setTimeout(forceLogout, IDLE_TIMEOUT_MS);
+    }
+
+    const events = ["mousemove", "mousedown", "keydown", "scroll", "touchstart", "click"];
+    events.forEach((e) => window.addEventListener(e, resetIdleTimer, { passive: true }));
+    resetIdleTimer(); // start on mount
+
+    return () => {
+      clearTimeout(idleTimer.current);
+      events.forEach((e) => window.removeEventListener(e, resetIdleTimer));
+    };
   }, []);
 
   if (!appReady) return <LoadingPage />;
 
   return (
     <BrowserRouter>
-      <SessionExpiredModal isOpen={sessionExpired} onLogin={() => setSessionExpired(false)} />
       <Suspense fallback={<LoadingPage />}>
         <Routes>
           {/* ── Public ── */}

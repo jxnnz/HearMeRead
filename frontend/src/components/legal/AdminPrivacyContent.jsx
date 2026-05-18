@@ -300,7 +300,7 @@ export default function AdminPrivacyContent() {
         <li><strong>Encryption in Transit:</strong> All data is transmitted over HTTPS (TLS 1.2+).</li>
         <li><strong>Password Security:</strong> Passwords are hashed using bcrypt with a computational
           cost factor and are never stored in plaintext.</li>
-        <li><strong>Access Tokens:</strong> JWT-based access tokens expire after sixty (60) minutes.
+        <li><strong>Access Tokens:</strong> JWT-based access tokens expire after sixty (240) minutes.
           Refresh tokens are rotated on each use.</li>
         <li><strong>School Code Access Control:</strong> School codes provide an additional layer of
           access control, ensuring that only teachers with a valid code can register under a school.</li>

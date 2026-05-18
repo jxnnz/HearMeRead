@@ -430,6 +430,18 @@ async def update_me(
     if data.last_name is not None:
         current_teacher.last_name = data.last_name
     if data.employee_id is not None:
+        if data.employee_id:
+            conflict = await db.execute(
+                select(Teacher).where(
+                    Teacher.employee_id == data.employee_id,
+                    Teacher.id != current_teacher.id,
+                )
+            )
+            if conflict.scalar_one_or_none():
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="This Employee ID is already in use by another account.",
+                )
         current_teacher.employee_id = data.employee_id
     if data.profile_picture_url is not None:
         current_teacher.profile_picture_url = data.profile_picture_url
@@ -491,7 +503,7 @@ async def get_profile_picture_upload_url(
 async def school_lookup(
     request: Request,
     school_code: str | None = Query(None, min_length=8, max_length=8),
-    school_id:   str | None = Query(None, min_length=1, max_length=20),
+    school_id:   str | None = Query(None, min_length=1, max_length=6),
     db: AsyncSession = Depends(get_db),
 ):
     if not school_code and not school_id:

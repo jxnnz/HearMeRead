@@ -92,12 +92,12 @@ export default function SignupForm({ onSubmit, loading }) {
   }
 
   function handleTeacherDepedIdChange(e) {
-    const val = e.target.value;
+    const val = e.target.value.replace(/\D/g, "").slice(0, 6);
     setTeacherDepedId(val);
     resetLookup();
     if (depedLookupTimer.current) clearTimeout(depedLookupTimer.current);
-    if (val.trim().length >= 3) {
-      depedLookupTimer.current = setTimeout(() => runLookup({ depedSchoolId: val.trim() }), 600);
+    if (val.length === 6) {
+      depedLookupTimer.current = setTimeout(() => runLookup({ depedSchoolId: val }), 400);
     }
   }
 
@@ -170,7 +170,7 @@ export default function SignupForm({ onSubmit, loading }) {
             {/* Row: School ID (DepEd) | School Code */}
             <div className="auth-form__row">
               <div className="auth-field-float">
-                <input id="teacher-deped-id" type="text" className={`auth-input${lookupClass}`} value={teacherDepedId} onChange={handleTeacherDepedIdChange} placeholder=" " autoComplete="off" />
+                <input id="teacher-deped-id" type="text" className={`auth-input${lookupClass}`} value={teacherDepedId} onChange={handleTeacherDepedIdChange} placeholder=" " maxLength={6} inputMode="numeric" autoComplete="off" />
                 <label className="auth-label-float" htmlFor="teacher-deped-id">School ID (DepEd)</label>
               </div>
               <div className="auth-field">
@@ -200,7 +200,7 @@ export default function SignupForm({ onSubmit, loading }) {
                 <label className="auth-label-float" htmlFor="admin-school-name">School Name</label>
               </div>
               <div className="auth-field-float">
-                <input id="admin-deped-id" type="text" className="auth-input" value={adminDepedId} onChange={(e) => setAdminDepedId(e.target.value)} placeholder=" " required autoComplete="off" />
+                <input id="admin-deped-id" type="text" className="auth-input" value={adminDepedId} onChange={(e) => setAdminDepedId(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder=" " required maxLength={6} inputMode="numeric" autoComplete="off" />
                 <label className="auth-label-float" htmlFor="admin-deped-id">School ID (DepEd)</label>
               </div>
             </div>

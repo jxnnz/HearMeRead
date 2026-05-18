@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 240  # 4 hours
     RESEND_API_KEY: str
 
     # Cloudflare R2 (optional — leave blank in dev if not yet configured)

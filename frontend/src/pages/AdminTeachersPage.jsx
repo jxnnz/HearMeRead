@@ -217,11 +217,10 @@ function EditTeacherModal({ teacher, onClose, onSaved }) {
     setSaving(true);
     setError(null);
     try {
-      const payload = {};
-      if (form.employee_id !== "") payload.employee_id = form.employee_id;
-      else                          payload.employee_id = null;
-      payload.grade_level = form.grade_level || null;
-      payload.section     = form.section     || null;
+      const payload = {
+        grade_level: form.grade_level || null,
+        section:     form.section     || null,
+      };
       await adminApi.updateTeacher(teacher.id, payload);
       onSaved();
     } catch (err) {
@@ -273,18 +272,16 @@ function EditTeacherModal({ teacher, onClose, onSaved }) {
           </button>
         </div>
 
-        {/* Employee ID */}
+        {/* Employee ID — read-only for admin */}
         <div style={{ marginBottom: 16 }}>
           <label style={labelStyle}>Employee ID</label>
           <input
-            style={inputStyle}
+            style={{ ...inputStyle, background: "#f3f5fa", color: "#6b7280", cursor: "not-allowed" }}
             value={form.employee_id}
-            onChange={e => setForm(f => ({ ...f, employee_id: e.target.value }))}
-            placeholder="7-digit number (e.g. 1234567)"
-            maxLength={7}
+            readOnly
           />
           <span style={{ fontSize: 10, color: "#8a94b2", marginTop: 3, display: "block" }}>
-            Permanent ID — does not change when teacher transfers schools.
+            Permanent ID — set by the teacher and cannot be changed here.
           </span>
         </div>
 
