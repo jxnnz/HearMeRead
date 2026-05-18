@@ -91,8 +91,12 @@ export const authApi = {
     return res.data;
   },
 
-  getProfilePictureUploadUrl: async (contentType) => {
-    const res = await api.get("/auth/me/profile-picture-url", { params: { content_type: contentType } });
+  uploadProfilePicture: async (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await api.post("/auth/me/profile-picture", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
     return res.data;
   },
 

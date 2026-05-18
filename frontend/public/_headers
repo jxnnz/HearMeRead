@@ -1,5 +1,5 @@
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-saWLu6+KetFficHggmIFn2crE4gBH7FJhvqBmuax0d0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https: http://localhost:8000; object-src 'none'; base-uri 'self';
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-saWLu6+KetFficHggmIFn2crE4gBH7FJhvqBmuax0d0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://*.r2.cloudflarestorage.com; media-src 'self' blob:; connect-src 'self' https: http://localhost:8000; object-src 'none'; base-uri 'self';
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin

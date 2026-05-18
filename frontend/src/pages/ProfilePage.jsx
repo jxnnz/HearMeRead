@@ -74,17 +74,7 @@ export default function ProfilePage() {
     setError(null);
     setSuccess(null);
     try {
-      const { presigned_url, key } = await authApi.getProfilePictureUploadUrl(file.type);
-
-      const uploadRes = await fetch(presigned_url, {
-        method: "PUT",
-        body: file,
-        headers: { "Content-Type": file.type },
-      });
-
-      if (!uploadRes.ok) throw new Error("Failed to upload image. Please try again.");
-
-      const updatedUser = await authApi.updateProfile({ profile_picture_url: key });
+      const updatedUser = await authApi.uploadProfilePicture(file);
       setUser(updatedUser);
       setSuccess("Profile picture updated successfully!");
     } catch (err) {

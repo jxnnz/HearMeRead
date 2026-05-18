@@ -2,7 +2,7 @@ import secrets
 import string
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
@@ -468,38 +468,69 @@ async def update_me(
     return response_data
 
 
-@router.get(
-    "/me/profile-picture-url",
-    response_model=ProfilePictureUrlResponse,
-    summary="Get a presigned URL to upload a profile picture",
+@router.post(
+    "/me/profile-picture",
+    response_model=TeacherResponse,
+    summary="Upload a profile picture — backend streams it directly to R2",
 )
-async def get_profile_picture_upload_url(
-    content_type: str = Query(..., description="MIME type of the image, e.g. image/jpeg or image/png"),
+async def upload_profile_picture(
+    file: UploadFile = File(...),
     current_teacher: Teacher = Depends(get_current_teacher),
+    db: AsyncSession = Depends(get_db),
 ):
-    if content_type not in ["image/jpeg", "image/png", "image/webp"]:
+    from app.services.storage_service import _make_key, _get_client, get_presigned_url
+    from app.core.config import settings as _s
+
+    ALLOWED = {"image/jpeg", "image/png", "image/webp"}
+    if file.content_type not in ALLOWED:
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail="Unsupported image format. Allowed: image/jpeg, image/png, image/webp"
+            detail="Unsupported image format. Allowed: JPEG, PNG, WebP",
         )
-        
-    from app.services.storage_service import _make_key, generate_presigned_put_url
-    from app.core.config import settings as _s
+
     if not _s.R2_ACCOUNT_ID:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Profile picture upload is not available in this environment.",
         )
-    ext = content_type.split("/")[-1]
+
+    ext = file.content_type.split("/")[-1]
     key = _make_key(f"profiles/{current_teacher.id}", f"profile.{ext}")
+
     try:
-        url = generate_presigned_put_url(key, content_type=content_type, expires_in=300)
-    except Exception:
+        data = await file.read()
+        from fastapi.concurrency import run_in_threadpool
+        await run_in_threadpool(
+            _get_client().put_object,
+            Bucket=_s.R2_BUCKET_NAME,
+            Key=key,
+            Body=data,
+            ContentType=file.content_type,
+        )
+    except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Storage service is unavailable. Please try again later.",
+            detail="Storage service unavailable. Please try again later.",
         )
-    return ProfilePictureUrlResponse(presigned_url=url, key=key)
+
+    current_teacher.profile_picture_url = key
+    await db.commit()
+    await db.refresh(current_teacher)
+
+    if current_teacher.school_id:
+        school_result = await db.execute(select(School).where(School.id == current_teacher.school_id))
+        school = school_result.scalar_one_or_none()
+    else:
+        school = None
+
+    response_data = TeacherResponse.model_validate(current_teacher)
+    if school:
+        response_data.school_name = school.name
+        response_data.school_code = school.school_code
+        response_data.deped_school_id = school.deped_school_id
+    if current_teacher.profile_picture_url:
+        response_data.profile_picture_url = get_presigned_url(current_teacher.profile_picture_url, expires_in=3600)
+    return response_data
 
 
 # ── School lookup ─────────────────────────────────────────────────────────────
