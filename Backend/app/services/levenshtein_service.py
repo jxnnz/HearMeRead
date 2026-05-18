@@ -1,22 +1,11 @@
-"""
-levenshtein_service.py
-HearMeRead — Reading Assessment Scoring Engine
-
-Handles:
-  - Word-level Levenshtein alignment (substitution / insertion / deletion)
-  - Assessment Part 1: Word Recognition & Sentence Reading scoring + routing
-  - Assessment Part 2: Reading Fluency & Comprehension metrics + Reading Profile
-"""
-
 import re
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
 
 
-# ---------------------------------------------------------------------------
+
 # Constants
-# ---------------------------------------------------------------------------
 
 # Grade-level time limits in seconds
 GRADE_TIME_LIMITS: dict[int, int] = {
@@ -25,10 +14,7 @@ GRADE_TIME_LIMITS: dict[int, int] = {
     3: 180,  # Grade 3 → 3 minutes
 }
 
-
-# ---------------------------------------------------------------------------
 # Enums
-# ---------------------------------------------------------------------------
 
 class MiscueType(str, Enum):
     CORRECT     = "correct"
@@ -57,9 +43,7 @@ class ReadingProfile(str, Enum):
     GRADE_LEVEL        = "Reading at Grade Level"
 
 
-# ---------------------------------------------------------------------------
 # Data classes
-# ---------------------------------------------------------------------------
 
 @dataclass
 class WordAlignment:

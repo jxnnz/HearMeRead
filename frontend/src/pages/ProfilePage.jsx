@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import { Camera, Loader } from "lucide-react";
+import { Camera, Loader, Lock } from "lucide-react";
 import { authApi } from "../services/api";
 import Layout from "../components/Layout";
 import TopBar from "../components/TopBar";
+import ConfirmModal from "../modals/ConfirmModal";
 import "./pages css/ProfilePage.css";
 
 function getInitials(first, last) {
@@ -22,6 +23,7 @@ export default function ProfilePage() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [showLockConfirm, setShowLockConfirm] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -40,8 +42,9 @@ export default function ProfilePage() {
       });
   }, []);
 
-  async function handleSubmit(e) {
-    e.preventDefault();
+  const isEmployeeIdLocked = Boolean(user?.employee_id);
+
+  async function saveProfile() {
     setLoading(true);
     setError(null);
     setSuccess(null);
@@ -49,7 +52,7 @@ export default function ProfilePage() {
       const updatedUser = await authApi.updateProfile({
         first_name: firstName,
         last_name: lastName,
-        employee_id: employeeId || null
+        employee_id: employeeId || null,
       });
       setUser(updatedUser);
       setSuccess("Profile updated successfully!");
@@ -58,6 +61,15 @@ export default function ProfilePage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    if (!isEmployeeIdLocked && employeeId) {
+      setShowLockConfirm(true);
+      return;
+    }
+    saveProfile();
   }
 
   async function handleFileChange(e) {
@@ -180,13 +192,18 @@ export default function ProfilePage() {
               </div>
 
               <div className="pp-field">
-                <label>Employee ID</label>
-                <input 
-                  type="text" 
-                  value={employeeId} 
-                  onChange={e => setEmployeeId(e.target.value)} 
+                <label className="pp-field-label-row">
+                  Employee ID
+                  {isEmployeeIdLocked && <Lock size={11} className="pp-lock-icon" />}
+                </label>
+                <input
+                  type="text"
+                  value={employeeId}
+                  onChange={e => !isEmployeeIdLocked && setEmployeeId(e.target.value)}
                   maxLength={7}
                   placeholder="7-digit ID"
+                  readOnly={isEmployeeIdLocked}
+                  className={isEmployeeIdLocked ? "pp-input-locked" : ""}
                 />
               </div>
 
@@ -225,6 +242,16 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+      <ConfirmModal
+        isOpen={showLockConfirm}
+        onClose={() => setShowLockConfirm(false)}
+        onConfirm={() => { setShowLockConfirm(false); saveProfile(); }}
+        title="Employee ID Cannot Be Changed"
+        message="Once saved, your Employee ID is permanent and cannot be edited. Please double-check that the ID is correct before confirming."
+        confirmLabel="Yes, Save"
+        cancelLabel="Go Back"
+        variant="default"
+      />
     </Layout>
   );
 }

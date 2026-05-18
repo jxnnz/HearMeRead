@@ -42,7 +42,6 @@ export default function StudentRecordPage() {
 
   const [schoolYears, setSchoolYears] = useState([]);
   const [schoolYear, setSchoolYear]   = useState(currentSchoolYear());
-  const [period, setPeriod]           = useState("beginning");
 
   const loadClasses = useCallback(() => {
     setLoading(true);
@@ -65,7 +64,7 @@ export default function StudentRecordPage() {
     }).catch(() => {});
   }, []);
 
-  const handleCardClick = useCallback((grade_level, section) => {
+  const handleCardClick = useCallback((grade_level, section, period) => {
     navigate("/students/class", {
       state: {
         grade:   grade_level,
@@ -74,9 +73,7 @@ export default function StudentRecordPage() {
         period,
       },
     });
-  }, [navigate, schoolYear, period]);
-
-  const periodLabel = PERIOD_OPTIONS.find((p) => p.value === period)?.label ?? period;
+  }, [navigate, schoolYear]);
 
   return (
     <Layout>
@@ -120,25 +117,12 @@ export default function StudentRecordPage() {
               />
             )}
           </div>
-          <div className="sr-filter-field">
-            <label htmlFor="sr-period">Assessment Period</label>
-            <select
-              id="sr-period"
-              className="sr-filter-input"
-              value={period}
-              onChange={(e) => setPeriod(e.target.value)}
-            >
-              {PERIOD_OPTIONS.map(({ value, label }) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
-          </div>
         </div>
 
         {/* States */}
         {loading && (
           <div className="sr-class-grid">
-            {[1, 2, 3, 4].map((i) => (
+            {[1, 2, 3].map((i) => (
               <div key={i} className="sr-skeleton-card">
                 <div className="sr-skeleton sr-skeleton-card__title" />
                 <div className="sr-skeleton sr-skeleton-card__meta" />
@@ -164,31 +148,33 @@ export default function StudentRecordPage() {
           </div>
         )}
 
-        {/* Class Cards */}
+        {/* Period Cards — one per assessment period per class */}
         {!loading && !error && classes.length > 0 && (
           <div className="sr-class-grid">
-            {classes.map((c) => (
-              <div
-                key={`${c.grade_level}||${c.section}`}
-                className="sr-class-card"
-                onClick={() => handleCardClick(c.grade_level, c.section)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => e.key === "Enter" && handleCardClick(c.grade_level, c.section)}
-                aria-label={`View ${formatGrade(c.grade_level)} ${c.section}`}
-              >
-                <h2 className="sr-class-card__title">
-                  {formatGrade(c.grade_level)}
-                  {c.section !== "No Section" && ` — ${c.section}`}
-                </h2>
-                <p className="sr-class-card__meta">
-                  {schoolYear} &nbsp;·&nbsp; {periodLabel}
-                </p>
-                <span className="sr-class-card__count">
-                  {c.student_count} {c.student_count === 1 ? "student" : "students"}
-                </span>
-              </div>
-            ))}
+            {classes.flatMap((c) =>
+              PERIOD_OPTIONS.map(({ value, label }) => (
+                <div
+                  key={`${c.grade_level}||${c.section}||${value}`}
+                  className="sr-class-card"
+                  onClick={() => handleCardClick(c.grade_level, c.section, value)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === "Enter" && handleCardClick(c.grade_level, c.section, value)}
+                  aria-label={`View ${formatGrade(c.grade_level)} ${c.section} — ${label}`}
+                >
+                  <h2 className="sr-class-card__title">
+                    {formatGrade(c.grade_level)}
+                    {c.section !== "No Section" && ` — ${c.section}`}
+                  </h2>
+                  <p className="sr-class-card__meta">
+                    {schoolYear} &nbsp;·&nbsp; {label}
+                  </p>
+                  <span className="sr-class-card__count">
+                    {c.student_count} {c.student_count === 1 ? "student" : "students"}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         )}
 

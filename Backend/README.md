@@ -1,7 +1,5 @@
 # HearMeRead — Backend API
 
-FastAPI backend for the HearMeRead oral reading fluency assessment PWA.
-
 ## Stack
 
 | Layer | Technology |
@@ -129,55 +127,7 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 
 This uses `.env.dev` files in each service directory. Backend will hot-reload via bind mount.
 
----
 
-## Project Structure
-
-```
-Backend/
-├── alembic/                    # Migration scripts (001–024)
-├── app/
-│   ├── core/
-│   │   ├── config.py           # Settings loaded from .env
-│   │   ├── encryption.py       # Fernet encrypt/decrypt helpers
-│   │   ├── rate_limit.py       # SlowAPI rate limiter setup
-│   │   └── security.py         # JWT + bcrypt utilities
-│   ├── routes/
-│   │   ├── auth.py             # /routes/auth/*
-│   │   ├── admin.py            # /routes/admin/*
-│   │   ├── students.py         # /routes/students/*
-│   │   ├── passages.py         # /routes/passages/*
-│   │   ├── questions.py        # /routes/questions/*
-│   │   ├── session.py          # /routes/sessions/*
-│   │   ├── dashboard.py        # /routes/dashboard/*
-│   │   └── asr.py              # /routes/asr/*
-│   ├── services/
-│   │   ├── asr_service.py      # Groq Whisper transcription
-│   │   ├── levenshtein_service.py  # Word alignment + CRLA scoring
-│   │   ├── audio_storage.py    # R2 upload/delete helpers
-│   │   ├── cleanup.py          # APScheduler: daily audio expiry job
-│   │   ├── email_service.py    # Resend transactional email
-│   │   ├── letter_normalizer.py    # Grade 1 letter normalization
-│   │   ├── log_service.py      # Teacher action logging
-│   │   ├── passage_service.py
-│   │   ├── question_service.py
-│   │   ├── session_service.py
-│   │   ├── storage_service.py
-│   │   └── student_service.py
-│   ├── utils/
-│   │   ├── docx_parser.py      # .docx passage + question extraction
-│   │   └── excel_parser.py     # Student Excel import
-│   ├── db.py                   # Async SQLAlchemy engine + get_db()
-│   ├── dependencies.py         # Auth dependencies (require_teacher, require_admin)
-│   ├── models.py               # All SQLAlchemy ORM models
-│   ├── router.py               # Mounts all route modules under /routes
-│   ├── schema.py               # Shared Pydantic schemas
-│   └── main.py                 # App factory, CORS, lifespan, APScheduler
-├── requirements.txt
-└── alembic.ini
-```
-
----
 
 ## API Base Path
 

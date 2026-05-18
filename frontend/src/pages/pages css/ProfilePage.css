@@ -159,6 +159,24 @@
 
 .pp-field input::placeholder { color: #aab3c5; }
 
+.pp-field-label-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.pp-lock-icon {
+  color: #8a94b2;
+  flex-shrink: 0;
+}
+
+.pp-input-locked {
+  background: #f4f6fb !important;
+  border-color: #dde2f0 !important;
+  color: #8a94b2 !important;
+  cursor: not-allowed !important;
+}
+
 /* Divider & section title */
 .pp-divider {
   border: none;

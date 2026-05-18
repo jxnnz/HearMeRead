@@ -113,7 +113,7 @@ export default function App() {
       <Suspense fallback={<LoadingPage />}>
         <Routes>
           {/* Public */}
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<RequireGuest><LandingPage /></RequireGuest>} />
           <Route path="/login" element={<RequireGuest><LoginPage /></RequireGuest>} />
           <Route path="/signup" element={<RequireGuest><SignupPage /></RequireGuest>} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />

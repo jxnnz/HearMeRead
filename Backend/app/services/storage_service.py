@@ -99,16 +99,16 @@ def get_presigned_url(key: str, expires_in: int = 3600) -> str:
     """Generate a temporary signed URL for private file access."""
     if not key:
         return ""
-    # If the bucket is public and settings.R2_PUBLIC_URL is provided, we could just return the public URL.
-    # Otherwise we generate a presigned URL.
     if settings.R2_PUBLIC_URL:
         return f"{settings.R2_PUBLIC_URL.rstrip('/')}/{key}"
-        
-    return _get_client().generate_presigned_url(
-        "get_object",
-        Params={"Bucket": BUCKET, "Key": key},
-        ExpiresIn=expires_in,
-    )
+    try:
+        return _get_client().generate_presigned_url(
+            "get_object",
+            Params={"Bucket": BUCKET, "Key": key},
+            ExpiresIn=expires_in,
+        )
+    except RuntimeError:
+        return ""
 
 
 def generate_presigned_put_url(key: str, content_type: str, expires_in: int = 3600) -> str:
