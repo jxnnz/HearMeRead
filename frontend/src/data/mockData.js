@@ -96,7 +96,7 @@ export const MOCK_PASSAGES = [
   // FILIPINO
   // ════════════════════════════════════════════════════════════
 
-  // ── Assessment 1 Gawain 1 — Sentences ───────────────────
+  // Assessment 1 Gawain 1 — Sentences
   {
     id: 101,
     passage_type: "a1_g1",
@@ -119,7 +119,7 @@ export const MOCK_PASSAGES = [
     questions: [],
   },
 
-  // ── Assessment 1 Gawain 2 — Words (0–6 scorers) ─────────
+  // Assessment 1 Gawain 2 — Words (0–6 scorers)
   {
     id: 102,
     passage_type: "a1_g2_words",
@@ -133,7 +133,7 @@ export const MOCK_PASSAGES = [
     questions: [],
   },
 
-  // ── Assessment 1 Gawain 2 — Sentences (7–10 scorers) ────
+  // Assessment 1 Gawain 2 — Sentences (7–10 scorers)
   {
     id: 103,
     passage_type: "a1_g2_sentences",
@@ -156,7 +156,7 @@ export const MOCK_PASSAGES = [
     questions: [],
   },
 
-  // ── Assessment 2 — Stories (student picks) ──────────────
+  // Assessment 2 — Stories (student picks)
   {
     id: 1,
     passage_type: "a2_story",
@@ -311,7 +311,7 @@ export const MOCK_PASSAGES = [
   // ENGLISH
   // ════════════════════════════════════════════════════════════
 
-  // ── Assessment 1 Gawain 1 — Sentences ───────────────────
+  // Assessment 1 Gawain 1 — Sentences
   {
     id: 201,
     passage_type: "a1_g1",
@@ -334,7 +334,7 @@ export const MOCK_PASSAGES = [
     questions: [],
   },
 
-  // ── Assessment 1 Gawain 2 — Words (0–6 scorers) ─────────
+  // Assessment 1 Gawain 2 — Words (0–6 scorers)
   {
     id: 202,
     passage_type: "a1_g2_words",
@@ -347,7 +347,7 @@ export const MOCK_PASSAGES = [
     questions: [],
   },
 
-  // ── Assessment 1 Gawain 2 — Sentences (7–10 scorers) ────
+  // Assessment 1 Gawain 2 — Sentences (7–10 scorers)
   {
     id: 203,
     passage_type: "a1_g2_sentences",
@@ -370,7 +370,7 @@ export const MOCK_PASSAGES = [
     questions: [],
   },
 
-  // ── Assessment 2 — Stories (student picks) ──────────────
+  // Assessment 2 — Stories (student picks)
   {
     id: 3,
     passage_type: "a2_story",

@@ -142,7 +142,7 @@ export default function EditAssessment2Page() {
     <Layout>
       <div className="ap-page">
 
-        {/* ── Top bar ── */}
+        {/* Top bar */}
         <div className="ap-topbar">
           <div className="ap-topbar__left">
             <button
@@ -159,10 +159,10 @@ export default function EditAssessment2Page() {
           </button>
         </div>
 
-        {/* ── Error banner ── */}
+        {/* Error banner */}
         {error && <div className="ap-error" role="alert">{error}</div>}
 
-        {/* ── Passage Details Card ── */}
+        {/* Passage Details Card */}
         <div className="ap-card">
           <h2 className="ap-card__title">Passage Details</h2>
           <p className="ap-card__subtitle">Update the passage details.</p>
@@ -241,7 +241,7 @@ export default function EditAssessment2Page() {
           </div>
         </div>
 
-        {/* ── Questions Card ── */}
+        {/* Questions Card */}
         <div className="ap-card">
           <h2 className="ap-card__title">Passage Questions</h2>
           <p className="ap-card__subtitle">Update the comprehension questions.</p>

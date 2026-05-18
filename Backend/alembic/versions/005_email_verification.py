@@ -21,7 +21,7 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # ── 1. Split full_name into first_name + last_name on teachers ────────────
+    # 1. Split full_name into first_name + last_name on teachers
     # Add both new columns as nullable first so existing rows don't fail
     op.add_column("teachers", sa.Column("first_name", sa.String(75), nullable=True))
     op.add_column("teachers", sa.Column("last_name",  sa.String(75), nullable=True))
@@ -44,13 +44,13 @@ def upgrade() -> None:
     op.alter_column("teachers", "last_name",  nullable=False)
     op.drop_column("teachers", "full_name")
 
-    # ── 2. Add is_verified to teachers ───────────────────────────────────────
+    # 2. Add is_verified to teachers
     op.add_column(
         "teachers",
         sa.Column("is_verified", sa.Boolean(), nullable=False, server_default="false"),
     )
 
-    # ── 3. Create email_verification_tokens table ─────────────────────────────
+    # 3. Create email_verification_tokens table
     op.create_table(
         "email_verification_tokens",
         sa.Column("id",         sa.Integer(),     primary_key=True),

@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 
-/* ── Aurora keyframes ────────────────────────────────── */
+/* Aurora keyframes */
 @keyframes aurora1 {
   0%   { transform: translateX(-10%) translateY(0%)   scaleX(1)    skewY(-3deg); opacity: 0.5; }
   25%  { transform: translateX(5%)   translateY(-8%)  scaleX(1.08) skewY(-5deg); opacity: 0.7; }
@@ -37,7 +37,7 @@
   100% { transform: translateX(5%)   translateY(-3%)  scaleX(1)    skewY(-4deg); opacity: 0.45; }
 }
 
-/* ── Full-screen background ────────────────────────────── */
+/* Full-screen background */
 .auth-bg {
   min-height: 100vh;
   background: #030b1a;
@@ -48,7 +48,7 @@
   overflow: hidden;
 }
 
-/* ── Aurora container ──────────────────────────────────── */
+/* Aurora container */
 .auth-aurora {
   position: absolute;
   inset: 0;
@@ -56,7 +56,7 @@
   z-index: 0;
 }
 
-/* ── Individual aurora bands ───────────────────────────── */
+/* Individual aurora bands */
 .auth-aurora__band {
   position: absolute;
   left: -20%;
@@ -128,7 +128,7 @@
   animation: aurora5 22s ease-in-out infinite;
 }
 
-/* ── Card wrapper — centers the card in remaining space ── */
+/* Card wrapper — centers the card in remaining space */
 .auth-card-wrap {
   flex: 1;
   position: relative;
@@ -139,7 +139,7 @@
   padding: 12px 24px 40px;
 }
 
-/* ── White card ────────────────────────────────────────── */
+/* White card */
 .auth-card {
   width: 100%;
   max-width: 680px;
@@ -154,7 +154,7 @@
   max-width: 480px;
 }
 
-/* ── Page heading ──────────────────────────────────────── */
+/* Page heading */
 .auth-heading {
   font-size: 26px;
   font-weight: 800;
@@ -170,7 +170,7 @@
   font-weight: 400;
 }
 
-/* ── Error banner ──────────────────────────────────────── */
+/* Error banner */
 .auth-error {
   background: #fdecea;
   color: #c0392b;
@@ -180,7 +180,7 @@
   margin-bottom: 14px;
 }
 
-/* ── Form ──────────────────────────────────────────────── */
+/* Form */
 .auth-form {
   display: flex;
   flex-direction: column;
@@ -245,7 +245,7 @@
   font-family: "Poppins", sans-serif;
 }
 
-/* ── Floating Label Fields ─────────────────────────────── */
+/* Floating Label Fields */
 .auth-field-float {
   position: relative;
   width: 100%;
@@ -301,7 +301,7 @@
   color: #27ae60;
 }
 
-/* ── Password wrapper ──────────────────────────────────── */
+/* Password wrapper */
 .auth-password-wrap {
   position: relative;
   display: flex;
@@ -329,7 +329,7 @@
 
 .auth-password-toggle:hover { color: #2c3e6b; }
 
-/* ── Forgot password ───────────────────────────────────── */
+/* Forgot password */
 .auth-forgot {
   text-align: right;
   margin-top: -4px;
@@ -352,7 +352,7 @@
   text-decoration: underline;
 }
 
-/* ── Submit button ─────────────────────────────────────── */
+/* Submit button */
 .auth-submit {
   width: 100%;
   padding: 11px;
@@ -372,7 +372,7 @@
 .auth-submit:hover:not(:disabled) { background: #1f6aad; }
 .auth-submit:disabled { opacity: 0.55; cursor: not-allowed; }
 
-/* ── Switch page link ──────────────────────────────────── */
+/* Switch page link */
 .auth-switch {
   text-align: center;
   font-size: 12.5px;
@@ -396,7 +396,7 @@
   text-decoration: underline;
 }
 
-/* ── Success banner ────────────────────────────────────── */
+/* Success banner */
 .auth-success {
   background: #eafaf1;
   color: #1e8449;
@@ -406,7 +406,7 @@
   margin-bottom: 14px;
 }
 
-/* ── Verify notice ─────────────────────────────────────── */
+/* Verify notice */
 .auth-verify-notice {
   background: #f0f4ff;
   border: 1.5px solid #c7d2f0;
@@ -432,7 +432,7 @@
   padding: 0;
 }
 
-/* ── Resend ────────────────────────────────────────────── */
+/* Resend */
 .auth-resend-trigger {
   display: block;
   margin-top: 8px;
@@ -449,7 +449,7 @@
 
 .auth-resend-form { margin-bottom: 14px; }
 
-/* ── Password strength bar ─────────────────────────────── */
+/* Password strength bar */
 .pw-strength {
   display: flex;
   align-items: center;
@@ -479,7 +479,7 @@
   transition: color 0.2s;
 }
 
-/* ── Password rule checklist ───────────────────────────── */
+/* Password rule checklist */
 .pw-rules {
   list-style: none;
   margin: 8px 0 0;
@@ -502,7 +502,7 @@
 .pw-rule--fail { color: #888888; }
 .pw-rule__icon { flex-shrink: 0; }
 
-/* ── Password match feedback ───────────────────────────── */
+/* Password match feedback */
 .pw-match {
   display: flex;
   align-items: center;
@@ -515,7 +515,7 @@
 .pw-match--ok    { color: #27ae60; }
 .pw-match--error { color: #c0392b; }
 
-/* ── Responsive ────────────────────────────────────────── */
+/* Responsive */
 
 /* Tablet (≤ 780px) — tighten card, keep 2-col rows */
 @media (max-width: 780px) {
@@ -533,7 +533,7 @@
   }
 }
 
-/* ── Mobile View (≤ 600px) ─────────────────────────────── */
+/* Mobile View (≤ 600px) */
 /* Centralized mobile styles for easier management */
 @media (max-width: 600px) {
   .auth-card-wrap {
@@ -639,7 +639,7 @@
 }
 
 
-/* ── Role toggle ───────────────────────────────────────── */
+/* Role toggle */
 .auth-role-toggle {
   display: flex;
   border: 1.5px solid #dde2f0;
@@ -666,7 +666,7 @@
   color: #fff;
 }
 
-/* ── Field hint text ───────────────────────────────────── */
+/* Field hint text */
 .auth-field-hint {
   font-size: 11.5px;
   color: #100c08;
@@ -675,7 +675,7 @@
   display: block;
 }
 
-/* ── Checkbox fields ───────────────────────────────────── */
+/* Checkbox fields */
 .auth-field--checkbox {
   display: flex;
   flex-direction: row;
@@ -745,7 +745,7 @@
   color: #1a5fa0;
 }
 
-/* ── Legal modal overlay ───────────────────────────────── */
+/* Legal modal overlay */
 .legal-modal-overlay {
   position: fixed;
   inset: 0;

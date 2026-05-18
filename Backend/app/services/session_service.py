@@ -21,8 +21,7 @@ from app.services.levenshtein_service import score_part1, score_part2
 from app.services.log_service import log_activity
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
-
+# Helpers
 def _compute_cwpm(total_words: int, miscue_count: int, reading_time_seconds: float) -> float:
     correct_words = total_words - miscue_count
     minutes = reading_time_seconds / 60
@@ -82,8 +81,7 @@ async def check_duplicate(
     return result.scalar_one_or_none()
 
 
-# ── CRUD ──────────────────────────────────────────────────────────────────────
-
+# CRUD
 async def get_sessions(
     db: AsyncSession,
     teacher_id: int,
@@ -222,8 +220,7 @@ async def create_session(
     return session, duplicate
 
 
-# ── complete_session helpers ──────────────────────────────────────────────────
-
+# complete_session helpers
 def _now() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -273,7 +270,7 @@ async def complete_session(
       ValueError  — session not found or not owned by this teacher
       RuntimeError — session already completed
     """
-    # ── 1. Fetch and validate session ────────────────────────────────────
+    # 1. Fetch and validate session
     result = await db.execute(
         select(AssessmentSession).where(
             AssessmentSession.id == session_id,
@@ -288,7 +285,7 @@ async def complete_session(
     if session.is_completed:
         raise RuntimeError(f"Session {session_id} is already completed.")
 
-    # ── 2. Score Part 1 ──────────────────────────────────────────────────
+    # 2. Score Part 1
     p1_input = payload.part1
     p1 = score_part1(
         task1_reference_text=p1_input.task1_reference_text,
@@ -310,7 +307,7 @@ async def complete_session(
         task2_alignments=_alignments_to_schema(p1.task2_alignments),
     )
 
-    # ── 3. Score Part 2 (optional) ───────────────────────────────────────
+    # 3. Score Part 2 (optional)
     part2_out: Optional[Part2ResultOut] = None
     p2 = None
 
@@ -351,7 +348,7 @@ async def complete_session(
             alignments=_alignments_to_schema(p2.alignments),
         )
 
-    # ── 4. Persist to reading_results (upsert — transcribe may have inserted a row already) ──
+    # 4. Persist to reading_results (upsert — transcribe may have inserted a row already)
     rr_query = await db.execute(
         select(ReadingResult).where(ReadingResult.session_id == session_id)
     )
@@ -388,7 +385,7 @@ async def complete_session(
         reading_result = ReadingResult(session_id=session_id, **scoring_fields)
         db.add(reading_result)
 
-    # ── 5. Upsert session_observations (only if Part 2 provided) ──────────
+    # 5. Upsert session_observations (only if Part 2 provided)
     if payload.part2 is not None and p2 is not None:
         p2_input = payload.part2
         obs_query = await db.execute(
@@ -414,7 +411,7 @@ async def complete_session(
             )
             db.add(observation)
 
-    # ── 6. Mark session completed ─────────────────────────────────────────
+    # 6. Mark session completed
     await db.execute(
         update(AssessmentSession)
         .where(AssessmentSession.id == session_id)

@@ -17,7 +17,7 @@ import { dashboardApi, studentsApi, authApi } from "../services/api";
 
 import "./DashboardPage.css";
 
-// ── School year helper ───────────────────────────────────────
+// School year helper
 function currentSchoolYear() {
   const now = new Date();
   const y   = now.getFullYear();
@@ -25,7 +25,7 @@ function currentSchoolYear() {
   return m >= 6 ? `${y}-${y + 1}` : `${y - 1}-${y}`;
 }
 
-// ── Score color logic ────────────────────────────────────────
+// Score color logic
 function getScoreColor(value, type = "percent") {
   const num = parseFloat(value);
   if (isNaN(num) || value == null) return "#8a94b2";
@@ -57,7 +57,7 @@ function getScoreColor(value, type = "percent") {
   return "#27ae60";
 }
 
-// ── Export dashboard data to Excel ──────────────────────────
+// Export dashboard data to Excel
 function exportDashboardXlsx(students, profileData, genderData, schoolYear) {
   const wb = XLSX.utils.book_new();
 
@@ -148,7 +148,7 @@ export default function DashboardPage() {
     exportDashboardXlsx(students, profileData, genderData, schoolYear);
   }
 
-  // ── Loading state ─────────────────────────────────────────
+  // Loading state
   if (loading) {
     return (
       <Layout>
@@ -189,7 +189,7 @@ export default function DashboardPage() {
     );
   }
 
-  // ── Error state ───────────────────────────────────────────
+  // Error state
   if (error) {
     return (
       <Layout>
@@ -210,7 +210,7 @@ export default function DashboardPage() {
     <Layout>
       <div className="db-page">
 
-        {/* ── Page header ── */}
+        {/* Page header */}
         <TopBar title="Dashboard">
           {user && (
             <button 
@@ -229,10 +229,10 @@ export default function DashboardPage() {
           )}
         </TopBar>
 
-        {/* ── School year indicator ── */}
+        {/* School year indicator */}
         <p className="db-school-year">School Year: {schoolYear}</p>
 
-        {/* ── Section 1: Stat cards ── */}
+        {/* Section 1: Stat cards */}
         <div className="db-stats-row">
           <DashboardStatCard
             value={stats.totalStudents}
@@ -256,13 +256,13 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* ── Section 2: Reading Profile bar + Gender pie ── */}
+        {/* Section 2: Reading Profile bar + Gender pie */}
         <ReadingProfileChart
           data={profileData}
           genderData={genderData}
         />
 
-        {/* ── Section 3 & 4: Fluency / Comprehension charts (A2 students only) ── */}
+        {/* Section 3 & 4: Fluency / Comprehension charts (A2 students only) */}
         {noA2Data ? (
           <div className="db-chart-card db-chart-card--full" style={{ textAlign: "center", padding: "32px" }}>
             <p style={{ color: "#8a94b2", fontSize: 14 }}>

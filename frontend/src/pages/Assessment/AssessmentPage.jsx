@@ -32,7 +32,7 @@ import LearnerExperienceStep    from "./LearnerExperienceStep";
 
 import "../pages css/AssessmentPage.css";
 
-// ── Step machine ──────────────────────────────────────────────────────────────
+// Step machine
 const STEPS = {
   INFO:          "info",
   // Assessment 1 — Task 1
@@ -110,7 +110,7 @@ function initForm() {
   };
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
+// Component
 export default function AssessmentPage() {
   const [step, setStep] = useState(STEPS.INFO);
   const [form, setForm] = useState(initForm());
@@ -212,7 +212,7 @@ export default function AssessmentPage() {
     }
   }, [recordingTime, step, isRecording, isPaused, timeLimitReached, form.grade_level]);
 
-  // ── Teacher profile — used to pre-fill grade/section ─────────────────────
+  // Teacher profile — used to pre-fill grade/section
   const [teacherProfile, setTeacherProfile] = useState(null);
 
   useEffect(() => {
@@ -239,7 +239,7 @@ export default function AssessmentPage() {
       .catch(() => {});
   }, []);
 
-  // ── Fetch students when grade level is selected ──────────────────────────
+  // Fetch students when grade level is selected
   useEffect(() => {
     if (!form.grade_level) { setStudents([]); return; }
     setLoadingStudents(true);
@@ -251,7 +251,7 @@ export default function AssessmentPage() {
       .finally(()  => setLoadingStudents(false));
   }, [form.grade_level]);
 
-  // ── Fetch A1 passages when language or grade_level changes ───────────────
+  // Fetch A1 passages when language or grade_level changes
   useEffect(() => {
     if (!form.grade_level || !form.language) return;
     setLoadingPassages(true);
@@ -292,7 +292,7 @@ export default function AssessmentPage() {
       .finally(()  => setLoadingPassages(false));
   }, [form.language, form.grade_level]);
 
-  // ── Fetch A2 passages when grade_level or language changes ───────────────
+  // Fetch A2 passages when grade_level or language changes
   useEffect(() => {
     if (!form.grade_level || !form.language) return;
     passagesApi
@@ -306,7 +306,7 @@ export default function AssessmentPage() {
       .catch(() => {});
   }, [form.language, form.grade_level]);
 
-  // ── Session creation ─────────────────────────────────────────────────────
+  // Session creation
   async function handleContinue() {
     if (creating) return;
     setCreateError(null);
@@ -333,7 +333,7 @@ export default function AssessmentPage() {
     }
   }
 
-  // ── Transcription helper ─────────────────────────────────────────────────
+  // Transcription helper
   async function fireTranscription(file, forTask) {
     setIsTranscribing(true);
     setTranscribeError(null);
@@ -375,7 +375,7 @@ export default function AssessmentPage() {
     }
   }
 
-  // ── Recording controls ───────────────────────────────────────────────────
+  // Recording controls
   async function handleFileSelect(e) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -412,7 +412,7 @@ export default function AssessmentPage() {
     }
   }
 
-  // ── Countdown state ──────────────────────────────────────────────────
+  // Countdown state
   const [countdown, setCountdown] = useState(0);
   const countdownTimerRef = useRef(null);
   const pendingStreamRef  = useRef(null);
@@ -527,7 +527,7 @@ export default function AssessmentPage() {
     }
   }
 
-  // ── TimeLimitModal handlers (A2 only) ────────────────────────────────────
+  // TimeLimitModal handlers (A2 only)
   function handleTimeLimitContinue() {
     setShowTimeLimitModal(false);
     setTimeLimitReached(false);
@@ -542,7 +542,7 @@ export default function AssessmentPage() {
     handleStopRecording();
   }
 
-  // ── Retake from transcription preview (live recordings only) ────────────
+  // Retake from transcription preview (live recordings only)
   function handleRetakeFromPreview(forTask) {
     resetRecording();
     if (forTask === "g1") {
@@ -562,7 +562,7 @@ export default function AssessmentPage() {
     setShowChoiceModal(true);
   }
 
-  // ── Transcription preview confirm handlers ───────────────────────────────
+  // Transcription preview confirm handlers
   async function handleConfirmG1Preview(editedText) {
     setG1Transcript(editedText);
     setStep(STEPS.A1_G1_LOADING);
@@ -623,7 +623,7 @@ export default function AssessmentPage() {
     setStep(STEPS.COMPREHENSION);
   }
 
-  // ── A1 G1 result — proceed to Task 2 ────────────────────────────────────
+  // A1 G1 result — proceed to Task 2
   function handleProceedToG2(freshScoreResult) {
     // freshScoreResult is passed directly from handleConfirmG1Preview to avoid
     // reading stale task1ScoreResult React state (which hasn't flushed yet).
@@ -658,7 +658,7 @@ export default function AssessmentPage() {
     setStep(STEPS.A1_G2);
   }
 
-  // ── Rhyme scoring complete (Grade 1 Filipino task_2L) ────────────────────
+  // Rhyme scoring complete (Grade 1 Filipino task_2L)
   async function handleRhymeComplete(score, details) {
     setRhymeDetails(details);
     setIsScoring(true);
@@ -688,7 +688,7 @@ export default function AssessmentPage() {
     }
   }
 
-  // ── A1 G2 result — proceed to A2 or finish ──────────────────────────────
+  // A1 G2 result — proceed to A2 or finish
   function handleProceedToA2() {
     resetRecording();
     setStep(STEPS.A2_SELECT);
@@ -710,7 +710,7 @@ export default function AssessmentPage() {
     setStep(STEPS.A2);
   }
 
-  // ── Final session completion ─────────────────────────────────────────────
+  // Final session completion
   async function handleCompleteSession(learnerExpBackendValue = null) {
     if (!session?.id) { handleReset(); return; }
     setIsCompleting(true);
@@ -806,7 +806,7 @@ export default function AssessmentPage() {
     setFontSizeIdx((i) => (i + 1) % FONT_SIZES.length);
   }
 
-  // ── Derived values ────────────────────────────────────────────────────────
+  // Derived values
   function currentPassage() {
     if ([STEPS.A1_G1, STEPS.A1_G1_PREVIEW].includes(step)) return {
       title:      form.passage_title,
@@ -828,7 +828,7 @@ export default function AssessmentPage() {
   const isLiveReadingStep = [STEPS.A1_G1, STEPS.A1_G2, STEPS.A2].includes(step);
   const isLoadingStep     = [STEPS.A1_G1_LOADING, STEPS.A1_G2_LOADING, STEPS.A2_LOADING].includes(step);
 
-  // ── Shared modal / input props ────────────────────────────────────────────
+  // Shared modal / input props
   const fileInput = (
     <input
       ref={fileInputRef}
@@ -854,17 +854,17 @@ export default function AssessmentPage() {
     },
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // Render
   if (step === STEPS.INFO) {
     return (
       <Layout>
-        {/* ── Duplicate session warning banner (commented out — re-enable after testing) ──
+        {/* Duplicate session warning banner (commented out, re-enable after testing)
         {duplicateWarning && (
           <div className="asp-duplicate-warning">
             ⚠ {duplicateWarning}
           </div>
         )}
-        ─────────────────────────────────────────────────────────────────────── */}
+        */}
         <InfoStep
           form={form} setForm={setForm}
           availableGrades={availableGrades}

@@ -5,7 +5,7 @@ export default function AuthLayout({ children, page }) {
   return (
     <div className="auth-bg">
 
-      {/* ── Aurora background ── */}
+      {/* Aurora background */}
       <div className="auth-aurora">
         <div className="auth-aurora__band auth-aurora__band--1" />
         <div className="auth-aurora__band auth-aurora__band--2" />
@@ -16,7 +16,7 @@ export default function AuthLayout({ children, page }) {
 
       <PublicNav page={page} />
 
-      {/* ── Card ── */}
+      {/* Card */}
       <div className="auth-card-wrap">
         <div className={`auth-card${page === "login" ? " auth-card--login" : ""}`}>
           {children}

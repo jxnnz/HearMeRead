@@ -87,7 +87,7 @@ export default function StudentInfoModal({ sessionId, onClose }) {
     <div className="sim-overlay" onClick={onClose}>
       <div className="sim-modal" onClick={(e) => e.stopPropagation()}>
 
-        {/* ── Header ── */}
+        {/* Header */}
         <div className="sim-header">
           <div className="sim-header__info">
             <h2 className="sim-name">
@@ -111,7 +111,7 @@ export default function StudentInfoModal({ sessionId, onClose }) {
           </button>
         </div>
 
-        {/* ── Scrollable body ── */}
+        {/* Scrollable body */}
         <div className="sim-body">
 
           {loading && (
@@ -160,7 +160,7 @@ export default function StudentInfoModal({ sessionId, onClose }) {
                 </div>
               )}
 
-              {/* ── Part 1 ── */}
+              {/* Part 1 */}
               <div className="sim-section">
                 <h3 className="sim-section-title">Assessment Part 1</h3>
                 <div className="sim-stat-grid">
@@ -193,7 +193,7 @@ export default function StudentInfoModal({ sessionId, onClose }) {
                 </div>
               </div>
 
-              {/* ── Part 2 ── */}
+              {/* Part 2 */}
               <div className="sim-section">
                 <h3 className="sim-section-title">Assessment Part 2</h3>
                 {session.passage?.title && (() => {
@@ -244,7 +244,7 @@ export default function StudentInfoModal({ sessionId, onClose }) {
                 </div>
               </div>
 
-              {/* ── Observation ── */}
+              {/* Observation */}
               <div className="sim-section">
                 <h3 className="sim-section-title">Observation & Feedback</h3>
                 <div className="sim-stat-grid">

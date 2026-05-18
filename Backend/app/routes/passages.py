@@ -21,8 +21,7 @@ from app.utils.docx_parser import validate_upload, parse_combined, parse_passage
 router = APIRouter(prefix="/passages", tags=["Passages"])
 
 
-# ── List ──────────────────────────────────────────────────────────────────────
-
+# List
 @router.get("", response_model=PassageListResponse, summary="List passages")
 async def list_passages(
     page:             int                    = Query(1, ge=1),
@@ -47,8 +46,7 @@ async def list_passages(
     return PassageListResponse(total=total, page=page, page_size=page_size, passages=passages)
 
 
-# ── Create manually ───────────────────────────────────────────────────────────
-
+# Create manually
 @router.post(
     "",
     response_model=PassageResponse,
@@ -63,8 +61,7 @@ async def create_passage(
     return await passage_service.create_passage(db=db, data=data, teacher_id=current_teacher.id)
 
 
-# ── Upload: combined passage + questions in one file ─────────────────────────
-
+# Upload: combined passage + questions in one file
 class CombinedUploadResponse(PassageResponse):
     imported_questions: List[QuestionResponse] = []
 
@@ -119,8 +116,7 @@ async def upload_combined(
     return response
 
 
-# ── Upload: passage text only (no questions) ──────────────────────────────────
-
+# Upload: passage text only (no questions)
 @router.post(
     "/upload/passage-only",
     response_model=PassageResponse,
@@ -151,8 +147,7 @@ async def upload_passage_only(
     )
 
 
-# ── Get one ───────────────────────────────────────────────────────────────────
-
+# Get one
 @router.get("/{passage_id}", response_model=PassageResponse, summary="Get a passage")
 async def get_passage(
     passage_id:      int,
@@ -164,8 +159,7 @@ async def get_passage(
     )
 
 
-# ── Update ────────────────────────────────────────────────────────────────────
-
+# Update
 @router.patch("/{passage_id}", response_model=PassageResponse, summary="Update a passage")
 async def update_passage(
     passage_id:      int,
@@ -178,8 +172,7 @@ async def update_passage(
     )
 
 
-# ── Archive ───────────────────────────────────────────────────────────────────
-
+# Archive
 @router.delete(
     "/{passage_id}",
     status_code=status.HTTP_204_NO_CONTENT,

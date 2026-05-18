@@ -282,7 +282,7 @@ export default function ClassRecordPage() {
     <Layout>
       <div className="cr-page">
 
-        {/* ── Top bar ── */}
+        {/* Top bar */}
         <div className="cr-topbar">
           <div className="cr-topbar__left">
             <button
@@ -325,7 +325,7 @@ export default function ClassRecordPage() {
           </div>
         </div>
 
-        {/* ── States ── */}
+        {/* States */}
         {loading && (
           <div className="cr-state">
             <div className="cr-spinner" />
@@ -337,7 +337,7 @@ export default function ClassRecordPage() {
           <div className="cr-state cr-state--error"><p>⚠ {error}</p></div>
         )}
 
-        {/* ── Class record card ── */}
+        {/* Class record card */}
         {!loading && !error && (
           <div className="cr-card">
 
@@ -532,7 +532,7 @@ export default function ClassRecordPage() {
           </div>
         )}
 
-        {/* ── Pagination Controls ── */}
+        {/* Pagination Controls */}
         {!loading && !error && students.length > 0 && (
           <div className="cr-pagination">
             <span className="cr-pagination__info">
@@ -575,13 +575,13 @@ export default function ClassRecordPage() {
 
       </div>
 
-      {/* ── Session Detail Modal ── */}
+      {/* Session Detail Modal */}
       <StudentInfoModal
         sessionId={selectedSessionId}
         onClose={() => setSelectedSessionId(null)}
       />
 
-      {/* ── Edit Student Modal ── */}
+      {/* Edit Student Modal */}
       <EditStudentModal
         isOpen={editStudent !== null}
         student={editStudent}
@@ -591,7 +591,7 @@ export default function ClassRecordPage() {
         error={editStudentError}
       />
 
-      {/* ── Edit Class Info Modal ── */}
+      {/* Edit Class Info Modal */}
       <EditClassInfoModal
         isOpen={showEditClass}
         onClose={() => setShowEditClass(false)}

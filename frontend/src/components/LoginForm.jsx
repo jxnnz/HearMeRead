@@ -17,7 +17,7 @@ export default function LoginForm({ onSubmit, loading }) {
   return (
     <form className="auth-form" onSubmit={handleSubmit}>
  
-      {/* ── Email ── */}
+      {/* Email */}
       <div className="auth-field">
         <div className="auth-field-float">
           <input
@@ -34,7 +34,7 @@ export default function LoginForm({ onSubmit, loading }) {
         </div>
       </div>
  
-      {/* ── Password ── */}
+      {/* Password */}
       <div className="auth-field">
         <div className="auth-field-float">
           <input
@@ -59,19 +59,19 @@ export default function LoginForm({ onSubmit, loading }) {
         </div>
       </div>
  
-      {/* ── Forgot password ── */}
+      {/* Forgot password */}
       <div className="auth-forgot">
         <button type="button" onClick={() => navigate("/forgot-password")}>
           Forgot password?
         </button>
       </div>
  
-      {/* ── Submit ── */}
+      {/* Submit */}
       <button type="submit" className="auth-submit" disabled={loading}>
         {loading ? "Logging in…" : "Log in"}
       </button>
  
-      {/* ── Switch to signup ── */}
+      {/* Switch to signup */}
       <p className="auth-switch">
         Don't have an account?{" "}
         <button type="button" onClick={() => navigate("/signup")}>

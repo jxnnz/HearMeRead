@@ -26,7 +26,7 @@ export default function StudentDetailsForm({ form, setForm }) {
   return (
     <div className="as-card">
 
-      {/* ── Card header: title + school year selector ── */}
+      {/* Card header: title + school year selector */}
       <div className="as-card__header">
         <div>
           <h2 className="as-card__title">Student Details</h2>
@@ -48,7 +48,7 @@ export default function StudentDetailsForm({ form, setForm }) {
         </div>
       </div>
 
-      {/* ── Row 1: LRN + Sex ── */}
+      {/* Row 1: LRN + Sex */}
       <div className="as-row as-row--lrn-sex">
         <div className="as-field as-field--lrn">
           <label className="as-label" htmlFor="student-lrn">LRN:</label>
@@ -83,7 +83,7 @@ export default function StudentDetailsForm({ form, setForm }) {
         </div>
       </div>
 
-      {/* ── Row 2: First Name + Last Name ── */}
+      {/* Row 2: First Name + Last Name */}
       <div className="as-row">
         <div className="as-field">
           <label className="as-label" htmlFor="student-firstname">
@@ -116,7 +116,7 @@ export default function StudentDetailsForm({ form, setForm }) {
         </div>
       </div>
 
-      {/* ── Row 3: Grade Level + Section ── */}
+      {/* Row 3: Grade Level + Section */}
       <div className="as-row">
         <div className="as-field">
           <label className="as-label" htmlFor="student-grade">

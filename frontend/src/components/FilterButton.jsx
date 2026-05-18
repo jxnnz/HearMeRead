@@ -34,7 +34,7 @@ export default function FilterButton({ filters = [], values = {}, onChange, onCl
 
   return (
     <div className="filter-btn-wrap" ref={ref}>
-      {/* ── Trigger button ── */}
+      {/* Trigger button */}
       <button
         type="button"
         className={`filter-trigger${open ? " filter-trigger--open" : ""}${hasActive ? " filter-trigger--active" : ""}`}
@@ -46,7 +46,7 @@ export default function FilterButton({ filters = [], values = {}, onChange, onCl
         <ChevronDown size={13} className={open ? "filter-chevron--up" : "filter-chevron"} />
       </button>
 
-      {/* ── Dropdown panel ── */}
+      {/* Dropdown panel */}
       {open && (
         <div className="filter-dropdown">
           {filters.map((f, i) => (

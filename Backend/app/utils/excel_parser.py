@@ -22,8 +22,7 @@ except ImportError:
     openpyxl = None  # type: ignore
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
-
+# Helpers
 def _str(cell) -> str:
     """Return cell value as a stripped string, or ''."""
     v = cell.value if hasattr(cell, "value") else cell
@@ -183,8 +182,7 @@ def _fill_col_map(row, col_map: dict, overwrite: bool = True) -> None:
             _set("teacher_remarks")
 
 
-# ── Data classes ──────────────────────────────────────────────────────────────
-
+# Data classes
 @dataclass
 class ParsedImportRow:
     lrn:                   Optional[str]
@@ -218,8 +216,7 @@ class ParsedExcel:
     parse_errors: list[str]            = field(default_factory=list)
 
 
-# ── Main parser ───────────────────────────────────────────────────────────────
-
+# Main parser
 def parse_crla_excel(file_bytes: bytes) -> ParsedExcel:
     if openpyxl is None:
         raise RuntimeError("openpyxl is not installed. Add it to requirements.txt.")
@@ -233,7 +230,7 @@ def parse_crla_excel(file_bytes: bytes) -> ParsedExcel:
     if not all_rows:
         raise ValueError("The uploaded file appears to be empty.")
 
-    # ── Step 1: Scan top rows for metadata ────────────────────────────────────
+    # Step 1: Scan top rows for metadata
     grade_level: Optional[str] = None
     section:     Optional[str] = None
     language:    str           = "filipino"
@@ -301,7 +298,7 @@ def parse_crla_excel(file_bytes: bytes) -> ParsedExcel:
             'Make sure the file has a column labelled "LRN".'
         )
 
-    # ── Step 2: Build column map from header row ───────────────────────────────
+    # Step 2: Build column map from header row
     col_map: dict[str, int] = {}
     _fill_col_map(all_rows[header_row_idx], col_map, overwrite=True)
 
@@ -325,7 +322,7 @@ def parse_crla_excel(file_bytes: bytes) -> ParsedExcel:
             "Header row found but required columns (LRN, Student Name) are missing."
         )
 
-    # ── Step 3: Parse data rows ────────────────────────────────────────────────
+    # Step 3: Parse data rows
     parsed_rows: list[ParsedImportRow] = []
     parse_errors: list[str] = []
 

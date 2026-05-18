@@ -26,8 +26,7 @@ from app.services import session_service
 router = APIRouter(prefix="/sessions", tags=["Sessions"])
 
 
-# ── List ──────────────────────────────────────────────────────────────────────
-
+# List
 @router.get("", response_model=SessionListResponse, summary="List assessment sessions")
 async def list_sessions(
     page:             int                      = Query(1, ge=1),
@@ -58,8 +57,7 @@ async def list_sessions(
     return SessionListResponse(total=total, page=page, page_size=page_size, sessions=sessions)
 
 
-# ── Create ────────────────────────────────────────────────────────────────────
-
+# Create
 @router.post(
     "",
     summary="Start a new assessment session",
@@ -98,8 +96,7 @@ async def create_session(
     return session
 
 
-# ── Get one ───────────────────────────────────────────────────────────────────
-
+# Get one
 @router.get("/{session_id}", response_model=SessionResponse, summary="Get a session")
 async def get_session(
     session_id:      int,
@@ -111,8 +108,7 @@ async def get_session(
     )
 
 
-# ── Complete (submit results) ─────────────────────────────────────────────────
-
+# Complete (submit results)
 @router.post(
     "/{session_id}/complete",
     response_model=CompleteSessionOut,
@@ -138,8 +134,7 @@ async def complete_session(
         raise HTTPException(status_code=409, detail=str(e))
 
 
-# ── Intermediate scoring (no session state change) ────────────────────────────
-
+# Intermediate scoring (no session state change)
 @router.post(
     "/{session_id}/score-task1",
     response_model=Task1ScoreOut,
@@ -253,8 +248,7 @@ async def score_session_part1(
     )
 
 
-# ── Observation (intermediate — does not complete session) ────────────────────
-
+# Observation (intermediate — does not complete session)
 @router.post(
     "/{session_id}/observe",
     status_code=200,
@@ -281,8 +275,7 @@ async def save_session_observation(
     }
 
 
-# ── Update ────────────────────────────────────────────────────────────────────
-
+# Update
 @router.patch(
     "/{session_id}",
     summary="Update a session",
@@ -318,8 +311,7 @@ async def update_session(
     return session
 
 
-# ── Archive ───────────────────────────────────────────────────────────────────
-
+# Archive
 @router.delete(
     "/{session_id}",
     status_code=status.HTTP_204_NO_CONTENT,
@@ -335,8 +327,7 @@ async def archive_session(
     )
 
 
-# ── Student-scoped shortcut ───────────────────────────────────────────────────
-
+# Student-scoped shortcut
 student_sessions_router = APIRouter(tags=["Sessions"])
 
 @student_sessions_router.get(

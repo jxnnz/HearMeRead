@@ -161,7 +161,7 @@ export default function PassagePage() {
 
         {!loading && !pageError && (
           <>
-            {/* ── Public Passages (read-only, shown first) ── */}
+            {/* Public Passages (read-only, shown first) */}
             {publicA1.length > 0 && (
               <AssessmentSection
                 label="Assessment 1"
@@ -179,7 +179,7 @@ export default function PassagePage() {
               />
             )}
 
-            {/* ── My Passages (private, full CRUD) ── */}
+            {/* My Passages (private, full CRUD) */}
             {(myA1.length > 0 || myA2.length > 0) && (
               <>
                 <div className="ph-section-label">
@@ -218,7 +218,7 @@ export default function PassagePage() {
         cancelLabel="Cancel"
       />
 
-      {/* ── View-only modal for public passages ── */}
+      {/* View-only modal for public passages */}
       {viewPassage && (
         <div
           style={{

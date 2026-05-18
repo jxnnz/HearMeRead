@@ -2,7 +2,7 @@ import axios from "axios";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000" || "http://hearmeread-production.up.railway.app";
 
-// ── Axios instance ────────────────────────────────────────────────────────────
+// Axios instance
 const api = axios.create({
   baseURL: `${API_BASE_URL}/routes`,
   headers: {
@@ -10,7 +10,7 @@ const api = axios.create({
   },
 });
 
-// ── Attach token to every request automatically ───────────────────────────────
+// Attach token to every request automatically
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {
@@ -19,7 +19,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// ── Auto-logout on 401 (expired / invalid token) ─────────────────────────────
+// Auto-logout on 401 (expired / invalid token)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -40,7 +40,7 @@ api.interceptors.response.use(
   }
 );
 
-// ── In-Memory Cache Helper ──────────────────────────────────────────────────
+// In-Memory Cache Helper
 const apiCache = new Map();
 
 async function withCache(key, fetcher, ttl = 300000) { // Default 5 min TTL
@@ -57,7 +57,7 @@ export function clearApiCache() {
   apiCache.clear();
 }
 
-// ── Auth ──────────────────────────────────────────────────────────────────────
+// Auth
 export const authApi = {
   /**
    * Login with email + password.
@@ -124,7 +124,7 @@ export const authApi = {
   },
 };
 
-// ── Admin ─────────────────────────────────────────────────────────────────────
+// Admin
 export const adminApi = {
   getDashboard: async () => {
     return withCache("admin_dashboard", async () => {
@@ -168,8 +168,7 @@ export const adminApi = {
     return res.data;
   },
 
-  // ── Teacher Assignments ──────────────────────────────────────────────────
-
+  // Teacher Assignments
   getAssignments: async (params = {}) => {
     const res = await api.get("/admin/assignments", { params });
     return res.data;
@@ -190,8 +189,7 @@ export const adminApi = {
     return res.data;
   },
 
-  // ── Public Passage Management ───────────────────────────────────────────
-
+  // Public Passage Management
   listPassages: async (params = {}) => {
     const res = await api.get("/admin/passages", { params });
     return res.data;
@@ -213,7 +211,7 @@ export const adminApi = {
   },
 };
 
-// ── Passages ──────────────────────────────────────────────────────────────────
+// Passages
 export const passagesApi = {
   /**
    * List passages with optional filters.
@@ -274,7 +272,7 @@ export const passagesApi = {
   },
 };
 
-// ── Questions ─────────────────────────────────────────────────────────────────
+// Questions
 export const questionsApi = {
   /** List all questions for a passage. */
   list: async (passageId, params = {}) => {
@@ -314,7 +312,7 @@ export const questionsApi = {
   },
 };
 
-// ── Students ──────────────────────────────────────────────────────────────────
+// Students
 export const studentsApi = {
   /**
    * List students with optional filters.
@@ -373,7 +371,7 @@ export const studentsApi = {
   },
 };
 
-// ── Sessions ──────────────────────────────────────────────────────────────────
+// Sessions
 export const sessionsApi = {
   /**
    * List sessions with optional filters.
@@ -461,7 +459,7 @@ export const sessionsApi = {
   },
 };
 
-// ── Dashboard ─────────────────────────────────────────────────────────────────
+// Dashboard
 export const dashboardApi = {
   /**
    * Fetch all dashboard summary stats and chart data for a school year.

@@ -27,7 +27,7 @@ export default function DetailDrawer({ passage, onClose, onEdit }) {
         aria-modal="true"
         aria-label={`Passage: ${passage.title}`}
       >
-        {/* ── Header ── */}
+        {/* Header */}
         <div className="drawer__header">
           <div className="drawer__header-meta">
             <span className="drawer__grade">Grade {passage.grade_level}</span>
@@ -46,16 +46,16 @@ export default function DetailDrawer({ passage, onClose, onEdit }) {
           </button>
         </div>
 
-        {/* ── Title ── */}
+        {/* Title */}
         <h2 className="drawer__title">{passage.title}</h2>
 
-        {/* ── Word count ── */}
+        {/* Word count */}
         <p className="drawer__meta">{words} words</p>
 
-        {/* ── Full passage content ── */}
+        {/* Full passage content */}
         <div className="drawer__content">{passage.content}</div>
 
-        {/* ── Footer buttons ── */}
+        {/* Footer buttons */}
         <div className="drawer__footer">
           <button className="drawer__btn drawer__btn--ghost" onClick={onClose}>
             Close

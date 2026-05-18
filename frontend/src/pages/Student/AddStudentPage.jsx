@@ -37,7 +37,7 @@ export default function AddStudentPage() {
     });
   }, []);
 
-  // ── Validation ───────────────────────────────────────────
+  // Validation
   function validate() {
     if (!form.first_name.trim()) { setError("First name is required.");  return false; }
     if (!form.last_name.trim())  { setError("Last name is required.");   return false; }
@@ -45,7 +45,7 @@ export default function AddStudentPage() {
     return true;
   }
 
-  // ── Save ─────────────────────────────────────────────────
+  // Save
   async function handleSave() {
     setError(null);
     if (!validate()) return;
@@ -80,7 +80,7 @@ export default function AddStudentPage() {
     <Layout>
       <div className="as-page">
 
-        {/* ── Top bar: back arrow + title ── */}
+        {/* Top bar: back arrow + title */}
         <div className="as-topbar">
           <button
             className="as-back-btn"
@@ -92,15 +92,15 @@ export default function AddStudentPage() {
           <h1 className="as-page__title">Add Student</h1>
         </div>
 
-        {/* ── Error banner ── */}
+        {/* Error banner */}
         {error && (
           <div className="as-error" role="alert">{error}</div>
         )}
 
-        {/* ── Student Details form card ── */}
+        {/* Student Details form card */}
         <StudentDetailsForm form={form} setForm={setForm} />
 
-        {/* ── Footer buttons (outside the card) ── */}
+        {/* Footer buttons (outside the card) */}
         <div className="as-footer">
           <button
             className="as-btn as-btn--cancel"

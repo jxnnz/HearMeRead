@@ -5,7 +5,7 @@
 #   test  → builds & tags :test images, runs pytest, optionally deploys to staging
 #   main  → builds & tags :prod images, pushes to GHCR, deploys to production
 #
-# ── Secrets you must add in GitHub → Settings → Secrets & Variables → Actions ──
+# Secrets you must add in GitHub → Settings → Secrets & Variables → Actions
 #   GHCR_TOKEN        Personal access token with write:packages scope
 #   SSH_HOST          Your production server IP or hostname
 #   SSH_USER          SSH user on that server
@@ -21,10 +21,9 @@ env:
   REGISTRY: ghcr.io
   IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/hearmeread
 
-# ──────────────────────────────────────────────────────────────────────────────
 jobs:
 
-  # ── DEV: push to 'dev' branch ───────────────────────────────────────────────
+  # DEV: push to 'dev' branch
   deploy-dev:
     if: github.ref == 'refs/heads/dev'
     runs-on: ubuntu-latest
@@ -58,7 +57,7 @@ jobs:
       #        git pull origin dev && \
       #        docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build"
 
-  # ── TEST: push to 'test' branch ─────────────────────────────────────────────
+  # TEST: push to 'test' branch
   deploy-test:
     if: github.ref == 'refs/heads/test'
     runs-on: ubuntu-latest
@@ -97,7 +96,7 @@ jobs:
       #       git pull origin test
       #       docker compose -f docker-compose.yml -f docker-compose.test.yml up -d --build
 
-  # ── PROD: push to 'main' branch ─────────────────────────────────────────────
+  # PROD: push to 'main' branch
   deploy-prod:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest

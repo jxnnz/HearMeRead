@@ -6,7 +6,7 @@
   position: relative;
 }
 
-/* ── Trigger ─────────────────────────────────────────── */
+/* Trigger */
 .filter-trigger {
   display: inline-flex;
   align-items: center;
@@ -55,7 +55,7 @@
   transition: transform 0.2s;
 }
 
-/* ── Dropdown ────────────────────────────────────────── */
+/* Dropdown */
 .filter-dropdown {
   position: absolute;
   top: calc(100% + 6px);

@@ -92,7 +92,7 @@ export default function A1OnlyResultsStep({
   return (
     <div className="asp-page asp-page--wide">
 
-      {/* ── Header card ── */}
+      {/* Header card */}
       <div className="asp-res-header">
         <div className="asp-res-header__left">
           <div className="asp-res-name-row">
@@ -131,7 +131,7 @@ export default function A1OnlyResultsStep({
         </div>
       </div>
 
-      {/* ── Score stat cards ── */}
+      {/* Score stat cards */}
       <div className="asp-res-stats asp-res-stats--4">
         <div className="asp-res-stat-card">
           <span className="asp-res-stat-card__value">
@@ -159,7 +159,7 @@ export default function A1OnlyResultsStep({
         </div>
       </div>
 
-      {/* ── Classification detail ── */}
+      {/* Classification detail */}
       {classification && (
         <div className="asp-res-profile-detail">
           <h3 className="asp-res-section-title">Reading Classification</h3>
@@ -173,7 +173,7 @@ export default function A1OnlyResultsStep({
         </div>
       )}
 
-      {/* ── Task 1 transcription ── */}
+      {/* Task 1 transcription */}
       {task1Alignments.length > 0 && (
         <div className="asp-res-profile-detail">
           <WordHighlightView
@@ -183,7 +183,7 @@ export default function A1OnlyResultsStep({
         </div>
       )}
 
-      {/* ── Task 2 transcription ── */}
+      {/* Task 2 transcription */}
       {task2Alignments.length > 0 && (
         <div className="asp-res-profile-detail">
           <WordHighlightView
@@ -193,7 +193,7 @@ export default function A1OnlyResultsStep({
         </div>
       )}
 
-      {/* ── Observation & Teacher note ── */}
+      {/* Observation & Teacher note */}
       <div className="asp-res-lower">
         <div className="asp-res-perf">
           <h3 className="asp-res-section-title">Observation Level</h3>
@@ -236,7 +236,7 @@ export default function A1OnlyResultsStep({
         </div>
       </div>
 
-      {/* ── Footer ── */}
+      {/* Footer */}
       <div className="asp-res-footer">
         <p className="asp-res-footer__info">
           Assessed by teacher · Section {form.section} · {form.school_year}

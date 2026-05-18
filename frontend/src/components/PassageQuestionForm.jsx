@@ -1,9 +1,9 @@
 import { Plus, X } from "lucide-react";
 
-// ── Fixed options — always Yes, No, N/A ─────────────────────
+// Fixed options — always Yes, No, N/A
 const FIXED_OPTIONS = ["Yes", "No", "N/A"];
 
-// ── Blank question template ──────────────────────────────────
+// Blank question template
 function blankQuestion() {
   return {
     id:       crypto.randomUUID(),
@@ -15,17 +15,17 @@ function blankQuestion() {
 // ============================================================
 export default function PassageQuestionsForm({ questions, setQuestions }) {
 
-  // ── Add a new blank question ─────────────────────────────
+  // Add a new blank question
   function addQuestion() {
     setQuestions((prev) => [...prev, blankQuestion()]);
   }
 
-  // ── Remove a question by index ───────────────────────────
+  // Remove a question by index
   function removeQuestion(index) {
     setQuestions((prev) => prev.filter((_, i) => i !== index));
   }
 
-  // ── Update a field on a specific question ────────────────
+  // Update a field on a specific question
   function updateQuestion(index, field, val) {
     setQuestions((prev) =>
       prev.map((q, i) => (i === index ? { ...q, [field]: val } : q))
@@ -38,7 +38,7 @@ export default function PassageQuestionsForm({ questions, setQuestions }) {
       <h2 className="ap-card__title">Passage Questions</h2>
       <p className="ap-card__subtitle">Enter the comprehension questions.</p>
 
-      {/* ── Question blocks ── */}
+      {/* Question blocks */}
       {questions.map((q, qIndex) => (
         <div key={q.id} className="pq-block">
 
@@ -106,7 +106,7 @@ export default function PassageQuestionsForm({ questions, setQuestions }) {
         </div>
       ))}
 
-      {/* ── Add Question button ── */}
+      {/* Add Question button */}
       <button
         type="button"
         className="pq-add-question"

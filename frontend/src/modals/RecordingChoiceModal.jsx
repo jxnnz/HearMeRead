@@ -8,7 +8,7 @@ export default function RecordingChoiceModal({
   onUpload,
   onLive,
 }) {
-  // ── Close on Escape key ──────────────────────────────────
+  // Close on Escape key
   useEffect(() => {
     if (!isOpen) return;
     function handleKey(e) {
@@ -18,7 +18,7 @@ export default function RecordingChoiceModal({
     return () => window.removeEventListener("keydown", handleKey);
   }, [isOpen, onClose]);
 
-  // ── Prevent body scroll when open ───────────────────────
+  // Prevent body scroll when open
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
@@ -38,7 +38,7 @@ export default function RecordingChoiceModal({
         className="rcm-modal"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* ── Header ── */}
+        {/* Header */}
         <div className="rcm-header">
           <div className="rcm-header__text">
             <h2 className="rcm-title">Start Assessment</h2>
@@ -55,7 +55,7 @@ export default function RecordingChoiceModal({
           </button>
         </div>
 
-        {/* ── Choice cards ── */}
+        {/* Choice cards */}
         <div className="rcm-choices">
 
           {/* Upload Audio */}
@@ -100,7 +100,7 @@ export default function RecordingChoiceModal({
           </button>
         </div>
 
-        {/* ── Footer hint ── */}
+        {/* Footer hint */}
         <p className="rcm-footer">
           Press <kbd>Esc</kbd> to cancel
         </p>

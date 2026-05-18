@@ -9,8 +9,7 @@ import { adminApi } from "../services/api";
 import StudentInfoModal from "../modals/StudentInfoModal";
 import "../pages/pages css/ClassRecordPage.css";
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
+// Helpers
 function formatGrade(gl) {
   if (!gl) return "—";
   if (gl === "kindergarten") return "Kindergarten";
@@ -65,8 +64,7 @@ const GRADE_TEXT = {
 
 const PERIOD_LABELS = { beginning: "Beginning", middle: "Middle", end: "End" };
 
-// ── Reassign Modal ────────────────────────────────────────────────────────────
-
+// Reassign Modal
 function ReassignModal({ card, onClose, onSuccess }) {
   const [teachers, setTeachers] = useState([]);
   const [toTeacherId, setToTeacherId] = useState("");
@@ -184,8 +182,7 @@ function ReassignModal({ card, onClose, onSuccess }) {
   );
 }
 
-// ── Class Record sub-view (reuses teacher-side cr-* CSS classes) ──────────────
-
+// Class Record sub-view (reuses teacher-side cr-* CSS classes)
 function ClassRecordView({ card, onBack }) {
   const [record,     setRecord]     = useState(null);
   const [loading,    setLoading]    = useState(true);
@@ -402,8 +399,7 @@ function ClassRecordView({ card, onBack }) {
   );
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
-
+// Main page
 export default function AdminStudentsPage() {
   const [cards,    setCards]    = useState([]);
   const [loading,  setLoading]  = useState(true);
@@ -552,7 +548,7 @@ export default function AdminStudentsPage() {
               </div>
             )}
 
-            {/* ── Cards grouped by school year ── */}
+            {/* Cards grouped by school year */}
             {!loading && !error && filtered.length > 0 && (
               <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
                 {sortedYears.map(year => (

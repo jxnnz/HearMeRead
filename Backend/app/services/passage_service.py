@@ -15,8 +15,7 @@ def _compute_word_count(text: str) -> int:
     return len(text.split())
 
 
-# ── Helpers ──────────────────────────────────────────────────────────────────
-
+# Helpers
 async def _get_teacher_assigned_grade(
     db: AsyncSession, teacher_id: int
 ) -> Optional[GradeLevel]:
@@ -54,8 +53,7 @@ async def _get_teacher_school_id(
     return result.scalar_one_or_none()
 
 
-# ── Passage services ─────────────────────────────────────────────────────────
-
+# Passage services
 async def get_passages(
     db: AsyncSession,
     teacher_id: int,

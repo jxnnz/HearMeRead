@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
-/* ── Overlay ─────────────────────────────────────────── */
+/* Overlay */
 .rcm-overlay {
   position: fixed;
   inset: 0;
@@ -19,7 +19,7 @@
   to   { opacity: 1; }
 }
 
-/* ── Modal box ───────────────────────────────────────── */
+/* Modal box */
 .rcm-modal {
   background: #fff;
   border-radius: 18px;
@@ -36,7 +36,7 @@
   to   { transform: translateY(0)    scale(1);    opacity: 1; }
 }
 
-/* ── Header ──────────────────────────────────────────── */
+/* Header */
 .rcm-header {
   display: flex;
   align-items: flex-start;
@@ -84,7 +84,7 @@
   color: #000000;
 }
 
-/* ── Choice cards container ──────────────────────────── */
+/* Choice cards container */
 .rcm-choices {
   display: flex;
   flex-direction: column;
@@ -92,7 +92,7 @@
   padding: 20px 24px;
 }
 
-/* ── Individual choice card ──────────────────────────── */
+/* Individual choice card */
 .rcm-choice {
   display: flex;
   align-items: center;
@@ -126,7 +126,7 @@
   background: #f0fdf6;
 }
 
-/* ── Icon wrapper ────────────────────────────────────── */
+/* Icon wrapper */
 .rcm-choice__icon-wrap {
   width: 54px;
   height: 54px;
@@ -164,7 +164,7 @@
   color: #fff;
 }
 
-/* ── Text body ───────────────────────────────────────── */
+/* Text body */
 .rcm-choice__body {
   flex: 1;
   display: flex;
@@ -186,7 +186,7 @@
   font-weight: 400;
 }
 
-/* ── Arrow ───────────────────────────────────────────── */
+/* Arrow */
 .rcm-choice__arrow {
   font-size: 18px;
   color: #c8d0e4;
@@ -204,7 +204,7 @@
   transform: translateX(4px);
 }
 
-/* ── Divider ─────────────────────────────────────────── */
+/* Divider */
 .rcm-divider {
   display: flex;
   align-items: center;
@@ -224,7 +224,7 @@
   background: #eaecf8;
 }
 
-/* ── Footer hint ─────────────────────────────────────── */
+/* Footer hint */
 .rcm-footer {
   text-align: center;
   font-size: 11.5px;

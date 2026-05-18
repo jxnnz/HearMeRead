@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
-/* ── Overlay ─────────────────────────────────────────── */
+/* Overlay */
 .etm-overlay {
   position: fixed;
   inset: 0;
@@ -18,7 +18,7 @@
   to   { opacity: 1; }
 }
 
-/* ── Modal card ──────────────────────────────────────── */
+/* Modal card */
 .etm-modal {
   background: #fff;
   border-radius: 18px;
@@ -38,7 +38,7 @@
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* ── Title ───────────────────────────────────────────── */
+/* Title */
 .etm-title {
   font-size: 17px;
   font-weight: 700;
@@ -46,7 +46,7 @@
   margin: 0;
 }
 
-/* ── Textarea ────────────────────────────────────────── */
+/* Textarea */
 .etm-textarea {
   width: 100%;
   border: 1.5px solid #dde2f0;
@@ -65,7 +65,7 @@
 
 .etm-textarea:focus { border-color: #2c3e6b; background: #fff; }
 
-/* ── Actions ─────────────────────────────────────────── */
+/* Actions */
 .etm-actions {
   display: flex;
   gap: 10px;

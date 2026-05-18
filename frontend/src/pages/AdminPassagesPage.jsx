@@ -6,7 +6,7 @@ import UploadModal from "../components/UploadModal";
 import { adminApi, questionsApi } from "../services/api";
 import "./pages css/AddPassagePage.css";
 
-// ── Rhyme pair helpers ────────────────────────────────────────────────────────
+// Rhyme pair helpers
 function makeEmptyRhymePairs() {
   return Array.from({ length: 10 }, (_, i) => ({ id: i, pair: "", answer: "Oo" }));
 }
@@ -436,7 +436,7 @@ export default function AdminPassagesPage() {
     }
   }
 
-  /* ── Editor view (add / edit) ── */
+  /* Editor view (add / edit) */
   if (view === "add" || view === "edit") {
     return (
       <Layout>
@@ -494,7 +494,7 @@ export default function AdminPassagesPage() {
 
   const pv = previewTarget;
 
-  /* ── List view ── */
+  /* List view */
   return (
     <Layout>
       <div style={{ fontFamily: "'Poppins', sans-serif", width: "100%" }}>

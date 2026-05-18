@@ -1,4 +1,4 @@
-/* ── Base ──────────────────────────────────────────────── */
+/* Base */
 .sidebar {
   width: 220px;
   min-width: 220px;
@@ -18,7 +18,7 @@
   min-width: 64px;
 }
 
-/* ── Header (logo) ─────────────────────────────────────── */
+/* Header (logo) */
 .sidebar__header {
   display: flex;
   align-items: center;
@@ -72,7 +72,7 @@
   max-width: 0;
 }
 
-/* ── Admin role badge ──────────────────────────────────── */
+/* Admin role badge */
 .sidebar__role-badge {
   display: flex;
   align-items: center;
@@ -94,7 +94,7 @@
   padding: 6px;
 }
 
-/* ── Nav ───────────────────────────────────────────────── */
+/* Nav */
 .sidebar__nav {
   display: flex;
   flex-direction: column;
@@ -150,7 +150,7 @@
   max-width: 0;
 }
 
-/* ── Logout ────────────────────────────────────────────── */
+/* Logout */
 .sidebar__logout {
   margin: 8px 8px 0;
   display: flex;

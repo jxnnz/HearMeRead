@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
-/* ── Page shell ─────────────────────────────────────── */
+/* Page shell */
 .passages {
   
   
@@ -10,7 +10,7 @@
   font-family: "Poppins", sans-serif;
 }
 
-/* ── Page title ─────────────────────────────────────── */
+/* Page title */
 .passages__title {
   font-size: 28px;
   font-weight: 700;
@@ -19,7 +19,7 @@
   font-family: "Poppins", sans-serif;
 }
 
-/* ── Toolbar ─────────────────────────────────────────── */
+/* Toolbar */
 .passages__toolbar {
   display: flex;
   align-items: flex-start;
@@ -57,7 +57,7 @@
   flex-wrap: wrap;
 }
 
-/* ── Search box ─────────────────────────────────────── */
+/* Search box */
 .passages__search {
   display: flex;
   align-items: center;
@@ -107,7 +107,7 @@
 
 .passages__search-clear:hover { color: #000000; }
 
-/* ── Active filter pills ─────────────────────────────── */
+/* Active filter pills */
 .passages__pills {
   display: flex;
   align-items: center;
@@ -158,7 +158,7 @@
 
 .passages__pill-clear:hover { color: #c0392b; }
 
-/* ── Passage card grid ───────────────────────────────── */
+/* Passage card grid */
 .passages__grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -176,7 +176,7 @@
   .passages__search { width: 100%; }
 }
 
-/* ── Loading / empty / error states ─────────────────── */
+/* Loading / empty / error states */
 .passages__state {
   display: flex;
   flex-direction: column;

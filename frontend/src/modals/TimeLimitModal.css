@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 
-/* ── Overlay ─────────────────────────────────────────── */
+/* Overlay */
 .tlm-overlay {
   position: fixed;
   inset: 0;
@@ -19,7 +19,7 @@
   to   { opacity: 1; }
 }
 
-/* ── Modal box ───────────────────────────────────────── */
+/* Modal box */
 .tlm-modal {
   background: #fff;
   border-radius: 20px;
@@ -41,7 +41,7 @@
   to   { transform: translateY(0)    scale(1);    opacity: 1; }
 }
 
-/* ── Bell icon ───────────────────────────────────────── */
+/* Bell icon */
 .tlm-icon {
   font-size: 72px;
   line-height: 1;
@@ -59,7 +59,7 @@
   100% { transform: rotate(0deg);    }
 }
 
-/* ── Title ───────────────────────────────────────────── */
+/* Title */
 .tlm-title {
   font-size: 24px;
   font-weight: 800;
@@ -69,7 +69,7 @@
   line-height: 1.2;
 }
 
-/* ── Description ─────────────────────────────────────── */
+/* Description */
 .tlm-desc {
   font-size: 14px;
   color: #080808;
@@ -80,7 +80,7 @@
   max-width: 340px;
 }
 
-/* ── Button group ────────────────────────────────────── */
+/* Button group */
 .tlm-actions {
   display: flex;
   flex-direction: column;

@@ -23,7 +23,7 @@
   opacity: 0.6;
 }
 
-/* ── Meta row ────────────────────────────────────────── */
+/* Meta row */
 .p-card__meta {
   display: flex;
   align-items: center;
@@ -65,7 +65,7 @@
   color: #9b3a3a;
 }
 
-/* ── Title ───────────────────────────────────────────── */
+/* Title */
 .p-card__title {
   font-size: 19px;
   font-weight: 700;
@@ -81,7 +81,7 @@
   overflow: hidden;
 }
 
-/* ── Excerpt ─────────────────────────────────────────── */
+/* Excerpt */
 .p-card__excerpt {
   font-size: 12.5px;
   color: #080808;
@@ -94,7 +94,7 @@
   overflow: hidden;
 }
 
-/* ── Action buttons (appear on hover) ───────────────── */
+/* Action buttons (appear on hover) */
 .p-card__actions {
   display: flex;
   gap: 6px;
@@ -138,7 +138,7 @@
   border-color: #e8c8c5;
 }
 
-/* ── Public passage variant ──────────────────────────── */
+/* Public passage variant */
 .p-card--public {
   background: #f8faff;
   border-color: #d4def4;
@@ -149,7 +149,7 @@
   box-shadow: 0 6px 20px rgba(44, 80, 180, 0.10);
 }
 
-/* ── Visibility badges ───────────────────────────────── */
+/* Visibility badges */
 .p-card__badge--public {
   margin-left: auto;
   font-size: 10px;

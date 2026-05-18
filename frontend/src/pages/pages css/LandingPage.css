@@ -274,7 +274,7 @@ html { scroll-behavior: smooth; }
 .hero-visual { animation: fadeUp 0.7s 0.25s ease-out both; }
 
 
-/* ── TABLET (max 1024px) ───────────────────────────────── */
+/* TABLET (max 1024px) */
 @media (max-width: 1024px) {
   .hero { gap: 2rem; padding: 3rem 5%; min-height: auto; }
   .hero-card-stack { max-width: 320px; }
@@ -295,7 +295,7 @@ html { scroll-behavior: smooth; }
 }
 
 
-/* ── MOBILE (max 768px) ────────────────────────────────── */
+/* MOBILE (max 768px) */
 @media (max-width: 768px) {
   .lp-nav { padding: 0.85rem 5%; }
   .nav-hamburger { display: flex; }
@@ -336,7 +336,7 @@ html { scroll-behavior: smooth; }
 }
 
 
-/* ── SMALL PHONES (max 480px) ──────────────────────────── */
+/* SMALL PHONES (max 480px) */
 @media (max-width: 480px) {
   .lp-nav { padding: 0.75rem 4%; }
   .nav-logo { font-size: 1.05rem; }

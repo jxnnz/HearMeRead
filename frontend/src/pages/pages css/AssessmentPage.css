@@ -251,7 +251,7 @@ select.si-input {
   margin: -8px;                 /* pull slightly into the layout padding */
 }
 
-/* ── Header bar ──────────────────────────────────────── */
+/* Header bar */
 .asp-reading-header {
   display: flex;
   align-items: center;
@@ -393,7 +393,7 @@ select.si-input {
   50%       { box-shadow: 0 0 0 8px rgba(39, 174, 96, 0); }
 }
 
-/* ── Passage body — large, centered, scrollable ──────── */
+/* Passage body — large, centered, scrollable */
 .asp-reading-body {
   flex: 1;
   overflow-y: auto;
@@ -430,7 +430,7 @@ select.si-input {
   margin-top: 40px;
 }
 
-/* ── Footer — mic button centered at bottom ──────────── */
+/* Footer — mic button centered at bottom */
 .asp-reading-footer {
   display: flex;
   flex-direction: column;
@@ -556,7 +556,7 @@ select.si-input {
   color: #2c7fc1;
 }
 
-/* ── Part 2 overlay + modal ──────────────────────────────── */
+/* Part 2 overlay + modal */
 .asp-overlay {
   position: fixed;
   inset: 0;
@@ -1077,7 +1077,7 @@ select.si-input {
   color: #080808;
 }
 
-/* ── Teacher Observations Panel ── */
+/* Teacher Observations Panel */
 .asp-obs-panel {
   background: #fff;
   border-radius: 14px;

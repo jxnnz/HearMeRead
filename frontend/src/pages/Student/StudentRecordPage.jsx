@@ -82,7 +82,7 @@ export default function StudentRecordPage() {
     <Layout>
       <div className="sr-page">
 
-        {/* ── Header ── */}
+        {/* Header */}
         <TopBar title="Student Record">
           <AppButton variant="ghost" onClick={() => setShowImport(true)}>
             <Upload size={15} />
@@ -94,7 +94,7 @@ export default function StudentRecordPage() {
           </AppButton>
         </TopBar>
 
-        {/* ── Global Filters ── */}
+        {/* Global Filters */}
         <div className="sr-filters">
           <div className="sr-filter-field">
             <label htmlFor="sr-year">School Year</label>
@@ -135,7 +135,7 @@ export default function StudentRecordPage() {
           </div>
         </div>
 
-        {/* ── States ── */}
+        {/* States */}
         {loading && (
           <div className="sr-class-grid">
             {[1, 2, 3, 4].map((i) => (
@@ -164,7 +164,7 @@ export default function StudentRecordPage() {
           </div>
         )}
 
-        {/* ── Class Cards ── */}
+        {/* Class Cards */}
         {!loading && !error && classes.length > 0 && (
           <div className="sr-class-grid">
             {classes.map((c) => (

@@ -1,4 +1,4 @@
-/* ── Overlay ─────────────────────────────────────────── */
+/* Overlay */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -16,7 +16,7 @@
   to   { opacity: 1; }
 }
 
-/* ── Modal box ───────────────────────────────────────── */
+/* Modal box */
 .modal {
   background: #fff;
   border-radius: 14px;
@@ -31,7 +31,7 @@
   to   { transform: translateY(0);    opacity: 1; }
 }
 
-/* ── Header ──────────────────────────────────────────── */
+/* Header */
 .modal__header {
   display: flex;
   align-items: center;
@@ -64,7 +64,7 @@
   background: #f0f1f5;
 }
 
-/* ── Form ────────────────────────────────────────────── */
+/* Form */
 .modal__form {
   padding: 20px 24px 24px;
   display: flex;
@@ -81,7 +81,7 @@
   font-size: 13px;
 }
 
-/* ── Fields ──────────────────────────────────────────── */
+/* Fields */
 .field {
   display: flex;
   flex-direction: column;
@@ -141,7 +141,7 @@
   gap: 12px;
 }
 
-/* ── Footer buttons ──────────────────────────────────── */
+/* Footer buttons */
 .modal__footer {
   display: flex;
   justify-content: flex-end;
@@ -149,7 +149,7 @@
   margin-top: 4px;
 }
 
-/* ── Shared button styles ────────────────────────────── */
+/* Shared button styles */
 .btn {
   display: inline-flex;
   align-items: center;

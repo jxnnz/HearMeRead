@@ -2,14 +2,14 @@
 # Usage: make <target>
 # Requires: bash, python in venv, psycopg2-binary installed
 
-# ── Run the app locally (no Docker) ───────────────────────────────────────────
+# Run the app locally (no Docker)
 dev:
 	ENV_FILE=.env.dev uvicorn app.main:app --reload --port 8000
 
 test-server:
 	ENV_FILE=.env.test uvicorn app.main:app --reload --port 8001
 
-# ── Alembic migrations ─────────────────────────────────────────────────────────
+# Alembic migrations
 migrate-dev:
 	ENV_FILE=.env.dev alembic upgrade head
 
@@ -34,11 +34,11 @@ status-test:
 status-prod:
 	ENV_FILE=.env.prod alembic current
 
-# ── Tests ─────────────────────────────────────────────────────────────────────
+# Tests
 test:
 	ENV_FILE=.env.test python -m pytest -v --tb=short
 
-# ── Reset test schema (DANGEROUS — wipes all test data) ───────────────────────
+# Reset test schema (DANGEROUS — wipes all test data)
 reset-test:
 	@echo "WARNING: This will drop and recreate the 'test' schema. All test data will be lost."
 	@read -p "Type 'yes' to confirm: " confirm && [ "$$confirm" = "yes" ]

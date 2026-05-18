@@ -9,7 +9,7 @@
   font-family: "Poppins", sans-serif;
 }
 
-/* ── Top bar ─────────────────────────────────────────────── */
+/* Top bar */
 .ph-topbar {
   display: flex;
   align-items: center;
@@ -32,7 +32,7 @@
   font-family: "Poppins", sans-serif;
 }
 
-/* ── Assessment card ─────────────────────────────────────── */
+/* Assessment card */
 .ph-card {
   background: #fff;
   border-radius: 14px;
@@ -71,7 +71,7 @@
   font-family: "Poppins", sans-serif;
 }
 
-/* ── View all button ─────────────────────────────────────── */
+/* View all button */
 .ph-view-all {
   display: inline-flex;
   align-items: center;
@@ -93,7 +93,7 @@
   background: #eef0fb;
 }
 
-/* ── Passage grid inside card ────────────────────────────── */
+/* Passage grid inside card */
 .ph-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -108,7 +108,7 @@
   .ph-grid { grid-template-columns: 1fr; }
 }
 
-/* ── Empty state ─────────────────────────────────────────── */
+/* Empty state */
 .ph-empty {
   display: flex;
   flex-direction: column;
@@ -125,7 +125,7 @@
   margin: 0;
 }
 
-/* ── Skeleton shimmer ────────────────────────────────────── */
+/* Skeleton shimmer */
 @keyframes phShimmer {
   0%   { background-position: -800px 0; }
   100% { background-position: 800px 0; }
@@ -171,7 +171,7 @@
 .ph-skeleton-line   { height: 12px; width: 100%; }
 .ph-skeleton-line--short { width: 65%; }
 
-/* ── Section labels (My Passages / Public Library) ──── */
+/* Section labels (My Passages / Public Library) */
 .ph-section-label {
   display: flex;
   align-items: center;

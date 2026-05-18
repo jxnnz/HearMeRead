@@ -42,7 +42,7 @@ export default function ReadingStep({
     <>
       <div className="asp-reading-screen">
 
-        {/* ── Header ── */}
+        {/* Header */}
         <div className="asp-reading-header">
           <div className="asp-reading-header__left">
             <button className="asp-reading-back" onClick={onBack}>
@@ -81,7 +81,7 @@ export default function ReadingStep({
           </div>
         </div>
 
-        {/* ── Passage text ── */}
+        {/* Passage text */}
         <div className="asp-reading-body">
           {passage?.content ? (
             <p className="asp-reading-text" style={{ fontSize: `${fontSize}px` }}>
@@ -92,7 +92,7 @@ export default function ReadingStep({
           )}
         </div>
 
-        {/* ── Footer: recording controls ── */}
+        {/* Footer: recording controls */}
         <div className="asp-reading-footer">
 
           {/* No mode chosen yet — plain mic to open modal */}

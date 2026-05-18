@@ -154,7 +154,7 @@ export default function AdminDashboardPage() {
       <div style={{ fontFamily: "Poppins, sans-serif", width: "100%" }}>
         <TopBar title="Dashboard" />
 
-        {/* ── School banner ─────────────────────────────────────── */}
+        {/* School banner */}
         <div style={{
           background: "#fff",
           borderRadius: 16,
@@ -219,7 +219,7 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* ── Stat cards ────────────────────────────────────────── */}
+        {/* Stat cards */}
         <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 20 }}>
           <StatCard
             icon={Users}       iconColor="#2c7fc1"
@@ -240,7 +240,7 @@ export default function AdminDashboardPage() {
           />
         </div>
 
-        {/* ── Period breakdown (past + current only) ────────────── */}
+        {/* Period breakdown (past + current only) */}
         <div style={{
           background: "#fff",
           borderRadius: 16,
@@ -308,7 +308,7 @@ export default function AdminDashboardPage() {
           </ResponsiveContainer>
         </div>
 
-        {/* ── Reading Profile % per Assessment Period ────────────── */}
+        {/* Reading Profile % per Assessment Period */}
         <div style={{
           background: "#fff",
           borderRadius: 16,

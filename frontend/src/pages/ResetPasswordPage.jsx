@@ -4,8 +4,7 @@ import { Eye, EyeOff, CheckCircle, XCircle } from "lucide-react";
 import AuthLayout from "../components/AuthLayout";
 import { authApi } from "../services/api";
 
-// ── Password strength helpers ─────────────────────────────────────────────────
-
+// Password strength helpers
 const RULES = [
   { id: "len",     label: "At least 8 characters",           test: (v) => v.length >= 8 },
   { id: "upper",   label: "At least one uppercase letter",   test: (v) => /[A-Z]/.test(v) },
@@ -25,8 +24,7 @@ function usePasswordStrength(password) {
   }, [password]);
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
-
+// Component
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -45,7 +43,7 @@ export default function ResetPasswordPage() {
 
   const canSubmit = allRulesPass && passwordsMatch && !loading;
 
-  // ── No token in URL → show error state ───────────────────────────────────
+  // No token in URL → show error state
   if (!token) {
     return (
       <AuthLayout page="reset">
@@ -98,7 +96,7 @@ export default function ResetPasswordPage() {
 
       <form className="auth-form" onSubmit={handleSubmit}>
 
-        {/* ── New password ── */}
+        {/* New password */}
         <div className="auth-field">
           <label className="auth-label" htmlFor="reset-new-password">New Password:</label>
           <div className="auth-password-wrap">
@@ -162,7 +160,7 @@ export default function ResetPasswordPage() {
           )}
         </div>
 
-        {/* ── Confirm password ── */}
+        {/* Confirm password */}
         <div className="auth-field">
           <label className="auth-label" htmlFor="reset-confirm-password">Confirm Password:</label>
           <div className="auth-password-wrap">

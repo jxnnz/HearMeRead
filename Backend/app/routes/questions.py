@@ -12,8 +12,7 @@ from app.utils.docx_parser import validate_upload, parse_questions_only
 router = APIRouter(tags=["Questions"])
 
 
-# ── List questions for a passage ──────────────────────────────────────────────
-
+# List questions for a passage
 @router.get(
     "/passages/{passage_id}/questions",
     response_model=List[QuestionResponse],
@@ -33,8 +32,7 @@ async def list_questions(
     )
 
 
-# ── Add a single question manually ───────────────────────────────────────────
-
+# Add a single question manually
 @router.post(
     "/passages/{passage_id}/questions",
     response_model=QuestionResponse,
@@ -52,8 +50,7 @@ async def create_question(
     )
 
 
-# ── Bulk upload questions from .docx ─────────────────────────────────────────
-
+# Bulk upload questions from .docx
 @router.post(
     "/passages/{passage_id}/questions/upload",
     response_model=List[QuestionResponse],
@@ -85,8 +82,7 @@ async def upload_questions(
     )
 
 
-# ── Update a question ─────────────────────────────────────────────────────────
-
+# Update a question
 @router.patch(
     "/questions/{question_id}",
     response_model=QuestionResponse,
@@ -103,8 +99,7 @@ async def update_question(
     )
 
 
-# ── Archive a question ────────────────────────────────────────────────────────
-
+# Archive a question
 @router.delete(
     "/questions/{question_id}",
     status_code=status.HTTP_204_NO_CONTENT,

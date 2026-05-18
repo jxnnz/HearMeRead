@@ -1,4 +1,4 @@
-// ── Reading observation levels ────────────────────────────────
+// Reading observation levels
 // backendValue maps to fluency_level (int 1–4) in CompleteSessionIn
 export const OBSERVATION_LEVELS = [
   { value: "level1", label: "Level 1", desc: "Reads word by word", backendValue: 1 },
@@ -7,7 +7,7 @@ export const OBSERVATION_LEVELS = [
   { value: "level4", label: "Level 4", desc: "Reads fluently with proper expression", backendValue: 4 },
 ];
 
-// ── Learner experience options ────────────────────────────────
+// Learner experience options
 // backendValue maps to learner_experience (int 1–5) in CompleteSessionIn
 export const EXPERIENCE_OPTIONS = [
   { value: "very_hard", label: "Very Hard", emoji: "😰", score: 2,  backendValue: 1 },
@@ -17,7 +17,7 @@ export const EXPERIENCE_OPTIONS = [
   { value: "excellent", label: "Excellent", emoji: "🌟", score: 10, backendValue: 5 },
 ];
 
-// ── Assessment period display → backend enum ──────────────────
+// Assessment period display → backend enum
 export const PERIOD_MAP = {
   BoSY: "beginning",
   MoSY: "middle",

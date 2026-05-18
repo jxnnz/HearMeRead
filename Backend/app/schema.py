@@ -10,8 +10,7 @@ from app.models import AssessmentPeriod, GradeLevel, Language, PassageVisibility
 _SCHOOL_YEAR_RE = re.compile(r"^\d{4}-\d{4}$")
 
 
-# ── Teacher / Auth ────────────────────────────────────────────────────────────
-
+# Teacher / Auth
 class TeacherRegister(BaseModel):
     first_name:       str           = Field(..., min_length=1, max_length=75)
     last_name:        str           = Field(..., min_length=1, max_length=75)
@@ -165,8 +164,7 @@ class AdminDashboardResponse(BaseModel):
     teachers:    List["TeacherResponse"] = []
 
 
-# ── Question ──────────────────────────────────────────────────────────────────
-
+# Question
 class QuestionBase(BaseModel):
     text:       str            = Field(..., min_length=1, max_length=500)
     answer_key: Optional[str] = None
@@ -194,8 +192,7 @@ class QuestionResponse(QuestionBase):
         from_attributes = True
 
 
-# ── Passage ───────────────────────────────────────────────────────────────────
-
+# Passage
 class PassageCreate(BaseModel):
     language:        Language
     # Assessment 2 fields (required when assessment_type = 2)
@@ -250,8 +247,7 @@ class PassageListResponse(BaseModel):
     passages:  List[PassageResponse]
 
 
-# ── Student ───────────────────────────────────────────────────────────────────
-
+# Student
 class StudentBase(BaseModel):
     first_name:  str           = Field(..., min_length=1, max_length=100, examples=["Maria"])
     last_name:   str           = Field(..., min_length=1, max_length=100, examples=["Santos"])
@@ -323,8 +319,7 @@ class ClassListResponse(BaseModel):
     classes: List[ClassSummary]
 
 
-# ── Reading Result ────────────────────────────────────────────────────────────
-
+# Reading Result
 class ReadingResultResponse(BaseModel):
     session_id:           int
     reading_time_seconds: Optional[float]
@@ -346,8 +341,7 @@ class ReadingResultResponse(BaseModel):
         from_attributes = True
 
 
-# ── Session Observation ───────────────────────────────────────────────────────
-
+# Session Observation
 class SessionObservationResponse(BaseModel):
     session_id:            int
     comprehension_correct: Optional[int]
@@ -362,8 +356,7 @@ class SessionObservationResponse(BaseModel):
         from_attributes = True
 
 
-# ── Assessment Session ────────────────────────────────────────────────────────
-
+# Assessment Session
 def _validate_school_year(v: Optional[str]) -> Optional[str]:
     if v is None:
         return v
@@ -463,8 +456,7 @@ class ExcelImportResponse(BaseModel):
     errors:            List[str]
 
 
-# ── Admin ─────────────────────────────────────────────────────────────────────
-
+# Admin
 class AdminTeacherUpdateRequest(BaseModel):
     employee_id: Optional[str] = Field(None, max_length=7)
     grade_level: Optional[GradeLevel] = None
@@ -510,8 +502,7 @@ class TeacherAdminView(BaseModel):
         from_attributes = True
 
 
-# ── Teacher Assignment ────────────────────────────────────────────────────────
-
+# Teacher Assignment
 class TeacherAssignmentCreate(BaseModel):
     teacher_id:  int
     grade_level: GradeLevel

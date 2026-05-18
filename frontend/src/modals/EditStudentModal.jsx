@@ -60,7 +60,7 @@ export default function EditStudentModal({
     <div className="esm-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="esm-title">
       <div className="esm-modal" onClick={(e) => e.stopPropagation()}>
 
-        {/* ── Header ── */}
+        {/* Header */}
         <div className="esm-header">
           <h3 className="esm-title" id="esm-title">Edit Student</h3>
           <button className="esm-close" onClick={onClose} aria-label="Close">
@@ -68,12 +68,12 @@ export default function EditStudentModal({
           </button>
         </div>
 
-        {/* ── Error banner ── */}
+        {/* Error banner */}
         {error && (
           <div className="esm-error" role="alert">{error}</div>
         )}
 
-        {/* ── Form ── */}
+        {/* Form */}
         <form className="esm-form" onSubmit={handleSubmit}>
 
           {/* Row 1: LRN + Sex */}
@@ -171,7 +171,7 @@ export default function EditStudentModal({
             </div>
           </div>
 
-          {/* ── Actions ── */}
+          {/* Actions */}
           <div className="esm-actions">
             <button type="button" className="esm-btn esm-btn--cancel" onClick={onClose} disabled={saving}>
               Cancel

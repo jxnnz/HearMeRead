@@ -205,7 +205,7 @@ export default function StudentInfoPage() {
         </div>
       )}
 
-      {/* ── Delete assessment record ── */}
+      {/* Delete assessment record */}
       <ConfirmModal
         isOpen={!!pendingDelete}
         onClose={() => setPendingDelete(null)}
@@ -217,7 +217,7 @@ export default function StudentInfoPage() {
         cancelLabel="Cancel"
       />
 
-      {/* ── Delete student ── */}
+      {/* Delete student */}
       <ConfirmModal
         isOpen={pendingStudentDelete}
         onClose={() => setPendingStudentDelete(false)}
@@ -229,7 +229,7 @@ export default function StudentInfoPage() {
         cancelLabel="Cancel"
       />
 
-      {/* ── Edit student ── */}
+      {/* Edit student */}
       <EditStudentModal
         isOpen={editStudentOpen}
         student={student}

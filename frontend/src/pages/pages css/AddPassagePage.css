@@ -7,7 +7,7 @@
    Font: Poppins (loaded via index.html or index.css)
    ============================================================ */
 
-/* ── Page shell ─────────────────────────────────────────── */
+/* Page shell */
 .ap-page {
   max-width: 680px;
   margin: 0 auto;
@@ -17,7 +17,7 @@
   font-family: "Poppins", sans-serif;
 }
 
-/* ── Top bar ─────────────────────────────────────────────── */
+/* Top bar */
 .ap-topbar {
   display: flex;
   align-items: center;
@@ -90,7 +90,7 @@
   cursor: not-allowed;
 }
 
-/* ── Error banner ─────────────────────────────────────────── */
+/* Error banner */
 .ap-error {
   background: #fdecea;
   color: #c0392b;
@@ -240,7 +240,7 @@
    pq-add-question
    ============================================================ */
 
-/* ── Individual question block ───────────────────────────── */
+/* Individual question block */
 .pq-block {
   display: flex;
   flex-direction: column;
@@ -285,7 +285,7 @@
   background: #fdecea;
 }
 
-/* ── Options list ─────────────────────────────────────────── */
+/* Options list */
 .pq-options {
   display: flex;
   flex-direction: column;
@@ -340,7 +340,7 @@
   color: #c0392b;
 }
 
-/* ── Add option link ──────────────────────────────────────── */
+/* Add option link */
 .pq-add-option {
   display: inline-flex;
   align-items: center;
@@ -360,7 +360,7 @@
   opacity: 0.7;
 }
 
-/* ── Add Question button (full width, dashed) ─────────────── */
+/* Add Question button (full width, dashed) */
 .pq-add-question {
   display: flex;
   align-items: center;
@@ -385,7 +385,7 @@
   border-color: #2c3e6b;
 }
 
-/* ── Assessment 1 instruction note ───────────────────────── */
+/* Assessment 1 instruction note */
 .a1-note {
   font-size: 12.5px;
   color: #100c08;
@@ -398,7 +398,7 @@
   color: #2c3e6b;
 }
 
-/* ── Card header with title + action on same line ──────── */
+/* Card header with title + action on same line */
 .ap-card__header-row {
   display: flex;
   align-items: center;
@@ -406,7 +406,7 @@
   gap: 12px;
 }
 
-/* ── Upload .txt button ─────────────────────────────────── */
+/* Upload .txt button */
 .ap-upload-btn {
   display: inline-flex;
   align-items: center;
@@ -430,7 +430,7 @@
   border-color: #2c3e6b;
 }
 
-/* ── Info banner (English Grade 3 note) ─────────────────── */
+/* Info banner (English Grade 3 note) */
 .ap-info-banner {
   display: flex;
   align-items: flex-start;
@@ -450,7 +450,7 @@
   flex-shrink: 0;
 }
 
-/* ── Upload Guide card ──────────────────────────────────── */
+/* Upload Guide card */
 .ap-card--guide {
   background: #f8f9fd;
   border: 1.5px dashed #c8d0e4;
@@ -511,7 +511,7 @@
   line-height: 1.6;
 }
 
-/* ── Custom Modal Scrollbar ───────────────────────────────── */
+/* Custom Modal Scrollbar */
 .cr-modal-body::-webkit-scrollbar {
   width: 8px;
 }
@@ -526,7 +526,7 @@
   background: #aab4cc;
 }
 
-/* ── Themed Scrollbar (content preview areas) ─────────────── */
+/* Themed Scrollbar (content preview areas) */
 .ap-scrollbar::-webkit-scrollbar { width: 6px; }
 .ap-scrollbar::-webkit-scrollbar-track { background: #eef1fc; border-radius: 6px; }
 .ap-scrollbar::-webkit-scrollbar-thumb { background: #2c3e6b; border-radius: 6px; }
@@ -537,7 +537,7 @@
 .ap-textarea::-webkit-scrollbar-thumb { background: #2c3e6b; border-radius: 6px; }
 .ap-textarea::-webkit-scrollbar-thumb:hover { background: #1a2340; }
 
-/* ── Rhyme Pair Editor (Grade 1 Filipino) ─────────────── */
+/* Rhyme Pair Editor (Grade 1 Filipino) */
 .rhyme-edit-grid {
   display: flex;
   flex-direction: column;
@@ -600,7 +600,7 @@
   color: #c62828;
 }
 
-/* ── Custom Radio Buttons ───────────────────────────────── */
+/* Custom Radio Buttons */
 .custom-radio {
   appearance: none;
   -webkit-appearance: none;
@@ -630,4 +630,4 @@
   height: 10px;
   border-radius: 50%;
   background: #2c3e6b;
-}
+}

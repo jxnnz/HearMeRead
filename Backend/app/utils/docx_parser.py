@@ -28,8 +28,7 @@ from docx import Document
 from fastapi import HTTPException, status
 
 
-# ── Constants ─────────────────────────────────────────────────────────────────
-
+# Constants
 _PASSAGE_MARKER   = re.compile(r"^\[PASSAGE\]\s*$",   re.IGNORECASE)
 _QUESTIONS_MARKER = re.compile(r"^\[QUESTIONS\]\s*$", re.IGNORECASE)
 _NUMBER_PREFIX    = re.compile(r"^\s*(?:Q\s*)?\d+[\.\)\-\:]\s*|^\s*\(\d+\)\s*", re.IGNORECASE)
@@ -37,16 +36,14 @@ _NUMBER_PREFIX    = re.compile(r"^\s*(?:Q\s*)?\d+[\.\)\-\:]\s*|^\s*\(\d+\)\s*", 
 _MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
 
 
-# ── Result dataclass ──────────────────────────────────────────────────────────
-
+# Result dataclass
 @dataclass
 class ParsedDocument:
     passage_content: str
     questions: List[str]
 
 
-# ── Internal helpers ──────────────────────────────────────────────────────────
-
+# Internal helpers
 def _strip_numbering(text: str) -> str:
     return _NUMBER_PREFIX.sub("", text).strip()
 
@@ -97,8 +94,7 @@ def _split_sections(lines: List[str]) -> Tuple[List[str], List[str]]:
     return passage_lines, question_lines
 
 
-# ── File readers ──────────────────────────────────────────────────────────────
-
+# File readers
 def _read_docx_lines(file_bytes: bytes) -> List[str]:
     try:
         doc = Document(BytesIO(file_bytes))
@@ -132,8 +128,7 @@ def _get_lines(file_bytes: bytes, filename: str) -> List[str]:
     )
 
 
-# ── Public API ────────────────────────────────────────────────────────────────
-
+# Public API
 def validate_upload(file_bytes: bytes, filename: str) -> None:
     """Enforce size and type limits before parsing."""
     if len(file_bytes) > _MAX_FILE_SIZE:

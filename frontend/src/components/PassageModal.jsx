@@ -29,7 +29,7 @@ export default function PassageModal({
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
 
-        {/* ── Header ── */}
+        {/* Header */}
         <div className="modal__header">
           <h2>Edit {isA1 ? "Assessment 1" : "Assessment 2"}</h2>
           <button className="modal__close" onClick={onClose} aria-label="Close">
@@ -37,7 +37,7 @@ export default function PassageModal({
           </button>
         </div>
 
-        {/* ── Form ── */}
+        {/* Form */}
         <form className="modal__form" onSubmit={onSubmit}>
 
           {formError && (

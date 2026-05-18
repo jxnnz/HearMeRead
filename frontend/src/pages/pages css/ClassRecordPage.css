@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
-/* ── Page shell ─────────────────────────────────────── */
+/* Page shell */
 .cr-page {
   display: flex;
   flex-direction: column;
@@ -8,7 +8,7 @@
   font-family: "Poppins", sans-serif;
 }
 
-/* ── Top bar ─────────────────────────────────────────── */
+/* Top bar */
 .cr-topbar {
   display: flex;
   align-items: center;
@@ -86,7 +86,7 @@
   border-color: #2c3e6b;
 }
 
-/* ── Class record card ───────────────────────────────── */
+/* Class record card */
 .cr-card {
   background: #fff;
   border: 1.5px solid #dde2f0;
@@ -94,7 +94,7 @@
   overflow: hidden;
 }
 
-/* ── Info bar ────────────────────────────────────────── */
+/* Info bar */
 .cr-info-bar {
   display: flex;
   align-items: center;
@@ -163,7 +163,7 @@
   text-transform: capitalize;
 }
 
-/* ── Archive confirm banner ──────────────────────────── */
+/* Archive confirm banner */
 .cr-archive-confirm {
   display: flex;
   align-items: center;
@@ -209,7 +209,7 @@
 }
 .cr-archive-confirm__btn--confirm:hover:not(:disabled) { background: #b91c1c; }
 
-/* ── Table wrapper ───────────────────────────────────── */
+/* Table wrapper */
 .cr-table-wrapper {
   overflow: auto;
   -webkit-overflow-scrolling: touch;
@@ -234,7 +234,7 @@
   background: #f4f6fb;
 }
 
-/* ── Assessment table ────────────────────────────────── */
+/* Assessment table */
 .cr-table {
   width: 100%;
   min-width: 1400px;
@@ -286,7 +286,7 @@
   color: #2f855a;
 }
 
-/* ── Table body ──────────────────────────────────────── */
+/* Table body */
 .cr-table tbody tr {
   transition: background 0.1s;
 }
@@ -320,7 +320,7 @@
 .cr-td--g1 { background-color: rgba(232, 240, 252, 0.35); }
 .cr-td--g2 { background-color: rgba(232, 250, 240, 0.35); }
 
-/* ── Student name link ───────────────────────────────── */
+/* Student name link */
 .cr-student-link {
   background: none;
   border: none;
@@ -338,7 +338,7 @@
   opacity: 0.75;
 }
 
-/* ── Empty row ───────────────────────────────────────── */
+/* Empty row */
 .cr-empty-row {
   padding: 48px 24px;
   text-align: center;
@@ -346,7 +346,7 @@
   font-size: 13px;
 }
 
-/* ── Action column ───────────────────────────────────── */
+/* Action column */
 .cr-th--actions { width: 70px; min-width: 70px; }
 .cr-td--actions {
   text-align: center;
@@ -391,7 +391,7 @@
   cursor: not-allowed;
 }
 
-/* ── Export buttons ──────────────────────────────────── */
+/* Export buttons */
 .cr-topbar__divider {
   width: 1px;
   height: 22px;
@@ -434,7 +434,7 @@
   border-color: #86efac;
 }
 
-/* ── Pagination ───────────────────────────────────────── */
+/* Pagination */
 .cr-pagination {
   display: flex;
   align-items: center;
@@ -509,7 +509,7 @@
   cursor: not-allowed;
 }
 
-/* ── Loading / error states ──────────────────────────── */
+/* Loading / error states */
 .cr-state {
   display: flex;
   flex-direction: column;

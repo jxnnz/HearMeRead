@@ -15,7 +15,7 @@ export default function TeacherPrivacyContent() {
         issuances of the National Privacy Commission (NPC).
       </p>
 
-      {/* ── Section 1 ──────────────────────────────────────────────────────── */}
+      {/* Section 1 */}
       <h3>1. Identity of the Personal Information Controller</h3>
       <p>
         <strong>HearMeRead</strong> acts as the <strong>Personal Information Controller (PIC)</strong> under RA 10173
@@ -27,7 +27,7 @@ export default function TeacherPrivacyContent() {
         <li><strong>Email:</strong> hearmereadsite@gmail.com</li>
       </ul>
 
-      {/* ── Section 2 ──────────────────────────────────────────────────────── */}
+      {/* Section 2 */}
       <h3>2. Types of Personal Information Collected</h3>
       <p>We collect and process the following categories of personal information:</p>
 
@@ -67,7 +67,7 @@ export default function TeacherPrivacyContent() {
         <li>Service usage patterns (pages accessed, features used)</li>
       </ul>
 
-      {/* ── Section 3 ──────────────────────────────────────────────────────── */}
+      {/* Section 3 */}
       <h3>3. Sensitive Personal Information</h3>
       <p>
         Under RA 10173, <strong>information about a child</strong> (a person under 18 years old) is considered
@@ -81,7 +81,7 @@ export default function TeacherPrivacyContent() {
         <li>Student data is subject to strict purpose limitation and data minimization principles.</li>
       </ul>
 
-      {/* ── Section 4 ──────────────────────────────────────────────────────── */}
+      {/* Section 4 */}
       <h3>4. Purposes of Data Processing</h3>
       <p>We process personal information for the following specified, legitimate purposes:</p>
       <ul>
@@ -99,7 +99,7 @@ export default function TeacherPrivacyContent() {
         marketing, advertising, or any purpose unrelated to educational assessment.
       </p>
 
-      {/* ── Section 5 ──────────────────────────────────────────────────────── */}
+      {/* Section 5 */}
       <h3>5. Legal Basis for Processing (RA 10173, Sections 12 and 13)</h3>
       <p>
         We process personal information based on the following lawful criteria under the Data Privacy Act of 2012:
@@ -124,7 +124,7 @@ export default function TeacherPrivacyContent() {
         </li>
       </ul>
 
-      {/* ── Section 6 ──────────────────────────────────────────────────────── */}
+      {/* Section 6 */}
       <h3>6. Data Minimization and Proportionality</h3>
       <p>
         In accordance with the principles of RA 10173, we collect only the personal information that is
@@ -133,7 +133,7 @@ export default function TeacherPrivacyContent() {
         assessment results.
       </p>
 
-      {/* ── Section 7 ──────────────────────────────────────────────────────── */}
+      {/* Section 7 */}
       <h3>7. Data Retention and Disposal</h3>
       <p>
         We retain personal information only for as long as necessary to fulfill the purposes for which
@@ -155,7 +155,7 @@ export default function TeacherPrivacyContent() {
         that prevents unauthorized access, use, or disclosure, in compliance with RA 10173 and NPC guidelines.
       </p>
 
-      {/* ── Section 8 ──────────────────────────────────────────────────────── */}
+      {/* Section 8 */}
       <h3>8. Data Subject Rights</h3>
       <p>
         Under RA 10173 (Sections 16–18), you and the data subjects whose data you process have the
@@ -203,7 +203,7 @@ export default function TeacherPrivacyContent() {
         For requests involving student data, verification of parental/guardian authority may be required.
       </p>
 
-      {/* ── Section 9 ──────────────────────────────────────────────────────── */}
+      {/* Section 9 */}
       <h3>9. Data Security Measures</h3>
       <p>
         We implement reasonable and appropriate organizational, physical, and technical security measures
@@ -232,7 +232,7 @@ export default function TeacherPrivacyContent() {
         <li>Designated Data Protection Officer responsible for privacy compliance.</li>
       </ul>
 
-      {/* ── Section 10 ─────────────────────────────────────────────────────── */}
+      {/* Section 10 */}
       <h3>10. Data Sharing and Third-Party Services</h3>
       <p>
         We may share personal data with the following categories of third-party service providers,
@@ -264,7 +264,7 @@ export default function TeacherPrivacyContent() {
         companies, or data brokers.
       </p>
 
-      {/* ── Section 11 ─────────────────────────────────────────────────────── */}
+      {/* Section 11 */}
       <h3>11. Cross-Border Data Transfer</h3>
       <p>
         Some of our third-party service providers may process data outside the Philippines. In such cases,
@@ -280,7 +280,7 @@ export default function TeacherPrivacyContent() {
         Currently, data may be processed in the United States (Railway and Resend infrastructure).
       </p>
 
-      {/* ── Section 12 ─────────────────────────────────────────────────────── */}
+      {/* Section 12 */}
       <h3>12. Automated Processing and Profiling</h3>
       <p>
         The Service uses automated speech recognition (ASR) technology to transcribe and score student
@@ -294,7 +294,7 @@ export default function TeacherPrivacyContent() {
           under RA 10173.</li>
       </ul>
 
-      {/* ── Section 13 ─────────────────────────────────────────────────────── */}
+      {/* Section 13 */}
       <h3>13. Cookies and Local Storage</h3>
       <p>
         The Service uses only essential, functional cookies and browser local storage for authentication
@@ -302,7 +302,7 @@ export default function TeacherPrivacyContent() {
         or third-party analytics cookies.
       </p>
 
-      {/* ── Section 14 ─────────────────────────────────────────────────────── */}
+      {/* Section 14 */}
       <h3>14. Data Breach Notification</h3>
       <p>
         In the event of a personal data breach that is likely to affect the rights and freedoms of data
@@ -319,7 +319,7 @@ export default function TeacherPrivacyContent() {
           of our internal breach register.</li>
       </ul>
 
-      {/* ── Section 15 ─────────────────────────────────────────────────────── */}
+      {/* Section 15 */}
       <h3>15. Changes to This Agreement</h3>
       <p>
         We reserve the right to update this Data Privacy Agreement at any time. Changes will be effective
@@ -329,7 +329,7 @@ export default function TeacherPrivacyContent() {
         your acceptance of the revised Agreement.
       </p>
 
-      {/* ── Section 16 ─────────────────────────────────────────────────────── */}
+      {/* Section 16 */}
       <h3>16. Contact / Data Protection Officer</h3>
       <p>
         For privacy-related concerns, requests, complaints, or to exercise your data subject rights,

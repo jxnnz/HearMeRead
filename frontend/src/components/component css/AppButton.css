@@ -23,13 +23,13 @@
   cursor: not-allowed;
 }
 
-/* ── Sizes ───────────────────────────────────────────── */
+/* Sizes */
 .app-btn--sm  { font-size: 12px; padding: 7px 14px; }
 .app-btn--md  { font-size: 13px; padding: 9px 20px; }
 .app-btn--lg  { font-size: 15px; padding: 12px 28px; }
 .app-btn--full { width: 100%; }
 
-/* ── Primary (dark navy, filled) ─────────────────────── */
+/* Primary (dark navy, filled) */
 .app-btn--primary {
   background: #2c3e6b;
   color: #fff;
@@ -40,7 +40,7 @@
   border-color: #1e2d52;
 }
 
-/* ── Teal / Add Student (matches the UI's teal-blue) ─── */
+/* Teal / Add Student (matches the UI's teal-blue) */
 .app-btn--teal {
   background: #1a7fc1;
   color: #fff;
@@ -51,7 +51,7 @@
   border-color: #1568a3;
 }
 
-/* ── Outline (white bg, grey border) ─────────────────── */
+/* Outline (white bg, grey border) */
 .app-btn--outline {
   background: #fff;
   color: #000000;
@@ -62,7 +62,7 @@
   border-color: #2c3e6b;
 }
 
-/* ── Ghost (transparent) ─────────────────────────────── */
+/* Ghost (transparent) */
 .app-btn--ghost {
   background: transparent;
   color: #2c3e6b;
@@ -72,7 +72,7 @@
   background: #f0f3fc;
 }
 
-/* ── Danger ──────────────────────────────────────────── */
+/* Danger */
 .app-btn--danger {
   background: transparent;
   color: #c0392b;

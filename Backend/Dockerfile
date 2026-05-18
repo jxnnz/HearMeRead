@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# ── base: shared system deps ───────────────────────────────────────────────────
+# base: shared system deps
 FROM python:3.11-slim AS base
 
 WORKDIR /app
@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# ── dev: full install, hot-reload via uvicorn --reload ─────────────────────────
+# dev: full install, hot-reload via uvicorn --reload
 FROM base AS dev
 
 COPY requirements.txt .
@@ -24,7 +24,7 @@ COPY . .
 EXPOSE 8000
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
-# ── prod: non-root user, multi-worker ─────────────────────────────────────────
+# prod: non-root user, multi-worker
 FROM base AS prod
 
 COPY requirements.txt .

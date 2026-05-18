@@ -81,8 +81,7 @@ async def _create_verification_token(db: AsyncSession, teacher_id: int) -> str:
     return token_str
 
 
-# ── Register ──────────────────────────────────────────────────────────────────
-
+# Register
 @router.post(
     "/register",
     response_model=TeacherResponse,
@@ -108,7 +107,7 @@ async def register(request: Request, data: TeacherRegister, db: AsyncSession = D
     school_code_out: str | None = None
 
     if data.role == UserRole.admin:
-        # ── Admin path ──────────────────────────────────────────────────────
+        # Admin path
         # Guard: check if a school with this DepEd School ID already exists
         deped_id = data.deped_school_id.strip() if data.deped_school_id else None
         if deped_id:
@@ -148,7 +147,7 @@ async def register(request: Request, data: TeacherRegister, db: AsyncSession = D
         school.admin_id = teacher.id
 
     else:
-        # ── Teacher path ────────────────────────────────────────────────────
+        # Teacher path
         school_id: int | None = None
         if data.deped_school_id or data.school_code:
             # Try DepEd School ID first, then fall back to school code
@@ -220,8 +219,7 @@ async def register(request: Request, data: TeacherRegister, db: AsyncSession = D
     return TeacherResponse(**response_data)
 
 
-# ── Verify email ──────────────────────────────────────────────────────────────
-
+# Verify email
 @router.get(
     "/verify",
     summary="Verify email address via token link",
@@ -284,8 +282,7 @@ async def verify_email(
     )
 
 
-# ── Resend verification ───────────────────────────────────────────────────────
-
+# Resend verification
 @router.post(
     "/resend-verification",
     status_code=status.HTTP_200_OK,
@@ -326,8 +323,7 @@ async def resend_verification(
     return ok_response
 
 
-# ── Login ─────────────────────────────────────────────────────────────────────
-
+# Login
 @router.post(
     "/login",
     response_model=TokenResponse,
@@ -381,8 +377,7 @@ async def login(request: Request, data: LoginRequest, db: AsyncSession = Depends
     return TokenResponse(access_token=token, role=teacher.role)
 
 
-# ── Me ────────────────────────────────────────────────────────────────────────
-
+# Me
 @router.get(
     "/me",
     response_model=TeacherResponse,
@@ -533,8 +528,7 @@ async def upload_profile_picture(
     return response_data
 
 
-# ── School lookup ─────────────────────────────────────────────────────────────
-
+# School lookup
 @router.get(
     "/school-lookup",
     response_model=SchoolLookupResponse,
@@ -564,8 +558,7 @@ async def school_lookup(
     return school
 
 
-# ── Forgot password ───────────────────────────────────────────────────────────
-
+# Forgot password
 @router.post(
     "/forgot-password",
     status_code=status.HTTP_200_OK,
@@ -620,8 +613,7 @@ async def forgot_password(
     return ok_response
 
 
-# ── Reset password ────────────────────────────────────────────────────────────
-
+# Reset password
 @router.post(
     "/reset-password",
     status_code=status.HTTP_200_OK,

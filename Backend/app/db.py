@@ -6,8 +6,7 @@ from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from app.core.config import settings
 
 
-# ── Declarative base (imported by all models) ─────────────────────────────────
-
+# Declarative base (imported by all models)
 class Base(DeclarativeBase):
     pass
 
@@ -15,7 +14,7 @@ class Base(DeclarativeBase):
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.DEBUG,
-    # ── Connection pool settings ──────────────────────────────────────────
+    # Connection pool settings
     pool_size=5,             
     max_overflow=10,          
     pool_recycle=300,         
@@ -29,8 +28,7 @@ engine = create_async_engine(
     },
 )
 
-# ── Session factory ───────────────────────────────────────────────────────────
-
+# Session factory
 AsyncSessionLocal = sessionmaker(
     bind=engine,
     class_=AsyncSession,
@@ -38,8 +36,7 @@ AsyncSessionLocal = sessionmaker(
 )
 
 
-# ── Dependency ────────────────────────────────────────────────────────────────
-
+# Dependency
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
         yield session

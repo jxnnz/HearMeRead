@@ -37,7 +37,7 @@ export default function PassageCard({ passage, onClick, onEdit, onRemove, readOn
       onKeyDown={(e) => e.key === "Enter" && onClick()}
       aria-label={`View passage: ${passage.title ?? "passage"}`}
     >
-      {/* ── Meta row ── */}
+      {/* Meta row */}
       <div className="p-card__meta">
         <span className="p-card__grade">{formatGrade(passage.grade_level)}</span>
         {!isA1 && (
@@ -50,10 +50,10 @@ export default function PassageCard({ passage, onClick, onEdit, onRemove, readOn
         <span className="p-card__lang">{lang}</span>
       </div>
 
-      {/* ── Title ── */}
+      {/* Title */}
       <h3 className="p-card__title">{passage.title}</h3>
 
-      {/* ── Excerpt ── */}
+      {/* Excerpt */}
       <p className="p-card__excerpt">
         {isA1
           ? (passage.task1_content?.slice(0, 160) ?? "")
@@ -61,7 +61,7 @@ export default function PassageCard({ passage, onClick, onEdit, onRemove, readOn
         {((isA1 ? passage.task1_content : passage.content)?.length ?? 0) > 160 ? "…" : ""}
       </p>
 
-      {/* ── Action buttons (visible on hover, hidden for public/readOnly) ── */}
+      {/* Action buttons (visible on hover, hidden for public/readOnly) */}
       {!readOnly && !isPublic && (
         <div className="p-card__actions" onClick={(e) => e.stopPropagation()}>
           <button

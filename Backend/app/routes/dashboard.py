@@ -63,19 +63,19 @@ async def get_dashboard_summary(
         ReadingResult.total_words > 0,
     )
 
-    # ── 1. Total students for this teacher ───────────────────────────────────
+    # 1. Total students for this teacher
     total_students = (await db.scalar(
         select(func.count(Student.id))
         .where(Student.teacher_id == teacher_id)
     )) or 0
 
-    # ── 2. Completed sessions this school year ───────────────────────────────
+    # 2. Completed sessions this school year
     total_assessed = (await db.scalar(
         select(func.count(AssessmentSession.id))
         .where(completed_filter)
     )) or 0
 
-    # ── 3. Avg accuracy % and error rate from A2 results ────────────────────
+    # 3. Avg accuracy % and error rate from A2 results
     acc_result = (await db.execute(
         select(
             func.avg(
@@ -93,7 +93,7 @@ async def get_dashboard_summary(
     avg_accuracy   = _safe_round(acc_result.avg_acc)
     avg_error_rate = _safe_round(acc_result.avg_err)
 
-    # ── 4. Reading profile distribution by sex (as %) ────────────────────────
+    # 4. Reading profile distribution by sex (as %)
     profile_rows = (await db.execute(
         select(Student.sex, ReadingResult.reading_profile, func.count().label("cnt"))
         .join(AssessmentSession, AssessmentSession.student_id == Student.id)
@@ -115,7 +115,7 @@ async def get_dashboard_summary(
 
     profile_distribution = {k: _to_pct(v) for k, v in raw_counts.items()}
 
-    # ── 5. Gender distribution of assessed students (%) ─────────────────────
+    # 5. Gender distribution of assessed students (%)
     gender_rows = (await db.execute(
         select(Student.sex, func.count(AssessmentSession.id).label("cnt"))
         .join(AssessmentSession, AssessmentSession.student_id == Student.id)
@@ -133,7 +133,7 @@ async def get_dashboard_summary(
         "male":   round(gender_counts["male"]   / gender_total * 100, 1) if gender_total else 0,
     }
 
-    # ── 6. Fluency + comprehension averages by sex (A2 students only) ────────
+    # 6. Fluency + comprehension averages by sex (A2 students only)
     # comprehension_pct = correct answers / total questions * 100
     comp_pct_expr = case(
         (SessionObservation.comprehension_total > 0,

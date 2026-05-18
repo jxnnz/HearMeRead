@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
-/* ── Page shell ─────────────────────────────────────── */
+/* Page shell */
 .sr-page {
   display: flex;
   flex-direction: column;
@@ -8,7 +8,7 @@
   font-family: "Poppins", sans-serif;
 }
 
-/* ── Header row ─────────────────────────────────────── */
+/* Header row */
 .sr-header {
   display: flex;
   align-items: center;
@@ -29,7 +29,7 @@
   align-items: center;
 }
 
-/* ── Global filters ──────────────────────────────────── */
+/* Global filters */
 .sr-filters {
   display: flex;
   gap: 16px;
@@ -66,7 +66,7 @@
   border-color: #2c3e6b;
 }
 
-/* ── Class card grid ─────────────────────────────────── */
+/* Class card grid */
 .sr-class-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -82,7 +82,7 @@
   .sr-header { flex-direction: column; align-items: flex-start; }
 }
 
-/* ── Class card ──────────────────────────────────────── */
+/* Class card */
 .sr-class-card {
   background: #fff;
   border: 1.5px solid #dde2f0;
@@ -132,7 +132,7 @@
   margin-top: 6px;
 }
 
-/* ── Loading / empty / error states ─────────────────── */
+/* Loading / empty / error states */
 .sr-state {
   display: flex;
   flex-direction: column;
@@ -148,7 +148,7 @@
 
 .sr-state--error { color: #c0392b; }
 
-/* ── Skeleton shimmer ────────────────────────────────── */
+/* Skeleton shimmer */
 @keyframes srShimmer {
   0%   { background-position: -600px 0; }
   100% { background-position: 600px 0; }

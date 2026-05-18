@@ -106,7 +106,7 @@ export default function AddAssessment1Page() {
     <Layout>
       <div className="ap-page" style={{ paddingBottom: 40, fontFamily: "'Poppins', sans-serif", maxWidth: 680, margin: "0 auto" }}>
 
-        {/* ── Sticky Top bar ── */}
+        {/* Sticky Top bar */}
         <div style={{ position: "sticky", top: 0, zIndex: 10, background: "#f0f2fa", padding: "20px 0", borderBottom: "1px solid #dde2f0", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
           <div className="ap-topbar__left">
             <button className="ap-back-btn" onClick={() => navigate("/passages")} aria-label="Go back">
@@ -120,10 +120,10 @@ export default function AddAssessment1Page() {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-          {/* ── Error banner ── */}
+          {/* Error banner */}
           {error && <div className="ap-error" role="alert">{error}</div>}
 
-          {/* ── Language & Grade Level Card ── */}
+          {/* Language & Grade Level Card */}
           <div className="ap-card">
             <h2 className="ap-card__title">Language &amp; Grade Level</h2>
             <div className="ap-row">
@@ -165,7 +165,7 @@ export default function AddAssessment1Page() {
             )}
           </div>
 
-          {/* ── Task 1 Card ── */}
+          {/* Task 1 Card */}
           <div className="ap-card">
             <div className="ap-card__header-row">
               <h2 className="ap-card__title">{eng3 ? "Task 1 — Words" : g1fil ? "Gawain 1 — Mga Titik" : "Task 1"}</h2>
@@ -182,7 +182,7 @@ export default function AddAssessment1Page() {
             </div>
           </div>
 
-          {/* ── Task 2 — Rhyme pairs (Grade 1 Filipino) or Words (others) ── */}
+          {/* Task 2 — Rhyme pairs (Grade 1 Filipino) or Words (others) */}
           {g1fil ? (
             <div className="ap-card">
               <div className="ap-card__header-row">
@@ -238,7 +238,7 @@ export default function AddAssessment1Page() {
             </div>
           )}
 
-          {/* ── Task 2H / Sentences (hidden for English Grade 3) ── */}
+          {/* Task 2H / Sentences (hidden for English Grade 3) */}
           {!eng3 && (
             <div className="ap-card">
               <div className="ap-card__header-row">

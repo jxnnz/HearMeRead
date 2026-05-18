@@ -24,7 +24,7 @@ export function parseDocument(rawText, type, eng3) {
   const text = (rawText || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
   const result = {};
 
-  // ── Extract Language & Grade Level metadata ──
+  // Extract Language & Grade Level metadata
   const langMatch = text.match(/Language[\s:-]+(filipino|english)/i);
   if (langMatch) {
     result.language = langMatch[1].toLowerCase();

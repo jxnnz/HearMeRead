@@ -5,7 +5,7 @@
    ============================================================ */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 
-/* ── Page shell ─────────────────────────────────────── */
+/* Page shell */
 .db-page {
   display: flex;
   flex-direction: column;
@@ -13,7 +13,7 @@
   font-family: "Poppins", sans-serif;
 }
 
-/* ── Header ──────────────────────────────────────────── */
+/* Header */
 .db-header {
   display: flex;
   align-items: center;
@@ -80,7 +80,7 @@
   border-color: #2c3e6b;
 }
 
-/* ── Section 1: Stat cards row ───────────────────────── */
+/* Section 1: Stat cards row */
 .db-stats-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -95,7 +95,7 @@
   .db-stats-row { grid-template-columns: 1fr; }
 }
 
-/* ── Stat Card ───────────────────────────────────────── */
+/* Stat Card */
 .db-stat-card {
   background: #fff;
   border-radius: 12px;
@@ -121,7 +121,7 @@
   line-height: 1.3;
 }
 
-/* ── Chart cards ─────────────────────────────────────── */
+/* Chart cards */
 .db-chart-card {
   background: #fff;
   border-radius: 12px;
@@ -151,7 +151,7 @@
   .db-chart-card--narrow { width: 100%; }
 }
 
-/* ── Skeleton shimmer ────────────────────────────────── */
+/* Skeleton shimmer */
 @keyframes dbShimmer {
   0%   { background-position: -800px 0; }
   100% { background-position: 800px 0; }
@@ -190,7 +190,7 @@
 .db-skeleton-chart__title { height: 14px; width: 45%; }
 .db-skeleton-chart__body  { height: 220px; width: 100%; border-radius: 8px; }
 
-/* ── Chart header ────────────────────────────────────── */
+/* Chart header */
 .db-chart-header {
   display: flex;
   align-items: center;
@@ -206,7 +206,7 @@
   font-family: "Poppins", sans-serif;
 }
 
-/* ── Chart row (side-by-side cards) ─────────────────── */
+/* Chart row (side-by-side cards) */
 .db-chart-row {
   display: flex;
   gap: 16px;
@@ -217,7 +217,7 @@
   .db-chart-row { flex-direction: column; }
 }
 
-/* ── Pie chart legend ────────────────────────────────── */
+/* Pie chart legend */
 .db-pie-legend {
   display: flex;
   gap: 14px;
@@ -242,7 +242,7 @@
   flex-shrink: 0;
 }
 
-/* ── Dashboard Avatar Button ─────────────────────────── */
+/* Dashboard Avatar Button */
 .db-avatar-btn {
   width: 36px;
   height: 36px;

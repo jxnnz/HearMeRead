@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 
-/* ── Page shell ─────────────────────────────────────── */
+/* Page shell */
 .sip-page {
   display: flex;
   flex-direction: column;
@@ -8,7 +8,7 @@
   font-family: "Poppins", sans-serif;
 }
 
-/* ── Back button ─────────────────────────────────────── */
+/* Back button */
 .sip-back-btn {
   width: 38px;
   height: 38px;
@@ -30,7 +30,7 @@
   border-color: #2c3e6b;
 }
 
-/* ── Loading / error state ───────────────────────────── */
+/* Loading / error state */
 .sip-state {
   display: flex;
   flex-direction: column;
@@ -65,7 +65,7 @@
   font-family: "Poppins", sans-serif;
 }
 
-/* ── Profile row ─────────────────────────────────────── */
+/* Profile row */
 .spc-profile {
   display: flex;
   align-items: center;
@@ -128,14 +128,14 @@
   font-weight: 500;
 }
 
-/* ── Divider ─────────────────────────────────────────── */
+/* Divider */
 .spc-divider {
   border: none;
   border-top: 1.5px solid #eef0f8;
   margin: 18px 0;
 }
 
-/* ── Stats row (legacy, kept for fallback) ───────────── */
+/* Stats row (legacy, kept for fallback) */
 .spc-stats {
   display: flex;
   align-items: center;
@@ -237,7 +237,7 @@
   font-family: "Poppins", sans-serif;
 }
 
-/* ── Section header ──────────────────────────────────── */
+/* Section header */
 .aht-header {
   display: flex;
   align-items: flex-start;
@@ -357,7 +357,7 @@
 
 .aht-btn--export:hover { background: #156040; }
 
-/* ── Table wrapper ───────────────────────────────────── */
+/* Table wrapper */
 .aht-table-wrap {
   overflow-x: auto;
 }
@@ -368,7 +368,7 @@
   font-family: "Poppins", sans-serif;
 }
 
-/* ── Table header ────────────────────────────────────── */
+/* Table header */
 .aht-th {
   padding: 11px 14px;
   text-align: left;
@@ -398,7 +398,7 @@
 
 .aht-th__sort-icon { opacity: 0.4; }
 
-/* ── Table rows ──────────────────────────────────────── */
+/* Table rows */
 .aht-row {
   border-bottom: 1px solid #f4f6fb;
   transition: background 0.12s;
@@ -426,7 +426,7 @@
   color: #000000;
 }
 
-/* ── Period badge ────────────────────────────────────── */
+/* Period badge */
 .aht-period {
   font-size: 11.5px;
   font-weight: 600;
@@ -452,7 +452,7 @@
   color: #27ae60;
 }
 
-/* ── Action buttons ──────────────────────────────────── */
+/* Action buttons */
 .aht-td--actions {
   display: flex;
   align-items: center;
@@ -489,7 +489,7 @@
   color: #c0392b;
 }
 
-/* ── Empty state ─────────────────────────────────────── */
+/* Empty state */
 .aht-empty {
   text-align: center;
   padding: 48px 20px;
@@ -498,7 +498,7 @@
   font-family: "Poppins", sans-serif;
 }
 
-/* ── Top bar: back btn + edit btn ────────────────────── */
+/* Top bar: back btn + edit btn */
 .sip-top-bar {
   display: flex;
   align-items: center;
@@ -523,7 +523,7 @@
 
 .sip-edit-btn:hover { background: #1a2a55; }
 
-/* ── Edit modal ──────────────────────────────────────── */
+/* Edit modal */
 .sip-modal-overlay {
   position: fixed;
   inset: 0;
@@ -670,7 +670,7 @@
 .sip-modal__save:hover:not(:disabled) { background: #1a2a55; }
 .sip-modal__save:disabled { opacity: 0.6; cursor: not-allowed; }
 
-/* ── Student profile card kebab menu ─────────────────── */
+/* Student profile card kebab menu */
 .spc-menu-wrap {
   position: relative;
   margin-left: auto;

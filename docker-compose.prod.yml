@@ -41,7 +41,7 @@ services:
           cpus: "0.5"
           memory: 128M
 
-  # ── Optional: local PostgreSQL (only if you switch away from Supabase) ────────
+  # Optional: local PostgreSQL (only if you switch away from Supabase)
   # db:
   #   image: postgres:16-alpine
   #   environment:

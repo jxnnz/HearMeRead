@@ -49,7 +49,7 @@ export default function ResultsStep({
   const expOption = EXPERIENCE_OPTIONS.find((e) => e.value === learnerExperience);
   const obsLevel  = OBSERVATION_LEVELS.find((l) => l.value === observationLevel);
 
-  // ── Stat card values from backend ────────────────────────────────────────
+  // Stat card values from backend
   const storyNumber        = a2Passage?.title ?? "—";
   const totalMiscues       = part2?.total_miscues ?? "—";
   const wordsWithinTime    = part2?.words_read_within_time ?? "—";
@@ -74,7 +74,7 @@ export default function ResultsStep({
     { label: "Observation Level",                             value: obsLevelDisplay,                               color: "#1a2340" },
   ];
 
-  // ── Excel export ─────────────────────────────────────────────────────────
+  // Excel export
   function handleExport() {
     const wb = XLSX.utils.book_new();
 
@@ -137,7 +137,7 @@ export default function ResultsStep({
   return (
     <div className="asp-page asp-page--wide">
 
-      {/* ── Header card ── */}
+      {/* Header card */}
       <div className="asp-res-header">
         <div className="asp-res-header__left">
           <div className="asp-res-name-row">
@@ -176,7 +176,7 @@ export default function ResultsStep({
         </div>
       </div>
 
-      {/* ── Stat cards ── */}
+      {/* Stat cards */}
       <div className="asp-res-stats asp-res-stats--8">
         {statCards.map((card) => (
           <div key={card.label} className="asp-res-stat-card">
@@ -188,7 +188,7 @@ export default function ResultsStep({
         ))}
       </div>
 
-      {/* ── Reading Profile Detail ── */}
+      {/* Reading Profile Detail */}
       <div className="asp-res-profile-detail">
         <h3 className="asp-res-section-title">Reading Profile</h3>
         <div
@@ -211,7 +211,7 @@ export default function ResultsStep({
         </div>
       </div>
 
-      {/* ── A1 Transcriptions ── */}
+      {/* A1 Transcriptions */}
       {(part1?.task1_alignments?.length > 0 || part1?.task2_alignments?.length > 0) && (
         <div className="asp-res-profile-detail">
           <h3 className="asp-res-section-title">Assessment 1 — Transcription</h3>
@@ -230,7 +230,7 @@ export default function ResultsStep({
         </div>
       )}
 
-      {/* ── A2 Reading Transcription ── */}
+      {/* A2 Reading Transcription */}
       {a2Alignments?.length > 0 && (
         <div className="asp-res-profile-detail">
           <WordHighlightView
@@ -240,7 +240,7 @@ export default function ResultsStep({
         </div>
       )}
 
-      {/* ── Observation Level detail ── */}
+      {/* Observation Level detail */}
       <div className="asp-res-lower">
         <div className="asp-res-perf">
           <h3 className="asp-res-section-title">Observation Level</h3>
@@ -273,7 +273,7 @@ export default function ResultsStep({
         </div>
       </div>
 
-      {/* ── Footer ── */}
+      {/* Footer */}
       <div className="asp-res-footer">
         <p className="asp-res-footer__info">
           Assessed by teacher · Section {form.section} · {form.school_year}

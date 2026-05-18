@@ -13,7 +13,7 @@ export default function LoginPage() {
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // ── Handle redirect flags from /auth/verify ──────────────────────────────
+  // Handle redirect flags from /auth/verify
   useEffect(() => {
     const verified    = searchParams.get("verified");
     const registered  = searchParams.get("registered");
@@ -35,7 +35,7 @@ export default function LoginPage() {
     }
   }, [searchParams]);
 
-  // ── Login submit ──────────────────────────────────────────────────────────
+  // Login submit
   async function handleLogin({ email, password }) {
     setError(null);
     setSuccess(null);
@@ -52,7 +52,7 @@ export default function LoginPage() {
     }
   }
 
-  // ── Resend verification ───────────────────────────────────────────────────
+  // Resend verification
   const [resendEmail,   setResendEmail]   = useState("");
   const [resendSent,    setResendSent]    = useState(false);
   const [resendLoading, setResendLoading] = useState(false);

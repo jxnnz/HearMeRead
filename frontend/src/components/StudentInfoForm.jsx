@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Search, X } from "lucide-react";
 
-// ── School year options: current and past only ───────────────
+// School year options: current and past only
 function schoolYearOptions() {
   const now          = new Date();
   const year         = now.getFullYear();
@@ -17,14 +17,14 @@ function schoolYearOptions() {
   return options;
 }
 
-// ── Assessment type options ───────────────────────────────────
+// Assessment type options
 const ASSESSMENT_TYPES = [
   { value: "BoSY", label: "BoSY — Beginning of School Year" },
   { value: "MoSY", label: "MoSY — Middle of School Year"    },
   { value: "EoSY", label: "EoSY — End of School Year"       },
 ];
 
-// ── Language options ──────────────────────────────────────────
+// Language options
 const LANGUAGE_OPTIONS = [
   { value: "filipino", label: "Filipino" },
   { value: "english",  label: "English"  },
@@ -46,12 +46,12 @@ export default function StudentInfoForm({
   const [studentSearch,   setStudentSearch]   = useState("");
   const [showStudentDrop, setShowStudentDrop] = useState(false);
 
-  // ── Generic field updater ────────────────────────────────
+  // Generic field updater
   function update(field, val) {
     setForm((prev) => ({ ...prev, [field]: val }));
   }
 
-  // ── Select a student — auto-fills Last Name, Grade, Section ─
+  // Select a student — auto-fills Last Name, Grade, Section
   function selectStudent(student) {
     setForm((prev) => ({
       ...prev,
@@ -76,7 +76,7 @@ export default function StudentInfoForm({
     }));
   }
 
-  // ── Filtered student dropdown ─────────────────────────────
+  // Filtered student dropdown
   const filteredStudents = students.filter((s) => {
     const q = studentSearch.toLowerCase();
     return (
@@ -96,7 +96,7 @@ export default function StudentInfoForm({
         Enter the student's details before starting the reading assessment.
       </p>
 
-      {/* ── Row 1: School Year + Assessment Type ── */}
+      {/* Row 1: School Year + Assessment Type */}
       <div className="si-row">
         <div className="si-field">
           <label className="si-label" htmlFor="si-school-year">
@@ -131,7 +131,7 @@ export default function StudentInfoForm({
         </div>
       </div>
 
-      {/* ── Row 2: First Name (searchable) + Last Name (auto-filled) ── */}
+      {/* Row 2: First Name (searchable) + Last Name (auto-filled) */}
       <div className="si-row">
         <div className="si-field">
           <label className="si-label" htmlFor="si-firstname">
@@ -211,7 +211,7 @@ export default function StudentInfoForm({
         </div>
       </div>
 
-      {/* ── Language tab toggle ── */}
+      {/* Language tab toggle */}
       <div className="si-field si-field--full">
         <label className="si-label">Reading Profile (Language):</label>
         <div className="si-lang-tabs">
@@ -240,7 +240,7 @@ export default function StudentInfoForm({
         </div>
       </div>
 
-      {/* ── Passage selector — filtered by grade level, language, and assessment type 1 ── */}
+      {/* Passage selector — filtered by grade level, language, and assessment type 1 */}
       <div className="si-field si-field--full">
         <label className="si-label" htmlFor="si-passage">
           Passage <span style={{ color: "#8a94b2", fontWeight: 400 }}>(Assessment 1 — Gawain 1)</span>

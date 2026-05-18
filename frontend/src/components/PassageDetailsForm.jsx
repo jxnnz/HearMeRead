@@ -17,7 +17,7 @@ export default function PassageDetailsForm({ form, setForm }) {
       <h2 className="ap-card__title">Passage Details</h2>
       <p className="ap-card__subtitle">Enter the passage details.</p>
 
-      {/* ── Passage Title ── */}
+      {/* Passage Title */}
       <div className="ap-field">
         <label className="ap-label" htmlFor="passage-title">
           Passage Title:
@@ -32,7 +32,7 @@ export default function PassageDetailsForm({ form, setForm }) {
         />
       </div>
 
-      {/* ── Grade Level + Level of Difficulty ── */}
+      {/* Grade Level + Level of Difficulty */}
       <div className="ap-row">
         <div className="ap-field">
           <label className="ap-label" htmlFor="passage-grade">
@@ -69,7 +69,7 @@ export default function PassageDetailsForm({ form, setForm }) {
         </div>
       </div>
 
-      {/* ── Language ── */}
+      {/* Language */}
       <div className="ap-field ap-field--half">
         <label className="ap-label" htmlFor="passage-language">
           Language:
@@ -85,7 +85,7 @@ export default function PassageDetailsForm({ form, setForm }) {
         </select>
       </div>
 
-      {/* ── Passage Content ── */}
+      {/* Passage Content */}
       <div className="ap-field">
         <label className="ap-label" htmlFor="passage-content">
           Passage Content:

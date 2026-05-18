@@ -112,7 +112,7 @@ export default function App() {
     <BrowserRouter>
       <Suspense fallback={<LoadingPage />}>
         <Routes>
-          {/* ── Public ── */}
+          {/* Public */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<RequireGuest><LoginPage /></RequireGuest>} />
           <Route path="/signup" element={<RequireGuest><SignupPage /></RequireGuest>} />
@@ -120,7 +120,7 @@ export default function App() {
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/signup/success" element={<SignupSuccessPage />} />
 
-          {/* ── Teacher-only ── */}
+          {/* Teacher-only */}
           <Route path="/dashboard" element={<RequireTeacher><DashboardPage /></RequireTeacher>} />
           <Route path="/assessment" element={<RequireTeacher><AssessmentPage /></RequireTeacher>} />
           <Route path="/passages" element={<RequireTeacher><PassagePage /></RequireTeacher>} />
@@ -133,13 +133,13 @@ export default function App() {
           <Route path="/students/class" element={<RequireTeacher><ClassRecordPage /></RequireTeacher>} />
           <Route path="/students/:id" element={<RequireTeacher><StudentInfoPage /></RequireTeacher>} />
 
-          {/* ── Admin-only ── */}
+          {/* Admin-only */}
           <Route path="/admin/dashboard" element={<RequireAdmin><AdminDashboardPage /></RequireAdmin>} />
           <Route path="/admin/teachers" element={<RequireAdmin><AdminTeachersPage /></RequireAdmin>} />
           <Route path="/admin/students" element={<RequireAdmin><AdminStudentsPage /></RequireAdmin>} />
           <Route path="/admin/passages" element={<RequireAdmin><AdminPassagesPage /></RequireAdmin>} />
 
-          {/* ── Shared ── */}
+          {/* Shared */}
           <Route path="/profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
 
           <Route path="*" element={<CatchAll />} />

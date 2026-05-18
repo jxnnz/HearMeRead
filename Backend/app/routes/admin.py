@@ -33,8 +33,7 @@ def _current_school_year() -> str:
     return f"{y-1}-{y}" if now.month < 6 else f"{y}-{y+1}"
 
 
-# ── Dashboard ─────────────────────────────────────────────────────────────────
-
+# Dashboard
 @router.get("/dashboard", summary="Admin dashboard — school stats and school code")
 async def admin_dashboard(
     current_admin: Teacher = Depends(require_admin),
@@ -161,8 +160,7 @@ async def admin_dashboard(
     }
 
 
-# ── Teachers ──────────────────────────────────────────────────────────────────
-
+# Teachers
 @router.get("/teachers", summary="List all teachers in admin's school", response_model=List[TeacherAdminView])
 async def list_teachers(
     current_admin: Teacher = Depends(require_admin),
@@ -281,8 +279,7 @@ async def archive_teacher(
     return {"detail": "Teacher archived successfully"}
 
 
-# ── Teacher Activity Logs ─────────────────────────────────────────────────────
-
+# Teacher Activity Logs
 @router.get("/teachers/{teacher_id}/logs", summary="Activity logs for a specific teacher")
 async def get_teacher_logs(
     teacher_id: int,
@@ -325,8 +322,7 @@ async def get_teacher_logs(
     }
 
 
-# ── Students (class record view) ──────────────────────────────────────────────
-
+# Students (class record view)
 @router.get("/students", summary="All teacher class cards in admin's school")
 async def list_class_cards(
     current_admin: Teacher = Depends(require_admin),
@@ -339,7 +335,7 @@ async def list_class_cards(
     """
     current_year = _current_school_year()
 
-    # ── 1. TeacherAssignment-based cards (all history) ──
+    # 1. TeacherAssignment-based cards (all history)
     asgn_result = await db.execute(
         select(TeacherAssignment)
         .join(Teacher, TeacherAssignment.teacher_id == Teacher.id)
@@ -355,7 +351,7 @@ async def list_class_cards(
     )
     assignments = asgn_result.scalars().all()
 
-    # ── 2. All active teachers with grade/section set (for current-year fallback) ──
+    # 2. All active teachers with grade/section set (for current-year fallback)
     cur_result = await db.execute(
         select(Teacher).where(
             Teacher.school_id == current_admin.school_id,
@@ -597,8 +593,7 @@ async def get_teacher_class_record(
     }
 
 
-# ── Teacher Assignments ───────────────────────────────────────────────────────
-
+# Teacher Assignments
 @router.get("/assignments", summary="List all teacher assignments for the school")
 async def list_assignments(
     school_year: Optional[str] = Query(None),
@@ -771,8 +766,7 @@ async def delete_assignment(
     await db.commit()
 
 
-# ── Public Passage Management ─────────────────────────────────────────────────
-
+# Public Passage Management
 @router.get("/passages", summary="List all public passages for admin's school")
 async def list_public_passages(
     language: Optional[str] = Query(None),
@@ -897,8 +891,7 @@ async def archive_public_passage(
     return {"detail": "Passage archived successfully"}
 
 
-# ── Student Reassignment ──────────────────────────────────────────────────────
-
+# Student Reassignment
 class ReassignStudentsRequest(BaseModel):
     from_teacher_id: int
     grade_level: str

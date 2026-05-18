@@ -1,7 +1,7 @@
 
 import "./component css/StudentCard.css";
 
-// ── Reading profile → badge color mapping ─────────────────────
+// Reading profile → badge color mapping
 const LEVEL_COLORS = {
   "Reading at Grade Level": "#639922",
   "Transitioning Reader":    "#378ADD",
@@ -48,11 +48,11 @@ export default function StudentCard({ student, onClick }) {
       onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       aria-label={`View ${fullName}`}
     >
-      {/* ── Name & LRN ── */}
+      {/* Name & LRN */}
       <h3 className="sc-name">{fullName}</h3>
       <p className="sc-lrn">LRN: {student.lrn ?? student.id}</p>
 
-      {/* ── Badges: Grade + Reading Level ── */}
+      {/* Badges: Grade + Reading Level */}
       <div className="sc-badges">
         <span className="sc-badge sc-badge--grade">
           {student.grade_level}
@@ -60,7 +60,7 @@ export default function StudentCard({ student, onClick }) {
         <LevelBadge level={student.reading_profile} />
       </div>
 
-      {/* ── Stats ── */}
+      {/* Stats */}
       <div className="sc-stats">
         <StatBox value={sessions} label="Sessions" />
       </div>

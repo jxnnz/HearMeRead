@@ -10,7 +10,7 @@ export default function LandingPage() {
   return (
     <div className="lp-root">
 
-      {/* ── NAV ── */}
+      {/* NAV */}
       <nav className="lp-nav">
         <a className="nav-logo" href="#">
           <img src={HmrLogo} alt="HearMeRead logo" />
@@ -29,7 +29,7 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* ── HERO ── */}
+      {/* HERO */}
       <section className="hero">
         <div className="hero-content">
           <h1>Empowering Early<br />Readers</h1>
@@ -89,7 +89,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── FEATURES ── */}
+      {/* FEATURES */}
       <section className="features">
         <h2 className="section-title">Core Features</h2>
         <div className="features-grid">
@@ -108,7 +108,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── ABOUT ── */}
+      {/* ABOUT */}
       <section>
         <div className="about">
           <div className="about-mascot-wrap">
@@ -133,7 +133,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── HOW IT WORKS ── */}
+      {/* HOW IT WORKS */}
       <section className="how">
         <h2 className="section-title">How It Works</h2>
         <p className="how-sub">A simple four-step flow designed around how teachers already work.</p>
@@ -153,7 +153,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── FOOTER ── */}
+      {/* FOOTER */}
       <footer className="lp-footer">
         <div className="footer-brand">HearMeRead</div>
         <div className="footer-mid">Supporting UN SDG 4 · Quality Education</div>

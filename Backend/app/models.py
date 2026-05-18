@@ -12,8 +12,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from app.db import Base
 
 
-# ── Enums ─────────────────────────────────────────────────────────────────────
-
+# Enums
 class UserRole(str, enum.Enum):
     teacher = "TEACHER"
     admin   = "ADMIN"
@@ -65,13 +64,11 @@ class PassageVisibility(str, enum.Enum):
     public  = "public"
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
-
+# Helpers
 _SCHOOL_YEAR_RE = re.compile(r"^\d{4}-\d{4}$")
 
 
-# ── Models ────────────────────────────────────────────────────────────────────
-
+# Models
 class School(Base):
     __tablename__ = "schools"
 
@@ -228,33 +225,33 @@ class AssessmentSession(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    # ── Who / what ────────────────────────────────────────────────────────────
+    # Who / what
     teacher_id = Column(Integer, ForeignKey("teachers.id", ondelete="CASCADE"), nullable=False, index=True)
     student_id = Column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True)
     passage_id = Column(Integer, ForeignKey("passages.id", ondelete="SET NULL"), nullable=True, index=True)
 
-    # ── When ──────────────────────────────────────────────────────────────────
+    # When
     school_year = Column(String(9),               nullable=False)   # e.g. "2024-2025"
     period      = Column(SAEnum(AssessmentPeriod), nullable=False)   # beginning | middle | end
 
-    # ── Language (drives Whisper model + passage filter) ──────────────────────
+    # Language (drives Whisper model + passage filter)
     language = Column(SAEnum(Language), nullable=False, default=Language.filipino)
 
-    # ── Status ────────────────────────────────────────────────────────────────
+    # Status
     is_completed = Column(Boolean, nullable=False, default=False)
     is_archived  = Column(Boolean, nullable=False, default=False)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
-    # ── Relationships ─────────────────────────────────────────────────────────
+    # Relationships
     teacher     = relationship("Teacher", back_populates="assessment_sessions")
     student     = relationship("Student", back_populates="assessment_sessions")
     passage     = relationship("Passage", back_populates="assessment_sessions")
     reading_result  = relationship("ReadingResult",      back_populates="session", uselist=False)
     observation     = relationship("SessionObservation", back_populates="session", uselist=False)
 
-    # ── Validators ────────────────────────────────────────────────────────────
+    # Validators
     @validates("school_year")
     def validate_school_year(self, key, value):
         if not _SCHOOL_YEAR_RE.match(value):
@@ -333,7 +330,7 @@ class SessionObservation(Base):
 
     session = relationship("AssessmentSession", back_populates="observation")
 
-    # ── Validators ────────────────────────────────────────────────────────────
+    # Validators
     @validates("fluency_level")
     def validate_fluency_level(self, key, value):
         if value is not None and value not in range(1, 5):
@@ -424,4 +421,4 @@ class StudentEnrollment(Base):
         start, end = value.split("-")
         if int(end) != int(start) + 1:
             raise ValueError("school_year end must be exactly one year after start")
-        return value
+        return value

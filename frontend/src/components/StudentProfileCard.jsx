@@ -46,7 +46,7 @@ export default function StudentProfileCard({ student, onEdit, onDelete }) {
 
   return (
     <div className="spc-card">
-      {/* ── Profile row ── */}
+      {/* Profile row */}
       <div className="spc-profile">
         <div className="spc-avatar">{getInitials(first_name, last_name)}</div>
 
@@ -75,7 +75,7 @@ export default function StudentProfileCard({ student, onEdit, onDelete }) {
           </div>
         </div>
 
-        {/* ── 3-dot menu ── */}
+        {/* 3-dot menu */}
         <div className="spc-menu-wrap" ref={menuRef}>
           <button
             className="spc-menu-btn"

@@ -11,14 +11,14 @@ import { useState } from "react";
 import * as XLSX from "xlsx";
 import { Search, FileSpreadsheet, Printer, Trash2, ChevronsUpDown } from "lucide-react";
 
-// ── Period labels ────────────────────────────────────────────
+// Period labels
 const PERIOD_LABELS = {
   BoSY: "Beginning of SY",
   MoSY: "Middle of SY",
   EoSY: "End of SY",
 };
 
-// ── Column definitions ───────────────────────────────────────
+// Column definitions
 // render(value, record) — optional JSX renderer for table cells
 // exportValue(value, record) — plain-text value for Excel / print
 const COLUMNS = [
@@ -68,14 +68,14 @@ const COLUMNS = [
   { key: "remarks",              label: "Remarks"                   },
 ];
 
-// ── Helper: get plain-text cell value ────────────────────────
+// Helper: get plain-text cell value
 function getCellText(col, record) {
   const v = record[col.key];
   if (col.exportValue) return col.exportValue(v, record);
   return v ?? "—";
 }
 
-// ── Student info block shared by export + print ───────────────
+// Student info block shared by export + print
 function buildStudentInfo(student = {}) {
   const {
     first_name = "", last_name = "", lrn = "—",
@@ -90,7 +90,7 @@ function buildStudentInfo(student = {}) {
   };
 }
 
-// ── Export to Excel ──────────────────────────────────────────
+// Export to Excel
 function exportExcel(records, student = {}) {
   const s = buildStudentInfo(student);
 
@@ -114,7 +114,7 @@ function exportExcel(records, student = {}) {
   XLSX.writeFile(wb, `assessment_${s.fullName.replace(/\s+/g, "_")}.xlsx`);
 }
 
-// ── Print table ──────────────────────────────────────────────
+// Print table
 function printTable(records, student = {}) {
   const s = buildStudentInfo(student);
 
@@ -190,7 +190,7 @@ export default function AssessmentHistoryTable({
   const [sortKey,      setSortKey]      = useState("assessment_date");
   const [sortAsc,      setSortAsc]      = useState(false);
 
-  // ── Filter ───────────────────────────────────────────────
+  // Filter
   const filtered = records.filter((r) => {
     if (filterLang   !== "all" && r.language !== filterLang)    return false;
     if (filterPeriod !== "all" && r.period   !== filterPeriod)  return false;
@@ -204,7 +204,7 @@ export default function AssessmentHistoryTable({
     return true;
   });
 
-  // ── Sort ─────────────────────────────────────────────────
+  // Sort
   function toggleSort(key) {
     if (sortKey === key) setSortAsc((a) => !a);
     else { setSortKey(key); setSortAsc(true); }
@@ -218,7 +218,7 @@ export default function AssessmentHistoryTable({
     return 0;
   });
 
-  // ── Unique filter options derived from actual records ────
+  // Unique filter options derived from actual records
   const languages = [...new Set(records.map((r) => r.language).filter(Boolean))];
   const periods   = [...new Set(records.map((r) => r.period).filter(Boolean))];
 
@@ -226,7 +226,7 @@ export default function AssessmentHistoryTable({
   return (
     <div className="aht-wrap">
 
-      {/* ── Section header ── */}
+      {/* Section header */}
       <div className="aht-header">
         <div className="aht-header__left">
           <h3 className="aht-title">Assessment History</h3>
@@ -296,7 +296,7 @@ export default function AssessmentHistoryTable({
         </div>
       </div>
 
-      {/* ── Table ── */}
+      {/* Table */}
       <div className="aht-table-wrap">
         <table className="aht-table">
           <thead>

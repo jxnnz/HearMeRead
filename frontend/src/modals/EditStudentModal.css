@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
-/* ── Overlay ─────────────────────────────────────────── */
+/* Overlay */
 .esm-overlay {
   position: fixed;
   inset: 0;
@@ -18,7 +18,7 @@
   to   { opacity: 1; }
 }
 
-/* ── Modal card ──────────────────────────────────────── */
+/* Modal card */
 .esm-modal {
   background: #fff;
   border-radius: 16px;
@@ -36,7 +36,7 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Header ──────────────────────────────────────────── */
+/* Header */
 .esm-header {
   display: flex;
   align-items: center;
@@ -70,7 +70,7 @@
 
 .esm-close:hover { background: #f4f6fb; color: #000000; }
 
-/* ── Error banner ────────────────────────────────────── */
+/* Error banner */
 .esm-error {
   background: #fdecea;
   color: #c0392b;
@@ -80,7 +80,7 @@
   margin: 14px 24px 0;
 }
 
-/* ── Form ────────────────────────────────────────────── */
+/* Form */
 .esm-form {
   padding: 20px 24px 24px;
   display: flex;
@@ -126,7 +126,7 @@
 
 .esm-input:focus { border-color: #2c3e6b; background: #fff; }
 
-/* ── Radio group ─────────────────────────────────────── */
+/* Radio group */
 .esm-radio-group {
   display: flex;
   gap: 16px;
@@ -145,7 +145,7 @@
   font-family: "Poppins", sans-serif;
 }
 
-/* ── Actions ─────────────────────────────────────────── */
+/* Actions */
 .esm-actions {
   display: flex;
   justify-content: flex-end;

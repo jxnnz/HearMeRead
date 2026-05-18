@@ -26,7 +26,7 @@ const PROFILES = Object.keys(PROFILE_COLORS);
 
 const GENDER_COLORS = ["#e07070", "#4a6fa5"];
 
-// ── Custom tooltip ───────────────────────────────────────────
+// Custom tooltip
 function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
@@ -61,7 +61,7 @@ export default function ReadingProfileChart({ data = {}, genderData = {} }) {
 
   return (
     <div className="db-chart-row">
-      {/* ── Left: Reading Profile Bar Chart ── */}
+      {/* Left: Reading Profile Bar Chart */}
       <div className="db-chart-card db-chart-card--wide">
         <div className="db-chart-header">
           <h3 className="db-chart-title">
@@ -116,7 +116,7 @@ export default function ReadingProfileChart({ data = {}, genderData = {} }) {
         </ResponsiveContainer>
       </div>
 
-      {/* ── Right: Gender Pie Chart ── */}
+      {/* Right: Gender Pie Chart */}
       <div className="db-chart-card db-chart-card--narrow">
         <div className="db-chart-header">
           <h3 className="db-chart-title">Percentage of Learners Assessed</h3>

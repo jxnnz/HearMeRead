@@ -140,13 +140,13 @@ export default function SignupForm({ onSubmit, loading }) {
     <>
       <form className="auth-form" onSubmit={handleSubmit}>
 
-        {/* ── Role toggle ─────────────────────────────────────────────────── */}
+        {/* Role toggle */}
         <div className="auth-role-toggle">
           <button type="button" className={`auth-role-toggle__btn${role === "teacher" ? " auth-role-toggle__btn--active" : ""}`} onClick={() => handleRoleSwitch("teacher")}>Teacher</button>
           <button type="button" className={`auth-role-toggle__btn${role === "admin" ? " auth-role-toggle__btn--active" : ""}`} onClick={() => handleRoleSwitch("admin")}>Admin</button>
         </div>
 
-        {/* ── First Name + Last Name ─────────────────────────────────────── */}
+        {/* First Name + Last Name */}
         <div className="auth-form__row">
           <div className="auth-field-float">
             <input id="signup-firstname" type="text" className="auth-input" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder=" " required autoComplete="given-name" />
@@ -213,7 +213,7 @@ export default function SignupForm({ onSubmit, loading }) {
           </>
         )}
 
-        {/* ── Passwords ─────────────────────────────────────────────────── */}
+        {/* Passwords */}
         <div className="auth-form__row">
           <div className="auth-field">
             <div className="auth-field-float">
@@ -281,7 +281,7 @@ export default function SignupForm({ onSubmit, loading }) {
           </div>
         </div>
 
-        {/* ── Terms & Conditions checkbox ────────────────────────────────── */}
+        {/* Terms & Conditions checkbox */}
         <div className="auth-field--checkbox">
           <input type="checkbox" id="agree-terms" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)} />
           <label className="auth-checkbox-label" htmlFor="agree-terms">
@@ -290,7 +290,7 @@ export default function SignupForm({ onSubmit, loading }) {
           </label>
         </div>
 
-        {/* ── Data Privacy Agreement checkbox ───────────────────────────── */}
+        {/* Data Privacy Agreement checkbox */}
         <div className="auth-field--checkbox">
           <input type="checkbox" id="agree-privacy" checked={agreedToPrivacy} onChange={(e) => setAgreedToPrivacy(e.target.checked)} />
           <label className="auth-checkbox-label" htmlFor="agree-privacy">
@@ -299,7 +299,7 @@ export default function SignupForm({ onSubmit, loading }) {
           </label>
         </div>
 
-        {/* ── Submit ────────────────────────────────────────────────────── */}
+        {/* Submit */}
         <button type="submit" className="auth-submit" disabled={!canSubmit}>
           {loading
             ? (role === "admin" ? "Creating school…" : "Creating account…")

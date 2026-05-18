@@ -9,8 +9,7 @@ import TopBar from "../components/TopBar";
 import ConfirmModal from "../modals/ConfirmModal";
 import { adminApi } from "../services/api";
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
+// Helpers
 const GRADE_OPTIONS = [
   { value: "",        label: "Not set" },
   { value: "grade_1", label: "Grade 1" },
@@ -56,8 +55,7 @@ function ActionBadge({ action }) {
   );
 }
 
-// ── Assign Modal ──────────────────────────────────────────────────────────────
-
+// Assign Modal
 function AssignTeacherModal({ teacher, onClose, onSaved }) {
   const currentYear = new Date().getFullYear();
   const fallbackSY = `${currentYear}-${currentYear + 1}`;
@@ -202,8 +200,7 @@ function AssignTeacherModal({ teacher, onClose, onSaved }) {
   );
 }
 
-// ── Edit Modal ────────────────────────────────────────────────────────────────
-
+// Edit Modal
 function EditTeacherModal({ teacher, onClose, onSaved }) {
   const [form, setForm] = useState({
     employee_id: teacher.employee_id ?? "",
@@ -354,8 +351,7 @@ function EditTeacherModal({ teacher, onClose, onSaved }) {
   );
 }
 
-// ── Logs Drawer ───────────────────────────────────────────────────────────────
-
+// Logs Drawer
 const DAY_FILTERS = [
   { key: "all",        label: "All" },
   { key: "today",      label: "Today" },
@@ -629,8 +625,7 @@ function LogsDrawer({ teacher, onClose }) {
   );
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
-
+// Main page
 export default function AdminTeachersPage() {
   const [teachers,  setTeachers]  = useState([]);
   const [loading,   setLoading]   = useState(true);
@@ -878,7 +873,7 @@ export default function AdminTeachersPage() {
         </div>
       </div>
 
-      {/* ── Assign modal ── */}
+      {/* Assign modal */}
       {assignTeacher && (
         <AssignTeacherModal
           teacher={assignTeacher}
@@ -887,7 +882,7 @@ export default function AdminTeachersPage() {
         />
       )}
 
-      {/* ── Edit modal ── */}
+      {/* Edit modal */}
       {editTeacher && (
         <EditTeacherModal
           teacher={editTeacher}
@@ -896,7 +891,7 @@ export default function AdminTeachersPage() {
         />
       )}
 
-      {/* ── Archive confirm ── */}
+      {/* Archive confirm */}
       <ConfirmModal
         isOpen={!!archiveTarget}
         title="Archive Teacher?"
@@ -912,7 +907,7 @@ export default function AdminTeachersPage() {
         onClose={() => !archiving && setArchiveTarget(null)}
       />
 
-      {/* ── Logs drawer ── */}
+      {/* Logs drawer */}
       {logsTeacher && (
         <LogsDrawer
           teacher={logsTeacher}

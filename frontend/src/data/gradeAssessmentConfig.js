@@ -9,8 +9,7 @@
  *  - timeLimits: Part 2 passage reading time limits (seconds)
  */
 
-// ── Filipino Grades 1–3 ──────────────────────────────────────────────────────
-
+// Filipino Grades 1–3
 const FILIPINO_GRADE_1 = {
   task1: {
     type: "letters",
@@ -62,8 +61,7 @@ const FILIPINO_GRADE_3 = {
   ...FILIPINO_GRADE_2,           // same structure as Grade 2, just different content
 };
 
-// ── English Grade 3 ──────────────────────────────────────────────────────────
-
+// English Grade 3
 const ENGLISH_GRADE_3 = {
   task1: {
     type: "words",
@@ -83,8 +81,7 @@ const ENGLISH_GRADE_3 = {
   classification: "english_single_scale",
 };
 
-// ── Exported config ──────────────────────────────────────────────────────────
-
+// Exported config
 export const ASSESSMENT_CONFIG = {
   filipino: {
     grade_1: FILIPINO_GRADE_1,
@@ -102,8 +99,7 @@ export const PART2_TIME_LIMITS = {
   english:  { grade_3: 120 },
 };
 
-// ── Classification bands ─────────────────────────────────────────────────────
-
+// Classification bands
 /**
  * Filipino (all grades) — classification depends on which route was taken.
  * Max total is 20 (Task 1 out of 10 + Task 2 out of 10).
@@ -134,8 +130,7 @@ export const ENGLISH_CLASSIFICATION = {
   ],
 };
 
-// ── Helper to get config for a student ───────────────────────────────────────
-
+// Helper to get config for a student
 /**
  * Returns the assessment config for a given language + grade combination.
  * @param {string} language  - "filipino" or "english"
