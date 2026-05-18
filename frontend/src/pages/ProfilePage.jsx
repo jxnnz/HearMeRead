@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { Camera, Loader, Lock } from "lucide-react";
+import { Camera, Loader, Lock, LogOut } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { authApi } from "../services/api";
 import Layout from "../components/Layout";
 import TopBar from "../components/TopBar";
@@ -13,18 +14,26 @@ function getInitials(first, last) {
 }
 
 export default function ProfilePage() {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [employeeId, setEmployeeId] = useState("");
-  
+
   const [loadingUser, setLoadingUser] = useState(true);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [showLockConfirm, setShowLockConfirm] = useState(false);
+  const [showLogout, setShowLogout] = useState(false);
   const fileInputRef = useRef(null);
+
+  function handleLogout() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    navigate("/login");
+  }
 
   useEffect(() => {
     authApi.me()
@@ -239,9 +248,19 @@ export default function ProfilePage() {
                 </button>
               </div>
             </form>
+
+            {/* Mobile-only logout button */}
+            <button
+              className="pp-mobile-logout"
+              onClick={() => setShowLogout(true)}
+            >
+              <LogOut size={16} />
+              Sign Out
+            </button>
           </div>
         </div>
       </div>
+
       <ConfirmModal
         isOpen={showLockConfirm}
         onClose={() => setShowLockConfirm(false)}
@@ -251,6 +270,16 @@ export default function ProfilePage() {
         confirmLabel="Yes, Save"
         cancelLabel="Go Back"
         variant="default"
+      />
+      <ConfirmModal
+        isOpen={showLogout}
+        onClose={() => setShowLogout(false)}
+        onConfirm={handleLogout}
+        variant="logout"
+        title="Sign Out?"
+        message="Are you sure you want to log out of your account?"
+        confirmLabel="Sign Out"
+        cancelLabel="Cancel"
       />
     </Layout>
   );

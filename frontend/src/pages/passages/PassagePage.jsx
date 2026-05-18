@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, FileText, Globe, Lock, Upload } from "lucide-react";
+import { useWindowWidth } from "../../hooks/useWindowWidth";
 
 import Layout from "../../components/Layout";
 import TopBar from "../../components/TopBar";
@@ -19,6 +20,7 @@ import "../pages css/AddPassagePage.css";
 export default function PassagePage() {
   const navigate = useNavigate();
   const { toasts, removeToast } = useToast();
+  const isMobile = useWindowWidth() <= 768;
 
   const [passages, setPassages]   = useState([]);
   const [loading, setLoading]     = useState(true);
@@ -118,14 +120,15 @@ export default function PassagePage() {
       <div className="ph-page">
 
         <TopBar title="Reading Passages">
-          <button className="ap-save-btn" onClick={() => setUploadOpen(true)} style={{ display: "flex", alignItems: "center", gap: 6, background: "#fff", borderColor: "#c8d0e4" }}>
-            <Upload size={15} /> Upload
+          <button className="ap-save-btn" onClick={() => setUploadOpen(true)} style={{ display: "flex", alignItems: "center", gap: isMobile ? 0 : 6, background: "#fff", borderColor: "#c8d0e4", padding: isMobile ? "7px 10px" : undefined }}>
+            <Upload size={15} />
+            {!isMobile && " Upload"}
           </button>
           <button className="ap-save-btn" onClick={() => navigate("/passages/add-assessment-1")} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <Plus size={15} /> Add Assessment 1
+            <Plus size={15} />{isMobile ? "A1" : "Add Assessment 1"}
           </button>
           <button className="ap-save-btn" onClick={() => navigate("/passages/add-assessment-2")} style={{ display: "flex", alignItems: "center", gap: 6, background: "#2c3e6b", color: "#fff", borderColor: "#2c3e6b" }}>
-            <Plus size={15} /> Add Assessment 2
+            <Plus size={15} />{isMobile ? "A2" : "Add Assessment 2"}
           </button>
         </TopBar>
 
@@ -220,67 +223,65 @@ export default function PassagePage() {
 
       {/* View-only modal for public passages */}
       {viewPassage && (
-        <div
-          style={{
-            position: "fixed", inset: 0, background: "rgba(0,0,0,.45)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            zIndex: 1000, padding: 16,
-          }}
-          onClick={() => setViewPassage(null)}
-        >
-          <div
-            style={{
-              background: "#fff", borderRadius: 16, width: "100%", maxWidth: 600,
-              maxHeight: "80vh", overflow: "auto",
-              boxShadow: "0 8px 32px rgba(0,0,0,.18)", padding: "28px 28px 24px",
-              fontFamily: "Poppins, sans-serif",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+        <div className="ph-preview-overlay" onClick={() => setViewPassage(null)}>
+          <div className="ph-preview-card" onClick={(e) => e.stopPropagation()}>
+
+            <div className="ph-preview-header">
               <div>
-                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#1a2340", fontFamily: "Georgia, serif" }}>
+                <h2 className="ph-preview-title">
                   {viewPassage.title || "Untitled"}
                 </h2>
-                <div style={{ display: "flex", gap: 8, marginTop: 6, fontSize: 12, color: "#8a94b2" }}>
+                <div className="ph-preview-meta">
                   <span>{viewPassage.grade_level ? viewPassage.grade_level.replace("grade_", "Grade ").replace("kindergarten", "Kindergarten") : ""}</span>
                   <span>·</span>
                   <span>{viewPassage.language === "filipino" ? "Filipino" : "English"}</span>
-                  <span>·</span>
-                  <span>{viewPassage.word_count} words</span>
+                  {viewPassage.word_count > 0 && <><span>·</span><span>{viewPassage.word_count} words</span></>}
                 </div>
               </div>
-              <button
-                onClick={() => setViewPassage(null)}
-                style={{ background: "none", border: "none", cursor: "pointer", padding: 4, fontSize: 18, color: "#8a94b2" }}
-              >
-                ✕
-              </button>
+              <button className="ph-preview-close" onClick={() => setViewPassage(null)}>✕</button>
             </div>
-            <div style={{ marginTop: 12 }}>
+
+            <div className="ph-preview-body">
               {viewPassage.assessment_type === 2 && viewPassage.content && (
-                <div style={{ background: "#f9fafb", border: "1px solid #eaecf8", padding: 20, borderRadius: 10, whiteSpace: "pre-wrap", fontSize: 14, lineHeight: 1.8, color: "#333" }}>{viewPassage.content}</div>
+                <div className="ph-preview-content">{viewPassage.content}</div>
               )}
               {viewPassage.assessment_type === 1 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                  {viewPassage.task1_content && <div><strong style={{ fontSize: 13, color: "#2c3e6b" }}>Task 1:</strong><div style={{ background: "#f9fafb", border: "1px solid #eaecf8", padding: 16, borderRadius: 10, marginTop: 6, fontSize: 14, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{viewPassage.task1_content}</div></div>}
-                  {viewPassage.task2_words && <div><strong style={{ fontSize: 13, color: "#2c3e6b" }}>Task 2 — Words:</strong><div style={{ background: "#f9fafb", border: "1px solid #eaecf8", padding: 16, borderRadius: 10, marginTop: 6, fontSize: 14, whiteSpace: "pre-wrap" }}>{viewPassage.task2_words}</div></div>}
-                  {viewPassage.task2_sentences && <div><strong style={{ fontSize: 13, color: "#2c3e6b" }}>Task 2 — Sentences:</strong><div style={{ background: "#f9fafb", border: "1px solid #eaecf8", padding: 16, borderRadius: 10, marginTop: 6, fontSize: 14, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{viewPassage.task2_sentences}</div></div>}
+                <div className="ph-preview-section">
+                  {viewPassage.task1_content && (
+                    <div>
+                      <strong className="ph-preview-block-label">Task 1:</strong>
+                      <div className="ph-preview-block-content">{viewPassage.task1_content}</div>
+                    </div>
+                  )}
+                  {viewPassage.task2_words && (
+                    <div>
+                      <strong className="ph-preview-block-label">Task 2 — Words:</strong>
+                      <div className="ph-preview-block-content">{viewPassage.task2_words}</div>
+                    </div>
+                  )}
+                  {viewPassage.task2_sentences && (
+                    <div>
+                      <strong className="ph-preview-block-label">Task 2 — Sentences:</strong>
+                      <div className="ph-preview-block-content">{viewPassage.task2_sentences}</div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-            {viewPassage.questions && viewPassage.questions.length > 0 && (
-              <div style={{ marginTop: 20, borderTop: "1px solid #eef0f8", paddingTop: 16 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 700, color: "#1a2340", marginBottom: 10 }}>
+
+            {viewPassage.questions?.length > 0 && (
+              <div className="ph-preview-questions">
+                <h3 className="ph-preview-questions-title">
                   Questions ({viewPassage.questions.length})
                 </h3>
-                <ol style={{ paddingLeft: 20, fontSize: 13, color: "#4a5568", lineHeight: 1.8 }}>
+                <ol className="ph-preview-questions-list">
                   {viewPassage.questions.map((q) => (
                     <li key={q.id}>{q.text}</li>
                   ))}
                 </ol>
               </div>
             )}
+
           </div>
         </div>
       )}

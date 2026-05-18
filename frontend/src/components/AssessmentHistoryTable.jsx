@@ -1,15 +1,8 @@
-// ============================================================
-// HearMeRead — AssessmentHistoryTable Component
-//
-// Props:
-//   records  — array of assessment record objects
-//   student  — student object (for export/print header)
-//   onEdit   — (record) => void
-//   onDelete — (record) => void
-// ============================================================
 import { useState } from "react";
 import * as XLSX from "xlsx";
-import { Search, FileSpreadsheet, Printer, Trash2, ChevronsUpDown } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import { Search, FileSpreadsheet, FileText, Trash2, ChevronsUpDown } from "lucide-react";
 
 // Period labels
 const PERIOD_LABELS = {
@@ -93,13 +86,14 @@ function buildStudentInfo(student = {}) {
 // Export to Excel
 function exportExcel(records, student = {}) {
   const s = buildStudentInfo(student);
+  const gradeSection = `${String(s.grade_level ?? "").replace("grade_", "Grade ").replace("kindergarten", "Kindergarten")} — ${s.section}`;
 
   const infoBlock = [
     ["STUDENT ASSESSMENT HISTORY REPORT"],
     [],
     ["Student Name",    s.fullName],
     ["LRN",             s.lrn],
-    ["Grade & Section", `${String(s.grade_level ?? "").replace("grade_", "Grade ").replace("kindergarten", "Kindergarten")} — ${s.section}`],
+    ["Grade & Section", gradeSection],
     ["Teacher",         s.teacher],
     ["Sex",             s.sex],
     ["Reading Profile", s.reading_profile],
@@ -109,73 +103,101 @@ function exportExcel(records, student = {}) {
   ];
 
   const ws = XLSX.utils.aoa_to_sheet(infoBlock);
+  ws["!cols"] = [
+    { wch: 4  },  // #
+    { wch: 20 },  // Assessment Date
+    { wch: 18 },  // Assessment Period
+    { wch: 12 },  // Language
+    { wch: 8  },  // Task 1
+    { wch: 14 },  // Task 2L Word
+    { wch: 18 },  // Task 2H Sentences
+    { wch: 12 },  // Total Score
+    { wch: 22 },  // Part 1 Reading Level
+    { wch: 10 },  // Story #
+    { wch: 15 },  // No. of Miscues
+    { wch: 12 },  // Words Read
+    { wch: 14 },  // Time (min:sec)
+    { wch: 18 },  // Words Per Minute
+    { wch: 18 },  // % Correct Words
+    { wch: 22 },  // Total Correct Answers
+    { wch: 18 },  // Observation Level
+    { wch: 24 },  // Reading Profile
+    { wch: 30 },  // Remarks
+  ];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Assessment History");
   XLSX.writeFile(wb, `assessment_${s.fullName.replace(/\s+/g, "_")}.xlsx`);
 }
 
-// Print table
-function printTable(records, student = {}) {
+// Export to PDF
+function exportPDF(records, student = {}) {
   const s = buildStudentInfo(student);
+  const gradeSection = `${String(s.grade_level ?? "").replace("grade_", "Grade ").replace("kindergarten", "Kindergarten")} — ${s.section}`;
 
-  const headerCells = ["#", ...COLUMNS.map((c) => c.label)]
-    .map((l) => `<th>${l}</th>`)
-    .join("");
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
 
-  const bodyRows = records
-    .map((r, idx) => {
-      const cells = [
-        `<td>${idx + 1}</td>`,
-        ...COLUMNS.map((c) => `<td>${getCellText(c, r)}</td>`),
-      ].join("");
-      return `<tr>${cells}</tr>`;
-    })
-    .join("");
+  // Student name heading
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(15);
+  doc.setTextColor(26, 35, 64);
+  doc.text(s.fullName, 14, 15);
 
-  const html = `<!DOCTYPE html>
-<html>
-<head>
-  <title>Assessment History — ${s.fullName}</title>
-  <style>
-    body { font-family: Arial, sans-serif; font-size: 11px; padding: 20px; color: #1a2340; }
-    h2   { margin: 0 0 2px; font-size: 17px; }
-    .subtitle { font-size: 11px; color: #666; margin: 0 0 14px; }
-    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 24px;
-      background: #f4f6fb; border: 1px solid #c8d0e4; border-radius: 6px;
-      padding: 10px 16px; margin-bottom: 18px; }
-    .info-row { display: flex; gap: 6px; font-size: 11px; }
-    .info-label { color: #666; min-width: 110px; }
-    .info-value { font-weight: 600; color: #1a2340; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #c8d0e4; padding: 5px 8px; text-align: left; white-space: nowrap; }
-    th { background: #eef0f8; font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; }
-    tr:nth-child(even) td { background: #f8f9fd; }
-    @media print { body { padding: 0; } }
-  </style>
-</head>
-<body>
-  <h2>${s.fullName}</h2>
-  <p class="subtitle">Student Assessment History Report</p>
-  <div class="info-grid">
-    <div class="info-row"><span class="info-label">LRN:</span><span class="info-value">${s.lrn}</span></div>
-    <div class="info-row"><span class="info-label">Grade &amp; Section:</span><span class="info-value">${String(s.grade_level ?? "").replace("grade_", "Grade ").replace("kindergarten", "Kindergarten")} — ${s.section}</span></div>
-    <div class="info-row"><span class="info-label">Teacher:</span><span class="info-value">${s.teacher}</span></div>
-    <div class="info-row"><span class="info-label">Sex:</span><span class="info-value">${s.sex}</span></div>
-    <div class="info-row"><span class="info-label">Reading Profile:</span><span class="info-value">${s.reading_profile}</span></div>
-    <div class="info-row"><span class="info-label">Total Records:</span><span class="info-value">${records.length}</span></div>
-  </div>
-  <table>
-    <thead><tr>${headerCells}</tr></thead>
-    <tbody>${bodyRows}</tbody>
-  </table>
-</body>
-</html>`;
+  // Subtitle
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(110, 110, 120);
+  doc.text("Student Assessment History Report", 14, 21);
 
-  const w = window.open("", "_blank");
-  w.document.write(html);
-  w.document.close();
-  w.focus();
-  w.print();
+  // Info box background
+  doc.setDrawColor(200, 208, 228);
+  doc.setFillColor(244, 246, 251);
+  doc.roundedRect(14, 25, 268, 22, 2, 2, "FD");
+
+  // Info items: 2 columns, 3 rows each
+  const leftCol  = [["LRN:", s.lrn], ["Teacher:", s.teacher ?? "—"], ["Reading Profile:", s.reading_profile ?? "—"]];
+  const rightCol = [["Grade & Section:", gradeSection], ["Sex:", s.sex ?? "—"], ["Total Records:", String(records.length)]];
+  const labelW   = 36;
+  const colX     = [18, 152];
+
+  [[leftCol, 0], [rightCol, 1]].forEach(([items, colIdx]) => {
+    items.forEach(([label, value], rowIdx) => {
+      const x = colX[colIdx];
+      const y = 31 + rowIdx * 6;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(110, 110, 120);
+      doc.text(label, x, y);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(26, 35, 64);
+      doc.text(value, x + labelW, y);
+    });
+  });
+
+  // Assessment table
+  const headers = ["#", ...COLUMNS.map((c) => c.label)];
+  const rows = records.map((r, idx) => [
+    idx + 1,
+    ...COLUMNS.map((c) => getCellText(c, r)),
+  ]);
+
+  autoTable(doc, {
+    head: [headers],
+    body: rows,
+    startY: 51,
+    styles: { fontSize: 6.5, cellPadding: 2, font: "helvetica", textColor: [26, 35, 64] },
+    headStyles: { fillColor: [44, 62, 107], textColor: 255, fontStyle: "bold" },
+    alternateRowStyles: { fillColor: [248, 249, 253] },
+    columnStyles: {
+      0:  { cellWidth: 6  },
+      1:  { cellWidth: 22 },
+      2:  { cellWidth: 24 },
+      8:  { cellWidth: 24 },
+      17: { cellWidth: 26 },
+      18: { cellWidth: 30 },
+    },
+  });
+
+  doc.save(`assessment_${s.fullName.replace(/\s+/g, "_")}.pdf`);
 }
 
 // ============================================================
@@ -276,13 +298,13 @@ export default function AssessmentHistoryTable({
             ))}
           </select>
 
-          {/* Print */}
+          {/* Export PDF */}
           <button
             className="aht-btn aht-btn--print"
-            onClick={() => printTable(sorted, student)}
+            onClick={() => exportPDF(sorted, student)}
           >
-            <Printer size={14} />
-            Print
+            <FileText size={14} />
+            Export PDF
           </button>
 
           {/* Export Excel */}
@@ -291,7 +313,7 @@ export default function AssessmentHistoryTable({
             onClick={() => exportExcel(sorted, student)}
           >
             <FileSpreadsheet size={14} />
-            Export
+            Export Excel
           </button>
         </div>
       </div>

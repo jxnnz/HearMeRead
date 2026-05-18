@@ -12,6 +12,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, Legend, LabelList,
   ResponsiveContainer, PieChart, Pie, Cell,
 } from "recharts";
+import { useWindowWidth } from "../hooks/useWindowWidth";
 
 // Reading profile colors
 const PROFILE_COLORS = {
@@ -46,6 +47,16 @@ function CustomTooltip({ active, payload, label }) {
 
 // ============================================================
 export default function ReadingProfileChart({ data = {}, genderData = {} }) {
+  const windowWidth = useWindowWidth();
+  const isMobile    = windowWidth <= 768;
+
+  const barHeight  = isMobile ? 180 : 240;
+  const pieHeight  = isMobile ? 150 : 180;
+  const pieRadius  = isMobile ? 58  : 75;
+  const tickSize   = isMobile ? 10  : 12;
+  const axisSz     = isMobile ? 9   : 11;
+  const legendSize = isMobile ? 9   : 11;
+
   // Build bar chart data
   const barData = [
     { group: "Female", ...data.female },
@@ -69,21 +80,21 @@ export default function ReadingProfileChart({ data = {}, genderData = {} }) {
           </h3>
         </div>
 
-        <ResponsiveContainer width="100%" height={240}>
+        <ResponsiveContainer width="100%" height={barHeight}>
           <BarChart
             data={barData}
-            margin={{ top: 16, right: 16, left: -16, bottom: 0 }}
+            margin={{ top: 16, right: 8, left: -20, bottom: 0 }}
             barCategoryGap="20%"
             barGap={2}
           >
             <XAxis
               dataKey="group"
-              tick={{ fontSize: 12, fontFamily: "Poppins" }}
+              tick={{ fontSize: tickSize, fontFamily: "Poppins" }}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
-              tick={{ fontSize: 11, fontFamily: "Poppins" }}
+              tick={{ fontSize: axisSz, fontFamily: "Poppins" }}
               axisLine={false}
               tickLine={false}
               tickFormatter={(v) => `${v}%`}
@@ -91,7 +102,7 @@ export default function ReadingProfileChart({ data = {}, genderData = {} }) {
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend
-              wrapperStyle={{ fontSize: 11, fontFamily: "Poppins", paddingTop: 8 }}
+              wrapperStyle={{ fontSize: legendSize, fontFamily: "Poppins", paddingTop: 8 }}
               iconType="circle"
               iconSize={8}
             />
@@ -104,12 +115,14 @@ export default function ReadingProfileChart({ data = {}, genderData = {} }) {
                 radius={[3, 3, 0, 0]}
                 maxBarSize={36}
               >
-                <LabelList
-                  dataKey={profile}
-                  position="insideTop"
-                  formatter={(v) => (v > 0 ? `${v}%` : "")}
-                  style={{ fill: "#fff", fontSize: 9, fontFamily: "Poppins", fontWeight: 700 }}
-                />
+                {!isMobile && (
+                  <LabelList
+                    dataKey={profile}
+                    position="insideTop"
+                    formatter={(v) => (v > 0 ? `${v}%` : "")}
+                    style={{ fill: "#fff", fontSize: 9, fontFamily: "Poppins", fontWeight: 700 }}
+                  />
+                )}
               </Bar>
             ))}
           </BarChart>
@@ -134,14 +147,14 @@ export default function ReadingProfileChart({ data = {}, genderData = {} }) {
           ))}
         </div>
 
-        <ResponsiveContainer width="100%" height={180}>
+        <ResponsiveContainer width="100%" height={pieHeight}>
           <PieChart>
             <Pie
               data={pieData}
               cx="50%"
               cy="50%"
               innerRadius={0}
-              outerRadius={75}
+              outerRadius={pieRadius}
               dataKey="value"
               label={({ cx, cy, midAngle, innerRadius, outerRadius, value }) => {
                 if (!value) return null;

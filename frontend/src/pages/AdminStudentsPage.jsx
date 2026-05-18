@@ -7,6 +7,7 @@ import {
 import Layout from "../components/Layout";
 import { adminApi } from "../services/api";
 import StudentInfoModal from "../modals/StudentInfoModal";
+import { useWindowWidth } from "../hooks/useWindowWidth";
 import "../pages/pages css/ClassRecordPage.css";
 
 // Helpers
@@ -460,10 +461,13 @@ export default function AdminStudentsPage() {
     [grouped]
   );
 
+  const isMobile = useWindowWidth() <= 768;
+
   const inputStyle = {
     padding: "8px 12px 8px 34px", border: "1.5px solid #dde1ee", borderRadius: 8,
     fontSize: 13, fontFamily: "Poppins, sans-serif", outline: "none",
-    background: "#fff", color: "#1a2340", width: 220,
+    background: "#fff", color: "#1a2340",
+    width: "100%", boxSizing: "border-box",
   };
 
   const gradeBtnStyle = (active) => ({
@@ -478,7 +482,7 @@ export default function AdminStudentsPage() {
   return (
     <Layout>
       <div style={{ fontFamily: "Poppins, sans-serif", width: "100%" }}>
-        <h1 style={{ fontSize: 28, fontWeight: 700, color: "#1a2340", margin: "0 0 24px", fontFamily: "Poppins, sans-serif" }}>
+        <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 700, color: "#1a2340", margin: isMobile ? "0 0 16px" : "0 0 24px", fontFamily: "Poppins, sans-serif" }}>
           Students
         </h1>
 
@@ -490,7 +494,13 @@ export default function AdminStudentsPage() {
             {!loading && !error && cards.length > 0 && (
               <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 20 }}>
                 {/* Row 1: count + search */}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                <div style={{
+                  display: "flex",
+                  flexDirection: isMobile ? "column" : "row",
+                  alignItems: isMobile ? "stretch" : "center",
+                  justifyContent: "space-between",
+                  gap: 10,
+                }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <Users size={15} color="#2c7fc1" />
                     <span style={{ fontSize: 13, fontWeight: 600, color: "#4a6fa5" }}>
@@ -572,15 +582,18 @@ export default function AdminStudentsPage() {
                         const bg   = GRADE_BG[card.grade_level]   ?? "#f0f6ff";
                         const text = GRADE_TEXT[card.grade_level]  ?? "#2c7fc1";
                         const cardKey = `${card.teacher_id}-${card.grade_level}-${card.section}-${year}`;
+                        const isActiveAdvisory = card.school_year === currentSchoolYear();
                         return (
                           <div
                             key={cardKey}
                             style={{
                               background: "#fff", border: "1.5px solid #e8ecf4",
                               borderRadius: 14, boxShadow: "0 2px 12px rgba(44,62,107,.06)",
-                              padding: "20px 24px", width: 280,
+                              padding: isMobile ? "16px" : "20px 24px",
+                              width: isMobile ? "100%" : 280,
                               fontFamily: "Poppins, sans-serif",
                               display: "flex", flexDirection: "column", gap: 0,
+                              boxSizing: "border-box",
                             }}
                           >
                             {/* Grade badge */}
@@ -623,29 +636,31 @@ export default function AdminStudentsPage() {
                               </div>
                             </button>
 
-                            {/* Reassign button */}
-                            <button
-                              onClick={() => setReassignCard(card)}
-                              style={{
-                                marginTop: 12, padding: "6px 0", borderRadius: 7,
-                                border: "1.5px solid #dde1ee", background: "#f7f9ff",
-                                color: "#2c3e6b", fontSize: 12, fontWeight: 600,
-                                cursor: "pointer", fontFamily: "Poppins, sans-serif",
-                                display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
-                                transition: "background 0.15s, border-color 0.15s",
-                              }}
-                              onMouseEnter={e => {
-                                e.currentTarget.style.background = "#eef3ff";
-                                e.currentTarget.style.borderColor = "#c8d0ec";
-                              }}
-                              onMouseLeave={e => {
-                                e.currentTarget.style.background = "#f7f9ff";
-                                e.currentTarget.style.borderColor = "#dde1ee";
-                              }}
-                            >
-                              <UserCheck size={13} />
-                              Reassign
-                            </button>
+                            {/* Reassign button — only for past/inactive advisory years */}
+                            {!isActiveAdvisory && (
+                              <button
+                                onClick={() => setReassignCard(card)}
+                                style={{
+                                  marginTop: 12, padding: "6px 0", borderRadius: 7,
+                                  border: "1.5px solid #dde1ee", background: "#f7f9ff",
+                                  color: "#2c3e6b", fontSize: 12, fontWeight: 600,
+                                  cursor: "pointer", fontFamily: "Poppins, sans-serif",
+                                  display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                                  transition: "background 0.15s, border-color 0.15s",
+                                }}
+                                onMouseEnter={e => {
+                                  e.currentTarget.style.background = "#eef3ff";
+                                  e.currentTarget.style.borderColor = "#c8d0ec";
+                                }}
+                                onMouseLeave={e => {
+                                  e.currentTarget.style.background = "#f7f9ff";
+                                  e.currentTarget.style.borderColor = "#dde1ee";
+                                }}
+                              >
+                                <UserCheck size={13} />
+                                Reassign
+                              </button>
+                            )}
                           </div>
                         );
                       })}

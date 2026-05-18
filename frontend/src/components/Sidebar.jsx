@@ -16,26 +16,29 @@ import ConfirmModal from "../modals/ConfirmModal";
 import "./component css/Sidebar.css";
 
 const TEACHER_NAV = [
-  { to: "/dashboard",  label: "Dashboard",     icon: LayoutDashboard },
-  { to: "/assessment", label: "Assessment",     icon: ClipboardList   },
-  { to: "/passages",   label: "Passages",       icon: BookOpen        },
-  { to: "/students",   label: "Student Record", icon: UserRound       },
-  { to: "/profile",    label: "My Profile",     icon: CircleUserRound },
+  { to: "/dashboard",  label: "Dashboard",  shortLabel: "Dashboard",  icon: LayoutDashboard },
+  { to: "/assessment", label: "Assessment",  shortLabel: "Assessment", icon: ClipboardList   },
+  { to: "/passages",   label: "Passages",    shortLabel: "Passages",   icon: BookOpen        },
+  { to: "/students",   label: "Student Record", shortLabel: "Students", icon: UserRound      },
+  { to: "/profile",    label: "My Profile",  shortLabel: "Profile",    icon: CircleUserRound },
 ];
 
 const ADMIN_NAV = [
-  { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/admin/teachers",  label: "Teachers",  icon: Users           },
-  { to: "/admin/students",  label: "Students",  icon: GraduationCap   },
-  { to: "/admin/passages",  label: "Passages",  icon: BookOpen        },
-  { to: "/profile",         label: "My Profile", icon: CircleUserRound },
+  { to: "/admin/dashboard", label: "Dashboard", shortLabel: "Dashboard", icon: LayoutDashboard },
+  { to: "/admin/teachers",  label: "Teachers",  shortLabel: "Teachers",  icon: Users           },
+  { to: "/admin/students",  label: "Students",  shortLabel: "Students",  icon: GraduationCap   },
+  { to: "/admin/passages",  label: "Passages",  shortLabel: "Passages",  icon: BookOpen        },
+  { to: "/profile",         label: "My Profile", shortLabel: "Profile",  icon: CircleUserRound },
 ];
 
 export default function Sidebar() {
-  const navigate     = useNavigate();
+  const navigate    = useNavigate();
   const [showLogout, setShowLogout] = useState(false);
   const [collapsed, setCollapsed]   = useState(true);
-  const sidebarRef   = useRef(null);
+  const [isMobile, setIsMobile]     = useState(
+    () => window.matchMedia("(max-width: 768px)").matches
+  );
+  const sidebarRef = useRef(null);
 
   const isAdmin  = localStorage.getItem("role") === "ADMIN";
   const navItems = isAdmin ? ADMIN_NAV : TEACHER_NAV;
@@ -47,6 +50,17 @@ export default function Sidebar() {
   }
 
   useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)");
+    const handler = (e) => {
+      setIsMobile(e.matches);
+      if (e.matches) setCollapsed(true);
+    };
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  // Desktop: collapse sidebar when clicking outside
+  useEffect(() => {
     function handleClickOutside(e) {
       if (showLogout) return;
       if (sidebarRef.current && !sidebarRef.current.contains(e.target)) {
@@ -57,6 +71,27 @@ export default function Sidebar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showLogout]);
 
+  // ── Mobile: bottom navigation bar ──────────────────────────────
+  if (isMobile) {
+    return (
+      <nav className="bottom-nav">
+        {navItems.map(({ to, shortLabel, icon: Icon }) => (
+          <NavLink
+            key={to}
+            to={to}
+            className={({ isActive }) =>
+              `bottom-nav__item${isActive ? " bottom-nav__item--active" : ""}`
+            }
+          >
+            <Icon size={22} strokeWidth={1.8} />
+            <span className="bottom-nav__label">{shortLabel}</span>
+          </NavLink>
+        ))}
+      </nav>
+    );
+  }
+
+  // ── Desktop: collapsible sidebar ───────────────────────────────
   return (
     <>
       <aside
@@ -64,7 +99,6 @@ export default function Sidebar() {
         className={`sidebar${collapsed ? " sidebar--collapsed" : ""}`}
         onMouseEnter={() => setCollapsed(false)}
       >
-
         {/* Logo */}
         <div className="sidebar__header">
           <div className="sidebar__logo-box">
@@ -107,7 +141,6 @@ export default function Sidebar() {
           <LogOut size={16} className="sidebar__icon" />
           <span className="sidebar__label">Log out</span>
         </button>
-
       </aside>
 
       <ConfirmModal

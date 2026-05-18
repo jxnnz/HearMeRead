@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Users, Pencil, Archive, X, ChevronLeft,
-  ChevronRight, Check, AlertCircle, Activity, CalendarDays,
+  ChevronRight, AlertCircle, Activity, CalendarDays,
   Search, ArrowUpDown,
 } from "lucide-react";
 import Layout from "../components/Layout";
 import TopBar from "../components/TopBar";
 import ConfirmModal from "../modals/ConfirmModal";
 import { adminApi } from "../services/api";
+import { useWindowWidth } from "../hooks/useWindowWidth";
 
 // Helpers
 const GRADE_OPTIONS = [
@@ -642,6 +643,7 @@ export default function AdminTeachersPage() {
   const [sortBy, setSortBy] = useState("name"); // "name" | "grade"
   const [page,   setPage]   = useState(1);
   const PAGE_SIZE = 10;
+  const isMobile = useWindowWidth() <= 768;
 
   async function load() {
     setLoading(true);
@@ -712,7 +714,8 @@ export default function AdminTeachersPage() {
   const inputStyle = {
     padding: "8px 12px 8px 34px", border: "1.5px solid #dde1ee", borderRadius: 8,
     fontSize: 13, fontFamily: "Poppins, sans-serif", outline: "none",
-    background: "#fff", color: "#1a2340", width: 240,
+    background: "#fff", color: "#1a2340",
+    width: "100%", boxSizing: "border-box",
   };
   const sortBtnStyle = (active) => ({
     padding: "7px 12px", border: `1.5px solid ${active ? "#2c3e6b" : "#dde1ee"}`,
@@ -724,27 +727,34 @@ export default function AdminTeachersPage() {
   return (
     <Layout>
       <div style={{ fontFamily: "Poppins, sans-serif", width: "100%" }}>
-        <h1 style={{ fontSize: 28, fontWeight: 700, color: "#1a2340", margin: "0 0 24px", fontFamily: "Poppins, sans-serif" }}>
+        <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 700, color: "#1a2340", margin: isMobile ? "0 0 16px" : "0 0 24px", fontFamily: "Poppins, sans-serif" }}>
           Teachers
         </h1>
 
         <div style={{
           background: "#fff", borderRadius: 16,
           boxShadow: "0 2px 16px rgba(44,62,107,.09)",
-          padding: "24px 28px",
+          padding: isMobile ? "16px" : "24px 28px",
         }}>
           {/* Toolbar: count + search + sort */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
+          <div style={{
+            display: "flex",
+            flexDirection: isMobile ? "column" : "row",
+            alignItems: isMobile ? "stretch" : "center",
+            justifyContent: "space-between",
+            gap: isMobile ? 10 : 12,
+            marginBottom: 16,
+          }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <Users size={16} color="#2c7fc1" />
-              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#1a2340" }}>
+              <h2 style={{ margin: 0, fontSize: isMobile ? 13 : 15, fontWeight: 700, color: "#1a2340" }}>
                 Teachers {!loading && `(${filtered.length})`}
               </h2>
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               {/* Search */}
-              <div style={{ position: "relative" }}>
+              <div style={{ position: "relative", flex: 1 }}>
                 <Search size={14} color="#8a94b2" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)" }} />
                 <input
                   style={inputStyle}
@@ -787,7 +797,7 @@ export default function AdminTeachersPage() {
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr>
-                    {["Name", "Email", "Employee ID", "Grade Level", "Section", "Verified", "Status", ""].map(h => (
+                    {["Name", "Email", "Employee ID", "Grade Level", "Section", "Status", ""].map(h => (
                       <th key={h} style={thStyle}>{h}</th>
                     ))}
                   </tr>
@@ -804,17 +814,6 @@ export default function AdminTeachersPage() {
                       </td>
                       <td style={tdStyle}>{formatGrade(t.grade_level)}</td>
                       <td style={tdStyle}>{t.section ?? <span style={{ color: "#c0c8d8" }}>—</span>}</td>
-                      <td style={tdStyle}>
-                        <span style={{
-                          fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 20,
-                          background: t.is_verified ? "#e8f5e9" : "#fff3e0",
-                          color: t.is_verified ? "#27ae60" : "#f39c12",
-                          display: "inline-flex", alignItems: "center", gap: 3,
-                        }}>
-                          {t.is_verified && <Check size={9} />}
-                          {t.is_verified ? "Verified" : "Pending"}
-                        </span>
-                      </td>
                       <td style={tdStyle}>
                         <span style={{
                           fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 20,

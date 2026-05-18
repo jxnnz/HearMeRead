@@ -177,3 +177,28 @@
   display: inline-flex;
   align-items: center;
 }
+
+/* ── Mobile responsive ────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .p-card {
+    padding: 14px;
+  }
+
+  .p-card__title {
+    font-size: 16px;
+  }
+
+  .p-card__excerpt {
+    font-size: 12px;
+    -webkit-line-clamp: 3;
+  }
+
+  .p-card__meta {
+    font-size: 11px;
+  }
+
+  /* Always show actions on mobile (no hover on touch) */
+  .p-card__actions {
+    opacity: 1;
+  }
+}

@@ -3,6 +3,8 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .topbar__title {
@@ -18,4 +20,27 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ── Responsive title + actions ──────────────────────────────── */
+@media (max-width: 768px) {
+  .topbar {
+    margin-bottom: 16px;
+    gap: 8px;
+  }
+
+  .topbar__title {
+    font-size: 17px;
+  }
+
+  .topbar__actions {
+    gap: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .topbar__title {
+    font-size: 15px;
+  }
 }

@@ -201,3 +201,216 @@
   text-transform: none;
   margin-left: 4px;
 }
+
+/* ── View-only preview modal ─────────────────────────────────── */
+.ph-preview-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.ph-preview-card {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  padding: 28px 28px 24px;
+  font-family: "Poppins", sans-serif;
+}
+
+.ph-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+
+.ph-preview-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a2340;
+  font-family: "Georgia", serif;
+}
+
+.ph-preview-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #8a94b2;
+}
+
+.ph-preview-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  font-size: 18px;
+  color: #8a94b2;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.ph-preview-body {
+  margin-top: 12px;
+}
+
+/* Assessment 2 content block */
+.ph-preview-content {
+  background: #f9fafb;
+  border: 1px solid #eaecf8;
+  padding: 20px;
+  border-radius: 10px;
+  white-space: pre-wrap;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #333;
+}
+
+/* Assessment 1 task sections */
+.ph-preview-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ph-preview-block-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2c3e6b;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.ph-preview-block-content {
+  background: #f9fafb;
+  border: 1px solid #eaecf8;
+  padding: 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  color: #333;
+}
+
+/* Questions */
+.ph-preview-questions {
+  margin-top: 20px;
+  border-top: 1px solid #eef0f8;
+  padding-top: 16px;
+}
+
+.ph-preview-questions-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a2340;
+  margin: 0 0 10px;
+}
+
+.ph-preview-questions-list {
+  padding-left: 20px;
+  font-size: 13px;
+  color: #4a5568;
+  line-height: 1.8;
+  margin: 0;
+}
+
+/* ── Mobile responsive ────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .ph-page {
+    gap: 16px;
+  }
+
+  .ph-card {
+    padding: 16px;
+    gap: 14px;
+    border-radius: 12px;
+  }
+
+  .ph-card__title {
+    font-size: 16px;
+  }
+
+  .ph-card__count {
+    font-size: 11.5px;
+  }
+
+  .ph-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .ph-skeleton-card {
+    padding: 16px;
+  }
+
+  .ph-empty {
+    padding: 24px 16px;
+    font-size: 12.5px;
+  }
+
+  /* Preview modal on mobile */
+  .ph-preview-overlay {
+    padding: 12px;
+  }
+
+  .ph-preview-card {
+    padding: 18px 16px 16px;
+    border-radius: 14px;
+    max-height: 88vh;
+  }
+
+  .ph-preview-title {
+    font-size: 15px;
+  }
+
+  .ph-preview-meta {
+    font-size: 10.5px;
+    gap: 4px;
+  }
+
+  .ph-preview-close {
+    font-size: 16px;
+  }
+
+  .ph-preview-block-label {
+    font-size: 11.5px;
+  }
+
+  .ph-preview-content,
+  .ph-preview-block-content {
+    padding: 12px;
+    font-size: 12px;
+    border-radius: 8px;
+  }
+
+  .ph-preview-section {
+    gap: 12px;
+  }
+
+  .ph-preview-questions {
+    margin-top: 14px;
+    padding-top: 12px;
+  }
+
+  .ph-preview-questions-title {
+    font-size: 12.5px;
+    margin-bottom: 8px;
+  }
+
+  .ph-preview-questions-list {
+    font-size: 11.5px;
+    padding-left: 16px;
+  }
+}

@@ -243,3 +243,71 @@
   font-family: "Poppins", sans-serif;
   color: #080808;
 }
+
+/* ── Mobile ──────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .rcm-overlay {
+    padding: 16px;
+    align-items: center;
+  }
+
+  .rcm-modal {
+    border-radius: 16px;
+    max-width: 100%;
+  }
+
+  .rcm-header {
+    padding: 16px 16px 0;
+  }
+
+  .rcm-title {
+    font-size: 15px;
+  }
+
+  .rcm-subtitle {
+    font-size: 11.5px;
+  }
+
+  .rcm-choices {
+    padding: 14px 16px;
+  }
+
+  .rcm-choice {
+    padding: 12px 14px;
+    gap: 12px;
+    border-radius: 10px;
+  }
+
+  .rcm-choice__icon-wrap {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+  }
+
+  .rcm-choice__icon-wrap svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .rcm-choice__title {
+    font-size: 13px;
+  }
+
+  .rcm-choice__desc {
+    font-size: 11px;
+  }
+
+  .rcm-choice__arrow {
+    font-size: 15px;
+  }
+
+  .rcm-divider {
+    margin: 8px 0;
+    font-size: 11px;
+  }
+
+  /* Esc hint is irrelevant on touch — hide it */
+  .rcm-footer {
+    display: none;
+  }
+}

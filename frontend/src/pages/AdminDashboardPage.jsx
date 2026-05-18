@@ -11,6 +11,8 @@ import {
 import Layout from "../components/Layout";
 import TopBar from "../components/TopBar";
 import { adminApi } from "../services/api";
+import { useWindowWidth } from "../hooks/useWindowWidth";
+import "./AdminDashboard.css";
 
 const PERIOD_COLORS = {
   beginning: { bg: "#e8f5e9", color: "#27ae60", label: "Beginning" },
@@ -34,12 +36,11 @@ function currentSchoolYear() {
   return m >= 6 ? `${y}-${y + 1}` : `${y - 1}-${y}`;
 }
 
-// Return only periods that have already started in the Philippine school calendar
 function visiblePeriods() {
-  const m = new Date().getMonth() + 1; // 1-12
+  const m = new Date().getMonth() + 1;
   if (m >= 6 && m <= 9)  return ["beginning"];
   if (m >= 10 || m === 1) return ["beginning", "middle"];
-  return ["beginning", "middle", "end"]; // Feb–May
+  return ["beginning", "middle", "end"];
 }
 
 function ProfileTooltip({ active, payload, label }) {
@@ -61,35 +62,14 @@ function ProfileTooltip({ active, payload, label }) {
 
 function StatCard({ icon: Icon, iconColor, label, value, sub }) {
   return (
-    <div style={{
-      background: "#fff",
-      borderRadius: 14,
-      boxShadow: "0 2px 12px rgba(44,62,107,.08)",
-      padding: "20px 24px",
-      display: "flex",
-      alignItems: "flex-start",
-      gap: 14,
-      flex: "1 1 160px",
-      minWidth: 0,
-    }}>
-      <div style={{
-        width: 40, height: 40, borderRadius: 10,
-        background: `${iconColor}18`,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        flexShrink: 0,
-      }}>
+    <div className="adm-stat-card">
+      <div className="adm-stat-card__icon-box" style={{ background: `${iconColor}18` }}>
         <Icon size={18} color={iconColor} />
       </div>
-      <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 22, fontWeight: 700, color: "#1a2340", lineHeight: 1.1 }}>
-          {value ?? "—"}
-        </div>
-        <div style={{ fontSize: 11, color: "#8a94b2", marginTop: 2, fontWeight: 500 }}>
-          {label}
-        </div>
-        {sub && (
-          <div style={{ fontSize: 11, color: "#4a6fa5", marginTop: 3 }}>{sub}</div>
-        )}
+      <div className="adm-stat-card__body">
+        <div className="adm-stat-card__value">{value ?? "—"}</div>
+        <div className="adm-stat-card__label">{label}</div>
+        {sub && <div className="adm-stat-card__sub">{sub}</div>}
       </div>
     </div>
   );
@@ -101,6 +81,9 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
   const [copied,  setCopied]  = useState(false);
+
+  const windowWidth = useWindowWidth();
+  const isMobile    = windowWidth <= 768;
 
   useEffect(() => {
     adminApi.getDashboard()
@@ -123,11 +106,13 @@ export default function AdminDashboardPage() {
   if (loading) {
     return (
       <Layout>
-        <div style={{ fontFamily: "Poppins, sans-serif", width: "100%" }}>
+        <div className="adm-page">
           <TopBar title="Dashboard" />
           <div className="sk-card"><div className="sk sk-h1" style={{ width: 220 }} /></div>
-          <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 24 }}>
-            {[1,2,3,4].map(i => <div key={i} className="sk-card" style={{ flex: "1 1 160px", height: 88 }} />)}
+          <div className="adm-stats-row">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="sk-card adm-stat-card" style={{ height: 88 }} />
+            ))}
           </div>
         </div>
       </Layout>
@@ -137,7 +122,7 @@ export default function AdminDashboardPage() {
   if (error) {
     return (
       <Layout>
-        <div style={{ fontFamily: "Poppins, sans-serif", width: "100%" }}>
+        <div className="adm-page">
           <TopBar title="Dashboard" />
           <p style={{ color: "#c0392b", textAlign: "center", padding: "64px 0" }}>{error}</p>
         </div>
@@ -145,85 +130,56 @@ export default function AdminDashboardPage() {
     );
   }
 
-  const pb  = data?.period_breakdown   ?? {};
-  const pbp = data?.profile_by_period  ?? {};
+  const pb   = data?.period_breakdown  ?? {};
+  const pbp  = data?.profile_by_period ?? {};
   const shown = visiblePeriods();
+
+  const sessionChartHeight = isMobile ? 160 : 220;
+  const profileChartHeight = isMobile ? 180 : 260;
+  const chartFontSize      = isMobile ? 10  : 12;
+  const axisFontSize       = isMobile ? 9   : 11;
 
   return (
     <Layout>
-      <div style={{ fontFamily: "Poppins, sans-serif", width: "100%" }}>
+      <div className="adm-page">
         <TopBar title="Dashboard" />
 
         {/* School banner */}
-        <div style={{
-          background: "#fff",
-          borderRadius: 16,
-          boxShadow: "0 2px 16px rgba(44,62,107,.09)",
-          padding: "24px 28px",
-          marginBottom: 20,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: 16,
-        }}>
+        <div className="adm-banner">
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-              <School size={18} color="#2c7fc1" />
-              <span style={{ fontSize: 18, fontWeight: 700, color: "#1a2340" }}>
-                {data.school_name}
-              </span>
+            <div className="adm-banner__name">
+              <School size={isMobile ? 15 : 18} color="#2c7fc1" />
+              <span className="adm-banner__name-text">{data.school_name}</span>
             </div>
             {data.deped_school_id && (
-              <div style={{ fontSize: 11, color: "#8a94b2" }}>
+              <div className="adm-banner__dep-id">
                 DepEd ID: <strong>{data.deped_school_id}</strong>
               </div>
             )}
           </div>
 
-          {/* School code badge */}
-          <div style={{
-            background: "#f0f6ff",
-            border: "2px solid #2c7fc1",
-            borderRadius: 12,
-            padding: "12px 18px",
-            display: "flex",
-            flexDirection: "column",
-            gap: 4,
-          }}>
-            <span style={{ fontSize: 10, fontWeight: 700, color: "#4a6fa5", textTransform: "uppercase", letterSpacing: ".8px" }}>
-              School Code
-            </span>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontSize: 22, fontWeight: 700, color: "#1e2d52", letterSpacing: 4, fontFamily: "monospace" }}>
-                {data.school_code}
-              </span>
+          <div className="adm-school-code">
+            <span className="adm-school-code__label">School Code</span>
+            <div className="adm-school-code__row">
+              <span className="adm-school-code__value">{data.school_code}</span>
               <button
                 onClick={handleCopy}
-                style={{
-                  background: copied ? "#27ae60" : "#2c7fc1",
-                  border: "none", borderRadius: 8, padding: "5px 10px",
-                  color: "#fff", cursor: "pointer",
-                  display: "flex", alignItems: "center", gap: 4,
-                  fontFamily: "Poppins, sans-serif",
-                  transition: "background 0.2s",
-                }}
+                className="adm-copy-btn"
+                style={{ background: copied ? "#27ae60" : "#2c7fc1" }}
               >
                 {copied ? <Check size={12} /> : <Copy size={12} />}
-                <span style={{ fontSize: 11, fontWeight: 600 }}>{copied ? "Copied!" : "Copy"}</span>
+                <span>{copied ? "Copied!" : "Copy"}</span>
               </button>
             </div>
-            <span style={{ fontSize: 10, color: "#8a94b2" }}>
-              Share with teachers to link to your school.
-            </span>
+            <span className="adm-school-code__hint">Share with teachers to link to your school.</span>
           </div>
         </div>
 
         {/* Stat cards */}
-        <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 20 }}>
+        <div className="adm-stats-row">
           <StatCard
-            icon={Users}       iconColor="#2c7fc1"
-            label="Teachers"  value={data.total_teachers}
+            icon={Users}         iconColor="#2c7fc1"
+            label="Teachers"     value={data.total_teachers}
           />
           <StatCard
             icon={GraduationCap} iconColor="#8e44ad"
@@ -231,33 +187,23 @@ export default function AdminDashboardPage() {
           />
           <StatCard
             icon={ClipboardList} iconColor="#e67e22"
-            label="Total Sessions"    value={data.total_sessions}
+            label="Total Sessions"   value={data.total_sessions}
           />
           <StatCard
-            icon={CheckCircle} iconColor="#27ae60"
-            label="Completed"  value={data.completed_sessions}
+            icon={CheckCircle}   iconColor="#27ae60"
+            label="Completed"    value={data.completed_sessions}
             sub={data.total_sessions > 0 ? `${data.completion_rate}% completion rate` : null}
           />
         </div>
 
-        {/* Period breakdown (past + current only) */}
-        <div style={{
-          background: "#fff",
-          borderRadius: 16,
-          boxShadow: "0 2px 16px rgba(44,62,107,.09)",
-          padding: "22px 28px",
-          marginBottom: 20,
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+        {/* Period breakdown */}
+        <div className="adm-chart-card">
+          <div className="adm-chart-header">
             <BarChart3 size={16} color="#2c7fc1" />
-            <span style={{ fontSize: 14, fontWeight: 700, color: "#1a2340" }}>
-              Completed Sessions by Period
-            </span>
+            <span className="adm-chart-title">Completed Sessions by Period</span>
           </div>
-          <p style={{ fontSize: 11, color: "#8a94b2", margin: "0 0 16px 0" }}>
-            {currentSchoolYear()}
-          </p>
-          <ResponsiveContainer width="100%" height={220}>
+          <p className="adm-chart-sub">{currentSchoolYear()}</p>
+          <ResponsiveContainer width="100%" height={sessionChartHeight}>
             <BarChart
               data={shown.map((key) => ({
                 period: PERIOD_COLORS[key].label,
@@ -265,66 +211,55 @@ export default function AdminDashboardPage() {
                 Male:   pb[key]?.male   ?? 0,
                 Total:  pb[key]?.total  ?? 0,
               }))}
-              margin={{ top: 16, right: 16, left: -16, bottom: 0 }}
+              margin={{ top: 16, right: 8, left: -20, bottom: 0 }}
               barCategoryGap="20%"
               barGap={2}
             >
               <XAxis
                 dataKey="period"
-                tick={{ fontSize: 12, fontFamily: "Poppins" }}
+                tick={{ fontSize: chartFontSize, fontFamily: "Poppins" }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
                 allowDecimals={false}
-                tick={{ fontSize: 11, fontFamily: "Poppins" }}
+                tick={{ fontSize: axisFontSize, fontFamily: "Poppins" }}
                 axisLine={false}
                 tickLine={false}
               />
-              <Tooltip
-                contentStyle={{ fontSize: 12, fontFamily: "Poppins", borderRadius: 8 }}
-              />
+              <Tooltip contentStyle={{ fontSize: 12, fontFamily: "Poppins", borderRadius: 8 }} />
               <Legend
-                wrapperStyle={{ fontSize: 11, fontFamily: "Poppins", paddingTop: 8 }}
+                wrapperStyle={{ fontSize: axisFontSize, fontFamily: "Poppins", paddingTop: 8 }}
                 iconType="circle"
                 iconSize={8}
               />
-              <Bar dataKey="Female" fill="#e07070" radius={[3,3,0,0]} maxBarSize={36}>
-                <LabelList dataKey="Female" position="insideTop"
+              <Bar dataKey="Female" fill="#e07070" radius={[3, 3, 0, 0]} maxBarSize={36}>
+                {!isMobile && <LabelList dataKey="Female" position="insideTop"
                   formatter={(v) => (v > 0 ? v : "")}
-                  style={{ fill: "#fff", fontSize: 9, fontFamily: "Poppins", fontWeight: 700 }} />
+                  style={{ fill: "#fff", fontSize: 9, fontFamily: "Poppins", fontWeight: 700 }} />}
               </Bar>
-              <Bar dataKey="Male" fill="#4a6fa5" radius={[3,3,0,0]} maxBarSize={36}>
-                <LabelList dataKey="Male" position="insideTop"
+              <Bar dataKey="Male" fill="#4a6fa5" radius={[3, 3, 0, 0]} maxBarSize={36}>
+                {!isMobile && <LabelList dataKey="Male" position="insideTop"
                   formatter={(v) => (v > 0 ? v : "")}
-                  style={{ fill: "#fff", fontSize: 9, fontFamily: "Poppins", fontWeight: 700 }} />
+                  style={{ fill: "#fff", fontSize: 9, fontFamily: "Poppins", fontWeight: 700 }} />}
               </Bar>
-              <Bar dataKey="Total" fill="#2c7fc1" radius={[3,3,0,0]} maxBarSize={36}>
-                <LabelList dataKey="Total" position="insideTop"
+              <Bar dataKey="Total" fill="#2c7fc1" radius={[3, 3, 0, 0]} maxBarSize={36}>
+                {!isMobile && <LabelList dataKey="Total" position="insideTop"
                   formatter={(v) => (v > 0 ? v : "")}
-                  style={{ fill: "#fff", fontSize: 9, fontFamily: "Poppins", fontWeight: 700 }} />
+                  style={{ fill: "#fff", fontSize: 9, fontFamily: "Poppins", fontWeight: 700 }} />}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         {/* Reading Profile % per Assessment Period */}
-        <div style={{
-          background: "#fff",
-          borderRadius: 16,
-          boxShadow: "0 2px 16px rgba(44,62,107,.09)",
-          padding: "22px 28px",
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+        <div className="adm-chart-card">
+          <div className="adm-chart-header">
             <BarChart3 size={16} color="#2c7fc1" />
-            <span style={{ fontSize: 14, fontWeight: 700, color: "#1a2340" }}>
-              Percentage of Students Assessed by Reading Profile
-            </span>
+            <span className="adm-chart-title">Percentage of Students Assessed by Reading Profile</span>
           </div>
-          <p style={{ fontSize: 11, color: "#8a94b2", margin: "0 0 16px 0" }}>
-            Per assessment period — {currentSchoolYear()}
-          </p>
-          <ResponsiveContainer width="100%" height={260}>
+          <p className="adm-chart-sub">Per assessment period — {currentSchoolYear()}</p>
+          <ResponsiveContainer width="100%" height={profileChartHeight}>
             <BarChart
               data={shown.map((key) => ({
                 period: PERIOD_COLORS[key].label,
@@ -333,18 +268,18 @@ export default function AdminDashboardPage() {
                   return acc;
                 }, {}),
               }))}
-              margin={{ top: 16, right: 16, left: -16, bottom: 0 }}
+              margin={{ top: 16, right: 8, left: -20, bottom: 0 }}
               barCategoryGap="20%"
               barGap={2}
             >
               <XAxis
                 dataKey="period"
-                tick={{ fontSize: 12, fontFamily: "Poppins" }}
+                tick={{ fontSize: chartFontSize, fontFamily: "Poppins" }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
-                tick={{ fontSize: 11, fontFamily: "Poppins" }}
+                tick={{ fontSize: axisFontSize, fontFamily: "Poppins" }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={(v) => `${v}%`}
@@ -352,7 +287,7 @@ export default function AdminDashboardPage() {
               />
               <Tooltip content={<ProfileTooltip />} />
               <Legend
-                wrapperStyle={{ fontSize: 11, fontFamily: "Poppins", paddingTop: 8 }}
+                wrapperStyle={{ fontSize: axisFontSize, fontFamily: "Poppins", paddingTop: 8 }}
                 iconType="circle"
                 iconSize={8}
               />
@@ -365,12 +300,14 @@ export default function AdminDashboardPage() {
                   radius={[3, 3, 0, 0]}
                   maxBarSize={36}
                 >
-                  <LabelList
-                    dataKey={profile}
-                    position="insideTop"
-                    formatter={(v) => (v > 0 ? `${v}%` : "")}
-                    style={{ fill: "#fff", fontSize: 9, fontFamily: "Poppins", fontWeight: 700 }}
-                  />
+                  {!isMobile && (
+                    <LabelList
+                      dataKey={profile}
+                      position="insideTop"
+                      formatter={(v) => (v > 0 ? `${v}%` : "")}
+                      style={{ fill: "#fff", fontSize: 9, fontFamily: "Poppins", fontWeight: 700 }}
+                    />
+                  )}
                 </Bar>
               ))}
             </BarChart>

@@ -236,3 +236,122 @@
 .pp-btn-primary { background: #1a2340; color: white; }
 .pp-btn-primary:hover:not(:disabled) { background: #2c3e6b; }
 .pp-btn-primary:disabled { background: #8a94b2; cursor: not-allowed; }
+
+/* Mobile-only logout — hidden on desktop */
+.pp-mobile-logout {
+  display: none;
+  width: 100%;
+  margin-top: 20px;
+  padding: 12px;
+  border: 1.5px solid #e0e4f0;
+  border-radius: 10px;
+  background: #fff;
+  color: #c0392b;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: "Poppins", sans-serif;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.pp-mobile-logout:hover {
+  background: #fdf0f0;
+  border-color: #e8c8c5;
+}
+
+@media (max-width: 768px) {
+  .pp-mobile-logout {
+    display: flex;
+  }
+
+  /* Allow page to grow past viewport so layout__main can scroll it */
+  .pp-page {
+    height: auto;
+    min-height: 100%;
+  }
+
+  .pp-content {
+    padding-top: 0;
+    align-items: stretch;
+  }
+
+  .pp-card {
+    padding: 16px 16px 18px;
+    border-radius: 12px;
+    max-width: 100%;
+  }
+
+  /* Stack first/last name fields vertically */
+  .pp-form-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .pp-form {
+    gap: 10px;
+  }
+
+  .pp-avatar-section {
+    margin-bottom: 16px;
+  }
+
+  .pp-avatar-wrapper {
+    width: 80px;
+    height: 80px;
+  }
+
+  .pp-avatar-initials {
+    font-size: 28px;
+  }
+
+  .pp-avatar-edit-btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .pp-field label {
+    font-size: 10.5px;
+    margin-bottom: 4px;
+  }
+
+  .pp-field input {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .pp-section-title {
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+
+  .pp-readonly-grid {
+    gap: 10px;
+  }
+
+  .pp-ro-label {
+    font-size: 10px;
+  }
+
+  .pp-ro-value {
+    font-size: 13px;
+  }
+
+  .pp-actions {
+    margin-top: 12px;
+  }
+
+  .pp-btn {
+    width: 100%;
+    padding: 10px 20px;
+    font-size: 13px;
+  }
+
+  .pp-mobile-logout {
+    margin-top: 14px;
+    font-size: 12.5px;
+    padding: 10px;
+  }
+}

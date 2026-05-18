@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     VitePWA({ 
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'icons.svg', 'manifest.json'],
+      includeAssets: ['icon-192x192.png', 'icon-512x512.png', 'HMR-LOGO.png', 'manifest.json'],
       manifest: false,
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,json}'],

@@ -81,13 +81,15 @@ export default function StudentRecordPage() {
 
         {/* Header */}
         <TopBar title="Student Record">
-          <AppButton variant="ghost" onClick={() => setShowImport(true)}>
-            <Upload size={15} />
-            Import Records
+          <AppButton variant="ghost" size="sm" onClick={() => setShowImport(true)}>
+            <Upload size={14} />
+            <span className="sr-btn-full">Import Records</span>
+            <span className="sr-btn-short">Import</span>
           </AppButton>
-          <AppButton variant="primary" onClick={() => navigate("/students/add")}>
-            <Plus size={15} />
-            Add Student
+          <AppButton variant="primary" size="sm" onClick={() => navigate("/students/add")}>
+            <Plus size={14} />
+            <span className="sr-btn-full">Add Student</span>
+            <span className="sr-btn-short">Add</span>
           </AppButton>
         </TopBar>
 

@@ -1,0 +1,255 @@
+/* ============================================================
+   HearMeRead — Admin Dashboard CSS
+   Font: Poppins
+   ============================================================ */
+
+.adm-page {
+  font-family: "Poppins", sans-serif;
+  width: 100%;
+}
+
+/* School banner */
+.adm-banner {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 16px rgba(44, 62, 107, 0.09);
+  padding: 24px 28px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.adm-banner__name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.adm-banner__name-text {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a2340;
+}
+
+.adm-banner__dep-id {
+  font-size: 11px;
+  color: #8a94b2;
+}
+
+/* School code badge */
+.adm-school-code {
+  background: #f0f6ff;
+  border: 2px solid #2c7fc1;
+  border-radius: 12px;
+  padding: 12px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.adm-school-code__label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #4a6fa5;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.adm-school-code__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.adm-school-code__value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1e2d52;
+  letter-spacing: 4px;
+  font-family: monospace;
+}
+
+.adm-school-code__hint {
+  font-size: 10px;
+  color: #8a94b2;
+}
+
+.adm-copy-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 5px 10px;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: "Poppins", sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+/* Stat cards row */
+.adm-stats-row {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.adm-stat-card {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(44, 62, 107, 0.08);
+  padding: 20px 24px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.adm-stat-card__icon-box {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.adm-stat-card__body {
+  min-width: 0;
+}
+
+.adm-stat-card__value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a2340;
+  line-height: 1.1;
+}
+
+.adm-stat-card__label {
+  font-size: 11px;
+  color: #8a94b2;
+  margin-top: 2px;
+  font-weight: 500;
+}
+
+.adm-stat-card__sub {
+  font-size: 11px;
+  color: #4a6fa5;
+  margin-top: 3px;
+}
+
+/* Chart cards */
+.adm-chart-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 16px rgba(44, 62, 107, 0.09);
+  padding: 22px 28px;
+  margin-bottom: 20px;
+}
+
+.adm-chart-card:last-child {
+  margin-bottom: 0;
+}
+
+.adm-chart-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.adm-chart-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a2340;
+}
+
+.adm-chart-sub {
+  font-size: 11px;
+  color: #8a94b2;
+  margin: 0 0 16px 0;
+}
+
+/* ── Mobile responsive ────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .adm-banner {
+    padding: 14px 16px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+  }
+
+  .adm-banner__name-text {
+    font-size: 14px;
+  }
+
+  .adm-banner__dep-id {
+    font-size: 10px;
+  }
+
+  .adm-school-code {
+    padding: 10px 14px;
+    border-radius: 10px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .adm-school-code__value {
+    font-size: 18px;
+    letter-spacing: 3px;
+  }
+
+  /* 2 stat cards per row on mobile */
+  .adm-stats-row {
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .adm-stat-card {
+    flex: 1 1 calc(50% - 5px);
+    min-width: calc(50% - 5px);
+    padding: 12px 14px;
+    border-radius: 10px;
+    gap: 10px;
+  }
+
+  .adm-stat-card__icon-box {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+  }
+
+  .adm-stat-card__value {
+    font-size: 18px;
+  }
+
+  .adm-stat-card__label {
+    font-size: 10px;
+  }
+
+  .adm-stat-card__sub {
+    font-size: 10px;
+  }
+
+  .adm-chart-card {
+    padding: 12px 14px 14px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+  }
+
+  .adm-chart-title {
+    font-size: 12px;
+  }
+
+  .adm-chart-sub {
+    margin-bottom: 10px;
+  }
+}

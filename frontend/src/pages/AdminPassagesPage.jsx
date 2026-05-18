@@ -4,6 +4,7 @@ import Layout from "../components/Layout";
 import ConfirmModal from "../modals/ConfirmModal";
 import UploadModal from "../components/UploadModal";
 import { adminApi, questionsApi } from "../services/api";
+import { useWindowWidth } from "../hooks/useWindowWidth";
 import "./pages css/AddPassagePage.css";
 
 // Rhyme pair helpers
@@ -233,6 +234,7 @@ export default function AdminPassagesPage() {
   const [uploadTargetField, setUploadTargetField] = useState(null);
   const [globalUploadOpen, setGlobalUploadOpen] = useState(false);
 
+  const isMobile = useWindowWidth() <= 768;
   const eng3 = isEng3(form);
 
   const load = useCallback(async () => {
@@ -500,19 +502,19 @@ export default function AdminPassagesPage() {
       <div style={{ fontFamily: "'Poppins', sans-serif", width: "100%" }}>
 
         {/* Topbar matching other nav pages */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 24 }}>
-          <h1 style={{ fontSize: 28, fontWeight: 700, color: "#1a2340", margin: 0, fontFamily: "Poppins, sans-serif" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: isMobile ? 16 : 24 }}>
+          <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 700, color: "#1a2340", margin: 0, fontFamily: "Poppins, sans-serif" }}>
             Public Passages
           </h1>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button onClick={() => setGlobalUploadOpen(true)} className="ap-save-btn" style={{ display: "flex", alignItems: "center", gap: 6, background: "#fff", borderColor: "#c8d0e4" }}>
-              <Upload size={16} /> Upload
+            <button onClick={() => setGlobalUploadOpen(true)} className="ap-save-btn" style={{ display: "flex", alignItems: "center", gap: isMobile ? 0 : 6, background: "#fff", borderColor: "#c8d0e4", padding: isMobile ? "7px 10px" : undefined }}>
+              <Upload size={15} />{!isMobile && " Upload"}
             </button>
             <button onClick={() => startAdd(1)} className="ap-save-btn" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <Plus size={16} /> Assessment 1
+              <Plus size={15} />{isMobile ? "A1" : " Assessment 1"}
             </button>
             <button onClick={() => startAdd(2)} className="ap-save-btn" style={{ display: "flex", alignItems: "center", gap: 6, background: "#2c3e6b", color: "#fff", borderColor: "#2c3e6b" }}>
-              <Plus size={16} /> Assessment 2
+              <Plus size={15} />{isMobile ? "A2" : " Assessment 2"}
             </button>
           </div>
         </div>
@@ -532,34 +534,44 @@ export default function AdminPassagesPage() {
 
         <div>
 
-          {/* Filters with clear labels */}
-          <div style={{ display: "flex", gap: 16, marginBottom: 20, flexWrap: "wrap", alignItems: "flex-end" }}>
-            <div style={{ position: "relative", flex: "1 1 220px", maxWidth: 300 }}>
+          {/* Filters */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
+            {/* Search — always full width */}
+            <div style={{ position: "relative" }}>
               <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 6 }}>Search</label>
               <Search size={15} style={{ position: "absolute", left: 10, bottom: 10, color: "#999" }} />
               <input type="text" placeholder="Search by title or content..." value={search}
-                onChange={(e) => { setSearch(e.target.value); setPage(1); }} className="ap-input" style={{ paddingLeft: 32 }} />
+                onChange={(e) => { setSearch(e.target.value); setPage(1); }} className="ap-input"
+                style={{ paddingLeft: 32, width: "100%", boxSizing: "border-box" }} />
             </div>
 
-            <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 6 }}>Grade Level</label>
-              <select value={gradeF} onChange={(e) => { setGradeF(e.target.value); setPage(1); }} className="ap-input" style={{ minWidth: 140 }}>
-                {GRADES.map(x => <option key={x.value} value={x.value}>{x.label}</option>)}
-              </select>
-            </div>
+            {/* Selects — 2-column grid on mobile, row on desktop */}
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(3, auto)",
+              gap: 10,
+              alignItems: "end",
+            }}>
+              <div>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 6 }}>Grade Level</label>
+                <select value={gradeF} onChange={(e) => { setGradeF(e.target.value); setPage(1); }} className="ap-input" style={{ width: "100%", boxSizing: "border-box" }}>
+                  {GRADES.map(x => <option key={x.value} value={x.value}>{x.label}</option>)}
+                </select>
+              </div>
 
-            <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 6 }}>Language</label>
-              <select value={langF} onChange={(e) => { setLangF(e.target.value); setPage(1); }} className="ap-input" style={{ minWidth: 140 }}>
-                {LANGS.map(x => <option key={x.value} value={x.value}>{x.label}</option>)}
-              </select>
-            </div>
+              <div>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 6 }}>Language</label>
+                <select value={langF} onChange={(e) => { setLangF(e.target.value); setPage(1); }} className="ap-input" style={{ width: "100%", boxSizing: "border-box" }}>
+                  {LANGS.map(x => <option key={x.value} value={x.value}>{x.label}</option>)}
+                </select>
+              </div>
 
-            <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 6 }}>Assessment Type</label>
-              <select value={typeF} onChange={(e) => { setTypeF(e.target.value); setPage(1); }} className="ap-input" style={{ minWidth: 140 }}>
-                {TYPES.map(x => <option key={x.value} value={x.value}>{x.label}</option>)}
-              </select>
+              <div style={isMobile ? { gridColumn: "1 / -1" } : {}}>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 6 }}>Assessment Type</label>
+                <select value={typeF} onChange={(e) => { setTypeF(e.target.value); setPage(1); }} className="ap-input" style={{ width: "100%", boxSizing: "border-box" }}>
+                  {TYPES.map(x => <option key={x.value} value={x.value}>{x.label}</option>)}
+                </select>
+              </div>
             </div>
           </div>
 
@@ -573,41 +585,44 @@ export default function AdminPassagesPage() {
             ) : (
               <>
                 <div style={{ overflowX: "auto", borderRadius: 10, border: "1px solid #e5e7eb" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: isMobile ? 11 : 13 }}>
                     <thead>
                       <tr style={{ background: "#f1f3f8" }}>
-                        {["#", "Title", "Type", "Grade", "Lang", "Words", "Actions"].map((h, i) => (
-                          <th key={i} style={{ padding: "12px 14px", fontWeight: 700, color: "#1a2340", textAlign: "left", borderBottom: "2px solid #dde2f0", whiteSpace: "nowrap" }}>{h}</th>
+                        {(isMobile
+                          ? ["#", "Title", "Type", "Grade", ""]
+                          : ["#", "Title", "Type", "Grade", "Lang", "Words", "Actions"]
+                        ).map((h, i) => (
+                          <th key={i} style={{ padding: isMobile ? "8px 8px" : "12px 14px", fontWeight: 700, color: "#1a2340", textAlign: "left", borderBottom: "2px solid #dde2f0", whiteSpace: "nowrap" }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {paginated.map((p, idx) => (
                         <tr key={p.id} onClick={() => setPreviewTarget(p)} style={{ borderBottom: "1px solid #eee", background: "#fff", cursor: "pointer" }}>
-                          <td style={{ padding: "12px 14px", color: "#888" }}>{(page - 1) * PER + idx + 1}</td>
-                          <td style={{ padding: "12px 14px", fontWeight: 600, color: "#1a2340" }}>
+                          <td style={{ padding: isMobile ? "8px 8px" : "12px 14px", color: "#888" }}>{(page - 1) * PER + idx + 1}</td>
+                          <td style={{ padding: isMobile ? "8px 8px" : "12px 14px", fontWeight: 600, color: "#1a2340", maxWidth: isMobile ? 110 : "none" }}>
                             {p.assessment_type === 2 ? (() => {
                               const { num, title } = parseStoryTitle(p.title);
                               return num ? (
                                 <>
-                                  <span style={{ fontSize: 11, color: "#2c3e6b", fontWeight: 700, marginRight: 6 }}>Story {num}:</span>
+                                  <span style={{ fontSize: isMobile ? 10 : 11, color: "#2c3e6b", fontWeight: 700, marginRight: 4 }}>Story {num}:</span>
                                   <span style={{ fontWeight: 400, color: "#555" }}>{title}</span>
                                 </>
                               ) : (p.title || "—");
                             })() : (p.title || "(Assessment 1)")}
                           </td>
-                          <td style={{ padding: "12px 14px" }}>
-                            <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 6, background: p.assessment_type === 1 ? "#e0edff" : "#e8f5e9", color: p.assessment_type === 1 ? "#1e40af" : "#166534", fontWeight: 600 }}>
-                              Assessment {p.assessment_type}
+                          <td style={{ padding: isMobile ? "8px 8px" : "12px 14px", whiteSpace: "nowrap" }}>
+                            <span style={{ fontSize: isMobile ? 10 : 11, padding: isMobile ? "2px 6px" : "3px 10px", borderRadius: 6, background: p.assessment_type === 1 ? "#e0edff" : "#e8f5e9", color: p.assessment_type === 1 ? "#1e40af" : "#166534", fontWeight: 600, whiteSpace: "nowrap" }}>
+                              {isMobile ? `A${p.assessment_type}` : `Assessment ${p.assessment_type}`}
                             </span>
                           </td>
-                          <td style={{ padding: "12px 14px" }}>{fmtGrade(p.grade_level)}</td>
-                          <td style={{ padding: "12px 14px", textTransform: "capitalize" }}>{p.language}</td>
-                          <td style={{ padding: "12px 14px" }}>{p.word_count}</td>
-                          <td style={{ padding: "12px 14px" }} onClick={(e) => e.stopPropagation()}>
-                            <div style={{ display: "flex", gap: 6 }}>
-                              <button onClick={() => startEdit(p)} title="Edit" style={{ background: "#f8f9fd", border: "1px solid #dde2f0", borderRadius: 6, padding: "6px 8px", cursor: "pointer" }}><Pencil size={14} color="#555" /></button>
-                              <button onClick={() => handleArchive(p)} title="Archive" style={{ background: "#fdf2f2", border: "1px solid #f9caca", borderRadius: 6, padding: "6px 8px", cursor: "pointer" }}><Trash2 size={14} color="#c44" /></button>
+                          <td style={{ padding: isMobile ? "8px 8px" : "12px 14px", whiteSpace: "nowrap" }}>{fmtGrade(p.grade_level)}</td>
+                          {!isMobile && <td style={{ padding: "12px 14px", textTransform: "capitalize" }}>{p.language}</td>}
+                          {!isMobile && <td style={{ padding: "12px 14px" }}>{p.word_count}</td>}
+                          <td style={{ padding: isMobile ? "8px 6px" : "12px 14px" }} onClick={(e) => e.stopPropagation()}>
+                            <div style={{ display: "flex", gap: isMobile ? 4 : 6 }}>
+                              <button onClick={() => startEdit(p)} title="Edit" style={{ background: "#f8f9fd", border: "1px solid #dde2f0", borderRadius: 6, padding: isMobile ? "5px 6px" : "6px 8px", cursor: "pointer" }}><Pencil size={isMobile ? 12 : 14} color="#555" /></button>
+                              <button onClick={() => handleArchive(p)} title="Archive" style={{ background: "#fdf2f2", border: "1px solid #f9caca", borderRadius: 6, padding: isMobile ? "5px 6px" : "6px 8px", cursor: "pointer" }}><Trash2 size={isMobile ? 12 : 14} color="#c44" /></button>
                             </div>
                           </td>
                         </tr>

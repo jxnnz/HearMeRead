@@ -495,8 +495,11 @@ def score_part2(
     result.substitutions  = lev.substitutions
     result.insertions     = lev.insertions
     result.deletions      = lev.deletions
-    result.total_miscues  = lev.total_miscues
-    result.correct_words  = lev.correct_words
+    # Insertions are extra words spoken that have no corresponding passage word,
+    # so they do not reduce the count of passage words read correctly.
+    # Miscues at the passage level = only substitutions + deletions.
+    result.total_miscues  = lev.substitutions + lev.deletions
+    result.correct_words  = lev.correct_words  # already excludes insertions
 
     # --- Words read within grade time limit ---
     result.words_read_within_time = _count_words_within_time(
@@ -506,20 +509,19 @@ def score_part2(
     )
 
     # --- CWPM ---
-    # Uses total passage words and total miscues from the full recording.
+    # Use correct_words directly — it is the count of passage words that were
+    # read correctly, unaffected by insertions.
     # Time is capped at the grade limit to avoid inflating CWPM.
     effective_time_sec = min(reading_time_sec, result.grade_time_limit_sec)
     if effective_time_sec > 0:
-        correct_in_passage = max(result.total_words_in_passage - result.total_miscues, 0)
-        result.cwpm = round(correct_in_passage / (effective_time_sec / 60), 2)
+        result.cwpm = round(result.correct_words / (effective_time_sec / 60), 2)
     else:
         result.cwpm = 0.0
 
     # --- Accuracy Percentage ---
     if result.total_words_in_passage > 0:
-        correct_in_passage = max(result.total_words_in_passage - result.total_miscues, 0)
         result.accuracy_pct = round(
-            (correct_in_passage / result.total_words_in_passage) * 100, 2
+            (result.correct_words / result.total_words_in_passage) * 100, 2
         )
     else:
         result.accuracy_pct = 0.0

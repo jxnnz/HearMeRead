@@ -1,4 +1,6 @@
 import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { CheckCircle } from "lucide-react";
 import { OBSERVATION_LEVELS, EXPERIENCE_OPTIONS } from "../data/assessmentConstants";
 import WordHighlightView from "./WordHighlightView";
@@ -74,60 +76,181 @@ export default function ResultsStep({
     { label: "Observation Level",                             value: obsLevelDisplay,                               color: "#1a2340" },
   ];
 
+  // PDF export
+  function handleSavePDF() {
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const langLabel = form.language === "filipino" ? "Filipino" : "English";
+    const gradeStr  = String(form.grade_level ?? "").replace("grade_", "Grade ").replace("kindergarten", "Kindergarten");
+
+    function hexRgb(hex) {
+      return [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+    }
+
+    // ── Student name ──────────────────────────────────────────
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(17);
+    doc.setTextColor(26, 35, 64);
+    doc.text(`${form.first_name} ${form.last_name}`, 15, 17);
+
+    // Profile badge (colored pill next to name)
+    const [br, bg, bb] = hexRgb(profile.bg);
+    const [cr, cg, cb] = hexRgb(profile.color);
+    const nameW = doc.getTextWidth(`${form.first_name} ${form.last_name}`);
+    doc.setFillColor(br, bg, bb);
+    doc.roundedRect(17 + nameW, 11, doc.getTextWidth(profile.label) + 6, 7, 2, 2, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(cr, cg, cb);
+    doc.text(profile.label, 20 + nameW, 15.8);
+
+    // Meta strip
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 115);
+    doc.text(`${langLabel}  ·  ${gradeStr}  ·  ${form.assessment_type}  ·  ${today}`, 15, 24);
+    if (a2Passage?.title) {
+      doc.setFontSize(8.5);
+      doc.setTextColor(26, 35, 64);
+      doc.text(a2Passage.title, 15, 30);
+    }
+
+    // Divider
+    doc.setDrawColor(210, 218, 235);
+    doc.line(15, 34, 195, 34);
+
+    // Section helper
+    function sectionTitle(title, y) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(44, 62, 107);
+      doc.text(title, 15, y);
+      return y + 5;
+    }
+
+    const labelStyle = { fontStyle: "bold", textColor: [90, 95, 120], cellWidth: 80 };
+    const valueStyle = { textColor: [26, 35, 64] };
+    const tableOpts  = {
+      margin: { left: 15, right: 15 },
+      styles: { fontSize: 9, cellPadding: 2.5, font: "helvetica" },
+      columnStyles: { 0: labelStyle, 1: valueStyle },
+      theme: "plain",
+      alternateRowStyles: { fillColor: [248, 249, 253] },
+    };
+
+    // ── Assessment Part 2 ─────────────────────────────────────
+    let y = sectionTitle("ASSESSMENT PART 2 — RESULTS", 41);
+    autoTable(doc, {
+      ...tableOpts,
+      startY: y,
+      body: [
+        ["Story",                                    storyNumber],
+        ["Total Reading Miscues",                    String(totalMiscues)],
+        [`Words read within ${timeLimitLabel(a2TimeLimit)}`, String(wordsWithinTime)],
+        ["Total Time Used",                          totalTimeUsed],
+        ["Words Per Minute (WPM)",                   String(wpm)],
+        ["Total Correct Answers",                    totalQuestions ? `${correctAnswers}/${totalQuestions}` : "—"],
+        ["Learner Experience",                       learnerExp],
+        ["Observation Level",                        obsLevelDisplay],
+      ],
+    });
+
+    // ── Assessment Part 1 ─────────────────────────────────────
+    y = sectionTitle("ASSESSMENT PART 1 — SUMMARY", doc.lastAutoTable.finalY + 7);
+    autoTable(doc, {
+      ...tableOpts,
+      startY: y,
+      body: [
+        ["Task 1 Correct",     String(part1?.task1_correct  ?? "—")],
+        ["Task 2 Correct",     String(part1?.task2_correct  ?? "—")],
+        ["Total Part 1 Score", String(part1?.total_score    ?? "—")],
+        ["Classification",     String(part1?.classification ?? "—")],
+      ],
+    });
+
+    // ── Comprehension Questions ───────────────────────────────
+    if (comprehensionQuestions?.length > 0) {
+      y = sectionTitle("COMPREHENSION QUESTIONS", doc.lastAutoTable.finalY + 7);
+      autoTable(doc, {
+        margin: { left: 15, right: 15 },
+        startY: y,
+        head: [["#", "Question", "Mark"]],
+        body: comprehensionQuestions.map((q, idx) => [idx + 1, q.text, answers[q.id] ?? "—"]),
+        styles: { fontSize: 8.5, cellPadding: 2, font: "helvetica", textColor: [26, 35, 64] },
+        headStyles: { fillColor: [44, 62, 107], textColor: 255, fontStyle: "bold" },
+        alternateRowStyles: { fillColor: [248, 249, 253] },
+        columnStyles: { 0: { cellWidth: 10, halign: "center" }, 2: { cellWidth: 28 } },
+      });
+    }
+
+    // ── Teacher Notes ─────────────────────────────────────────
+    y = doc.lastAutoTable?.finalY ?? doc.lastAutoTable?.finalY;
+    const notesY = (doc.lastAutoTable?.finalY ?? 200) + 7;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(44, 62, 107);
+    doc.text("TEACHER NOTES", 15, notesY);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(60, 65, 80);
+    const noteLines = doc.splitTextToSize(teacherNotes || "No notes added.", 175);
+    doc.text(noteLines, 15, notesY + 6);
+
+    const filename = `${form.last_name}_${form.first_name}_${form.assessment_type}_${form.school_year}`
+      .replace(/\s+/g, "_") + "_assessment.pdf";
+    doc.save(filename);
+  }
+
   // Excel export
   function handleExport() {
-    const wb = XLSX.utils.book_new();
+    const langLabel = form.language === "filipino" ? "Filipino" : "English";
+    const gradeStr  = String(form.grade_level ?? "").replace("grade_", "Grade ").replace("kindergarten", "Kindergarten");
 
-    const summaryRows = [
-      ["HearMeRead — Assessment Report"],
+    const rows = [
+      ["STUDENT ASSESSMENT REPORT"],
       [],
-      ["STUDENT INFORMATION"],
-      ["Name",            `${form.first_name} ${form.last_name}`],
+      ["Student Name",    `${form.first_name} ${form.last_name}`],
       ["Reading Profile", profile.label],
-      ["Grade Level",     String(form.grade_level ?? "").replace("grade_", "Grade ").replace("kindergarten", "Kindergarten")],
-      ["Section",         form.section],
-      ["School Year",     form.school_year],
-      ["Assessment Type", form.assessment_type],
-      ["Language",        form.language === "filipino" ? "Filipino" : "English"],
+      ["Grade Level",     gradeStr],
+      ["Section",         form.section   ?? "—"],
+      ["School Year",     form.school_year ?? "—"],
+      ["Assessment Type", form.assessment_type ?? "—"],
+      ["Language",        langLabel],
       ["Date",            today],
       [],
-      ["ASSESSMENT 2 RESULTS"],
-      ["Story",                         storyNumber],
-      ["Total Reading Miscues",         totalMiscues],
+      ["ASSESSMENT PART 2 — RESULTS"],
+      ["Story",                                    storyNumber],
+      ["Total Reading Miscues",                    totalMiscues],
       [`Words within ${timeLimitLabel(a2TimeLimit)}`, wordsWithinTime],
-      ["Total Time Used",               totalTimeUsed],
-      ["Words Per Minute (WPM)",        wpm],
-      ["Total Correct Answers",         totalQuestions ? `${correctAnswers}/${totalQuestions}` : "—"],
-      ["Learner Experience",            learnerExp],
-      ["Observation Level",             obsLevelDisplay],
+      ["Total Time Used",                          totalTimeUsed],
+      ["Words Per Minute (WPM)",                   wpm],
+      ["Total Correct Answers",                    totalQuestions ? `${correctAnswers}/${totalQuestions}` : "—"],
+      ["Learner Experience",                       learnerExp],
+      ["Observation Level",                        obsLevelDisplay],
       [],
-      ["ASSESSMENT 1 SUMMARY"],
-      ["Task 1 Correct",   part1?.task1_correct  ?? "—"],
-      ["Task 2 Correct",   part1?.task2_correct  ?? "—"],
-      ["Total Part 1 Score", part1?.total_score  ?? "—"],
-      ["Classification",   part1?.classification ?? "—"],
-      [],
-      ["TEACHER NOTES"],
-      ["Remarks", teacherNotes || "No notes added."],
+      ["ASSESSMENT PART 1 — SUMMARY"],
+      ["Task 1 Correct",     part1?.task1_correct  ?? "—"],
+      ["Task 2 Correct",     part1?.task2_correct  ?? "—"],
+      ["Total Part 1 Score", part1?.total_score    ?? "—"],
+      ["Classification",     part1?.classification ?? "—"],
     ];
 
-    const ws1 = XLSX.utils.aoa_to_sheet(summaryRows);
-    ws1["!cols"] = [{ wch: 32 }, { wch: 44 }];
-    XLSX.utils.book_append_sheet(wb, ws1, "Summary");
-
     if (comprehensionQuestions?.length > 0) {
-      const compRows = [
-        ["Comprehension Questions"],
-        [],
-        ["#", "Question", "Teacher's Mark"],
-        ...comprehensionQuestions.map((q, idx) => [
-          idx + 1, q.text, answers[q.id] ?? "—",
-        ]),
-      ];
-      const ws2 = XLSX.utils.aoa_to_sheet(compRows);
-      ws2["!cols"] = [{ wch: 4 }, { wch: 52 }, { wch: 16 }];
-      XLSX.utils.book_append_sheet(wb, ws2, "Comprehension");
+      rows.push([]);
+      rows.push(["COMPREHENSION QUESTIONS"]);
+      rows.push(["#", "Question", "Teacher's Mark"]);
+      comprehensionQuestions.forEach((q, idx) => {
+        rows.push([idx + 1, q.text, answers[q.id] ?? "—"]);
+      });
     }
+
+    rows.push([]);
+    rows.push(["TEACHER NOTES"]);
+    rows.push(["Remarks", teacherNotes || "No notes added."]);
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws["!cols"] = [{ wch: 36 }, { wch: 46 }, { wch: 18 }];
+    XLSX.utils.book_append_sheet(wb, ws, "Assessment Report");
 
     const filename = `${form.last_name}_${form.first_name}_${form.assessment_type}_${form.school_year}`
       .replace(/\s+/g, "_") + ".xlsx";

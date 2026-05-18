@@ -279,12 +279,71 @@
   line-height: 1;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 769px) {
   .db-avatar-btn {
     width: 36px;
     height: 36px;
   }
   .db-avatar-initials {
     font-size: 13px;
+  }
+}
+
+/* ── Mobile responsive ────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .db-page {
+    gap: 12px;
+  }
+
+  .db-school-year {
+    font-size: 11px;
+    margin: -6px 0 0;
+  }
+
+  /* Stat cards: 2-column, compact */
+  .db-stats-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .db-stat-card {
+    padding: 12px 14px;
+    border-radius: 10px;
+    gap: 4px;
+  }
+
+  .db-stat-card__value {
+    font-size: 20px;
+  }
+
+  .db-stat-card__label {
+    font-size: 11px;
+  }
+
+  /* Chart cards */
+  .db-chart-card {
+    padding: 12px 12px 14px;
+    border-radius: 10px;
+  }
+
+  .db-chart-title {
+    font-size: 12px;
+  }
+
+  .db-chart-header {
+    margin-bottom: 8px;
+  }
+
+  /* Skeleton adjustments */
+  .db-skeleton-stat {
+    padding: 12px 14px;
+  }
+
+  .db-skeleton-stat__value {
+    height: 22px;
+  }
+
+  .db-skeleton-chart {
+    padding: 12px;
   }
 }

@@ -14,6 +14,13 @@
   padding: 20px 24px;
 }
 
+/* On mobile the sidebar is replaced by a bottom nav bar */
+@media (max-width: 768px) {
+  .layout__main {
+    padding: 16px 14px calc(62px + 20px);
+  }
+}
+
 /* Global skeleton shimmer */
 @keyframes sk-shimmer {
   0%   { background-position: -800px 0; }
