@@ -30,7 +30,7 @@ router = APIRouter(prefix="/sessions", tags=["Sessions"])
 @router.get("", response_model=SessionListResponse, summary="List assessment sessions")
 async def list_sessions(
     page:             int                      = Query(1, ge=1),
-    page_size:        int                      = Query(20, ge=1, le=500),
+    page_size:        int                      = Query(20, ge=1, le=100),
     student_id:       Optional[int]            = Query(None, description="Filter by student"),
     school_year:      Optional[str]            = Query(None, description="Filter by school year, e.g. 2024-2025"),
     period:           Optional[AssessmentPeriod] = Query(None, description="Filter by assessment period"),

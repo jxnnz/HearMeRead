@@ -257,7 +257,7 @@ export default function AssessmentPage() {
     if (!form.school_year || !form.assessment_type) { setCompletedStudentIds(new Set()); return; }
     const period = PERIOD_MAP[form.assessment_type];
     sessionsApi
-      .list({ school_year: form.school_year, period, is_completed: true, page_size: 500 })
+      .list({ school_year: form.school_year, period, is_completed: true, page_size: 100 })
       .then((data) => {
         const ids = new Set((data.sessions || []).map((s) => String(s.student_id)));
         setCompletedStudentIds(ids);
