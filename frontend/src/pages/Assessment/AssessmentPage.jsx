@@ -118,12 +118,13 @@ export default function AssessmentPage() {
   const { toasts, removeToast, showSaveSuccess } = useToast();
 
   // Student & passage loading
-  const [availableGrades, setAvailableGrades] = useState([]);
-  const [students,        setStudents]        = useState([]);
-  const [a1Passages,      setA1Passages]      = useState([]);
-  const [loadingStudents, setLoadingStudents] = useState(false);
-  const [loadingPassages, setLoadingPassages] = useState(false);
-  const [fetchError,      setFetchError]      = useState(null);
+  const [availableGrades,      setAvailableGrades]      = useState([]);
+  const [students,             setStudents]             = useState([]);
+  const [completedStudentIds,  setCompletedStudentIds]  = useState(new Set());
+  const [a1Passages,           setA1Passages]           = useState([]);
+  const [loadingStudents,      setLoadingStudents]      = useState(false);
+  const [loadingPassages,      setLoadingPassages]      = useState(false);
+  const [fetchError,           setFetchError]           = useState(null);
 
   // Session
   const [session,      setSession]      = useState(null);
@@ -250,6 +251,19 @@ export default function AssessmentPage() {
       .catch((e)  => setFetchError(e.response?.data?.detail || e.message))
       .finally(()  => setLoadingStudents(false));
   }, [form.grade_level]);
+
+  // Fetch completed sessions to exclude already-assessed students from the search dropdown
+  useEffect(() => {
+    if (!form.school_year || !form.assessment_type) { setCompletedStudentIds(new Set()); return; }
+    const period = PERIOD_MAP[form.assessment_type];
+    sessionsApi
+      .list({ school_year: form.school_year, period, is_completed: true, page_size: 500 })
+      .then((data) => {
+        const ids = new Set((data.sessions || []).map((s) => String(s.student_id)));
+        setCompletedStudentIds(ids);
+      })
+      .catch(() => setCompletedStudentIds(new Set()));
+  }, [form.school_year, form.assessment_type]);
 
   // Fetch A1 passages when language or grade_level changes
   useEffect(() => {
@@ -869,6 +883,7 @@ export default function AssessmentPage() {
           form={form} setForm={setForm}
           availableGrades={availableGrades}
           students={students} allPassages={a1Passages}
+          completedStudentIds={completedStudentIds}
           loadingStudents={loadingStudents} loadingPassages={loadingPassages}
           fetchError={fetchError} createError={createError}
           creating={creating} session={session} onContinue={handleContinue}

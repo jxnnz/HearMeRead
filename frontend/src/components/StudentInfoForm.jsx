@@ -38,10 +38,11 @@ function gradeLabel(gl) {
 export default function StudentInfoForm({
   form,
   setForm,
-  students        = [],
-  passages        = [],
-  loadingStudents = false,
-  loadingPassages = false,
+  students            = [],
+  completedStudentIds = new Set(),
+  passages            = [],
+  loadingStudents     = false,
+  loadingPassages     = false,
 }) {
   const [studentSearch,   setStudentSearch]   = useState("");
   const [showStudentDrop, setShowStudentDrop] = useState(false);
@@ -76,8 +77,9 @@ export default function StudentInfoForm({
     }));
   }
 
-  // Filtered student dropdown
+  // Filtered student dropdown — excludes students who already have a completed session for this period
   const filteredStudents = students.filter((s) => {
+    if (completedStudentIds.has(String(s.id))) return false;
     const q = studentSearch.toLowerCase();
     return (
       s.first_name.toLowerCase().includes(q) ||

@@ -7,6 +7,7 @@ export default function InfoStep({
   form, setForm,
   availableGrades,
   students, allPassages,
+  completedStudentIds,
   loadingStudents, loadingPassages,
   fetchError, createError,
   creating, session, onContinue,
@@ -24,6 +25,7 @@ export default function InfoStep({
           form={form}
           setForm={setForm}
           students={students}
+          completedStudentIds={completedStudentIds}
           passages={allPassages}
           loadingStudents={loadingStudents}
           loadingPassages={loadingPassages}

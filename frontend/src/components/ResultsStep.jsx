@@ -293,7 +293,7 @@ export default function ResultsStep({
             Assessment Complete
           </div>
           <div className="asp-res-header__actions">
-            <button className="asp-res-action-btn" onClick={() => window.print()}>Save as PDF</button>
+            <button className="asp-res-action-btn" onClick={handleSavePDF}>Save as PDF</button>
             <button className="asp-res-action-btn" onClick={handleExport}>Export Excel</button>
           </div>
         </div>

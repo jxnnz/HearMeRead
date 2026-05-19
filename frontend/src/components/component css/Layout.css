@@ -1,11 +1,10 @@
 .layout {
-  display: flex;
   min-height: 100vh;
   background: #e8edf7;
 }
 
 .layout__main {
-  flex: 1;
+  margin-left: 64px; /* collapsed sidebar width — sidebar overlays on expand */
   min-width: 0;
   overflow-x: hidden;
   overflow-y: auto;
