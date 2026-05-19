@@ -1,21 +1,23 @@
 /* ── Desktop sidebar ─────────────────────────────────────────── */
 .sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 200;
   width: 220px;
-  min-width: 220px;
   background: #2c3e6b;
   display: flex;
   flex-direction: column;
   height: 100vh;
-  position: sticky;
-  top: 0;
   padding: 20px 0;
   overflow: hidden;
-  transition: width 0.3s ease, min-width 0.3s ease;
+  transition: width 0.3s ease;
+  box-shadow: 2px 0 16px rgba(44, 62, 107, 0.18);
 }
 
 .sidebar--collapsed {
   width: 64px;
-  min-width: 64px;
+  box-shadow: none;
 }
 
 /* Header (logo) */
