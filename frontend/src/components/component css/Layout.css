@@ -16,6 +16,7 @@
 /* On mobile the sidebar is replaced by a bottom nav bar */
 @media (max-width: 768px) {
   .layout__main {
+    margin-left: 0;
     padding: 16px 14px calc(62px + 20px);
   }
 }
