@@ -81,14 +81,18 @@ async def create_session(
         period=data.period,
     )
     if existing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=(
-                f"This student already has a {data.period.value.capitalize()} "
-                f"assessment for school year {data.school_year}. "
-                f"Only one assessment per period per school year is allowed."
-            ),
-        )
+        if existing.is_completed:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    f"This student already has a completed {data.period.value.capitalize()} "
+                    f"assessment for school year {data.school_year}. "
+                    f"Only one assessment per period per school year is allowed."
+                ),
+            )
+        # Incomplete session — delete it so the user can start fresh
+        await db.delete(existing)
+        await db.commit()
 
     session, _ = await session_service.create_session(
         db=db, data=data, teacher_id=current_teacher.id
