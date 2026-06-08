@@ -81,9 +81,6 @@ async def security_headers(request: Request, call_next):
     try:
         response = await call_next(request)
     except Exception:
-        # Return a generic 500 so CORS middleware can still attach its
-        # headers — without this, the error would propagate and the
-        # browser would see a CORS failure instead of the real error.
         import traceback, logging
         logging.getLogger("uvicorn.error").error(
             "Unhandled exception in middleware chain:\n%s",
