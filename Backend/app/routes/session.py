@@ -57,6 +57,18 @@ async def list_sessions(
     return SessionListResponse(total=total, page=page, page_size=page_size, sessions=sessions)
 
 
+def _infer_resume_step(session) -> str:
+    if not session.reading_result:
+        return "reading"
+    if session.reading_result.part1_task1_correct is None:
+        return "reading"
+    if session.reading_result.part1_total_score is None:
+        return "task2"
+    if session.reading_result.part1_route == "task_2H":
+        return "a2"
+    return "comprehension"
+
+
 # Create
 @router.post(
     "",
@@ -73,26 +85,49 @@ async def create_session(
     db:              AsyncSession = Depends(get_db),
     current_teacher: Teacher      = Depends(get_current_teacher),
 ):
+    from sqlalchemy import select
+    from app.models import Student
+    
+    student_result = await db.execute(
+        select(Student).where(Student.id == data.student_id, Student.teacher_id == current_teacher.id)
+    )
+    student = student_result.scalar_one_or_none()
+    if not student:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")
+
+    school_year = student.school_year if student.school_year else data.school_year
+
     existing = await session_service.check_duplicate(
         db=db,
         teacher_id=current_teacher.id,
         student_id=data.student_id,
-        school_year=data.school_year,
+        school_year=school_year,
         period=data.period,
     )
     if existing:
-        if existing.is_completed:
+        if not existing.is_completed:
+            resume_step = _infer_resume_step(existing)
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=(
-                    f"This student already has a completed {data.period.value.capitalize()} "
-                    f"assessment for school year {data.school_year}. "
-                    f"Only one assessment per period per school year is allowed."
-                ),
+                detail={
+                    "message": "An unfinished session exists for this student this period.",
+                    "existing_session_id": existing.id,
+                    "resume_state": resume_step,
+                    "is_completed": False
+                }
             )
-        # Incomplete session — delete it so the user can start fresh
-        await db.delete(existing)
-        await db.commit()
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "message": (
+                        f"This student already has a completed {data.period.value.capitalize()} "
+                        f"assessment for school year {existing.school_year}. "
+                        f"Only one assessment per period per school year is allowed."
+                    ),
+                    "is_completed": True
+                }
+            )
 
     session, _ = await session_service.create_session(
         db=db, data=data, teacher_id=current_teacher.id
@@ -153,7 +188,12 @@ async def score_session_task1(
 ):
     from app.services.levenshtein_service import preprocess, align_words, Part1Route
     from app.services.letter_normalizer import normalize_letter_transcript, is_letter_content
-    await session_service.get_session_by_id(db, session_id, current_teacher.id)
+    from sqlalchemy import select
+    from datetime import datetime, timezone
+    from app.models import ReadingResult
+    from app.services.session_service import _alignments_to_json
+
+    session = await session_service.get_session_by_id(db, session_id, current_teacher.id)
 
     ref1 = preprocess(payload.task1_reference_text)
 
@@ -184,6 +224,29 @@ async def score_session_task1(
         else:
             task2_type = "sentences"
 
+    # Save intermediate Task 1 scoring progress
+    rr_query = await db.execute(
+        select(ReadingResult).where(ReadingResult.session_id == session_id)
+    )
+    reading_result = rr_query.scalar_one_or_none()
+    
+    alignments_json = _alignments_to_json(lev1.alignments)
+    if reading_result:
+        reading_result.part1_task1_correct = lev1.correct_words
+        reading_result.part1_route = route.value
+        reading_result.part1_task1_alignments_json = alignments_json
+    else:
+        reading_result = ReadingResult(
+            session_id=session_id,
+            part1_task1_correct=lev1.correct_words,
+            part1_route=route.value,
+            part1_task1_alignments_json=alignments_json,
+        )
+        db.add(reading_result)
+    
+    session.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+
     return Task1ScoreOut(
         task1_correct=lev1.correct_words,
         task1_miscues=lev1.total_miscues,
@@ -213,7 +276,12 @@ async def score_session_part1(
     current_teacher: Teacher      = Depends(get_current_teacher),
 ):
     from app.services.levenshtein_service import score_part1
-    await session_service.get_session_by_id(db, session_id, current_teacher.id)
+    from sqlalchemy import select
+    from datetime import datetime, timezone
+    from app.models import ReadingResult
+    from app.services.session_service import _alignments_to_json
+
+    session = await session_service.get_session_by_id(db, session_id, current_teacher.id)
 
     p1 = score_part1(
         task1_reference_text=payload.task1_reference_text,
@@ -223,6 +291,41 @@ async def score_session_part1(
         language=payload.language or "filipino",
         grade_level=payload.grade_level or 1,
     )
+
+    # Save intermediate Part 1 scoring progress (both Task 1 & Task 2)
+    rr_query = await db.execute(
+        select(ReadingResult).where(ReadingResult.session_id == session_id)
+    )
+    reading_result = rr_query.scalar_one_or_none()
+    
+    t1_align = _alignments_to_json(p1.task1_alignments)
+    t2_align = _alignments_to_json(p1.task2_alignments)
+    classification_val = p1.classification.value if p1.classification else None
+    route_val = p1.route.value if p1.route else None
+
+    if reading_result:
+        reading_result.part1_task1_correct = p1.task1_correct
+        reading_result.part1_task2_correct = p1.task2_correct
+        reading_result.part1_total_score = p1.total_score
+        reading_result.part1_classification = classification_val
+        reading_result.part1_route = route_val
+        reading_result.part1_task1_alignments_json = t1_align
+        reading_result.part1_task2_alignments_json = t2_align
+    else:
+        reading_result = ReadingResult(
+            session_id=session_id,
+            part1_task1_correct=p1.task1_correct,
+            part1_task2_correct=p1.task2_correct,
+            part1_total_score=p1.total_score,
+            part1_classification=classification_val,
+            part1_route=route_val,
+            part1_task1_alignments_json=t1_align,
+            part1_task2_alignments_json=t2_align,
+        )
+        db.add(reading_result)
+        
+    session.updated_at = datetime.now(timezone.utc)
+    await db.commit()
 
     return Part1ResultOut(
         task1_correct=p1.task1_correct,

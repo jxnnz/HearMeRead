@@ -1,0 +1,49 @@
+.astop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f6f8ff;
+  border: 1px solid #dbe2ff;
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-top: -6px;
+  margin-bottom: 18px;
+  gap: 10px;
+}
+
+.astop__left {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.astop__sep {
+  color: #8a94b2;
+  font-weight: 600;
+}
+
+.astop__right {
+  display: none;
+}
+
+
+.astop__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #667085;
+}
+
+.astop__value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a2340;
+}
+
+@media (max-width: 480px) {
+  .astop {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+

@@ -113,6 +113,12 @@ export default function AddAssessment2Page() {
         });
       }
 
+      // Upload original file to R2 if present
+      const uploadedFile = location.state?.uploadedFile;
+      if (uploadedFile) {
+        await passagesApi.uploadFile(passage.id, uploadedFile).catch(() => {});
+      }
+
       navigate("/passages");
     } catch (err) {
       setError(parseApiError(err, "Failed to save passage. Please try again."));

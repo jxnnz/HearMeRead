@@ -1,17 +1,16 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, FileText, Globe, Lock, Upload } from "lucide-react";
+import { Plus, FileText, Lock, Upload } from "lucide-react";
 import { useWindowWidth } from "../../hooks/useWindowWidth";
 
 import Layout from "../../components/Layout";
 import TopBar from "../../components/TopBar";
 import PassageCard from "../../components/PassageCard";
-import AppButton from "../../components/AppButton";
 import ConfirmModal from "../../modals/ConfirmModal";
 import Toast from "../../modals/Toast";
 import UploadModal from "../../components/UploadModal";
 import useToast from "../../hooks/Usetoast";
-import { passagesApi } from "../../services/api";
+import { passagesApi, questionsApi, authApi } from "../../services/api";
 import { parseApiError } from "../../utils/apiError";
 
 import "../pages css/PassagePage.css";
@@ -29,10 +28,15 @@ export default function PassagePage() {
   const [pendingArchive, setPendingArchive] = useState(null);
   const [archiveError, setArchiveError]     = useState(null);
 
-  // View-only modal for public passages
   const [viewPassage, setViewPassage] = useState(null);
+  const [uploadOpen, setUploadOpen]   = useState(false);
 
-  const [uploadOpen, setUploadOpen] = useState(false);
+  // Bulk upload state
+  const [bulkSaving, setBulkSaving]   = useState(false);
+  const [bulkResult, setBulkResult]   = useState(null);  // { saved, failed, total }
+
+  // NEW — teacher's grade level, used to auto-select the right A1 template
+  const [teacherGrade, setTeacherGrade] = useState(null);
 
   useEffect(() => {
     passagesApi
@@ -40,15 +44,90 @@ export default function PassagePage() {
       .then((data) => setPassages(data.passages))
       .catch((e) => setPageError(parseApiError(e, "Failed to load passages.")))
       .finally(() => setLoading(false));
+
+    // NEW — load teacher profile to get grade_level
+    const role = localStorage.getItem("role") || "TEACHER";
+    if (role !== "ADMIN") {
+      authApi.me()
+        .then((user) => { if (user?.grade_level) setTeacherGrade(user.grade_level); })
+        .catch(() => {}); // non-critical — falls back to admin picker behaviour
+    }
   }, []);
 
-  // Separate by visibility first, then by assessment type
-  const myPassages = useMemo(() => passages.filter((p) => p.visibility !== "public"), [passages]);
+  // ── Bulk upload handler ──────────────────────────────────────────────
+  async function handleBulkUpload(type, parsedItems) {
+    setBulkSaving(true);
+    let saved = 0;
+    let failed = 0;
+    const total = parsedItems.length;
+
+    for (const item of parsedItems) {
+      const { parsedData } = item;
+      try {
+        if (type === 1) {
+          // Assessment 1
+          const g1fil = (parsedData.language || "filipino") === "filipino" &&
+                        (parsedData.grade_level || "grade_1") === "grade_1";
+          let task2Words = parsedData.task2Words || "";
+          if (g1fil && parsedData.task2Rhymes?.length > 0) {
+            task2Words = parsedData.task2Rhymes
+              .filter((p) => p.pair.trim())
+              .map((p) => `${p.pair}|${p.answer}`)
+              .join("\n");
+          }
+          const isEng3 = (parsedData.language || "filipino") === "english" &&
+                         (parsedData.grade_level || "grade_1") === "grade_3";
+          const passage = await passagesApi.create({
+            language:        parsedData.language || "filipino",
+            grade_level:     parsedData.grade_level || "grade_1",
+            assessment_type: 1,
+            task1_content:   (parsedData.task1 || "").trim(),
+            task2_words:     task2Words.trim(),
+            task2_sentences: isEng3 ? "" : (parsedData.task2Sentences || "").trim(),
+          });
+          if (item.file) await passagesApi.uploadFile(passage.id, item.file).catch(() => {});
+        } else {
+          // Assessment 2
+          const passage = await passagesApi.create({
+            title:           parsedData.title ? `Story 1: ${parsedData.title.trim()}` : "Untitled",
+            content:         (parsedData.content || "").trim(),
+            language:        parsedData.language || "filipino",
+            grade_level:     parsedData.grade_level || "grade_2",
+            assessment_type: 2,
+          });
+          if (item.file) await passagesApi.uploadFile(passage.id, item.file).catch(() => {});
+          // Save questions if present
+          if (parsedData.questions?.length > 0) {
+            for (const q of parsedData.questions) {
+              if (!q.question?.trim()) continue;
+              await questionsApi.create(passage.id, {
+                text:       q.question.trim(),
+                answer_key: q.answer?.trim() || null,
+              });
+            }
+          }
+        }
+        saved++;
+      } catch {
+        failed++;
+      }
+    }
+
+    setBulkSaving(false);
+    setBulkResult({ saved, failed, total });
+
+    // Refresh passages list
+    passagesApi
+      .list({ page_size: 100 })
+      .then((data) => setPassages(data.passages))
+      .catch(() => {});
+  }
+
+  const myPassages     = useMemo(() => passages.filter((p) => p.visibility !== "public"), [passages]);
   const publicPassages = useMemo(() => passages.filter((p) => p.visibility === "public"), [passages]);
 
-  const myA1 = useMemo(() => myPassages.filter((p) => p.assessment_type === 1), [myPassages]);
-  const myA2 = useMemo(() => myPassages.filter((p) => p.assessment_type === 2), [myPassages]);
-
+  const myA1     = useMemo(() => myPassages.filter((p) => p.assessment_type === 1), [myPassages]);
+  const myA2     = useMemo(() => myPassages.filter((p) => p.assessment_type === 2), [myPassages]);
   const publicA1 = useMemo(() => publicPassages.filter((p) => p.assessment_type === 1), [publicPassages]);
   const publicA2 = useMemo(() => publicPassages.filter((p) => p.assessment_type === 2), [publicPassages]);
 
@@ -120,7 +199,11 @@ export default function PassagePage() {
       <div className="ph-page">
 
         <TopBar title="Reading Passages">
-          <button className="ap-save-btn" onClick={() => setUploadOpen(true)} style={{ display: "flex", alignItems: "center", gap: isMobile ? 0 : 6, background: "#fff", borderColor: "#c8d0e4", padding: isMobile ? "7px 10px" : undefined }}>
+          <button
+            className="ap-save-btn"
+            onClick={() => setUploadOpen(true)}
+            style={{ display: "flex", alignItems: "center", gap: isMobile ? 0 : 6, background: "#fff", borderColor: "#c8d0e4", padding: isMobile ? "7px 10px" : undefined }}
+          >
             <Upload size={15} />
             {!isMobile && " Upload"}
           </button>
@@ -164,25 +247,13 @@ export default function PassagePage() {
 
         {!loading && !pageError && (
           <>
-            {/* Public Passages (read-only, shown first) */}
             {publicA1.length > 0 && (
-              <AssessmentSection
-                label="Assessment 1"
-                list={publicA1}
-                readOnly
-                icon={null}
-              />
+              <AssessmentSection label="Assessment 1" list={publicA1} readOnly icon={null} />
             )}
             {publicA2.length > 0 && (
-              <AssessmentSection
-                label="Assessment 2"
-                list={publicA2}
-                readOnly
-                icon={null}
-              />
+              <AssessmentSection label="Assessment 2" list={publicA2} readOnly icon={null} />
             )}
 
-            {/* My Passages (private, full CRUD) */}
             {(myA1.length > 0 || myA2.length > 0) && (
               <>
                 <div className="ph-section-label">
@@ -190,18 +261,10 @@ export default function PassagePage() {
                   <span>My Passages</span>
                 </div>
                 {myA1.length > 0 && (
-                  <AssessmentSection
-                    label="Assessment 1"
-                    list={myA1}
-                    icon={null}
-                  />
+                  <AssessmentSection label="Assessment 1" list={myA1} icon={null} />
                 )}
                 {myA2.length > 0 && (
-                  <AssessmentSection
-                    label="Assessment 2"
-                    list={myA2}
-                    icon={null}
-                  />
+                  <AssessmentSection label="Assessment 2" list={myA2} icon={null} />
                 )}
               </>
             )}
@@ -221,16 +284,13 @@ export default function PassagePage() {
         cancelLabel="Cancel"
       />
 
-      {/* View-only modal for public passages */}
       {viewPassage && (
         <div className="ph-preview-overlay" onClick={() => setViewPassage(null)}>
           <div className="ph-preview-card" onClick={(e) => e.stopPropagation()}>
 
             <div className="ph-preview-header">
               <div>
-                <h2 className="ph-preview-title">
-                  {viewPassage.title || "Untitled"}
-                </h2>
+                <h2 className="ph-preview-title">{viewPassage.title || "Untitled"}</h2>
                 <div className="ph-preview-meta">
                   <span>{viewPassage.grade_level ? viewPassage.grade_level.replace("grade_", "Grade ").replace("kindergarten", "Kindergarten") : ""}</span>
                   <span>·</span>
@@ -271,9 +331,7 @@ export default function PassagePage() {
 
             {viewPassage.questions?.length > 0 && (
               <div className="ph-preview-questions">
-                <h3 className="ph-preview-questions-title">
-                  Questions ({viewPassage.questions.length})
-                </h3>
+                <h3 className="ph-preview-questions-title">Questions ({viewPassage.questions.length})</h3>
                 <ol className="ph-preview-questions-list">
                   {viewPassage.questions.map((q) => (
                     <li key={q.id}>{q.text}</li>
@@ -289,19 +347,48 @@ export default function PassagePage() {
       <Toast toasts={toasts} onRemove={removeToast} />
 
       {uploadOpen && (
-        <UploadModal 
+        <UploadModal
           defaultType={2}
           eng3={false}
+          teacherGrade={teacherGrade}
           onClose={() => setUploadOpen(false)}
-          onUpload={(type, parsedData) => {
+          onUpload={(type, parsedData, fileName, file) => {
             if (type === 1) {
-              navigate("/passages/add-assessment-1", { state: { parsedData } });
+              navigate("/passages/add-assessment-1", { state: { parsedData, uploadedFile: file } });
             } else {
-              navigate("/passages/add-assessment-2", { state: { parsedData } });
+              navigate("/passages/add-assessment-2", { state: { parsedData, uploadedFile: file } });
             }
           }}
+          onBulkUpload={handleBulkUpload}
         />
       )}
+
+      {/* Bulk saving overlay */}
+      <ConfirmModal
+        isOpen={bulkSaving}
+        title="Saving Passages…"
+        message="Please wait while your passages are being saved."
+        confirmLabel={null}
+        cancelLabel={null}
+        onClose={() => {}}
+        onConfirm={() => {}}
+      />
+
+      {/* Bulk result modal */}
+      <ConfirmModal
+        isOpen={!!bulkResult}
+        title={bulkResult?.failed > 0 ? "Upload Complete" : "Passages Saved!"}
+        message={
+          bulkResult?.failed > 0
+            ? `${bulkResult.saved} of ${bulkResult.total} passages saved successfully. ${bulkResult.failed} failed to save.`
+            : `${bulkResult?.saved || 0} passage${(bulkResult?.saved || 0) !== 1 ? "s" : ""} saved successfully.`
+        }
+        variant={bulkResult?.failed > 0 ? "danger" : "default"}
+        confirmLabel="OK"
+        cancelLabel={null}
+        onConfirm={() => setBulkResult(null)}
+        onClose={() => setBulkResult(null)}
+      />
     </Layout>
   );
 }

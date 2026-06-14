@@ -1,49 +1,20 @@
-import { useRef, useState, useEffect } from "react";
-import { X, Upload, FileSpreadsheet, CheckCircle, AlertCircle, AlertTriangle } from "lucide-react";
+import { useRef, useState } from "react";
+import {
+  X, Upload, FileSpreadsheet, CheckCircle,
+  AlertCircle, AlertTriangle, Download,
+} from "lucide-react";
 import { studentsApi } from "../services/api";
-import "./ImportRecordsModal.css";
+import "./ImportRecordsModal.css"; // reuses the same CSS — no new styles needed
 
-const PERIOD_OPTIONS = [
-  { value: "beginning", label: "Beginning" },
-  { value: "middle",    label: "Middle"    },
-  { value: "end",       label: "End"       },
-];
-
-function currentSchoolYear() {
-  const now = new Date();
-  const y = now.getFullYear();
-  return now.getMonth() < 5 ? `${y - 1}-${y}` : `${y}-${y + 1}`;
-}
-
-function defaultYears() {
-  const now = new Date();
-  const cy = now.getMonth() < 5 ? now.getFullYear() - 1 : now.getFullYear();
-  return [`${cy}-${cy + 1}`, `${cy - 1}-${cy}`, `${cy - 2}-${cy - 1}`];
-}
-
-export default function ImportRecordsModal({ isOpen, onClose, onSuccess }) {
+export default function BulkUploadStudentsModal({ isOpen, onClose, onSuccess }) {
   const fileInputRef = useRef(null);
 
-  const [file, setFile]               = useState(null);
-  const [schoolYear, setSchoolYear]   = useState(currentSchoolYear());
-  const [schoolYears, setSchoolYears] = useState(defaultYears());
-  const [period, setPeriod]           = useState("beginning");
-  const [dragging, setDragging]       = useState(false);
-  const [loading, setLoading]         = useState(false);
-  const [result, setResult]           = useState(null);
-  const [error, setError]             = useState(null);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    studentsApi.listSchoolYears()
-      .then((data) => {
-        const apiYears = data.school_years || [];
-        const merged = [...new Set([...apiYears, ...defaultYears()])].sort((a, b) => b.localeCompare(a));
-        setSchoolYears(merged);
-        if (!merged.includes(schoolYear)) setSchoolYear(merged[0]);
-      })
-      .catch(() => {});
-  }, [isOpen]);
+  const [file, setFile]         = useState(null);
+  const [dragging, setDragging] = useState(false);
+  const [loading, setLoading]   = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [result, setResult]     = useState(null);
+  const [error, setError]       = useState(null);
 
   if (!isOpen) return null;
 
@@ -72,9 +43,19 @@ export default function ImportRecordsModal({ isOpen, onClose, onSuccess }) {
     onClose();
   }
 
-  async function handleImport() {
-    if (!file)       { setError("Please select an Excel file."); return; }
-    if (!schoolYear) { setError("School year is required.");     return; }
+  async function handleDownloadTemplate() {
+    setDownloading(true);
+    try {
+      await studentsApi.downloadBulkTemplate();
+    } catch {
+      setError("Failed to download template. Please try again.");
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  async function handleUpload() {
+    if (!file) { setError("Please select an Excel file."); return; }
 
     setLoading(true);
     setError(null);
@@ -83,10 +64,7 @@ export default function ImportRecordsModal({ isOpen, onClose, onSuccess }) {
     try {
       const fd = new FormData();
       fd.append("file", file);
-      fd.append("school_year", schoolYear);
-      fd.append("period", period);
-
-      const data = await studentsApi.importExcel(fd);
+      const data = await studentsApi.bulkUploadStudents(fd);
       setResult(data);
       if (onSuccess) onSuccess();
     } catch (err) {
@@ -107,7 +85,7 @@ export default function ImportRecordsModal({ isOpen, onClose, onSuccess }) {
 
         {/* Header */}
         <div className="im-header">
-          <h2 className="im-title">Import Records from Excel</h2>
+          <h2 className="im-title">Upload Student List</h2>
           <button className="im-close" onClick={handleClose} aria-label="Close">
             <X size={18} />
           </button>
@@ -115,6 +93,22 @@ export default function ImportRecordsModal({ isOpen, onClose, onSuccess }) {
 
         {/* Body */}
         <div className="im-body">
+
+          {/* Context note */}
+          <p className="im-note">
+            Add multiple students to your roster at once using the HearMeRead Excel template.
+            This does <strong>not</strong> import assessment scores — use <em>Import Records</em> for that.
+          </p>
+
+          {/* Template download */}
+          <button
+            className="im-btn im-btn--template"
+            onClick={handleDownloadTemplate}
+            disabled={downloading}
+          >
+            <Download size={14} />
+            {downloading ? "Downloading…" : "Download Template (.xlsx)"}
+          </button>
 
           {/* Drop zone */}
           <div
@@ -151,42 +145,12 @@ export default function ImportRecordsModal({ isOpen, onClose, onSuccess }) {
               <div className="im-dropzone-prompt">
                 <Upload size={28} className="im-upload-icon" />
                 <p className="im-dropzone-text">
-                  Drag &amp; drop your CRLA Excel file here,<br />
+                  Drag &amp; drop your filled template here,<br />
                   or <span className="im-dropzone-link">click to browse</span>
                 </p>
                 <p className="im-dropzone-hint">.xlsx files only</p>
               </div>
             )}
-          </div>
-
-          {/* Form fields */}
-          <div className="im-fields">
-            <div className="im-field">
-              <label htmlFor="im-year">School Year</label>
-              <select
-                id="im-year"
-                className="im-input"
-                value={schoolYear}
-                onChange={(e) => setSchoolYear(e.target.value)}
-              >
-                {schoolYears.map((y) => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
-            </div>
-            <div className="im-field">
-              <label htmlFor="im-period">Assessment Period</label>
-              <select
-                id="im-period"
-                className="im-input"
-                value={period}
-                onChange={(e) => setPeriod(e.target.value)}
-              >
-                {PERIOD_OPTIONS.map(({ value, label }) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-            </div>
           </div>
 
           {/* Error */}
@@ -202,20 +166,17 @@ export default function ImportRecordsModal({ isOpen, onClose, onSuccess }) {
             <div className="im-result">
               <div className="im-result__header">
                 <CheckCircle size={16} className="im-result__icon" />
-                Import complete
+                Upload complete
               </div>
               <ul className="im-result__list">
                 <li><strong>{result.students_created}</strong> new students added</li>
-                <li><strong>{result.students_found}</strong> existing students matched</li>
-                <li><strong>{result.sessions_created}</strong> sessions imported</li>
-                {result.sessions_skipped > 0 && (
-                  <li><strong>{result.sessions_skipped}</strong> sessions skipped (already exist)</li>
+                {result.students_skipped > 0 && (
+                  <li><strong>{result.students_skipped}</strong> skipped (LRN already in roster)</li>
                 )}
-                {/* NEW — empty assessment warning */}
-                {result.sessions_empty_assessment > 0 && (
+                {result.students_invalid > 0 && (
                   <li className="im-result__list-item--warn">
                     <AlertTriangle size={13} className="im-result__warn-icon" />
-                    <strong>{result.sessions_empty_assessment}</strong> student{result.sessions_empty_assessment !== 1 ? "s" : ""} imported with no assessment data — run an assessment in HearMeRead to fill these in.
+                    <strong>{result.students_invalid}</strong> rows skipped — missing required name fields
                   </li>
                 )}
               </ul>
@@ -239,10 +200,10 @@ export default function ImportRecordsModal({ isOpen, onClose, onSuccess }) {
           {!result && (
             <button
               className="im-btn im-btn--primary"
-              onClick={handleImport}
+              onClick={handleUpload}
               disabled={loading || !file}
             >
-              {loading ? "Importing…" : "Import Records"}
+              {loading ? "Uploading…" : "Upload Students"}
             </button>
           )}
         </div>

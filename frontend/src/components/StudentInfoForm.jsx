@@ -1,20 +1,11 @@
 import { useState } from "react";
 import { Search, X } from "lucide-react";
 
-// School year options: current and past only
-function schoolYearOptions() {
-  const now          = new Date();
-  const year         = now.getFullYear();
-  const month        = now.getMonth() + 1; // 1–12
-  const currentStart = month >= 6 ? year : year - 1;
-
-  // Last 5 school years up to and including the current one
-  const options = [];
-  for (let i = 4; i >= 0; i--) {
-    const start = currentStart - i;
-    options.push(`${start}-${start + 1}`);
-  }
-  return options;
+function getCalculatedSchoolYear() {
+  const now = new Date();
+  const y   = now.getFullYear();
+  const m   = now.getMonth() + 1;
+  return m >= 6 ? `${y}-${y + 1}` : `${y - 1}-${y}`;
 }
 
 // Assessment type options
@@ -52,7 +43,7 @@ export default function StudentInfoForm({
     setForm((prev) => ({ ...prev, [field]: val }));
   }
 
-  // Select a student — auto-fills Last Name, Grade, Section
+  // Select a student — auto-fills Last Name, Grade, Section, School Year
   function selectStudent(student) {
     setForm((prev) => ({
       ...prev,
@@ -61,10 +52,14 @@ export default function StudentInfoForm({
       last_name:   student.last_name,
       grade_level: String(student.grade_level ?? ""),
       section:     student.section ?? "",
+      school_year: student.school_year ?? prev.school_year,
+      // Used by AssessmentStudentTopStrip in AssessmentPage
+      lrn:          student.lrn ?? prev.lrn ?? null,
     }));
     setStudentSearch("");
     setShowStudentDrop(false);
   }
+
 
   function clearStudent() {
     setForm((prev) => ({
@@ -73,6 +68,7 @@ export default function StudentInfoForm({
       first_name: "",
       last_name:  "",
       section:    "",
+      school_year: getCalculatedSchoolYear(),
       // grade_level kept intentionally — it acts as the search filter
     }));
   }
@@ -104,16 +100,13 @@ export default function StudentInfoForm({
           <label className="si-label" htmlFor="si-school-year">
             School Year:
           </label>
-          <select
+          <input
             id="si-school-year"
-            className="si-input"
-            value={form.school_year}
-            onChange={(e) => update("school_year", e.target.value)}
-          >
-            {schoolYearOptions().map((y) => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
+            type="text"
+            className="si-input si-input--readonly"
+            value={form.school_year || getCalculatedSchoolYear()}
+            readOnly
+          />
         </div>
 
         <div className="si-field">

@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, FileUp } from "lucide-react";
 
 import Layout                              from "../../components/Layout";
 import StudentDetailsForm, { currentSchoolYear } from "../../components/StudentDetailsForm";
-import { studentsApi, authApi }                    from "../../services/api";
+import BulkUploadStudentsModal             from "../../modals/BulkUploadStudentsModal";
+import { studentsApi, authApi }            from "../../services/api";
 
 import "../pages css/AddStudentPage.css";
 
@@ -21,23 +22,23 @@ const EMPTY_FORM = {
 export default function AddStudentPage() {
   const navigate = useNavigate();
 
-  const [form, setForm]   = useState(EMPTY_FORM);
+  const [form, setForm]     = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState(null);
+  const [showBulk, setShowBulk] = useState(false);   // NEW
 
   useEffect(() => {
     authApi.me().then((user) => {
       setForm((prev) => ({
         ...prev,
         grade_level: user.grade_level || prev.grade_level,
-        section: user.section || prev.section,
+        section:     user.section     || prev.section,
       }));
     }).catch((err) => {
       console.error("Failed to load teacher profile for autofill", err);
     });
   }, []);
 
-  // Validation
   function validate() {
     if (!form.first_name.trim()) { setError("First name is required.");  return false; }
     if (!form.last_name.trim())  { setError("Last name is required.");   return false; }
@@ -45,11 +46,9 @@ export default function AddStudentPage() {
     return true;
   }
 
-  // Save
   async function handleSave() {
     setError(null);
     if (!validate()) return;
-
     setSaving(true);
     try {
       await studentsApi.create({
@@ -73,14 +72,11 @@ export default function AddStudentPage() {
     }
   }
 
-  // ============================================================
-  // RENDER
-  // ============================================================
   return (
     <Layout>
       <div className="as-page">
 
-        {/* Top bar: back arrow + title */}
+        {/* Top bar: back arrow + title + upload button */}
         <div className="as-topbar">
           <button
             className="as-back-btn"
@@ -89,18 +85,26 @@ export default function AddStudentPage() {
           >
             <ChevronLeft size={18} />
           </button>
+
           <h1 className="as-page__title">Add Student</h1>
+
+          {/* NEW — Upload Student List, pushed to the far right */}
+          <button
+            className="as-btn as-btn--upload"
+            onClick={() => setShowBulk(true)}
+            style={{ marginLeft: "auto" }}
+          >
+            <FileUp size={14} style={{ flexShrink: 0 }} />
+            Upload Student List
+          </button>
         </div>
 
-        {/* Error banner */}
         {error && (
           <div className="as-error" role="alert">{error}</div>
         )}
 
-        {/* Student Details form card */}
         <StudentDetailsForm form={form} setForm={setForm} />
 
-        {/* Footer buttons (outside the card) */}
         <div className="as-footer">
           <button
             className="as-btn as-btn--cancel"
@@ -119,6 +123,13 @@ export default function AddStudentPage() {
         </div>
 
       </div>
+
+      {/* NEW — Bulk upload modal */}
+      <BulkUploadStudentsModal
+        isOpen={showBulk}
+        onClose={() => setShowBulk(false)}
+        onSuccess={() => navigate("/students")}
+      />
     </Layout>
   );
 }

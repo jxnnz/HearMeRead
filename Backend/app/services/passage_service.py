@@ -164,6 +164,7 @@ async def create_passage(db: AsyncSession, data: PassageCreate, teacher_id: int)
         task1_content=data.task1_content,
         task2_words=data.task2_words,
         task2_sentences=data.task2_sentences,
+        file_path=data.file_path,
     )
     db.add(passage)
     await db.commit()
@@ -246,6 +247,8 @@ async def update_passage(
         passage.task2_words = data.task2_words
     if data.task2_sentences is not None:
         passage.task2_sentences = data.task2_sentences
+    if data.file_path is not None:
+        passage.file_path = data.file_path
 
     await db.commit()
     await db.refresh(passage)

@@ -355,3 +355,226 @@
     padding: 10px;
   }
 }
+
+/* User Manual Styling */
+.pp-manual-btn {
+  margin-top: 16px;
+  width: 100%;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  border: 1.5px solid #1a2340;
+  background: #f1f3f8;
+  color: #1a2340;
+  font-family: "Poppins", sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.pp-manual-btn:hover {
+  background: #e2e6f0;
+  border-color: #2c3e6b;
+  color: #2c3e6b;
+}
+
+.pp-manual-card {
+  background: #ffffff;
+  border-radius: 14px;
+  width: 100%;
+  padding: 28px 36px;
+  box-shadow: 0 2px 16px rgba(44, 62, 107, 0.08);
+  margin-top: 16px;
+  font-family: "Poppins", sans-serif;
+  color: #2c3e50;
+  line-height: 1.6;
+}
+
+.pp-manual-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #e0e4f0;
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+}
+
+.pp-manual-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a2340;
+  margin: 0;
+}
+
+.pp-manual-download-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  background: #2c3e6b;
+  color: #ffffff;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.pp-manual-download-btn:hover {
+  background: #1a2340;
+}
+
+.pp-manual-section {
+  margin-bottom: 24px;
+}
+
+.pp-manual-section h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a2340;
+  margin: 0 0 12px 0;
+  border-bottom: 1px solid #f0f2f8;
+  padding-bottom: 4px;
+}
+
+.pp-manual-section h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2c3e6b;
+  margin: 14px 0 6px 0;
+}
+
+.pp-manual-section p, .pp-manual-section li {
+  font-size: 13px;
+  color: #5a6382;
+  margin: 0 0 8px 0;
+}
+
+.pp-manual-section ul, .pp-manual-section ol {
+  margin: 0 0 12px 0;
+  padding-left: 20px;
+}
+
+.pp-manual-note {
+  background: #f8f9fd;
+  border-left: 4px solid #f1c40f;
+  padding: 10px 14px;
+  border-radius: 4px;
+  margin: 12px 0;
+  font-size: 12.5px;
+}
+
+.pp-manual-note strong {
+  color: #d4ac0d;
+}
+
+.pp-manual-faq-item {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed #e0e4f0;
+}
+
+.pp-manual-faq-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.pp-manual-faq-q {
+  font-weight: 600;
+  color: #1a2340;
+  margin-bottom: 4px;
+}
+
+.pp-manual-faq-a {
+  color: #5a6382;
+}
+
+@media (max-width: 768px) {
+  .pp-manual-card {
+    padding: 20px 16px;
+  }
+  
+  .pp-manual-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    text-align: center;
+  }
+  
+  .pp-manual-download-btn {
+    justify-content: center;
+  }
+}
+
+/* Top bar for User Manual page: back button + title */
+.pp-manual-topbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.pp-manual-back-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1.5px solid #c8d0e4;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #1a2340;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.pp-manual-back-btn:hover {
+  background: #eef0fb;
+  border-color: #2c3e6b;
+}
+
+.pp-manual-topbar-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a2340;
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+  letter-spacing: -0.01em;
+}
+
+@media (max-width: 768px) {
+  .pp-manual-topbar {
+    margin-bottom: 16px;
+    gap: 10px;
+  }
+  .pp-manual-back-btn {
+    width: 32px;
+    height: 32px;
+  }
+  .pp-manual-topbar-title {
+    font-size: 18px;
+  }
+}
+
+/* Styled inline code highlights in User Manual */
+.pp-manual-card code {
+  background: #eef2ff;
+  color: #4338ca;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--mono, ui-monospace, SFMono-Regular, Consolas, monospace);
+  font-size: 12.5px;
+  font-weight: 600;
+  border: 1px solid #e0e7ff;
+  margin: 0 2px;
+}
+
+
+

@@ -167,20 +167,27 @@ export default function SignupForm({ onSubmit, loading }) {
               <label className="auth-label-float" htmlFor="signup-school-name">School Name</label>
             </div>
 
-            {/* Row: School ID (DepEd) | School Code */}
+            {/* Row: School Code | School ID */}
             <div className="auth-form__row">
               <div className="auth-field-float">
-                <input id="teacher-deped-id" type="text" className={`auth-input${lookupClass}`} value={teacherDepedId} onChange={handleTeacherDepedIdChange} placeholder=" " maxLength={6} inputMode="numeric" autoComplete="off" />
-                <label className="auth-label-float" htmlFor="teacher-deped-id">School ID (DepEd)</label>
+                <input id="signup-school-code" type="text" className={`auth-input${lookupClass}`} value={schoolCode} onChange={handleSchoolCodeChange} placeholder=" " maxLength={8} autoComplete="off" />
+                <label className="auth-label-float" htmlFor="signup-school-code">School Code</label>
               </div>
               <div className="auth-field">
                 <div className="auth-field-float">
-                  <input id="signup-school-code" type="text" className={`auth-input${lookupClass}`} value={schoolCode} onChange={handleSchoolCodeChange} placeholder=" " maxLength={8} autoComplete="off" />
-                  <label className="auth-label-float" htmlFor="signup-school-code">School Code</label>
+                  <input id="teacher-deped-id" type="text" className={`auth-input${lookupClass}`} value={teacherDepedId} onChange={handleTeacherDepedIdChange} placeholder=" " maxLength={6} inputMode="numeric" autoComplete="off" />
+                  <label className="auth-label-float" htmlFor="teacher-deped-id">School ID (DepEd)</label>
                 </div>
                 <SchoolStatus />
               </div>
             </div>
+
+            {/* School Name (Full Width) */}
+            <div className="auth-field-float">
+              <input id="signup-school-name" type="text" className={`auth-input${schoolName ? " auth-input--success" : ""}`} value={schoolName} placeholder=" " readOnly />
+              <label className="auth-label-float" htmlFor="signup-school-name">School name</label>
+            </div>
+
 
             {/* Email (Full Width) */}
             <div className="auth-field-float">

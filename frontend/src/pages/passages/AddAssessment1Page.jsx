@@ -86,7 +86,7 @@ export default function AddAssessment1Page() {
     if (!validate()) return;
     setSaving(true);
     try {
-      await passagesApi.create({
+      const passage = await passagesApi.create({
         language:        form.language,
         grade_level:     form.grade_level,
         assessment_type: 1,
@@ -94,6 +94,11 @@ export default function AddAssessment1Page() {
         task2_words:     g1fil ? serializeRhymePairs(rhymePairs) : form.task2_words.trim(),
         task2_sentences: eng3 ? "" : form.task2_sentences.trim(),
       });
+      // Upload original file to R2 if present
+      const uploadedFile = location.state?.uploadedFile;
+      if (uploadedFile) {
+        await passagesApi.uploadFile(passage.id, uploadedFile).catch(() => {});
+      }
       navigate("/passages");
     } catch (err) {
       setError(parseApiError(err, "Failed to save passage. Please try again."));

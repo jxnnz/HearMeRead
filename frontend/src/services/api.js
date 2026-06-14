@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000" || "http://hearmeread-production.up.railway.app";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000" || "https://hearmeread-production.up.railway.app";
 
 // Axios instance
 const api = axios.create({
@@ -55,6 +55,15 @@ async function withCache(key, fetcher, ttl = 300000) { // Default 5 min TTL
 
 export function clearApiCache() {
   apiCache.clear();
+}
+
+function _downloadBlob(data, filename) {
+  const url = URL.createObjectURL(new Blob([data]));
+  const a   = document.createElement("a");
+  a.href     = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 // Auth
@@ -209,6 +218,15 @@ export const adminApi = {
     const res = await api.delete(`/admin/passages/${id}`);
     return res.data;
   },
+
+  uploadPassageFile: async (passageId, file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await api.post(`/admin/passages/${passageId}/file`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return res.data;
+  },
 };
 
 // Passages
@@ -239,20 +257,34 @@ export const passagesApi = {
     return res.data;
   },
 
-  /**
-   * Soft-delete (archive) a passage.
-   * Backend: DELETE /passages/:id
-   */
+    /** Soft-delete (archive) a passage. */
   archive: async (id) => {
     const res = await api.delete(`/passages/${id}`);
     return res.data;
   },
 
-  /**
-   * Upload a .docx containing BOTH the passage and questions
-   * (uses [PASSAGE] / [QUESTIONS] section markers).
-   * formData must include: file (Blob), title, language, grade_level
-   */
+ uploadBatch: async (formData) => {
+    const res = await api.post("/passages/upload/batch", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return res.data;
+  },
+
+  downloadA1Template: async (grade, language) => {
+    const res = await api.get("/passages/template/a1", {
+      params:       { grade, language },
+      responseType: "blob",
+    });
+    _downloadBlob(res.data, `a1_template_${grade}_${language}.txt`);
+  },
+
+   downloadA2Template: async () => {
+    const res = await api.get("/passages/template/a2", {
+      responseType: "blob",
+    });
+    _downloadBlob(res.data, "a2_template.txt");
+  },
+
   uploadCombined: async (formData) => {
     const res = await api.post("/passages/upload", formData, {
       headers: { "Content-Type": "multipart/form-data" },
@@ -260,12 +292,18 @@ export const passagesApi = {
     return res.data;
   },
 
-  /**
-   * Upload a .docx containing only the passage text (no section markers needed).
-   * formData must include: file (Blob), title, language, grade_level
-   */
+  
   uploadPassageOnly: async (formData) => {
     const res = await api.post("/passages/upload/passage-only", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return res.data;
+  },
+
+  uploadFile: async (passageId, file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await api.post(`/passages/${passageId}/file`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
     return res.data;
@@ -354,10 +392,6 @@ export const studentsApi = {
     return res.data;
   },
 
-  /**
-   * List all assessment sessions for a specific student.
-   * Params: { school_year, period, page, page_size }
-   */
   listSessions: async (studentId, params = {}) => {
     const res = await api.get(`/students/${studentId}/sessions`, { params });
     return res.data;
@@ -368,6 +402,20 @@ export const studentsApi = {
       headers: { "Content-Type": "multipart/form-data" },
     });
     return res.data;
+  },
+
+  bulkUploadStudents: async (formData) => {
+    const res = await api.post("/students/bulk-upload", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return res.data;
+  },
+
+  downloadBulkTemplate: async () => {
+    const res = await api.get("/students/bulk-upload/template", {
+      responseType: "blob",
+    });
+    _downloadBlob(res.data, "HearMeRead_BulkStudentUpload_Template.xlsx");
   },
 };
 

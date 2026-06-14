@@ -60,17 +60,23 @@ export default function ConfirmModal({
         <h3 className="cm-title" id="cm-title">{title}</h3>
         {message && <p className="cm-body">{message}</p>}
 
-        <div className="cm-actions">
-          <button className="cm-btn cm-btn--cancel" onClick={onClose}>
-            {cancelLabel}
-          </button>
-          <button
-            className={`cm-btn cm-btn--confirm cm-btn--confirm-${variant}`}
-            onClick={onConfirm}
-          >
-            {confirmLabel}
-          </button>
-        </div>
+        {(cancelLabel || confirmLabel) && (
+          <div className="cm-actions">
+            {cancelLabel && (
+              <button className="cm-btn cm-btn--cancel" onClick={onClose}>
+                {cancelLabel}
+              </button>
+            )}
+            {confirmLabel && (
+              <button
+                className={`cm-btn cm-btn--confirm cm-btn--confirm-${variant}`}
+                onClick={onConfirm}
+              >
+                {confirmLabel}
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

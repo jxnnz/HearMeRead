@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Camera, Loader, Lock, LogOut } from "lucide-react";
+import { Camera, Loader, Lock, LogOut, BookOpen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { authApi } from "../services/api";
 import Layout from "../components/Layout";
@@ -158,104 +158,117 @@ export default function ProfilePage() {
         <TopBar title="My Profile" />
 
         <div className="pp-content">
-          <div className="pp-card">
-            
-            {error && <div className="pp-alert pp-alert--error">{error}</div>}
-            {success && <div className="pp-alert pp-alert--success">{success}</div>}
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px", width: "100%", maxWidth: "580px", margin: "0 auto", paddingBottom: "40px" }}>
+            <div className="pp-card">
+              
+              {error && <div className="pp-alert pp-alert--error">{error}</div>}
+              {success && <div className="pp-alert pp-alert--success">{success}</div>}
 
-            <div className="pp-avatar-section">
-              <div className="pp-avatar-wrapper">
-                {uploading ? (
-                  <div className="pp-avatar-loading"><Loader className="spin" size={32} /></div>
-                ) : (
-                  avatarContent
-                )}
-                <button 
-                  type="button" 
-                  className="pp-avatar-edit-btn"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
-                >
-                  <Camera size={18} />
-                </button>
-                <input 
-                  type="file" 
-                  ref={fileInputRef}
-                  style={{ display: "none" }}
-                  accept="image/jpeg,image/png,image/webp"
-                  onChange={handleFileChange}
-                />
+              <div className="pp-avatar-section">
+                <div className="pp-avatar-wrapper">
+                  {uploading ? (
+                    <div className="pp-avatar-loading"><Loader className="spin" size={32} /></div>
+                  ) : (
+                    avatarContent
+                  )}
+                  <button 
+                    type="button" 
+                    className="pp-avatar-edit-btn"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                  >
+                    <Camera size={18} />
+                  </button>
+                  <input 
+                    type="file" 
+                    ref={fileInputRef}
+                    style={{ display: "none" }}
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleFileChange}
+                  />
+                </div>
               </div>
+
+              <form onSubmit={handleSubmit} className="pp-form">
+                <div className="pp-form-row">
+                  <div className="pp-field">
+                    <label>First Name</label>
+                    <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} required />
+                  </div>
+                  <div className="pp-field">
+                    <label>Last Name</label>
+                    <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} required />
+                  </div>
+                </div>
+
+                <div className="pp-field">
+                  <label className="pp-field-label-row">
+                    Employee ID
+                    {isEmployeeIdLocked && <Lock size={11} className="pp-lock-icon" />}
+                  </label>
+                  <input
+                    type="text"
+                    value={employeeId}
+                    onChange={e => !isEmployeeIdLocked && setEmployeeId(e.target.value)}
+                    maxLength={7}
+                    placeholder="7-digit ID"
+                    readOnly={isEmployeeIdLocked}
+                    className={isEmployeeIdLocked ? "pp-input-locked" : ""}
+                  />
+                </div>
+
+                <hr className="pp-divider" />
+                <h3 className="pp-section-title">Assignment Information</h3>
+                
+                <div className="pp-readonly-grid">
+                  <div className="pp-readonly-item">
+                    <span className="pp-ro-label">School ID</span>
+                    <span className="pp-ro-value">{user?.deped_school_id || user?.school_code || "N/A"}</span>
+                  </div>
+                  <div className="pp-readonly-item">
+                    <span className="pp-ro-label">School Name</span>
+                    <span className="pp-ro-value">{user?.school_name || "N/A"}</span>
+                  </div>
+                  {user?.role !== "admin" && (
+                    <>
+                      <div className="pp-readonly-item">
+                        <span className="pp-ro-label">Grade Level</span>
+                        <span className="pp-ro-value">{user?.grade_level ? user.grade_level.replace("_", " ").toUpperCase() : "Unassigned"}</span>
+                      </div>
+                      <div className="pp-readonly-item">
+                        <span className="pp-ro-label">Section</span>
+                        <span className="pp-ro-value">{user?.section || "Unassigned"}</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <div className="pp-actions">
+                  <button type="submit" className="pp-btn pp-btn-primary" disabled={loading || uploading}>
+                    {loading ? "Saving..." : "Save Changes"}
+                  </button>
+                </div>
+              </form>
+
+              {/* Mobile-only logout button */}
+              <button
+                className="pp-mobile-logout"
+                type="button"
+                onClick={() => setShowLogout(true)}
+              >
+                <LogOut size={16} />
+                Sign Out
+              </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="pp-form">
-              <div className="pp-form-row">
-                <div className="pp-field">
-                  <label>First Name</label>
-                  <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} required />
-                </div>
-                <div className="pp-field">
-                  <label>Last Name</label>
-                  <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} required />
-                </div>
-              </div>
-
-              <div className="pp-field">
-                <label className="pp-field-label-row">
-                  Employee ID
-                  {isEmployeeIdLocked && <Lock size={11} className="pp-lock-icon" />}
-                </label>
-                <input
-                  type="text"
-                  value={employeeId}
-                  onChange={e => !isEmployeeIdLocked && setEmployeeId(e.target.value)}
-                  maxLength={7}
-                  placeholder="7-digit ID"
-                  readOnly={isEmployeeIdLocked}
-                  className={isEmployeeIdLocked ? "pp-input-locked" : ""}
-                />
-              </div>
-
-              <hr className="pp-divider" />
-              <h3 className="pp-section-title">Assignment Information</h3>
-              
-              <div className="pp-readonly-grid">
-                <div className="pp-readonly-item">
-                  <span className="pp-ro-label">School ID</span>
-                  <span className="pp-ro-value">{user?.deped_school_id || user?.school_code || "N/A"}</span>
-                </div>
-                <div className="pp-readonly-item">
-                  <span className="pp-ro-label">School Name</span>
-                  <span className="pp-ro-value">{user?.school_name || "N/A"}</span>
-                </div>
-                {user?.role !== "admin" && (
-                  <>
-                    <div className="pp-readonly-item">
-                      <span className="pp-ro-label">Grade Level</span>
-                      <span className="pp-ro-value">{user?.grade_level ? user.grade_level.replace("_", " ").toUpperCase() : "Unassigned"}</span>
-                    </div>
-                    <div className="pp-readonly-item">
-                      <span className="pp-ro-label">Section</span>
-                      <span className="pp-ro-value">{user?.section || "Unassigned"}</span>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              <div className="pp-actions">
-                <button type="submit" className="pp-btn pp-btn-primary" disabled={loading || uploading}>
-                  {loading ? "Saving..." : "Save Changes"}
-                </button>
-              </div>
-            </form>
-
-            {/* Mobile-only logout button */}
+            {/* User Manual Button */}
             <button
-              className="pp-mobile-logout"
-              onClick={() => setShowLogout(true)}
+              type="button"
+              className="pp-manual-btn"
+              onClick={() => navigate("/manual")}
             >
-              <LogOut size={16} />
-              Sign Out
+              <BookOpen size={16} />
+              User Manual
             </button>
           </div>
         </div>

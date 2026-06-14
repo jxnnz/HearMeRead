@@ -22,6 +22,7 @@ const AssessmentPage = React.lazy(() => import("./pages/Assessment/AssessmentPag
 const StudentInfoPage = React.lazy(() => import("./pages/Student/StudentInfoPage"));
 const ClassRecordPage = React.lazy(() => import("./pages/Student/ClassRecordPage"));
 const ProfilePage = React.lazy(() => import("./pages/ProfilePage"));
+const UserManualPage = React.lazy(() => import("./pages/UserManualPage"));
 
 const AdminDashboardPage = React.lazy(() => import("./pages/AdminDashboardPage"));
 const AdminTeachersPage = React.lazy(() => import("./pages/AdminTeachersPage"));
@@ -141,6 +142,7 @@ export default function App() {
 
           {/* Shared */}
           <Route path="/profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
+          <Route path="/manual" element={<RequireAuth><UserManualPage /></RequireAuth>} />
 
           <Route path="*" element={<CatchAll />} />
         </Routes>
