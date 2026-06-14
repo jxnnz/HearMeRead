@@ -76,7 +76,10 @@ async def check_duplicate(
         filters.append(AssessmentSession.id != exclude_session_id)
 
     result = await db.execute(
-        select(AssessmentSession).where(and_(*filters)).limit(1)
+        select(AssessmentSession)
+        .options(selectinload(AssessmentSession.reading_result))
+        .where(and_(*filters))
+        .limit(1)
     )
     return result.scalar_one_or_none()
 
@@ -172,14 +175,22 @@ async def create_session(
     Creates a new session. Also returns any duplicate found (same student +
     school_year + period) so the route can attach a warning to the response.
     """
-    await _verify_student_ownership(db, data.student_id, teacher_id)
+    student_result = await db.execute(
+        select(Student).where(Student.id == data.student_id, Student.teacher_id == teacher_id)
+    )
+    student = student_result.scalar_one_or_none()
+    if not student:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")
+
     await _verify_passage_ownership(db, data.passage_id, teacher_id)
+
+    school_year = student.school_year if student.school_year else data.school_year
 
     duplicate = await check_duplicate(
         db=db,
         teacher_id=teacher_id,
         student_id=data.student_id,
-        school_year=data.school_year,
+        school_year=school_year,
         period=data.period,
     )
 
@@ -187,8 +198,9 @@ async def create_session(
         teacher_id=teacher_id,
         student_id=data.student_id,
         passage_id=data.passage_id,
-        school_year=data.school_year,
+        school_year=school_year,
         period=data.period,
+        language=data.language,
     )
     db.add(session)
     await db.commit()

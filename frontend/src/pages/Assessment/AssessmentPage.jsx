@@ -8,6 +8,7 @@ import ResultsStep          from "../../components/ResultsStep";
 import Toast               from "../../modals/Toast";
 import useToast            from "../../hooks/Usetoast";
 import AssessmentStudentTopStrip from "../../components/AssessmentStudentTopStrip";
+import RecoveryModal             from "../../modals/RecoveryModal";
 
 import {
   authApi,
@@ -123,6 +124,10 @@ export default function AssessmentPage() {
   const [availableGrades,      setAvailableGrades]      = useState([]);
   const [students,             setStudents]             = useState([]);
   const [completedStudentIds,  setCompletedStudentIds]  = useState(new Set());
+  const [yearSessions,         setYearSessions]         = useState([]);
+  const [loadingSessions,      setLoadingSessions]      = useState(false);
+  const [recoveryModalOpen,    setRecoveryModalOpen]    = useState(false);
+  const [recoveryData,         setRecoveryData]         = useState(null);
   const [a1Passages,           setA1Passages]           = useState([]);
   const [loadingStudents,      setLoadingStudents]      = useState(false);
   const [loadingPassages,      setLoadingPassages]      = useState(false);
@@ -254,18 +259,58 @@ export default function AssessmentPage() {
       .finally(()  => setLoadingStudents(false));
   }, [form.grade_level]);
 
-  // Fetch completed sessions to exclude already-assessed students from the search dropdown
+  // Fetch completed sessions for the school year to auto-detect period & filter students
   useEffect(() => {
-    if (!form.school_year || !form.assessment_type) { setCompletedStudentIds(new Set()); return; }
-    const period = PERIOD_MAP[form.assessment_type];
+    if (!form.school_year) { setYearSessions([]); return; }
+    setLoadingSessions(true);
     sessionsApi
-      .list({ school_year: form.school_year, period, is_completed: true, page_size: 100 })
+      .list({ school_year: form.school_year, is_completed: true, page_size: 1000 })
       .then((data) => {
-        const ids = new Set((data.sessions || []).map((s) => String(s.student_id)));
-        setCompletedStudentIds(ids);
+        setYearSessions(data.sessions || []);
       })
-      .catch(() => setCompletedStudentIds(new Set()));
-  }, [form.school_year, form.assessment_type]);
+      .catch(() => setYearSessions([]))
+      .finally(() => setLoadingSessions(false));
+  }, [form.school_year]);
+
+  // Derive completed student IDs in-memory for the selected period
+  useEffect(() => {
+    const period = PERIOD_MAP[form.assessment_type] ?? "beginning";
+    const ids = new Set(
+      yearSessions
+        .filter((s) => s.period === period)
+        .map((s) => String(s.student_id))
+    );
+    setCompletedStudentIds(ids);
+  }, [yearSessions, form.assessment_type]);
+
+  // Auto-detect default period based on the class's assessment state
+  useEffect(() => {
+    if (students.length === 0 || loadingStudents || loadingSessions) return;
+
+    const periods = [
+      { key: "beginning", type: "BoSY" },
+      { key: "middle",    type: "MoSY" },
+      { key: "end",       type: "EoSY" }
+    ];
+
+    for (const p of periods) {
+      const assessedStudentIds = new Set(
+        yearSessions
+          .filter(s => s.period === p.key)
+          .map(s => String(s.student_id))
+      );
+
+      // Check if any student in our roster has no session for this period
+      const hasUnassessed = students.some(student => !assessedStudentIds.has(String(student.id)));
+      if (hasUnassessed) {
+        setForm(prev => ({
+          ...prev,
+          assessment_type: p.type
+        }));
+        break;
+      }
+    }
+  }, [students, yearSessions, loadingStudents, loadingSessions]);
 
   // Fetch A1 passages when language or grade_level changes
   useEffect(() => {
@@ -322,6 +367,20 @@ export default function AssessmentPage() {
       .catch(() => {});
   }, [form.language, form.grade_level]);
 
+  // Helper to reconstruct text from alignments JSON string
+  function reconstructTranscript(alignmentsJson) {
+    if (!alignmentsJson) return "";
+    try {
+      const alignments = JSON.parse(alignmentsJson);
+      return alignments
+        .map((a) => a.transcribed)
+        .filter((t) => t !== null && t !== undefined && t !== "")
+        .join(" ");
+    } catch {
+      return "";
+    }
+  }
+
   // Session creation
   async function handleContinue() {
     if (creating) return;
@@ -338,13 +397,159 @@ export default function AssessmentPage() {
         school_year: form.school_year,
       });
 
-    
       setSession(res.session ?? res);
       setStep(STEPS.A1_G1);
       setShowChoiceModal(true);
     } catch (err) {
-      setCreateError(err.response?.data?.detail || err.message || "Failed to create session.");
+      if (err.response?.status === 409) {
+        const detail = err.response.data.detail;
+        if (detail && detail.is_completed === false) {
+          // Open Recovery Modal for incomplete session
+          setRecoveryData({
+            existing_session_id: detail.existing_session_id,
+            resume_state: detail.resume_state,
+            student_name: `${form.first_name} ${form.last_name}`,
+          });
+          setRecoveryModalOpen(true);
+        } else {
+          // Show hard block message
+          setCreateError(detail?.message || err.message || "Duplicate session detected.");
+        }
+      } else {
+        setCreateError(err.response?.data?.detail || err.message || "Failed to create session.");
+      }
     } finally {
+      setCreating(false);
+    }
+  }
+
+  // Resume unfinished session
+  async function handleResume(existing_session_id, resume_state) {
+    setRecoveryModalOpen(false);
+    setCreating(true);
+    setCreateError(null);
+    try {
+      // 1. Fetch full session
+      const sess = await sessionsApi.get(existing_session_id);
+      setSession(sess);
+
+      // 2. Derive passage data
+      let wc = 0;
+      if (sess.passage) {
+        wc = sess.passage.task1_content
+          ? sess.passage.task1_content.trim().split(/\s+/).filter(Boolean).length
+          : (sess.passage.word_count ?? 0);
+      }
+
+      // 3. Set form fields, preserving student name
+      setForm((prev) => ({
+        ...prev,
+        school_year:      sess.school_year,
+        assessment_type:  sess.period === "beginning" ? "BoSY" : sess.period === "middle" ? "MoSY" : "EoSY",
+        student_id:       sess.student_id,
+        language:         sess.language,
+        passage_id:       sess.passage_id,
+        passage_title:    sess.passage?.title ?? prev.passage_title,
+        passage_content:  sess.passage?.task1_content ?? prev.passage_content,
+        word_count:       wc || prev.word_count,
+        selected_passage: sess.passage || prev.selected_passage,
+      }));
+
+      // 4. Reconstruct transcripts and intermediate states
+      const rr = sess.reading_result;
+      let g1Txt = "";
+      let g2Txt = "";
+      if (rr) {
+        g1Txt = reconstructTranscript(rr.part1_task1_alignments_json);
+        g2Txt = reconstructTranscript(rr.part1_task2_alignments_json);
+        setG1Transcript(g1Txt);
+        setG2Transcript(g2Txt);
+        
+        // Populate alignments
+        const t1Aligns = JSON.parse(rr.part1_task1_alignments_json || "[]");
+        const t2Aligns = JSON.parse(rr.part1_task2_alignments_json || "[]");
+
+        if (rr.part1_task1_correct !== null) {
+          const t1Score = {
+            task1_correct: rr.part1_task1_correct,
+            route:         rr.part1_route,
+            alignments:    t1Aligns,
+          };
+          setTask1ScoreResult(t1Score);
+        }
+
+        if (rr.part1_total_score !== null) {
+          const p1ResultObj = {
+            task1_correct:    rr.part1_task1_correct,
+            task1_miscues:    t1Aligns.filter((a) => a.miscue_type && a.miscue_type !== "none").length,
+            route:            rr.part1_route,
+            task2_type:       rr.part1_route === "task_2L" ? (form.grade_level === "grade_1" && sess.language === "filipino" ? "rhymes" : "words") : "sentences",
+            task2_correct:    rr.part1_task2_correct,
+            task2_miscues:    t2Aligns.filter((a) => a.miscue_type && a.miscue_type !== "none").length,
+            total_score:      rr.part1_total_score,
+            classification:   rr.part1_classification,
+            task1_alignments: t1Aligns,
+            task2_alignments: t2Aligns,
+          };
+          setPart1Result(p1ResultObj);
+        }
+      }
+
+      // 5. Navigate step based on resume_state
+      resetRecording();
+      if (resume_state === "reading") {
+        setStep(STEPS.A1_G1);
+        setShowChoiceModal(true);
+      } else if (resume_state === "task2") {
+        const route = rr?.part1_route;
+        const p = sess.passage;
+        const isRhymeRoute =
+          route === "task_2L" &&
+          sess.language === "filipino" &&
+          getGradeNum(form.grade_level) === 1 &&
+          (p?.task2_words ?? "").includes("|");
+
+        if (isRhymeRoute) {
+          setStep(STEPS.A1_G2_RHYME);
+        } else {
+          const content = route === "task_2L"
+            ? (p?.task2_words     ?? "")
+            : (p?.task2_sentences ?? "");
+          const wcG2 = content.trim().split(/\s+/).filter(Boolean).length;
+          setG2Passage({
+            title:      p?.title ?? sess.passage?.title ?? "Assessment 1",
+            content,
+            word_count: wcG2,
+          });
+          setStep(STEPS.A1_G2);
+          setShowChoiceModal(true);
+        }
+      } else if (resume_state === "a2") {
+        setStep(STEPS.A2_SELECT);
+      } else {
+        // comprehension / learner_exp
+        setStep(STEPS.LEARNER_EXP);
+      }
+
+    } catch (err) {
+      setCreateError(err.response?.data?.detail || err.message || "Failed to resume session.");
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  // Start Over: Archive old incomplete session and create new one
+  async function handleStartOver(existing_session_id) {
+    setRecoveryModalOpen(false);
+    setCreating(true);
+    setCreateError(null);
+    try {
+      await sessionsApi.archive(existing_session_id);
+      // Wait a tiny moment for DB sync then retry creating
+      setCreating(false);
+      await handleContinue();
+    } catch (err) {
+      setCreateError(err.response?.data?.detail || err.message || "Failed to start over.");
       setCreating(false);
     }
   }
@@ -883,6 +1088,13 @@ export default function AssessmentPage() {
           fetchError={fetchError} createError={createError}
           creating={creating} session={session} onContinue={handleContinue}
           fileInput={fileInput} choiceModalProps={choiceModalProps}
+        />
+        <RecoveryModal
+          isOpen={recoveryModalOpen}
+          onClose={() => setRecoveryModalOpen(false)}
+          onResume={() => handleResume(recoveryData.existing_session_id, recoveryData.resume_state)}
+          onStartOver={() => handleStartOver(recoveryData.existing_session_id)}
+          studentName={recoveryData?.student_name || ""}
         />
       </Layout>
     );

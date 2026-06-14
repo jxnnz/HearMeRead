@@ -147,3 +147,10 @@ For a production-like build served via nginx:
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
 ```
+
+### Production SSL / HTTPS Configuration
+
+To secure request payloads and headers in transit on the network, the application must be served over HTTPS. 
+
+1. **SSL Certificates**: Place your SSL certificate files (`fullchain.pem` and `privkey.pem`) in the `./ssl/` directory.
+2. **Nginx Configuration**: Use the provided `nginx-ssl.conf` as a drop-in replacement for `nginx.conf`. It automatically redirects all unencrypted HTTP traffic on port 80 to HTTPS on port 443 and implements modern TLS ciphers for secure communication.
