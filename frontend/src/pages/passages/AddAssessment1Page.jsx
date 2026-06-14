@@ -109,10 +109,10 @@ export default function AddAssessment1Page() {
 
   return (
     <Layout>
-      <div className="ap-page" style={{ paddingBottom: 40, fontFamily: "'Poppins', sans-serif", maxWidth: 680, margin: "0 auto" }}>
+      <div className="ap-page">
 
-        {/* Sticky Top bar */}
-        <div style={{ position: "sticky", top: 0, zIndex: 10, background: "#f0f2fa", padding: "20px 0", borderBottom: "1px solid #dde2f0", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+        {/* Top bar */}
+        <div className="ap-topbar">
           <div className="ap-topbar__left">
             <button className="ap-back-btn" onClick={() => navigate("/passages")} aria-label="Go back">
               <ChevronLeft size={18} />
