@@ -1,17 +1,16 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, FileText, Globe, Lock, Upload } from "lucide-react";
+import { Plus, FileText, Lock, Upload } from "lucide-react";
 import { useWindowWidth } from "../../hooks/useWindowWidth";
 
 import Layout from "../../components/Layout";
 import TopBar from "../../components/TopBar";
 import PassageCard from "../../components/PassageCard";
-import AppButton from "../../components/AppButton";
 import ConfirmModal from "../../modals/ConfirmModal";
 import Toast from "../../modals/Toast";
 import UploadModal from "../../components/UploadModal";
 import useToast from "../../hooks/Usetoast";
-import { passagesApi } from "../../services/api";
+import { passagesApi, authApi } from "../../services/api";
 import { parseApiError } from "../../utils/apiError";
 
 import "../pages css/PassagePage.css";
@@ -29,10 +28,11 @@ export default function PassagePage() {
   const [pendingArchive, setPendingArchive] = useState(null);
   const [archiveError, setArchiveError]     = useState(null);
 
-  // View-only modal for public passages
   const [viewPassage, setViewPassage] = useState(null);
+  const [uploadOpen, setUploadOpen]   = useState(false);
 
-  const [uploadOpen, setUploadOpen] = useState(false);
+  // NEW — teacher's grade level, used to auto-select the right A1 template
+  const [teacherGrade, setTeacherGrade] = useState(null);
 
   useEffect(() => {
     passagesApi
@@ -40,15 +40,21 @@ export default function PassagePage() {
       .then((data) => setPassages(data.passages))
       .catch((e) => setPageError(parseApiError(e, "Failed to load passages.")))
       .finally(() => setLoading(false));
+
+    // NEW — load teacher profile to get grade_level
+    const role = localStorage.getItem("role") || "TEACHER";
+    if (role !== "ADMIN") {
+      authApi.me()
+        .then((user) => { if (user?.grade_level) setTeacherGrade(user.grade_level); })
+        .catch(() => {}); // non-critical — falls back to admin picker behaviour
+    }
   }, []);
 
-  // Separate by visibility first, then by assessment type
-  const myPassages = useMemo(() => passages.filter((p) => p.visibility !== "public"), [passages]);
+  const myPassages     = useMemo(() => passages.filter((p) => p.visibility !== "public"), [passages]);
   const publicPassages = useMemo(() => passages.filter((p) => p.visibility === "public"), [passages]);
 
-  const myA1 = useMemo(() => myPassages.filter((p) => p.assessment_type === 1), [myPassages]);
-  const myA2 = useMemo(() => myPassages.filter((p) => p.assessment_type === 2), [myPassages]);
-
+  const myA1     = useMemo(() => myPassages.filter((p) => p.assessment_type === 1), [myPassages]);
+  const myA2     = useMemo(() => myPassages.filter((p) => p.assessment_type === 2), [myPassages]);
   const publicA1 = useMemo(() => publicPassages.filter((p) => p.assessment_type === 1), [publicPassages]);
   const publicA2 = useMemo(() => publicPassages.filter((p) => p.assessment_type === 2), [publicPassages]);
 
@@ -120,7 +126,11 @@ export default function PassagePage() {
       <div className="ph-page">
 
         <TopBar title="Reading Passages">
-          <button className="ap-save-btn" onClick={() => setUploadOpen(true)} style={{ display: "flex", alignItems: "center", gap: isMobile ? 0 : 6, background: "#fff", borderColor: "#c8d0e4", padding: isMobile ? "7px 10px" : undefined }}>
+          <button
+            className="ap-save-btn"
+            onClick={() => setUploadOpen(true)}
+            style={{ display: "flex", alignItems: "center", gap: isMobile ? 0 : 6, background: "#fff", borderColor: "#c8d0e4", padding: isMobile ? "7px 10px" : undefined }}
+          >
             <Upload size={15} />
             {!isMobile && " Upload"}
           </button>
@@ -164,25 +174,13 @@ export default function PassagePage() {
 
         {!loading && !pageError && (
           <>
-            {/* Public Passages (read-only, shown first) */}
             {publicA1.length > 0 && (
-              <AssessmentSection
-                label="Assessment 1"
-                list={publicA1}
-                readOnly
-                icon={null}
-              />
+              <AssessmentSection label="Assessment 1" list={publicA1} readOnly icon={null} />
             )}
             {publicA2.length > 0 && (
-              <AssessmentSection
-                label="Assessment 2"
-                list={publicA2}
-                readOnly
-                icon={null}
-              />
+              <AssessmentSection label="Assessment 2" list={publicA2} readOnly icon={null} />
             )}
 
-            {/* My Passages (private, full CRUD) */}
             {(myA1.length > 0 || myA2.length > 0) && (
               <>
                 <div className="ph-section-label">
@@ -190,18 +188,10 @@ export default function PassagePage() {
                   <span>My Passages</span>
                 </div>
                 {myA1.length > 0 && (
-                  <AssessmentSection
-                    label="Assessment 1"
-                    list={myA1}
-                    icon={null}
-                  />
+                  <AssessmentSection label="Assessment 1" list={myA1} icon={null} />
                 )}
                 {myA2.length > 0 && (
-                  <AssessmentSection
-                    label="Assessment 2"
-                    list={myA2}
-                    icon={null}
-                  />
+                  <AssessmentSection label="Assessment 2" list={myA2} icon={null} />
                 )}
               </>
             )}
@@ -221,16 +211,13 @@ export default function PassagePage() {
         cancelLabel="Cancel"
       />
 
-      {/* View-only modal for public passages */}
       {viewPassage && (
         <div className="ph-preview-overlay" onClick={() => setViewPassage(null)}>
           <div className="ph-preview-card" onClick={(e) => e.stopPropagation()}>
 
             <div className="ph-preview-header">
               <div>
-                <h2 className="ph-preview-title">
-                  {viewPassage.title || "Untitled"}
-                </h2>
+                <h2 className="ph-preview-title">{viewPassage.title || "Untitled"}</h2>
                 <div className="ph-preview-meta">
                   <span>{viewPassage.grade_level ? viewPassage.grade_level.replace("grade_", "Grade ").replace("kindergarten", "Kindergarten") : ""}</span>
                   <span>·</span>
@@ -271,9 +258,7 @@ export default function PassagePage() {
 
             {viewPassage.questions?.length > 0 && (
               <div className="ph-preview-questions">
-                <h3 className="ph-preview-questions-title">
-                  Questions ({viewPassage.questions.length})
-                </h3>
+                <h3 className="ph-preview-questions-title">Questions ({viewPassage.questions.length})</h3>
                 <ol className="ph-preview-questions-list">
                   {viewPassage.questions.map((q) => (
                     <li key={q.id}>{q.text}</li>
@@ -289,9 +274,10 @@ export default function PassagePage() {
       <Toast toasts={toasts} onRemove={removeToast} />
 
       {uploadOpen && (
-        <UploadModal 
+        <UploadModal
           defaultType={2}
           eng3={false}
+          teacherGrade={teacherGrade}   // NEW — null on admin side, grade string on teacher side
           onClose={() => setUploadOpen(false)}
           onUpload={(type, parsedData) => {
             if (type === 1) {

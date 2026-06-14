@@ -7,6 +7,8 @@ import CountdownOverlay     from "../../components/CountdownOverlay";
 import ResultsStep          from "../../components/ResultsStep";
 import Toast               from "../../modals/Toast";
 import useToast            from "../../hooks/Usetoast";
+import AssessmentStudentTopStrip from "../../components/AssessmentStudentTopStrip";
+
 import {
   authApi,
   studentsApi,
@@ -872,13 +874,6 @@ export default function AssessmentPage() {
   if (step === STEPS.INFO) {
     return (
       <Layout>
-        {/* Duplicate session warning banner (commented out, re-enable after testing)
-        {duplicateWarning && (
-          <div className="asp-duplicate-warning">
-            ⚠ {duplicateWarning}
-          </div>
-        )}
-        */}
         <InfoStep
           form={form} setForm={setForm}
           availableGrades={availableGrades}
@@ -892,6 +887,19 @@ export default function AssessmentPage() {
       </Layout>
     );
   }
+
+  const showAssessmentStudentStrip = step !== STEPS.RESULTS;
+  const studentLrn = form.lrn ?? form.student_lrn ?? form.student?.lrn ?? null;
+
+
+  const studentStrip = showAssessmentStudentStrip ? (
+    <AssessmentStudentTopStrip
+      firstName={form.first_name}
+      lastName={form.last_name}
+      lrn={studentLrn}
+    />
+  ) : null;
+
 
   if (isLoadingStep) {
     const msg = isScoring ? "Proceeding…" : "Processing audio…";
@@ -910,11 +918,13 @@ export default function AssessmentPage() {
   if (isLiveReadingStep) {
     return (
       <Layout>
+        {studentStrip}
         {fileInput}
         {countdown > 0 && (
           <CountdownOverlay count={countdown} onDone={handleCountdownDone} />
         )}
         <ReadingStep
+
           stepLabel={STEP_LABELS[step]}
           step={step}
           passage={passage} wordCount={wordCount}
@@ -955,7 +965,9 @@ export default function AssessmentPage() {
   if (step === STEPS.A1_G1_PREVIEW) {
     return (
       <Layout>
+        {studentStrip}
         <TranscriptionPreviewStep
+
           badge={STEP_LABELS[step]}
           transcript={g1Transcript}
           referenceText={form.selected_passage?.task1_content ?? form.passage_content ?? ""}
@@ -976,7 +988,9 @@ export default function AssessmentPage() {
     const rhymePairs = parseRhymePairs(form.selected_passage?.task2_words ?? "");
     return (
       <Layout>
+        {studentStrip}
         <RhymeScoringStep
+
           rhymePairs={rhymePairs}
           onComplete={handleRhymeComplete}
         />
@@ -991,7 +1005,9 @@ export default function AssessmentPage() {
   if (step === STEPS.A1_G2_PREVIEW) {
     return (
       <Layout>
+        {studentStrip}
         <TranscriptionPreviewStep
+
           badge={STEP_LABELS[step]}
           transcript={g2Transcript}
           referenceText={g2Passage?.content ?? ""}
@@ -1011,7 +1027,9 @@ export default function AssessmentPage() {
   if (step === STEPS.A2_SELECT) {
     return (
       <Layout>
+        {studentStrip}
         <A2SelectStep
+
           a2Stories={a2Passages}
           a2Passage={a2Passage} setA2Passage={setA2Passage}
           onSelect={handleSelectA2Passage}
@@ -1023,7 +1041,9 @@ export default function AssessmentPage() {
   if (step === STEPS.A2_PREVIEW) {
     return (
       <Layout>
+        {studentStrip}
         <TranscriptionPreviewStep
+
           badge={STEP_LABELS[step]}
           transcript={a2Transcript}
           referenceText={a2Passage?.content ?? ""}
@@ -1042,7 +1062,9 @@ export default function AssessmentPage() {
   if (step === STEPS.COMPREHENSION) {
     return (
       <Layout>
+        {studentStrip}
         <ComprehensionStep
+
           a2Passage={a2Passage}
           answers={answers} setAnswers={setAnswers}
           onSubmit={() => setStep(STEPS.LEARNER_EXP)}
@@ -1055,7 +1077,9 @@ export default function AssessmentPage() {
     const isA2Path = !!a2Passage;
     return (
       <Layout>
+        {studentStrip}
         <LearnerExperienceStep
+
           onConfirm={(selectedValue) => {
             setLearnerExperience(selectedValue);
             const backendVal = EXPERIENCE_OPTIONS.find((e) => e.value === selectedValue)?.backendValue ?? null;
@@ -1079,7 +1103,9 @@ export default function AssessmentPage() {
     const leBackendVal = EXPERIENCE_OPTIONS.find((e) => e.value === learnerExperience)?.backendValue ?? null;
     return (
       <Layout>
+        {studentStrip}
         <ObservationStep
+
           sessionId={session?.id}
           learnerExperience={leBackendVal}
           onComplete={(data) => {
@@ -1101,7 +1127,9 @@ export default function AssessmentPage() {
   if (step === STEPS.A2_OBSERVE) {
     return (
       <Layout>
+        {studentStrip}
         <ObservationStep
+
           sessionId={session?.id}
           onComplete={(data) => {
             const lvl = OBSERVATION_LEVELS.find((l) => l.backendValue === data.observation_level);

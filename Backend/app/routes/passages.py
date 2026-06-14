@@ -1,13 +1,13 @@
 from typing import Optional, List
 
 from fastapi import APIRouter, Depends, Query, UploadFile, File, Form, status, HTTPException
+from fastapi.responses import Response
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_current_teacher
 from app.db import get_db
-from app.models import Teacher
-from app.models import Language
-from app.models import GradeLevel
+from app.models import Teacher, Language, GradeLevel
 from app.schema import (
     PassageCreate,
     PassageUpdate,
@@ -18,10 +18,125 @@ from app.schema import (
 from app.services import passage_service, question_service
 from app.utils.docx_parser import validate_upload, parse_combined, parse_passage_only
 
+
 router = APIRouter(prefix="/passages", tags=["Passages"])
 
 
-# List
+# ── A1 downloadable templates (one per grade/language variant) ────────────────
+# Format matches exactly what the frontend fileParser.js expects.
+
+_A1_GRADE1_FILIPINO = """\
+Language:
+Filipino
+Grade:
+1
+Task 1:
+b, ng, T, e, p, s, H, G, u, L
+Task 2:
+W: sanay, tunay
+R: Oo
+W: ulam, anim
+R: Hindi
+W: hinog, lamig
+R: Hindi
+W: buhay, buhay
+R: Oo
+W: luto, tayo
+R: Hindi
+W: mata, pata
+R: Oo
+W: saya, maya
+R: Oo
+W: kuha, lupa
+R: Hindi
+W: puso, dulo
+R: Hindi
+W: tuwa, buwa
+R: Oo
+Task 2 Sentences:
+Ang bata ay masaya. Siya ay mabait. Mahal niya ang kanyang pamilya.
+"""
+
+_A1_GRADE2_FILIPINO = """\
+Language:
+Filipino
+Grade:
+2
+Task 1:
+aso, bata, kuya, isda, damit, bahay, paaralan, mahal, tahimik, maganda
+Task 2 Words:
+aklat, lapis, mesa, silya, kotse, puno, bundok, ilog, dagat, langit
+Task 2 Sentences:
+Ang bata ay pumunta sa paaralan. Siya ay nagdala ng kanyang bag. Masaya siya sa klase.
+"""
+
+_A1_GRADE3_FILIPINO = """\
+Language:
+Filipino
+Grade:
+3
+Task 1:
+magulang, kaibigan, kalikasan, pamayanan, kasipagan, katapatan, pagmamahal, pagiging, katahimikan, responsibilidad
+Task 2 Words:
+naglalaro, kumakain, nagaaral, tumatakbo, nagtatrabaho, natutulog, nagbabasa, sumusulat, naglalakad, nagtatanong
+Task 2 Sentences:
+Ang mga bata ay masayang naglalaro sa parke tuwing hapon. Tinutulungan nila ang isa't isa sa oras ng pangangailangan. Ang pagkakaisa ay nagbibigay ng lakas sa bawat miyembro ng pangkat.
+"""
+
+_A1_GRADE3_ENGLISH = """\
+Language:
+English
+Grade:
+3
+Task 1:
+beautiful, environment, community, responsibility, friendship, knowledge, adventure, imagination, celebration, determination
+Task 2 Words:
+running, jumping, playing, reading, writing, eating, sleeping, helping, listening, learning
+"""
+
+# A2 template (unchanged)
+_TEMPLATE_A2 = """\
+Language:
+Filipino
+Grade:
+2
+[PASSAGE]
+Isulat dito ang buong teksto ng kwento.
+Maaaring magkaroon ng maraming talata.
+Bawat linya ay magiging bahagi ng kwento.
+
+Pangalawang talata ng kwento.
+
+[QUESTIONS]
+Q: Sino ang pangunahing tauhan ng kwento?
+A: (Ilagay dito ang tamang sagot)
+
+Q: Ano ang nangyari sa simula ng kwento?
+A: (Ilagay dito ang tamang sagot)
+
+Q: Saan naganap ang kwento?
+A: (Ilagay dito ang tamang sagot)
+
+Q: Bakit ginawa iyon ng tauhan?
+A: (Ilagay dito ang tamang sagot)
+
+Q: Ano ang natutunan mo sa kwento?
+A: (Ilagay dito ang tamang sagot)
+
+Q: Paano nagtapos ang kwento?
+A: (Ilagay dito ang tamang sagot)
+"""
+
+# Map of (grade, language) → template string for A1
+_A1_TEMPLATES = {
+    ("grade_1", "filipino"): _A1_GRADE1_FILIPINO,
+    ("grade_2", "filipino"): _A1_GRADE2_FILIPINO,
+    ("grade_3", "filipino"): _A1_GRADE3_FILIPINO,
+    ("grade_3", "english"):  _A1_GRADE3_ENGLISH,
+}
+
+
+# ── List ──────────────────────────────────────────────────────────────────────
 @router.get("", response_model=PassageListResponse, summary="List passages")
 async def list_passages(
     page:             int                    = Query(1, ge=1),
@@ -46,7 +161,7 @@ async def list_passages(
     return PassageListResponse(total=total, page=page, page_size=page_size, passages=passages)
 
 
-# Create manually
+# ── Create manually ───────────────────────────────────────────────────────────
 @router.post(
     "",
     response_model=PassageResponse,
@@ -61,7 +176,55 @@ async def create_passage(
     return await passage_service.create_passage(db=db, data=data, teacher_id=current_teacher.id)
 
 
-# Upload: combined passage + questions in one file
+# ── NEW: Download A1 template by grade + language ────────────────────────────
+@router.get(
+    "/template/a1",
+    summary="Download an Assessment 1 .txt template for a specific grade and language",
+    response_class=Response,
+)
+async def download_a1_template(
+    grade:    str = Query(..., description="grade_1 | grade_2 | grade_3"),
+    language: str = Query(..., description="filipino | english"),
+):
+    """
+    Returns a downloadable .txt template pre-filled with the correct format
+    for the given grade level and language combination.
+    Valid combos: grade_1/filipino, grade_2/filipino, grade_3/filipino, grade_3/english.
+    """
+    key = (grade.lower().strip(), language.lower().strip())
+    content = _A1_TEMPLATES.get(key)
+    if content is None:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"No A1 template for grade='{grade}' language='{language}'. "
+                "Valid combinations: grade_1/filipino, grade_2/filipino, "
+                "grade_3/filipino, grade_3/english."
+            ),
+        )
+    filename = f"a1_template_{grade}_{language}.txt"
+    return Response(
+        content=content.encode("utf-8"),
+        media_type="text/plain; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+# ── NEW: Download A2 template ─────────────────────────────────────────────────
+@router.get(
+    "/template/a2",
+    summary="Download the Assessment 2 .txt template",
+    response_class=Response,
+)
+async def download_a2_template():
+    return Response(
+        content=_TEMPLATE_A2.encode("utf-8"),
+        media_type="text/plain; charset=utf-8",
+        headers={"Content-Disposition": "attachment; filename=a2_template.txt"},
+    )
+
+
+# ── Upload: combined passage + questions ──────────────────────────────────────
 class CombinedUploadResponse(PassageResponse):
     imported_questions: List[QuestionResponse] = []
 
@@ -71,11 +234,6 @@ class CombinedUploadResponse(PassageResponse):
     response_model=CombinedUploadResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Upload a .docx or .txt file containing both passage and questions",
-    description=(
-        "The file must follow the template format with **[PASSAGE]** and **[QUESTIONS]** "
-        "section markers. Both the passage and all questions are created in one request. "
-        "Numbering prefixes (1. / Q1: / etc.) on questions are stripped automatically."
-    ),
 )
 async def upload_combined(
     file:            UploadFile  = File(...),
@@ -87,42 +245,26 @@ async def upload_combined(
 ):
     file_bytes = await file.read()
     validate_upload(file_bytes, file.filename)
-
     parsed = parse_combined(file_bytes, file.filename)
-
-    # Create the passage first
     passage = await passage_service.create_passage_from_docx(
-        db=db,
-        title=title,
-        language=language,
-        grade_level=grade_level,
-        content=parsed.passage_content,
-        teacher_id=current_teacher.id,
+        db=db, title=title, language=language, grade_level=grade_level,
+        content=parsed.passage_content, teacher_id=current_teacher.id,
     )
-
-    # Bulk create all parsed questions
     questions = await question_service.bulk_create_questions(
-        db=db,
-        passage_id=passage.id,
-        texts=parsed.questions,
-        teacher_id=current_teacher.id,
+        db=db, passage_id=passage.id, texts=parsed.questions, teacher_id=current_teacher.id,
     )
-
-    # Build combined response
-    response = CombinedUploadResponse(
+    return CombinedUploadResponse(
         **PassageResponse.model_validate(passage).model_dump(),
         imported_questions=questions,
     )
-    return response
 
 
-# Upload: passage text only (no questions)
+# ── Upload: passage text only ─────────────────────────────────────────────────
 @router.post(
     "/upload/passage-only",
     response_model=PassageResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Upload a .docx or .txt file containing only the passage text",
-    description="No section markers needed — every paragraph becomes part of the passage content.",
 )
 async def upload_passage_only(
     file:            UploadFile  = File(...),
@@ -134,20 +276,83 @@ async def upload_passage_only(
 ):
     file_bytes = await file.read()
     validate_upload(file_bytes, file.filename)
-
     content = parse_passage_only(file_bytes, file.filename)
-
     return await passage_service.create_passage_from_docx(
-        db=db,
-        title=title,
-        language=language,
-        grade_level=grade_level,
-        content=content,
-        teacher_id=current_teacher.id,
+        db=db, title=title, language=language, grade_level=grade_level,
+        content=content, teacher_id=current_teacher.id,
     )
 
 
-# Get one
+# ── NEW: Batch upload multiple passages ───────────────────────────────────────
+class BatchUploadResult(BaseModel):
+    filename:           str
+    passage_id:         Optional[int] = None
+    title:              str
+    questions_imported: int           = 0
+    error:              Optional[str] = None
+
+
+class BatchUploadResponse(BaseModel):
+    created: int
+    failed:  int
+    results: List[BatchUploadResult]
+
+
+def _title_from_filename(filename: str) -> str:
+    import os
+    name = os.path.splitext(filename)[0]
+    return name.replace("_", " ").replace("-", " ").title()
+
+
+@router.post(
+    "/upload/batch",
+    response_model=BatchUploadResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Upload multiple passage files in one request (max 10)",
+)
+async def upload_batch(
+    files:           List[UploadFile] = File(...),
+    language:        Language         = Form(...),
+    grade_level:     GradeLevel       = Form(...),
+    db:              AsyncSession     = Depends(get_db),
+    current_teacher: Teacher          = Depends(get_current_teacher),
+):
+    if len(files) > 10:
+        raise HTTPException(status_code=400, detail="Maximum 10 files per batch upload.")
+
+    created = 0
+    failed  = 0
+    results: List[BatchUploadResult] = []
+
+    for upload in files:
+        filename = upload.filename or "unknown"
+        title    = _title_from_filename(filename)
+        try:
+            file_bytes = await upload.read()
+            validate_upload(file_bytes, filename)
+            parsed     = parse_combined(file_bytes, filename)
+            passage    = await passage_service.create_passage_from_docx(
+                db=db, title=title, language=language, grade_level=grade_level,
+                content=parsed.passage_content, teacher_id=current_teacher.id,
+            )
+            questions = await question_service.bulk_create_questions(
+                db=db, passage_id=passage.id, texts=parsed.questions,
+                teacher_id=current_teacher.id,
+            )
+            results.append(BatchUploadResult(
+                filename=filename, passage_id=passage.id,
+                title=title, questions_imported=len(questions),
+            ))
+            created += 1
+        except Exception as exc:
+            results.append(BatchUploadResult(filename=filename, title=title, error=str(exc)))
+            failed += 1
+
+    await db.commit()
+    return BatchUploadResponse(created=created, failed=failed, results=results)
+
+
+# ── Get one ───────────────────────────────────────────────────────────────────
 @router.get("/{passage_id}", response_model=PassageResponse, summary="Get a passage")
 async def get_passage(
     passage_id:      int,
@@ -159,7 +364,7 @@ async def get_passage(
     )
 
 
-# Update
+# ── Update ────────────────────────────────────────────────────────────────────
 @router.patch("/{passage_id}", response_model=PassageResponse, summary="Update a passage")
 async def update_passage(
     passage_id:      int,
@@ -172,7 +377,7 @@ async def update_passage(
     )
 
 
-# Archive
+# ── Archive ───────────────────────────────────────────────────────────────────
 @router.delete(
     "/{passage_id}",
     status_code=status.HTTP_204_NO_CONTENT,

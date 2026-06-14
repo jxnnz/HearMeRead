@@ -449,12 +449,18 @@ class DuplicateWarning(BaseModel):
 
 
 class ExcelImportResponse(BaseModel):
-    students_created:  int
-    students_found:    int
-    sessions_created:  int
-    sessions_skipped:  int
-    errors:            List[str]
+    students_created:          int
+    students_found:            int
+    sessions_created:          int
+    sessions_skipped:          int
+    sessions_empty_assessment: int        
+    errors:                    List[str]
 
+class BulkStudentUploadResponse(BaseModel):
+    students_created:   int
+    students_skipped:   int       
+    students_invalid:   int      
+    errors:             List[str] 
 
 # Admin
 class AdminTeacherUpdateRequest(BaseModel):

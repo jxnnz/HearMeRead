@@ -29,7 +29,6 @@ function currentSchoolYear() {
   return now.getMonth() < 5 ? `${y - 1}-${y}` : `${y}-${y + 1}`;
 }
 
-
 export default function StudentRecordPage() {
   const navigate = useNavigate();
 
@@ -81,11 +80,14 @@ export default function StudentRecordPage() {
 
         {/* Header */}
         <TopBar title="Student Record">
+          {/* Import Records (CRLA Excel) */}
           <AppButton variant="ghost" size="sm" onClick={() => setShowImport(true)}>
             <Upload size={14} />
             <span className="sr-btn-full">Import Records</span>
             <span className="sr-btn-short">Import</span>
           </AppButton>
+
+          {/* Add Student — navigates to AddStudentPage where bulk upload also lives */}
           <AppButton variant="primary" size="sm" onClick={() => navigate("/students/add")}>
             <Plus size={14} />
             <span className="sr-btn-full">Add Student</span>
@@ -93,7 +95,7 @@ export default function StudentRecordPage() {
           </AppButton>
         </TopBar>
 
-        {/* Global Filters */}
+        {/* School Year Filter */}
         <div className="sr-filters">
           <div className="sr-filter-field">
             <label htmlFor="sr-year">School Year</label>
@@ -121,7 +123,7 @@ export default function StudentRecordPage() {
           </div>
         </div>
 
-        {/* States */}
+        {/* Loading skeletons */}
         {loading && (
           <div className="sr-class-grid">
             {[1, 2, 3].map((i) => (
@@ -150,7 +152,7 @@ export default function StudentRecordPage() {
           </div>
         )}
 
-        {/* Period Cards — one per assessment period per class */}
+        {/* Period Cards */}
         {!loading && !error && classes.length > 0 && (
           <div className="sr-class-grid">
             {classes.flatMap((c) =>
@@ -182,6 +184,7 @@ export default function StudentRecordPage() {
 
       </div>
 
+      {/* CRLA import modal */}
       <ImportRecordsModal
         isOpen={showImport}
         onClose={() => setShowImport(false)}

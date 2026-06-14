@@ -61,10 +61,13 @@ export default function StudentInfoForm({
       last_name:   student.last_name,
       grade_level: String(student.grade_level ?? ""),
       section:     student.section ?? "",
+      // Used by AssessmentStudentTopStrip in AssessmentPage
+      lrn:          student.lrn ?? prev.lrn ?? null,
     }));
     setStudentSearch("");
     setShowStudentDrop(false);
   }
+
 
   function clearStudent() {
     setForm((prev) => ({
