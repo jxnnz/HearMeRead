@@ -42,6 +42,7 @@ async def list_students(
     search: Optional[str] = Query(None, description="Search by first or last name"),
     grade_level: Optional[GradeLevel] = Query(None),
     section: Optional[str] = Query(None),
+    school_year: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
     current_teacher: Teacher = Depends(get_current_teacher),
 ):
@@ -53,6 +54,7 @@ async def list_students(
         search=search,
         grade_level=grade_level,
         section=section,
+        school_year=school_year,
     )
     return StudentListResponse(total=total, page=page, page_size=page_size, students=students)
 

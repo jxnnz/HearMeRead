@@ -115,7 +115,7 @@ export default function DashboardPage() {
   useEffect(() => {
     Promise.all([
       dashboardApi.getSummary(schoolYear),
-      studentsApi.list(),
+      studentsApi.list({ school_year: schoolYear }),
       authApi.me(),
     ])
       .then(([summary, studentData, userData]) => {

@@ -82,7 +82,7 @@ export default function ClassRecordPage() {
     setLoading(true);
     setError(null);
     try {
-      const stuParams  = { page, page_size: pageSize, ...(grade ? { grade_level: grade } : {}), ...(section ? { section } : {}) };
+      const stuParams  = { page, page_size: pageSize, ...(grade ? { grade_level: grade } : {}), ...(section ? { section } : {}), ...(year ? { school_year: year } : {}) };
       const sessParams = { school_year: year, period, is_completed: true, page_size: pageSize, ...(grade ? { grade_level: grade } : {}), ...(section ? { section } : {}) };
       const [me, stuData, sessData] = await Promise.all([
         authApi.me(),
@@ -111,7 +111,7 @@ export default function ClassRecordPage() {
       setLoading(true);
       setError(null);
       try {
-        const stuParams  = { page, page_size: pageSize, ...(grade ? { grade_level: grade } : {}), ...(section ? { section } : {}) };
+        const stuParams  = { page, page_size: pageSize, ...(grade ? { grade_level: grade } : {}), ...(section ? { section } : {}), ...(year ? { school_year: year } : {}) };
         const sessParams = { school_year: year, period, is_completed: true, page_size: pageSize, ...(grade ? { grade_level: grade } : {}), ...(section ? { section } : {}) };
         const [me, stuData, sessData] = await Promise.all([
           authApi.me(),

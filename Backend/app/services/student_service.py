@@ -84,6 +84,7 @@ async def get_students(
     search: Optional[str] = None,
     grade_level: Optional[str] = None,
     section: Optional[str] = None,
+    school_year: Optional[str] = None,
 ):
     query = select(Student).where(Student.teacher_id == teacher_id)
 
@@ -96,6 +97,23 @@ async def get_students(
             query = query.where(or_(Student.section == None, Student.section == ""))
         else:
             query = query.where(Student.section == section)
+
+    if school_year:
+        enrollment_subquery = select(StudentEnrollment.student_id).where(
+            StudentEnrollment.teacher_id == teacher_id,
+            StudentEnrollment.school_year == school_year
+        )
+        session_subquery = select(AssessmentSession.student_id).where(
+            AssessmentSession.teacher_id == teacher_id,
+            AssessmentSession.school_year == school_year
+        )
+        query = query.where(
+            or_(
+                Student.school_year == school_year,
+                Student.id.in_(enrollment_subquery),
+                Student.id.in_(session_subquery)
+            )
+        )
 
     result = await db.execute(query)
     students = list(result.scalars().all())

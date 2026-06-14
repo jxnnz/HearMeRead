@@ -247,17 +247,17 @@ export default function AssessmentPage() {
       .catch(() => {});
   }, []);
 
-  // Fetch students when grade level is selected
+  // Fetch students when grade level or school year is selected
   useEffect(() => {
     if (!form.grade_level) { setStudents([]); return; }
     setLoadingStudents(true);
     setFetchError(null);
     studentsApi
-      .list({ grade_level: form.grade_level })
+      .list({ grade_level: form.grade_level, school_year: form.school_year })
       .then((data) => setStudents(data.students || []))
       .catch((e)  => setFetchError(e.response?.data?.detail || e.message))
       .finally(()  => setLoadingStudents(false));
-  }, [form.grade_level]);
+  }, [form.grade_level, form.school_year]);
 
   // Fetch completed sessions for the school year to auto-detect period & filter students
   useEffect(() => {
