@@ -10,7 +10,7 @@ import ConfirmModal from "../../modals/ConfirmModal";
 import Toast from "../../modals/Toast";
 import UploadModal from "../../components/UploadModal";
 import useToast from "../../hooks/Usetoast";
-import { passagesApi, authApi } from "../../services/api";
+import { passagesApi, questionsApi, authApi } from "../../services/api";
 import { parseApiError } from "../../utils/apiError";
 
 import "../pages css/PassagePage.css";
@@ -31,6 +31,10 @@ export default function PassagePage() {
   const [viewPassage, setViewPassage] = useState(null);
   const [uploadOpen, setUploadOpen]   = useState(false);
 
+  // Bulk upload state
+  const [bulkSaving, setBulkSaving]   = useState(false);
+  const [bulkResult, setBulkResult]   = useState(null);  // { saved, failed, total }
+
   // NEW — teacher's grade level, used to auto-select the right A1 template
   const [teacherGrade, setTeacherGrade] = useState(null);
 
@@ -49,6 +53,75 @@ export default function PassagePage() {
         .catch(() => {}); // non-critical — falls back to admin picker behaviour
     }
   }, []);
+
+  // ── Bulk upload handler ──────────────────────────────────────────────
+  async function handleBulkUpload(type, parsedItems) {
+    setBulkSaving(true);
+    let saved = 0;
+    let failed = 0;
+    const total = parsedItems.length;
+
+    for (const item of parsedItems) {
+      const { parsedData } = item;
+      try {
+        if (type === 1) {
+          // Assessment 1
+          const g1fil = (parsedData.language || "filipino") === "filipino" &&
+                        (parsedData.grade_level || "grade_1") === "grade_1";
+          let task2Words = parsedData.task2Words || "";
+          if (g1fil && parsedData.task2Rhymes?.length > 0) {
+            task2Words = parsedData.task2Rhymes
+              .filter((p) => p.pair.trim())
+              .map((p) => `${p.pair}|${p.answer}`)
+              .join("\n");
+          }
+          const isEng3 = (parsedData.language || "filipino") === "english" &&
+                         (parsedData.grade_level || "grade_1") === "grade_3";
+          const passage = await passagesApi.create({
+            language:        parsedData.language || "filipino",
+            grade_level:     parsedData.grade_level || "grade_1",
+            assessment_type: 1,
+            task1_content:   (parsedData.task1 || "").trim(),
+            task2_words:     task2Words.trim(),
+            task2_sentences: isEng3 ? "" : (parsedData.task2Sentences || "").trim(),
+          });
+          if (item.file) await passagesApi.uploadFile(passage.id, item.file).catch(() => {});
+        } else {
+          // Assessment 2
+          const passage = await passagesApi.create({
+            title:           parsedData.title ? `Story 1: ${parsedData.title.trim()}` : "Untitled",
+            content:         (parsedData.content || "").trim(),
+            language:        parsedData.language || "filipino",
+            grade_level:     parsedData.grade_level || "grade_2",
+            assessment_type: 2,
+          });
+          if (item.file) await passagesApi.uploadFile(passage.id, item.file).catch(() => {});
+          // Save questions if present
+          if (parsedData.questions?.length > 0) {
+            for (const q of parsedData.questions) {
+              if (!q.question?.trim()) continue;
+              await questionsApi.create(passage.id, {
+                text:       q.question.trim(),
+                answer_key: q.answer?.trim() || null,
+              });
+            }
+          }
+        }
+        saved++;
+      } catch {
+        failed++;
+      }
+    }
+
+    setBulkSaving(false);
+    setBulkResult({ saved, failed, total });
+
+    // Refresh passages list
+    passagesApi
+      .list({ page_size: 100 })
+      .then((data) => setPassages(data.passages))
+      .catch(() => {});
+  }
 
   const myPassages     = useMemo(() => passages.filter((p) => p.visibility !== "public"), [passages]);
   const publicPassages = useMemo(() => passages.filter((p) => p.visibility === "public"), [passages]);
@@ -277,17 +350,45 @@ export default function PassagePage() {
         <UploadModal
           defaultType={2}
           eng3={false}
-          teacherGrade={teacherGrade}   // NEW — null on admin side, grade string on teacher side
+          teacherGrade={teacherGrade}
           onClose={() => setUploadOpen(false)}
-          onUpload={(type, parsedData) => {
+          onUpload={(type, parsedData, fileName, file) => {
             if (type === 1) {
-              navigate("/passages/add-assessment-1", { state: { parsedData } });
+              navigate("/passages/add-assessment-1", { state: { parsedData, uploadedFile: file } });
             } else {
-              navigate("/passages/add-assessment-2", { state: { parsedData } });
+              navigate("/passages/add-assessment-2", { state: { parsedData, uploadedFile: file } });
             }
           }}
+          onBulkUpload={handleBulkUpload}
         />
       )}
+
+      {/* Bulk saving overlay */}
+      <ConfirmModal
+        isOpen={bulkSaving}
+        title="Saving Passages…"
+        message="Please wait while your passages are being saved."
+        confirmLabel={null}
+        cancelLabel={null}
+        onClose={() => {}}
+        onConfirm={() => {}}
+      />
+
+      {/* Bulk result modal */}
+      <ConfirmModal
+        isOpen={!!bulkResult}
+        title={bulkResult?.failed > 0 ? "Upload Complete" : "Passages Saved!"}
+        message={
+          bulkResult?.failed > 0
+            ? `${bulkResult.saved} of ${bulkResult.total} passages saved successfully. ${bulkResult.failed} failed to save.`
+            : `${bulkResult?.saved || 0} passage${(bulkResult?.saved || 0) !== 1 ? "s" : ""} saved successfully.`
+        }
+        variant={bulkResult?.failed > 0 ? "danger" : "default"}
+        confirmLabel="OK"
+        cancelLabel={null}
+        onConfirm={() => setBulkResult(null)}
+        onClose={() => setBulkResult(null)}
+      />
     </Layout>
   );
 }

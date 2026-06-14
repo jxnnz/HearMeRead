@@ -84,6 +84,16 @@ async def upload_import(file_bytes: bytes, filename: str, teacher_id: str) -> st
     return key
 
 
+async def upload_passage_file(file_bytes: bytes, filename: str, teacher_id: str) -> str:
+    key = _make_key(f"passages/{teacher_id}", filename)
+    _get_client().put_object(
+        Bucket=BUCKET,
+        Key=key,
+        Body=file_bytes,
+    )
+    return key
+
+
 async def upload_archive(file_bytes: bytes, filename: str, school_id: str) -> str:
     key = _make_key(f"archives/{school_id}", filename)
     _get_client().put_object(

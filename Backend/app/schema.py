@@ -205,6 +205,7 @@ class PassageCreate(BaseModel):
     task2_sentences: Optional[str]        = None
     # Shared
     assessment_type: Optional[int]        = Field(None, ge=1, le=2)
+    file_path:       Optional[str]        = None
 
 
 class PassageUpdate(BaseModel):
@@ -216,6 +217,7 @@ class PassageUpdate(BaseModel):
     task1_content:   Optional[str]        = None
     task2_words:     Optional[str]        = None
     task2_sentences: Optional[str]        = None
+    file_path:       Optional[str]        = None
 
 
 class PassageResponse(BaseModel):
@@ -232,6 +234,7 @@ class PassageResponse(BaseModel):
     task1_content:   Optional[str]        = None
     task2_words:     Optional[str]        = None
     task2_sentences: Optional[str]        = None
+    file_path:       Optional[str]        = None
     created_at:      datetime
     updated_at:      datetime
     questions:       List[QuestionResponse] = []

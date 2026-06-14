@@ -1,7 +1,7 @@
 from typing import Optional, List
 from datetime import datetime
 import sqlalchemy as sa
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, update
@@ -889,6 +889,27 @@ async def archive_public_passage(
     passage.is_archived = True
     await db.commit()
     return {"detail": "Passage archived successfully"}
+
+
+@router.post("/passages/{passage_id}/file", status_code=status.HTTP_200_OK, summary="Upload the original passage file to R2 storage (admin)")
+async def admin_upload_passage_file(
+    passage_id: int,
+    file: UploadFile = File(...),
+    current_admin: Teacher = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.services import storage_service
+    result = await db.execute(select(Passage).where(Passage.id == passage_id))
+    passage = result.scalar_one_or_none()
+    if not passage:
+        raise HTTPException(status_code=404, detail="Passage not found")
+    file_bytes = await file.read()
+    r2_key = await storage_service.upload_passage_file(
+        file_bytes, file.filename or "passage", str(current_admin.id)
+    )
+    passage.file_path = r2_key
+    await db.commit()
+    return {"file_path": r2_key}
 
 
 # Student Reassignment

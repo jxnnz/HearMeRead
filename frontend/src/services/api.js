@@ -218,6 +218,15 @@ export const adminApi = {
     const res = await api.delete(`/admin/passages/${id}`);
     return res.data;
   },
+
+  uploadPassageFile: async (passageId, file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await api.post(`/admin/passages/${passageId}/file`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return res.data;
+  },
 };
 
 // Passages
@@ -286,6 +295,15 @@ export const passagesApi = {
   
   uploadPassageOnly: async (formData) => {
     const res = await api.post("/passages/upload/passage-only", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return res.data;
+  },
+
+  uploadFile: async (passageId, file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await api.post(`/passages/${passageId}/file`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
     return res.data;

@@ -15,7 +15,7 @@ from app.schema import (
     PassageListResponse,
     QuestionResponse,
 )
-from app.services import passage_service, question_service
+from app.services import passage_service, question_service, storage_service
 from app.utils.docx_parser import validate_upload, parse_combined, parse_passage_only
 
 
@@ -350,6 +350,29 @@ async def upload_batch(
 
     await db.commit()
     return BatchUploadResponse(created=created, failed=failed, results=results)
+
+
+# ── Upload original file to R2 ────────────────────────────────────────────────
+@router.post(
+    "/{passage_id}/file",
+    status_code=status.HTTP_200_OK,
+    summary="Upload the original passage file to R2 storage",
+)
+async def upload_passage_file(
+    passage_id:      int,
+    file:            UploadFile  = File(...),
+    db:              AsyncSession = Depends(get_db),
+    current_teacher: Teacher      = Depends(get_current_teacher),
+):
+    passage = await passage_service.get_passage_by_id(db, passage_id, current_teacher.id)
+    file_bytes = await file.read()
+    r2_key = await storage_service.upload_passage_file(
+        file_bytes, file.filename or "passage", str(current_teacher.id)
+    )
+    passage.file_path = r2_key
+    await db.commit()
+    await db.refresh(passage)
+    return {"file_path": r2_key}
 
 
 # ── Get one ───────────────────────────────────────────────────────────────────

@@ -7,6 +7,7 @@ import { passagesApi } from "../services/api";
 export default function UploadModal({
   onClose,
   onUpload,
+  onBulkUpload,
   defaultType  = 2,
   eng3         = false,
   teacherGrade = null,   // NEW — pass teacher's grade_level from authApi.me()
@@ -25,18 +26,32 @@ export default function UploadModal({
 
   const isMobile = useWindowWidth() <= 768;
 
-  // ── File handler — now supports multiple files ──────────────────────────
+  // ── File handler — single vs. bulk ──────────────────────────────────────
   const handleFiles = async (fileList) => {
     if (!fileList || fileList.length === 0) return;
     setLoading(true);
     try {
-      // Process each file sequentially; call onUpload per file
-      for (const file of Array.from(fileList)) {
-        const rawText    = await parseFile(file);
+      const files = Array.from(fileList);
+
+      if (files.length === 1) {
+        // Single file → parse and send to form for editing
+        const rawText    = await parseFile(files[0]);
         const parsedData = parseDocument(rawText, selectedType, eng3);
-        onUpload(selectedType, parsedData, file.name);
+        onUpload(selectedType, parsedData, files[0].name, files[0]);
+        onClose();
+      } else {
+        // Bulk (2+ files) → parse all, then let parent save directly
+        const parsedItems = [];
+        for (const file of files) {
+          const rawText    = await parseFile(file);
+          const parsedData = parseDocument(rawText, selectedType, eng3);
+          parsedItems.push({ parsedData, fileName: file.name, file });
+        }
+        onClose();
+        if (onBulkUpload) {
+          onBulkUpload(selectedType, parsedItems);
+        }
       }
-      onClose();
     } catch (err) {
       alert("Failed to read file. Make sure it matches the format shown below.");
     } finally {
