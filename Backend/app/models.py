@@ -96,6 +96,7 @@ class Teacher(Base):
     agreed_to_privacy = Column(Boolean, default=False, nullable=False)
     employee_id = Column(String(50),  nullable=True)
     profile_picture_url = Column(String(500), nullable=True)
+    pending_deped_school_id = Column(String(20), nullable=True)
     grade_level = Column(SAEnum(GradeLevel), nullable=True)
     section     = Column(String(100), nullable=True)
     created_at      = Column(DateTime(timezone=True), server_default=func.now())

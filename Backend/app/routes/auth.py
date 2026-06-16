@@ -13,6 +13,7 @@ from app.core.security import verify_password, get_password_hash, create_access_
 from app.db import get_db
 from app.dependencies import get_current_teacher
 from app.models import Teacher, EmailVerificationToken, PasswordResetToken, School, UserRole
+from sqlalchemy import update as sa_update
 from app.schema import (
     TeacherRegister, LoginRequest, TokenResponse,
     TeacherResponse, ResendVerificationRequest,
@@ -146,28 +147,50 @@ async def register(request: Request, data: TeacherRegister, db: AsyncSession = D
 
         school.admin_id = teacher.id
 
+        # Auto-link any teachers who registered before this school existed.
+        # They stored their typed DepEd ID in pending_deped_school_id;
+        # now that the school exists we link them and clear the pending field.
+        if deped_id:
+            await db.execute(
+                sa_update(Teacher)
+                .where(
+                    Teacher.pending_deped_school_id == deped_id,
+                    Teacher.school_id.is_(None),
+                    Teacher.role == UserRole.teacher,
+                )
+                .values(school_id=school.id, pending_deped_school_id=None)
+            )
+
     else:
         # Teacher path
+        # DepEd School ID is required on the form but does NOT have to match
+        # an existing school — teacher registers unlinked (school_id = None).
+        # The typed ID is saved as pending_deped_school_id so that when an
+        # admin later registers the matching school, all waiting teachers get
+        # auto-linked. School code is optional and also non-blocking.
         school_id: int | None = None
-        if data.deped_school_id or data.school_code:
-            # Try DepEd School ID first, then fall back to school code
-            school = None
-            if data.deped_school_id:
-                res = await db.execute(
-                    select(School).where(School.deped_school_id == data.deped_school_id.strip())
-                )
-                school = res.scalar_one_or_none()
-            if not school and data.school_code:
-                res = await db.execute(
-                    select(School).where(School.school_code == data.school_code.upper())
-                )
-                school = res.scalar_one_or_none()
-            if not school:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="No school found with that ID or code. Please check with your administrator.",
-                )
+        school = None
+        pending_deped_id: str | None = None
+
+        # 1. Try DepEd School ID first (required field from form)
+        if data.deped_school_id:
+            res = await db.execute(
+                select(School).where(School.deped_school_id == data.deped_school_id.strip())
+            )
+            school = res.scalar_one_or_none()
+
+        # 2. Fall back to school code if DepEd ID did not match (optional field)
+        if not school and data.school_code:
+            res = await db.execute(
+                select(School).where(School.school_code == data.school_code.upper())
+            )
+            school = res.scalar_one_or_none()
+
+        # 3. Link if found; otherwise save ID as pending for later auto-link
+        if school:
             school_id = school.id
+        elif data.deped_school_id:
+            pending_deped_id = data.deped_school_id.strip()
 
         teacher = Teacher(
             first_name=data.first_name,
@@ -176,6 +199,7 @@ async def register(request: Request, data: TeacherRegister, db: AsyncSession = D
             hashed_password=await get_password_hash(data.password),
             role=UserRole.teacher,
             school_id=school_id,
+            pending_deped_school_id=pending_deped_id,
             agreed_to_terms=data.agreed_to_terms,
             agreed_to_privacy=data.agreed_to_privacy,
         )

@@ -61,7 +61,7 @@ export default function SignupForm({ onSubmit, loading }) {
   const passwordsMismatch = confirmPassword.length > 0 && password !== confirmPassword;
 
   const schoolReady = role === "teacher"
-    ? schoolLookupStatus === "found"
+    ? teacherDepedId.trim().length > 0                                          // DepEd ID required; school code optional; match not required
     : adminSchoolName.trim().length > 0 && adminDepedId.trim().length > 0;
 
   function handleRoleSwitch(newRole) {
@@ -117,7 +117,7 @@ export default function SignupForm({ onSubmit, loading }) {
     setConfirmError("");
     onSubmit({
       firstName, lastName, email, password, role,
-      depedSchoolId: role === "admin" ? adminDepedId.trim() : teacherDepedId.trim() || undefined,
+      depedSchoolId: role === "admin" ? adminDepedId.trim() : teacherDepedId.trim(),
       schoolCode: role === "teacher" ? schoolCode || undefined : undefined,
       schoolName: role === "admin" ? adminSchoolName : undefined,
       agreedToTerms, agreedToPrivacy,
@@ -129,11 +129,11 @@ export default function SignupForm({ onSubmit, loading }) {
   const SchoolStatus = () => {
     if (schoolLookupStatus === "loading") return <span className="auth-field-hint" style={{ display: "flex", alignItems: "center", gap: 5 }}><Loader size={11} /> Looking up school…</span>;
     if (schoolLookupStatus === "found") return <span className="pw-match pw-match--ok"><Check size={12} /> {schoolName}</span>;
-    if (schoolLookupStatus === "not_found") return <span className="pw-match pw-match--error"><X size={12} /> No school found</span>;
+    if (schoolLookupStatus === "not_found") return <span className="pw-match pw-match--warn"><X size={12} /> No school found — you can still register and connect later</span>;
     return null;
   };
 
-  const lookupClass = schoolLookupStatus === "found" ? " auth-input--success" : schoolLookupStatus === "not_found" ? " auth-input--error" : "";
+  const lookupClass = schoolLookupStatus === "found" ? " auth-input--success" : "";
 
   // ==========================================================================
   return (
@@ -161,12 +161,6 @@ export default function SignupForm({ onSubmit, loading }) {
         {/* ══ TEACHER school fields ══════════════════════════════════════════ */}
         {role === "teacher" && (
           <>
-            {/* School Name (Full Width) */}
-            <div className="auth-field-float">
-              <input id="signup-school-name" type="text" className={`auth-input${schoolName ? " auth-input--success" : ""}`} value={schoolName} placeholder=" " readOnly />
-              <label className="auth-label-float" htmlFor="signup-school-name">School Name</label>
-            </div>
-
             {/* Row: School Code | School ID */}
             <div className="auth-form__row">
               <div className="auth-field-float">
@@ -185,9 +179,8 @@ export default function SignupForm({ onSubmit, loading }) {
             {/* School Name (Full Width) */}
             <div className="auth-field-float">
               <input id="signup-school-name" type="text" className={`auth-input${schoolName ? " auth-input--success" : ""}`} value={schoolName} placeholder=" " readOnly />
-              <label className="auth-label-float" htmlFor="signup-school-name">School name</label>
+              <label className="auth-label-float" htmlFor="signup-school-name">School Name</label>
             </div>
-
 
             {/* Email (Full Width) */}
             <div className="auth-field-float">
