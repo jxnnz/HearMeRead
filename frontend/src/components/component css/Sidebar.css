@@ -47,6 +47,7 @@
   flex: 0 0 auto;
   padding: 9px;
   justify-content: center;
+  gap: 0;
 }
 
 .sidebar__logo-img {
@@ -94,6 +95,7 @@
 .sidebar--collapsed .sidebar__role-badge {
   justify-content: center;
   padding: 6px;
+  gap: 0;
 }
 
 /* Nav */
@@ -122,6 +124,7 @@
 .sidebar--collapsed .sidebar__link {
   justify-content: center;
   padding: 10px;
+  gap: 0;
 }
 
 .sidebar__link:hover {
@@ -174,6 +177,7 @@
 .sidebar--collapsed .sidebar__logout {
   justify-content: center;
   padding: 10px;
+  gap: 0;
 }
 
 .sidebar__logout:hover {

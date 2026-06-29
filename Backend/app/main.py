@@ -32,6 +32,17 @@ async def lifespan(app: FastAPI):
     from app.services.audio_storage import ensure_audio_dir
     from app.services.cleanup import create_scheduler
     ensure_audio_dir()
+
+    # Dynamic DB update: add original_passage_id to passages if not exists
+    try:
+        from sqlalchemy import text
+        from app.db import AsyncSessionLocal
+        async with AsyncSessionLocal() as session:
+            await session.execute(text("ALTER TABLE passages ADD COLUMN IF NOT EXISTS original_passage_id INTEGER REFERENCES passages(id) ON DELETE SET NULL"))
+            await session.commit()
+    except Exception as e:
+        logger.warning(f"Failed to auto-add column 'original_passage_id' on startup: {e}")
+
     scheduler = create_scheduler()
     scheduler.start()
 

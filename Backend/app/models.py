@@ -193,7 +193,8 @@ class Passage(Base):
     task1_content   = Column(Text, nullable=True)      # Assessment 1: Task 1 reading passage
     task2_words     = Column(Text, nullable=True)      # Assessment 1: comma-separated word list
     task2_sentences = Column(Text, nullable=True)      # Assessment 1: period-separated sentences
-    file_path       = Column(String(500), nullable=True)   # R2 key for the original uploaded file
+    file_path           = Column(String(500), nullable=True)   # R2 key for the original uploaded file
+    original_passage_id = Column(Integer, ForeignKey("passages.id", ondelete="SET NULL"), nullable=True)
     created_at      = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at      = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 

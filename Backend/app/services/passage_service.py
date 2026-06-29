@@ -76,13 +76,35 @@ async def get_passages(
     # Always include the teacher's own passages (any visibility)
     own_filter = Passage.teacher_id == teacher_id
 
-    # Public passages: match grade level AND same school
+    # Public passages: match grade level and check for local school overrides
     if assigned_grade and school_id:
+        # Subquery: get original passage IDs that have been overridden in this school
+        override_subquery = (
+            select(Passage.original_passage_id)
+            .join(Teacher, Teacher.id == Passage.teacher_id)
+            .where(
+                Passage.visibility == PassageVisibility.public,
+                Passage.original_passage_id.is_not(None),
+                Teacher.school_id == school_id,
+            )
+        )
+        
         public_filter = and_(
             Passage.visibility == PassageVisibility.public,
             Passage.grade_level == assigned_grade,
-            Passage.teacher_id.in_(
-                select(Teacher.id).where(Teacher.school_id == school_id)
+            or_(
+                # Show global public passages that have not been overridden by this school
+                and_(
+                    Passage.original_passage_id.is_(None),
+                    Passage.id.not_in(override_subquery),
+                ),
+                # Show local overrides for this school
+                and_(
+                    Passage.original_passage_id.is_not(None),
+                    Passage.teacher_id.in_(
+                        select(Teacher.id).where(Teacher.school_id == school_id)
+                    ),
+                ),
             ),
         )
         visibility_filter = or_(own_filter, public_filter)
@@ -141,12 +163,9 @@ async def get_passage_by_id(
     if passage.teacher_id == teacher_id:
         return passage
 
-    # Public passage — verify same school
+    # Public passage — accessible to everyone
     if passage.visibility == PassageVisibility.public:
-        school_id = await _get_teacher_school_id(db, teacher_id)
-        owner_school_id = await _get_teacher_school_id(db, passage.teacher_id)
-        if school_id and school_id == owner_school_id:
-            return passage
+        return passage
 
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Passage not found")
 

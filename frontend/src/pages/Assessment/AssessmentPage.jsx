@@ -751,7 +751,6 @@ export default function AssessmentPage() {
   // TimeLimitModal handlers (A2 only)
   function handleTimeLimitContinue() {
     setShowTimeLimitModal(false);
-    setTimeLimitReached(false);
     setIsPaused(false); // resume timer + recording
     if (mediaRecorderRef.current?.state === "paused") {
       mediaRecorderRef.current.resume();

@@ -777,13 +777,44 @@ async def list_public_passages(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Returns all public passages. Admin can filter by language, grade, and type.
+    Returns all public passages visible to the admin. Excludes original public
+    passages if they have been overridden (cloned) by this admin's school.
     """
-    from app.models import PassageVisibility
+    from app.models import PassageVisibility, Teacher
+    from sqlalchemy import select, or_, and_
+
+    school_id = current_admin.school_id
+
+    # Subquery to find all original_passage_id overrides created in this school
+    override_subquery = (
+        select(Passage.original_passage_id)
+        .join(Teacher, Teacher.id == Passage.teacher_id)
+        .where(
+            Passage.visibility == PassageVisibility.public,
+            Passage.original_passage_id.is_not(None),
+            Teacher.school_id == school_id,
+        )
+    )
 
     query = (
         select(Passage)
-        .where(Passage.visibility == PassageVisibility.public)
+        .where(
+            Passage.visibility == PassageVisibility.public,
+            or_(
+                # Show global public passages that have not been overridden
+                and_(
+                    Passage.original_passage_id.is_(None),
+                    Passage.id.not_in(override_subquery),
+                ),
+                # Show local overrides for this school
+                and_(
+                    Passage.original_passage_id.is_not(None),
+                    Passage.teacher_id.in_(
+                        select(Teacher.id).where(Teacher.school_id == school_id)
+                    ),
+                ),
+            ),
+        )
         .order_by(Passage.grade_level, Passage.language, Passage.title)
     )
     if language:
@@ -807,9 +838,10 @@ async def create_public_passage(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Creates a new public passage visible to all teachers in the school.
+    Creates a new public passage.
     """
-    from app.models import PassageVisibility
+    from app.models import PassageVisibility, Question
+    from sqlalchemy import select
 
     # Compute word count from content
     content = payload.get("content", "") or ""
@@ -831,6 +863,22 @@ async def create_public_passage(
     db.add(passage)
     await db.commit()
     await db.refresh(passage)
+
+    # Save questions inline if provided
+    questions_data = payload.get("questions", [])
+    if questions_data:
+        db_questions = [
+            Question(
+                passage_id=passage.id,
+                text=q["text"],
+                answer_key=q.get("answer_key"),
+                order=q.get("order", 0)
+            )
+            for q in questions_data
+        ]
+        db.add_all(db_questions)
+        await db.commit()
+
     return passage
 
 
@@ -841,7 +889,12 @@ async def update_public_passage(
     current_admin: Teacher = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    from app.models import PassageVisibility
+    """
+    Updates a public passage. If the passage belongs to a different school,
+    clones it and all of its questions for the local school to preserve privacy.
+    """
+    from app.models import PassageVisibility, Teacher, Question
+    from sqlalchemy import select
 
     result = await db.execute(
         select(Passage).where(
@@ -853,19 +906,121 @@ async def update_public_passage(
     if not passage:
         raise HTTPException(status_code=404, detail="Public passage not found")
 
-    for field in ["title", "content", "language", "grade_level",
-                   "assessment_type", "task1_content", "task2_words", "task2_sentences"]:
-        if field in payload:
-            setattr(passage, field, payload[field])
+    # Check if the creator belongs to a different school
+    creator_result = await db.execute(select(Teacher).where(Teacher.id == passage.teacher_id))
+    creator = creator_result.scalar_one_or_none()
+    is_different_school = creator and creator.school_id is not None and creator.school_id != current_admin.school_id
 
-    # Recompute word count
-    if "content" in payload:
-        content = payload["content"] or ""
-        passage.word_count = len(content.split()) if content.strip() else 0
+    if is_different_school:
+        # Clone-on-write!
+        content = payload.get("content", passage.content) or ""
+        word_count = len(content.split()) if content.strip() else 0
 
-    await db.commit()
-    await db.refresh(passage)
-    return passage
+        cloned_passage = Passage(
+            teacher_id=current_admin.id,
+            title=payload.get("title", passage.title),
+            content=content if content.strip() else None,
+            language=payload.get("language", passage.language),
+            grade_level=payload.get("grade_level", passage.grade_level),
+            word_count=word_count,
+            visibility=PassageVisibility.public,
+            assessment_type=payload.get("assessment_type", passage.assessment_type),
+            task1_content=payload.get("task1_content", passage.task1_content),
+            task2_words=payload.get("task2_words", passage.task2_words),
+            task2_sentences=payload.get("task2_sentences", passage.task2_sentences),
+            file_path=passage.file_path,
+            original_passage_id=passage.id,
+        )
+        db.add(cloned_passage)
+        await db.commit()
+        await db.refresh(cloned_passage)
+
+        # Clone and update questions inline
+        questions_data = payload.get("questions", [])
+        if questions_data:
+            db_questions = [
+                Question(
+                    passage_id=cloned_passage.id,
+                    text=q["text"],
+                    answer_key=q.get("answer_key"),
+                    order=q.get("order", 0)
+                )
+                for q in questions_data
+            ]
+            db.add_all(db_questions)
+            await db.commit()
+        else:
+            # If no questions in payload, clone original questions
+            orig_qs_result = await db.execute(
+                select(Question).where(
+                    Question.passage_id == passage.id,
+                    Question.is_archived == False
+                )
+            )
+            orig_qs = orig_qs_result.scalars().all()
+            cloned_qs = [
+                Question(
+                    passage_id=cloned_passage.id,
+                    text=oq.text,
+                    answer_key=oq.answer_key,
+                    order=oq.order
+                )
+                for oq in orig_qs
+            ]
+            if cloned_qs:
+                db.add_all(cloned_qs)
+                await db.commit()
+
+        return cloned_passage
+
+    else:
+        # Update directly (same school)
+        for field in ["title", "content", "language", "grade_level",
+                       "assessment_type", "task1_content", "task2_words", "task2_sentences"]:
+            if field in payload:
+                setattr(passage, field, payload[field])
+
+        if "content" in payload:
+            content = payload["content"] or ""
+            passage.word_count = len(content.split()) if content.strip() else 0
+
+        # Sync questions inline
+        if "questions" in payload:
+            q_result = await db.execute(
+                select(Question).where(
+                    Question.passage_id == passage.id,
+                    Question.is_archived == False
+                )
+            )
+            existing_qs = {q.id: q for q in q_result.scalars().all()}
+            
+            payload_qs = payload["questions"]
+            keep_ids = {q["id"] for q in payload_qs if q.get("id") is not None}
+
+            # Archive removed questions
+            for eq_id, eq in existing_qs.items():
+                if eq_id not in keep_ids:
+                    eq.is_archived = True
+
+            # Create or update remaining questions
+            for q in payload_qs:
+                q_id = q.get("id")
+                if q_id is not None and q_id in existing_qs:
+                    existing_qs[q_id].text = q["text"]
+                    existing_qs[q_id].answer_key = q.get("answer_key")
+                    existing_qs[q_id].order = q.get("order", 0)
+                else:
+                    new_q = Question(
+                        passage_id=passage.id,
+                        text=q["text"],
+                        answer_key=q.get("answer_key"),
+                        order=q.get("order", 0)
+                    )
+                    db.add(new_q)
+
+        await db.commit()
+        await db.refresh(passage)
+        return passage
 
 
 @router.delete("/passages/{passage_id}", summary="Archive a public passage")

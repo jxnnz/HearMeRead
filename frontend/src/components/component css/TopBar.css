@@ -16,6 +16,20 @@
   letter-spacing: -0.01em;
 }
 
+.topbar__right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.topbar__user-name {
+  font-size: 20px;
+  font-weight: 800;
+  color: #2c3e6b;
+  font-family: "Poppins", sans-serif;
+}
+
 .topbar__actions {
   display: flex;
   align-items: center;
@@ -34,6 +48,14 @@
     font-size: 17px;
   }
 
+  .topbar__right {
+    gap: 8px;
+  }
+
+  .topbar__user-name {
+    font-size: 16px;
+  }
+
   .topbar__actions {
     gap: 6px;
   }
@@ -42,5 +64,9 @@
 @media (max-width: 480px) {
   .topbar__title {
     font-size: 15px;
+  }
+
+  .topbar__user-name {
+    font-size: 14px;
   }
 }

@@ -440,52 +440,30 @@ export default function AdminPassagesPage() {
       if (assType === 1 && eng3) payload.task2_sentences = "";
       if (assType === 2) payload.title = `Story ${form.story_number || "1"}: ${(form.title || "").trim()}`;
       
+      if (assType === 2) {
+        payload.questions = questions
+          .filter(q => q.question?.trim())
+          .map((q, idx) => ({
+            id: typeof q.id === "number" ? q.id : null,
+            text: q.question.trim(),
+            answer_key: q.answer?.trim() || null,
+            order: idx,
+          }));
+      }
+
       let passageId = editId;
       if (editId) {
-        await adminApi.updatePassage(editId, payload);
+        const updated = await adminApi.updatePassage(editId, payload);
+        passageId = updated.id;
       } else {
         const created = await adminApi.createPassage(payload);
         passageId = created.id;
-
-        // Upload original file to R2
-        if (pendingFile) {
-          await adminApi.uploadPassageFile(passageId, pendingFile).catch(() => {});
-          setPendingFile(null);
-        }
       }
-      
-      // Handle questions for Assessment 2
-      if (assType === 2) {
-        let existingQs = [];
-        if (editId) {
-          try {
-            const qRes = await questionsApi.list(editId);
-            existingQs = qRes.questions || qRes || [];
-          } catch(e) {}
-        }
-        
-        const keepIds = questions.map(q => q.id).filter(id => typeof id === "number");
-        
-        // Archive removed questions
-        for (const eq of existingQs) {
-          if (!keepIds.includes(eq.id)) {
-            await questionsApi.archive(eq.id).catch(()=>{});
-          }
-        }
-        
-        // Create or update remaining questions
-        for (let i = 0; i < questions.length; i++) {
-          const q = questions[i];
-          if (!q.question?.trim()) continue;
-          try {
-            const qPayload = { text: q.question.trim(), answer_key: q.answer?.trim() || null, order: i };
-            if (typeof q.id === "number") {
-              await questionsApi.update(q.id, qPayload);
-            } else {
-              await questionsApi.create(passageId, qPayload);
-            }
-          } catch { /* ignore */ }
-        }
+
+      // Upload original file to R2
+      if (pendingFile && passageId) {
+        await adminApi.uploadPassageFile(passageId, pendingFile).catch(() => {});
+        setPendingFile(null);
       }
       
       setView("list");
@@ -534,6 +512,13 @@ export default function AdminPassagesPage() {
 
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             {error && <div className="ap-error" role="alert">{error}</div>}
+
+            {view === "add" && (
+              <div className="ap-info-banner" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <Info size={16} style={{ flexShrink: 0 }} />
+                <span>Only DepEd passages should be added.</span>
+              </div>
+            )}
 
             <div className="ap-card">
               <h2 className="ap-card__title">Language &amp; Grade Level</h2>

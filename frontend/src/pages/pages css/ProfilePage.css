@@ -2,7 +2,7 @@
 .pp-page {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  min-height: 100%;
 }
 
 .pp-content {
@@ -518,6 +518,12 @@
   align-items: center;
   gap: 14px;
   margin-bottom: 24px;
+  position: sticky;
+  top: -20px;
+  margin-top: -20px;
+  padding: 20px 0 10px;
+  background: #e8edf7;
+  z-index: 100;
 }
 
 .pp-manual-back-btn {
@@ -553,6 +559,9 @@
   .pp-manual-topbar {
     margin-bottom: 16px;
     gap: 10px;
+    top: -16px;
+    margin-top: -16px;
+    padding: 16px 0 8px;
   }
   .pp-manual-back-btn {
     width: 32px;
