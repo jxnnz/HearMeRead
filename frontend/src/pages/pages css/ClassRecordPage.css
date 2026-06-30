@@ -209,6 +209,26 @@
 }
 .cr-archive-confirm__btn--confirm:hover:not(:disabled) { background: #b91c1c; }
 
+/* Delete student confirm banner — deeper red to distinguish from session archive */
+.cr-delete-confirm {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: #fef2f2;
+  border-bottom: 1.5px solid #fca5a5;
+  padding: 12px 24px;
+  font-size: 13px;
+  color: #7f1d1d;
+  line-height: 1.5;
+}
+
+.cr-delete-confirm__error {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
 /* Table wrapper */
 .cr-table-wrapper {
   overflow: auto;
@@ -387,6 +407,20 @@
   border-color: #f87171;
 }
 .cr-action-btn--archive:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.cr-action-btn--delete {
+  background: #7f1d1d;
+  border-color: #7f1d1d;
+  color: #fff;
+}
+.cr-action-btn--delete:hover:not(:disabled) {
+  background: #5c1414;
+  border-color: #5c1414;
+}
+.cr-action-btn--delete:disabled {
   opacity: 0.3;
   cursor: not-allowed;
 }

@@ -195,7 +195,7 @@ export default function AssessmentPage() {
   const streamRef         = useRef(null);
   const currentStepRef    = useRef(step);  // track step in callbacks
 
-  const [fontSizeIdx, setFontSizeIdx] = useState(1);
+  const [fontSizeIdx, setFontSizeIdx] = useState(3); // default to 26px (largest)
   const fontSize = FONT_SIZES[fontSizeIdx];
 
   // Keep currentStepRef in sync

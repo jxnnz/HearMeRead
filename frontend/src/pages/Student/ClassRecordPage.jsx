@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ChevronLeft, ChevronRight, FileText, FileSpreadsheet, Pencil, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText, FileSpreadsheet, Pencil, Trash2, UserX } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import ExcelJS from "exceljs";
@@ -77,6 +77,9 @@ export default function ClassRecordPage() {
   const [editStudentError, setEditStudentError]   = useState(null);
   const [archiveSession, setArchiveSession] = useState(null);
   const [archiving, setArchiving]           = useState(false);
+  const [deleteStudent, setDeleteStudent]   = useState(null); // student object pending hard delete
+  const [deletingStudent, setDeletingStudent] = useState(false);
+  const [deleteStudentError, setDeleteStudentError] = useState(null);
 
   async function reload() {
     setLoading(true);
@@ -178,6 +181,21 @@ export default function ClassRecordPage() {
       showError(parseApiError(err, "Failed to archive session. Please try again."));
     } finally {
       setArchiving(false);
+    }
+  }
+
+  async function handleDeleteStudent() {
+    if (!deleteStudent) return;
+    setDeletingStudent(true);
+    setDeleteStudentError(null);
+    try {
+      await studentsApi.delete(deleteStudent.id);
+      setDeleteStudent(null);
+      reload();
+    } catch (err) {
+      setDeleteStudentError(parseApiError(err, "Failed to delete student. Please try again."));
+    } finally {
+      setDeletingStudent(false);
     }
   }
 
@@ -610,6 +628,31 @@ export default function ClassRecordPage() {
               </div>
             )}
 
+            {/* Delete student confirmation banner */}
+            {deleteStudent && (
+              <div className="cr-delete-confirm">
+                <span>
+                  Permanently delete <strong>{deleteStudent.first_name} {deleteStudent.last_name}</strong>?
+                  This removes the student and all of their assessment history across every school year.
+                  This cannot be undone.
+                  {deleteStudentError && (
+                    <>
+                      <br />
+                      <span className="cr-delete-confirm__error">{deleteStudentError}</span>
+                    </>
+                  )}
+                </span>
+                <div className="cr-archive-confirm__actions">
+                  <button className="cr-archive-confirm__btn cr-archive-confirm__btn--cancel" onClick={() => { setDeleteStudent(null); setDeleteStudentError(null); }} disabled={deletingStudent}>
+                    Cancel
+                  </button>
+                  <button className="cr-archive-confirm__btn cr-archive-confirm__btn--confirm" onClick={handleDeleteStudent} disabled={deletingStudent}>
+                    {deletingStudent ? "Deleting…" : "Delete Permanently"}
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Scrollable assessment table */}
             <div className="cr-table-wrapper">
               <table className="cr-table">
@@ -738,6 +781,13 @@ export default function ClassRecordPage() {
                               title={sess ? "Archive session" : "No session to archive"}
                             >
                               <Trash2 size={13} />
+                            </button>
+                            <button
+                              className="cr-action-btn cr-action-btn--delete"
+                              onClick={() => { setDeleteStudent(s); setDeleteStudentError(null); }}
+                              title="Delete student permanently"
+                            >
+                              <UserX size={13} />
                             </button>
                           </td>
                         </tr>

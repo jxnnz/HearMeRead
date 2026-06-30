@@ -24,14 +24,109 @@ export default function UploadModal({
   const [pickerGrade, setPickerGrade]         = useState("grade_1");
   const [pickerLanguage, setPickerLanguage]   = useState("filipino");
 
+  // Drag & drop state
+  const [isDragging, setIsDragging]     = useState(false);
+  const dragCounterRef = useRef(0); // tracks nested dragenter/dragleave pairs
+
+  // Staged files awaiting review before upload
+  const [stagedFiles, setStagedFiles]   = useState([]); // File[]
+  const [stageError, setStageError]     = useState(null);
+
   const isMobile = useWindowWidth() <= 768;
 
-  // ── File handler — single vs. bulk ──────────────────────────────────────
-  const handleFiles = async (fileList) => {
+  const ACCEPTED_EXTENSIONS = [".txt", ".docx"];
+  const MAX_FILES = 10;
+
+  function formatFileSize(bytes) {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  function isAcceptedFile(file) {
+    const name = (file.name || "").toLowerCase();
+    return ACCEPTED_EXTENSIONS.some((ext) => name.endsWith(ext));
+  }
+
+  // ── Stage files — adds to the preview list instead of uploading immediately ──
+  function stageFiles(fileList) {
     if (!fileList || fileList.length === 0) return;
+    setStageError(null);
+
+    const incoming = Array.from(fileList);
+    const accepted = incoming.filter(isAcceptedFile);
+    const rejected = incoming.length - accepted.length;
+
+    setStagedFiles((prev) => {
+      // De-dupe by name+size so dragging the same file twice doesn't double it
+      const existingKeys = new Set(prev.map((f) => `${f.name}__${f.size}`));
+      const merged = [...prev];
+      for (const f of accepted) {
+        const key = `${f.name}__${f.size}`;
+        if (!existingKeys.has(key)) {
+          merged.push(f);
+          existingKeys.add(key);
+        }
+      }
+      return merged.slice(0, MAX_FILES);
+    });
+
+    if (rejected > 0) {
+      setStageError(
+        `${rejected} file${rejected > 1 ? "s were" : " was"} skipped — only .docx and .txt files are accepted.`
+      );
+    }
+  }
+
+  function removeStagedFile(index) {
+    setStagedFiles((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function clearStagedFiles() {
+    setStagedFiles([]);
+    setStageError(null);
+  }
+
+  // ── Drag & drop handlers ──────────────────────────────────────────────
+  function handleDragEnter(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current += 1;
+    if (e.dataTransfer?.types?.includes("Files")) {
+      setIsDragging(true);
+    }
+  }
+
+  function handleDragOver(e) {
+    // Required: without preventDefault here, onDrop never fires —
+    // the browser's default behavior is to navigate to the dropped file.
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  function handleDragLeave(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current = Math.max(0, dragCounterRef.current - 1);
+    if (dragCounterRef.current === 0) {
+      setIsDragging(false);
+    }
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current = 0;
+    setIsDragging(false);
+    stageFiles(e.dataTransfer?.files);
+  }
+
+  // ── Submit handler — parses staged files and hands off to parent ────────
+  const handleUploadStaged = async () => {
+    if (stagedFiles.length === 0) return;
     setLoading(true);
     try {
-      const files = Array.from(fileList);
+      const files = stagedFiles;
 
       if (files.length === 1) {
         // Single file → parse and send to form for editing
@@ -164,22 +259,41 @@ export default function UploadModal({
           </div>
 
           {/* Drop zone — multiple files allowed */}
-          <div style={{ border: "2px dashed #c8d0e4", borderRadius: 10, padding: isMobile ? "16px 12px" : "30px 20px", textAlign: "center", background: "#fcfdff", marginBottom: isMobile ? 14 : 24 }}>
-            <Upload size={isMobile ? 22 : 32} color="#8a94b2" style={{ marginBottom: isMobile ? 8 : 12 }} />
+          <div
+            onDragEnter={handleDragEnter}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            style={{
+              border: `2px dashed ${isDragging ? "#2c3e6b" : "#c8d0e4"}`,
+              borderRadius: 10,
+              padding: isMobile ? "16px 12px" : "30px 20px",
+              textAlign: "center",
+              background: isDragging ? "#eef2fb" : "#fcfdff",
+              marginBottom: stagedFiles.length > 0 ? 12 : (isMobile ? 14 : 24),
+              transition: "background 0.15s ease, border-color 0.15s ease",
+            }}
+          >
+            <Upload size={isMobile ? 22 : 32} color={isDragging ? "#2c3e6b" : "#8a94b2"} style={{ marginBottom: isMobile ? 8 : 12 }} />
             <p style={{ margin: isMobile ? "0 0 4px" : "0 0 6px", fontSize: isMobile ? 12 : 14, color: "#444", fontWeight: 500 }}>
-              Select a <strong>.docx</strong> or <strong>.txt</strong> file to extract text.
+              {isDragging
+                ? "Drop your files here"
+                : <>Drag and drop, or select a <strong>.docx</strong> or <strong>.txt</strong> file.</>
+              }
             </p>
-            {/* NEW — multi-file hint */}
             <p style={{ margin: isMobile ? "0 0 10px" : "0 0 14px", fontSize: isMobile ? 11 : 12, color: "#8a94b2" }}>
               You can select multiple files at once.
             </p>
             <input
               type="file"
               accept=".txt,.docx"
-              multiple              // NEW — enables multi-select
+              multiple
               ref={fileInputRef}
               style={{ display: "none" }}
-              onChange={(e) => handleFiles(e.target.files)}
+              onChange={(e) => {
+                stageFiles(e.target.files);
+                e.target.value = ""; // allow re-selecting the same file later
+              }}
             />
             <button
               onClick={() => fileInputRef.current?.click()}
@@ -187,9 +301,93 @@ export default function UploadModal({
               className="ap-save-btn"
               style={{ background: "#2c3e6b", color: "#fff", borderColor: "#2c3e6b" }}
             >
-              {loading ? "Reading File…" : "Browse Files"}
+              Browse Files
             </button>
           </div>
+
+          {/* Staging error (e.g. unsupported file type dropped) */}
+          {stageError && (
+            <p style={{ fontSize: isMobile ? 11 : 12, color: "#c0392b", margin: "0 0 12px" }}>
+              {stageError}
+            </p>
+          )}
+
+          {/* Staged file preview list — shown once files are selected/dropped */}
+          {stagedFiles.length > 0 && (
+            <div style={{
+              border: "1px solid #dde2f0", borderRadius: 8,
+              marginBottom: isMobile ? 14 : 24, overflow: "hidden",
+            }}>
+              <div style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                padding: isMobile ? "8px 12px" : "10px 16px",
+                background: "#f8f9fd", borderBottom: "1px solid #eaecf8",
+              }}>
+                <span style={{ fontSize: isMobile ? 11 : 12, fontWeight: 700, color: "#2c3e6b" }}>
+                  {stagedFiles.length} file{stagedFiles.length > 1 ? "s" : ""} ready to upload
+                </span>
+                <button
+                  onClick={clearStagedFiles}
+                  disabled={loading}
+                  style={{ background: "none", border: "none", cursor: "pointer", fontSize: isMobile ? 11 : 12, color: "#8a94b2", fontWeight: 600 }}
+                >
+                  Clear all
+                </button>
+              </div>
+
+              <div style={{ maxHeight: isMobile ? 180 : 220, overflowY: "auto" }}>
+                {stagedFiles.map((file, idx) => (
+                  <div
+                    key={`${file.name}-${file.size}-${idx}`}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 10,
+                      padding: isMobile ? "8px 12px" : "10px 16px",
+                      borderBottom: idx < stagedFiles.length - 1 ? "1px solid #f0f2f8" : "none",
+                    }}
+                  >
+                    <FileText size={isMobile ? 14 : 16} color="#8a94b2" style={{ flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{
+                        margin: 0, fontSize: isMobile ? 12 : 13, color: "#1a2340", fontWeight: 500,
+                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                      }}>
+                        {file.name}
+                      </p>
+                      <p style={{ margin: 0, fontSize: isMobile ? 10 : 11, color: "#8a94b2" }}>
+                        {formatFileSize(file.size)}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => removeStagedFile(idx)}
+                      disabled={loading}
+                      aria-label={`Remove ${file.name}`}
+                      title="Remove"
+                      style={{
+                        background: "none", border: "none", cursor: "pointer",
+                        color: "#8a94b2", padding: 4, flexShrink: 0,
+                        display: "flex", alignItems: "center",
+                      }}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ padding: isMobile ? "10px 12px" : "12px 16px", background: "#f8f9fd", borderTop: "1px solid #eaecf8" }}>
+                <button
+                  onClick={handleUploadStaged}
+                  disabled={loading}
+                  className="ap-save-btn"
+                  style={{ width: "100%", background: "#2c3e6b", color: "#fff", borderColor: "#2c3e6b" }}
+                >
+                  {loading
+                    ? "Reading Files…"
+                    : `Upload ${stagedFiles.length} file${stagedFiles.length > 1 ? "s" : ""}`}
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Document Format Guide — collapsible on mobile */}
           <div style={{ background: "#f8f9fd", borderRadius: 8, border: "1px solid #eaecf8", padding: isMobile ? "12px 14px" : "16px 20px" }}>
