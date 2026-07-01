@@ -79,6 +79,12 @@ export function parseDocument(rawText, type, eng3) {
       result.task1 = text.trim();
     }
   } else {
+    // ── Assessment 2 ──────────────────────────────────────────────────────
+
+    // Story Number: extract before Title so the template order doesn't matter
+    const storyNumMatch = text.match(/Story\s*(?:Number|No\.?)[\s:-]+(\d+)/i);
+    if (storyNumMatch) result.story_number = storyNumMatch[1];
+
     const titleMatch = text.match(/Title[\s:-]+([^\n]+)/i);
     if (titleMatch) result.title = titleMatch[1].trim();
 
@@ -86,7 +92,10 @@ export function parseDocument(rawText, type, eng3) {
     if (contentMatch) {
       result.content = contentMatch[1].trim();
     } else {
-      result.content = text.replace(/Title[\s:-]+.*?(\n|$)/i, '').trim();
+      result.content = text
+        .replace(/Story\s*(?:Number|No\.?)[\s:-]+\d+[^\n]*/gi, "")
+        .replace(/Title[\s:-]+.*?(\n|$)/i, "")
+        .trim();
     }
 
     const questionsMatch = text.match(/Questions[\s:-]+([\s\S]*)$/i);
@@ -107,4 +116,4 @@ export function parseDocument(rawText, type, eng3) {
     }
   }
   return result;
-}
+}a

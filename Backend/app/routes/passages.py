@@ -100,31 +100,20 @@ Language:
 Filipino
 Grade:
 2
-[PASSAGE]
+
+Story Number:
+1
+Title:
+Ang Pagong at ang Matsing
+
+Content:
 Isulat dito ang buong teksto ng kwento.
-Maaaring magkaroon ng maraming talata.
-Bawat linya ay magiging bahagi ng kwento.
+...
 
-Pangalawang talata ng kwento.
-
-[QUESTIONS]
+Questions:
 Q: Sino ang pangunahing tauhan ng kwento?
 A: (Ilagay dito ang tamang sagot)
-
-Q: Ano ang nangyari sa simula ng kwento?
-A: (Ilagay dito ang tamang sagot)
-
-Q: Saan naganap ang kwento?
-A: (Ilagay dito ang tamang sagot)
-
-Q: Bakit ginawa iyon ng tauhan?
-A: (Ilagay dito ang tamang sagot)
-
-Q: Ano ang natutunan mo sa kwento?
-A: (Ilagay dito ang tamang sagot)
-
-Q: Paano nagtapos ang kwento?
-A: (Ilagay dito ang tamang sagot)
+...
 """
 
 # Map of (grade, language) → template string for A1

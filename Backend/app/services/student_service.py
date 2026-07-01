@@ -144,35 +144,98 @@ async def get_students(
     return total, students
 
 
-async def get_class_summaries(db: AsyncSession, teacher_id: int):
-    # Filter by teacher's current handle grade so old classes don't bleed through
+async def get_class_summaries(db: AsyncSession, teacher_id: int, school_year: Optional[str] = None):
+    """
+    Returns one summary per (grade_level, section) combination this teacher
+    currently handles, with a student_count that is scoped to `school_year`
+    using the exact same membership rule as get_students(): a student counts
+    toward a school year if their own school_year field matches, OR they have
+    a StudentEnrollment row for that year, OR they have an AssessmentSession
+    for that year. This keeps the card counts (this function) and the class
+    record detail view (get_students) in agreement.
+
+    If school_year is not provided, falls back to counting every student
+    currently tied to the teacher's grade/section (legacy behaviour), so
+    callers that don't yet pass a year don't break.
+    """
     t_res = await db.execute(select(Teacher).where(Teacher.id == teacher_id))
     teacher = t_res.scalar_one_or_none()
+
+    grade_filter = teacher.grade_level if teacher and teacher.grade_level else None
+    section_filter = teacher.section if teacher and teacher.section else None
+
+    if not school_year:
+        # Legacy fallback: no year given, count all students ever tied to
+        # this teacher's current grade/section. Kept for backward
+        # compatibility with any caller that doesn't pass school_year yet.
+        query = (
+            select(
+                Student.grade_level,
+                Student.section,
+                func.count(Student.id).label("student_count"),
+            )
+            .where(Student.teacher_id == teacher_id)
+        )
+        if grade_filter:
+            query = query.where(Student.grade_level == grade_filter)
+        if section_filter:
+            query = query.where(Student.section == section_filter)
+        query = query.group_by(Student.grade_level, Student.section).order_by(
+            Student.grade_level, Student.section
+        )
+        result = await db.execute(query)
+        return [
+            {
+                "grade_level": row.grade_level,
+                "section": row.section if row.section else "No Section",
+                "student_count": row.student_count,
+            }
+            for row in result
+        ]
+
+    # Year-aware path — mirrors get_students()'s membership rule exactly.
+    enrollment_subquery = select(StudentEnrollment.student_id).where(
+        StudentEnrollment.teacher_id == teacher_id,
+        StudentEnrollment.school_year == school_year,
+    )
+    session_subquery = select(AssessmentSession.student_id).where(
+        AssessmentSession.teacher_id == teacher_id,
+        AssessmentSession.school_year == school_year,
+    )
 
     query = (
         select(
             Student.grade_level,
             Student.section,
-            func.count(Student.id).label("student_count")
+            func.count(Student.id).label("student_count"),
         )
-        .where(Student.teacher_id == teacher_id)
+        .where(
+            Student.teacher_id == teacher_id,
+            or_(
+                Student.school_year == school_year,
+                Student.id.in_(enrollment_subquery),
+                Student.id.in_(session_subquery),
+            ),
+        )
     )
-    if teacher and teacher.grade_level:
-        query = query.where(Student.grade_level == teacher.grade_level)
-    if teacher and teacher.section:
-        query = query.where(Student.section == teacher.section)
+    if grade_filter:
+        query = query.where(Student.grade_level == grade_filter)
+    if section_filter:
+        query = query.where(Student.section == section_filter)
 
-    query = query.group_by(Student.grade_level, Student.section).order_by(Student.grade_level, Student.section)
+    query = query.group_by(Student.grade_level, Student.section).order_by(
+        Student.grade_level, Student.section
+    )
     result = await db.execute(query)
 
-    classes = []
-    for row in result:
-        classes.append({
+    return [
+        {
             "grade_level": row.grade_level,
             "section": row.section if row.section else "No Section",
-            "student_count": row.student_count
-        })
-    return classes
+            "student_count": row.student_count,
+        }
+        for row in result
+    ]
 
 
 async def get_student_by_id(db: AsyncSession, student_id: int, teacher_id: int) -> Student:

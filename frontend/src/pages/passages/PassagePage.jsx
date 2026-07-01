@@ -89,7 +89,8 @@ export default function PassagePage() {
         } else {
           // Assessment 2
           const passage = await passagesApi.create({
-            title:           parsedData.title ? `Story 1: ${parsedData.title.trim()}` : "Untitled",
+            title:           (parsedData.title || "").trim() || "Untitled",
+            story_number:    parsedData.story_number ? parseInt(parsedData.story_number, 10) : 1,
             content:         (parsedData.content || "").trim(),
             language:        parsedData.language || "filipino",
             grade_level:     parsedData.grade_level || "grade_2",

@@ -75,10 +75,22 @@ async def list_school_years(
 
 @router.get("/classes", response_model=ClassListResponse, summary="List class summaries")
 async def list_classes(
+    school_year: Optional[str] = Query(
+        None,
+        description=(
+            "Scope student counts to this school year, using the same "
+            "membership rule as GET /students (own school_year field, "
+            "StudentEnrollment, or AssessmentSession for that year). "
+            "If omitted, falls back to counting all students ever tied "
+            "to the teacher's current grade/section."
+        ),
+    ),
     db: AsyncSession = Depends(get_db),
     current_teacher: Teacher = Depends(get_current_teacher),
 ):
-    classes = await student_service.get_class_summaries(db=db, teacher_id=current_teacher.id)
+    classes = await student_service.get_class_summaries(
+        db=db, teacher_id=current_teacher.id, school_year=school_year
+    )
     return ClassListResponse(classes=classes)
 
 

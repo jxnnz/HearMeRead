@@ -45,11 +45,11 @@ export default function StudentRecordPage() {
   const loadClasses = useCallback(() => {
     setLoading(true);
     studentsApi
-      .listClasses()
+      .listClasses(schoolYear)
       .then((data) => setClasses(data.classes || []))
       .catch((e) => setError(e.response?.data?.detail || e.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [schoolYear]);
 
   useEffect(() => { loadClasses(); }, [loadClasses]);
 

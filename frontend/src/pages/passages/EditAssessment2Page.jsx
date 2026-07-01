@@ -7,6 +7,8 @@ import { passagesApi, questionsApi } from "../../services/api";
 import "../pages css/AddPassagePage.css";
 
 function parseStoryTitle(t) {
+  // Fallback only — used for passages created before story_number was a
+  // proper field, where the number was concatenated into the title string.
   if (!t) return { num: "1", title: "" };
   const m = t.match(/^Story\s*(\d+)\s*:\s*(.+)$/i);
   return m ? { num: m[1], title: m[2] } : { num: "1", title: t };
@@ -30,10 +32,20 @@ export default function EditAssessment2Page() {
     passagesApi
       .get(id)
       .then((p) => {
-        const { num, title } = parseStoryTitle(p.title ?? "");
+        // Prefer the real story_number field; fall back to regex-parsing
+        // the legacy "Story N: Title" concatenated format for old passages.
+        let num = "1";
+        let titleOnly = p.title ?? "";
+        if (p.story_number != null) {
+          num = String(p.story_number);
+        } else {
+          const parsed = parseStoryTitle(p.title ?? "");
+          num = parsed.num;
+          titleOnly = parsed.title;
+        }
         setStoryNum(num);
         setDetails({
-          title,
+          title:       titleOnly,
           grade_level: p.grade_level ?? "grade_2",
           language:    p.language    ?? "filipino",
           content:     p.content     ?? "",
@@ -96,10 +108,11 @@ export default function EditAssessment2Page() {
     setSaving(true);
     try {
       await passagesApi.update(id, {
-        title:       `Story ${storyNum}: ${details.title.trim()}`,
-        content:     details.content.trim(),
-        language:    details.language,
-        grade_level: details.grade_level,
+        title:        details.title.trim(),
+        story_number: parseInt(storyNum, 10),
+        content:      details.content.trim(),
+        language:     details.language,
+        grade_level:  details.grade_level,
       });
 
       for (const serverId of removedIds) {

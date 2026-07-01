@@ -1,4 +1,5 @@
 from typing import Optional, Tuple, List
+from datetime import datetime, timezone
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_
@@ -15,7 +16,78 @@ def _compute_word_count(text: str) -> int:
     return len(text.split())
 
 
-# Helpers
+# ---------------------------------------------------------------------------
+# A1 auto-title helpers
+# ---------------------------------------------------------------------------
+
+_GRADE_LABELS = {
+    "grade_1": "Grade 1",
+    "grade_2": "Grade 2",
+    "grade_3": "Grade 3",
+    "kindergarten": "Kindergarten",
+}
+
+_LANG_LABELS = {
+    "filipino": "Filipino",
+    "english":  "English",
+}
+
+
+def _a1_base_title(language: str, grade_level: str) -> str:
+    """
+    Returns the canonical Assessment 1 title for a given grade + language,
+    e.g. "Grade 2 Filipino — Assessment 1".
+    """
+    lang  = _LANG_LABELS.get(str(language),   str(language).title())
+    grade = _GRADE_LABELS.get(str(grade_level), str(grade_level).replace("_", " ").title())
+    return f"{grade} {lang} — Assessment 1"
+
+
+async def _a1_title(
+    db: AsyncSession,
+    teacher_id: int,
+    language: str,
+    grade_level: str,
+) -> str:
+    """
+    Generates a unique display title for a new A1 passage.
+
+    - First passage for this grade+language → canonical base title,
+      e.g. "Grade 2 Filipino — Assessment 1".
+    - Any subsequent passage for the same grade+language → appends a short
+      datestamp so duplicates are distinguishable without manual naming,
+      e.g. "Grade 2 Filipino — Assessment 1 (Jul 2026)".
+
+    This means if a teacher accidentally uploads the same A1 twice, the second
+    one gets a datestamp and neither clobbers the other.
+    """
+    base = _a1_base_title(language, grade_level)
+
+    # Count existing A1 passages for this teacher + grade + language
+    existing = await db.execute(
+        select(func.count(Passage.id)).where(
+            Passage.teacher_id    == teacher_id,
+            Passage.assessment_type == 1,
+            Passage.language      == language,
+            Passage.grade_level   == grade_level,
+            Passage.is_archived   == False,
+        )
+    )
+    count = existing.scalar_one() or 0
+
+    if count == 0:
+        return base
+
+    # Already have one — append month + year so it's distinguishable
+    now = datetime.now(timezone.utc)
+    suffix = now.strftime("%b %Y")   # e.g. "Jul 2026"
+    return f"{base} ({suffix})"
+
+
+# ---------------------------------------------------------------------------
+# Teacher-grade helpers
+# ---------------------------------------------------------------------------
+
 async def _get_teacher_assigned_grade(
     db: AsyncSession, teacher_id: int
 ) -> Optional[GradeLevel]:
@@ -36,7 +108,7 @@ async def _get_teacher_assigned_grade(
         select(TeacherAssignment.grade_level)
         .where(
             TeacherAssignment.teacher_id == teacher_id,
-            TeacherAssignment.is_active == True,
+            TeacherAssignment.is_active  == True,
         )
         .order_by(TeacherAssignment.school_year.desc())
         .limit(1)
@@ -53,7 +125,10 @@ async def _get_teacher_school_id(
     return result.scalar_one_or_none()
 
 
+# ---------------------------------------------------------------------------
 # Passage services
+# ---------------------------------------------------------------------------
+
 async def get_passages(
     db: AsyncSession,
     teacher_id: int,
@@ -68,51 +143,23 @@ async def get_passages(
     Returns the teacher's own passages (private) PLUS public passages that
     match the teacher's assigned grade level and belong to the same school.
     """
-    # Determine the teacher's assigned grade level and school
     assigned_grade = await _get_teacher_assigned_grade(db, teacher_id)
-    school_id = await _get_teacher_school_id(db, teacher_id)
+    school_id      = await _get_teacher_school_id(db, teacher_id)
 
-    # -- Build the ownership / visibility filter --
-    # Always include the teacher's own passages (any visibility)
     own_filter = Passage.teacher_id == teacher_id
 
-    # Public passages: match grade level and check for local school overrides
     if assigned_grade and school_id:
-        # Subquery: get original passage IDs that have been overridden in this school
-        override_subquery = (
-            select(Passage.original_passage_id)
-            .join(Teacher, Teacher.id == Passage.teacher_id)
-            .where(
-                Passage.visibility == PassageVisibility.public,
-                Passage.original_passage_id.is_not(None),
-                Teacher.school_id == school_id,
-            )
-        )
-        
         public_filter = and_(
-            Passage.visibility == PassageVisibility.public,
+            Passage.visibility  == PassageVisibility.public,
             Passage.grade_level == assigned_grade,
-            or_(
-                # Show global public passages that have not been overridden by this school
-                and_(
-                    Passage.original_passage_id.is_(None),
-                    Passage.id.not_in(override_subquery),
-                ),
-                # Show local overrides for this school
-                and_(
-                    Passage.original_passage_id.is_not(None),
-                    Passage.teacher_id.in_(
-                        select(Teacher.id).where(Teacher.school_id == school_id)
-                    ),
-                ),
+            Passage.teacher_id.in_(
+                select(Teacher.id).where(Teacher.school_id == school_id)
             ),
         )
         visibility_filter = or_(own_filter, public_filter)
     else:
-        # Teacher has no assignment yet — only show their own passages
         visibility_filter = own_filter
 
-    # -- Common filters (applied to both own and public) --
     common_filters = [visibility_filter]
     if not include_archived:
         common_filters.append(Passage.is_archived == False)
@@ -159,35 +206,51 @@ async def get_passage_by_id(
     if not passage:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Passage not found")
 
-    # Owner can always access
     if passage.teacher_id == teacher_id:
         return passage
 
-    # Public passage — accessible to everyone
     if passage.visibility == PassageVisibility.public:
-        return passage
+        school_id       = await _get_teacher_school_id(db, teacher_id)
+        owner_school_id = await _get_teacher_school_id(db, passage.teacher_id)
+        if school_id and school_id == owner_school_id:
+            return passage
 
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Passage not found")
 
 
 async def create_passage(db: AsyncSession, data: PassageCreate, teacher_id: int) -> Passage:
+    # ── A1 auto-title ───────────────────────────────────────────────────────
+    # Assessment 1 passages are never given a title by the teacher (the
+    # AddAssessment1Page form has no title field). Auto-generate a meaningful
+    # label here so the passage-selection dropdown during an assessment session
+    # is never blank.
+    title = data.title
+    if data.assessment_type == 1 and not title and data.grade_level and data.language:
+        title = await _a1_title(
+            db=db,
+            teacher_id=teacher_id,
+            language=str(data.language.value if hasattr(data.language, "value") else data.language),
+            grade_level=str(data.grade_level.value if hasattr(data.grade_level, "value") else data.grade_level),
+        )
+
     passage = Passage(
-        teacher_id=teacher_id,
-        title=data.title,
-        content=data.content,
-        language=data.language,
-        grade_level=data.grade_level,
-        word_count=_compute_word_count(data.content or ""),
-        visibility=PassageVisibility.private,   # teacher-created = always private
-        assessment_type=data.assessment_type,
-        task1_content=data.task1_content,
-        task2_words=data.task2_words,
-        task2_sentences=data.task2_sentences,
-        file_path=data.file_path,
+        teacher_id      = teacher_id,
+        title           = title,
+        content         = data.content,
+        language        = data.language,
+        grade_level     = data.grade_level,
+        word_count      = _compute_word_count(data.content or ""),
+        visibility      = PassageVisibility.private,
+        assessment_type = data.assessment_type,
+        task1_content   = data.task1_content,
+        task2_words     = data.task2_words,
+        task2_sentences = data.task2_sentences,
+        file_path       = data.file_path,
     )
     db.add(passage)
     await db.commit()
     await db.refresh(passage)
+
     teacher_result = await db.execute(select(Teacher).where(Teacher.id == teacher_id))
     _teacher = teacher_result.scalar_one_or_none()
     if _teacher and _teacher.school_id:
@@ -210,17 +273,18 @@ async def create_passage_from_docx(
     teacher_id: int,
 ) -> Passage:
     passage = Passage(
-        teacher_id=teacher_id,
-        title=title,
-        content=content,
-        language=language,
-        grade_level=grade_level,
-        word_count=_compute_word_count(content),
-        visibility=PassageVisibility.private,   # teacher-created = always private
+        teacher_id  = teacher_id,
+        title       = title,
+        content     = content,
+        language    = language,
+        grade_level = grade_level,
+        word_count  = _compute_word_count(content),
+        visibility  = PassageVisibility.private,
     )
     db.add(passage)
     await db.commit()
     await db.refresh(passage)
+
     teacher_result = await db.execute(select(Teacher).where(Teacher.id == teacher_id))
     _teacher = teacher_result.scalar_one_or_none()
     if _teacher and _teacher.school_id:
@@ -252,7 +316,7 @@ async def update_passage(
     if data.title is not None:
         passage.title = data.title
     if data.content is not None:
-        passage.content = data.content
+        passage.content    = data.content
         passage.word_count = _compute_word_count(data.content)
     if data.language is not None:
         passage.language = data.language

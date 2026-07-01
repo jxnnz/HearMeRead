@@ -361,8 +361,9 @@ export const studentsApi = {
     return res.data;
   },
 
-  listClasses: async () => {
-    const res = await api.get("/students/classes");
+  listClasses: async (schoolYear) => {
+    const params = schoolYear ? { school_year: schoolYear } : {};
+    const res = await api.get("/students/classes", { params });
     return res.data;
   },
 

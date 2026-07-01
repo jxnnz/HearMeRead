@@ -22,17 +22,14 @@ function blankQuestion() {
   };
 }
 
-function parseStoryTitle(t) {
-  if (!t) return { num: "1", title: "" };
-  const m = t.match(/^Story\s*(\d+)\s*:\s*(.+)$/i);
-  return m ? { num: m[1], title: m[2] } : { num: "1", title: t };
-}
-
 export default function AddAssessment2Page() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [storyNum, setStoryNum] = useState("1");
+  const [storyNum, setStoryNum] = useState(() => {
+    const parsed = location.state?.parsedData;
+    return parsed?.story_number ? String(parsed.story_number) : "1";
+  });
   const [details, setDetails] = useState(() => {
     const parsed = location.state?.parsedData;
     if (parsed) {
@@ -98,7 +95,8 @@ export default function AddAssessment2Page() {
     setSaving(true);
     try {
       const passage = await passagesApi.create({
-        title:           `Story ${storyNum}: ${details.title.trim()}`,
+        title:           details.title.trim(),
+        story_number:    parseInt(storyNum, 10),
         content:         details.content.trim(),
         language:        details.language,
         grade_level:     details.grade_level,
@@ -308,4 +306,4 @@ export default function AddAssessment2Page() {
       </div>
     </Layout>
   );
-}
+}e
