@@ -1,12 +1,7 @@
 import { useState } from "react";
 import { Search, X } from "lucide-react";
 
-function getCalculatedSchoolYear() {
-  const now = new Date();
-  const y   = now.getFullYear();
-  const m   = now.getMonth() + 1;
-  return m >= 6 ? `${y}-${y + 1}` : `${y - 1}-${y}`;
-}
+
 
 // Assessment type options
 const ASSESSMENT_TYPES = [
@@ -68,7 +63,7 @@ export default function StudentInfoForm({
       first_name: "",
       last_name:  "",
       section:    "",
-      school_year: getCalculatedSchoolYear(),
+      school_year: prev.school_year,
       // grade_level kept intentionally — it acts as the search filter
     }));
   }
@@ -104,7 +99,7 @@ export default function StudentInfoForm({
             id="si-school-year"
             type="text"
             className="si-input si-input--readonly"
-            value={form.school_year || getCalculatedSchoolYear()}
+            value={form.school_year}
             readOnly
           />
         </div>

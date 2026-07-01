@@ -373,13 +373,44 @@ async def list_class_cards(
     teacher_res = await db.execute(select(Teacher).where(Teacher.id.in_(all_teacher_ids)))
     teacher_map = {t.id: t for t in teacher_res.scalars().all()}
 
-    # Batch-fetch student counts per (teacher_id, grade_level, section)
-    count_result = await db.execute(
+    from app.models import StudentEnrollment
+
+    # Batch-fetch student counts per (teacher_id, grade_level, section, school_year) from enrollments
+    enrollment_counts = await db.execute(
+        select(
+            StudentEnrollment.teacher_id,
+            StudentEnrollment.grade_level,
+            StudentEnrollment.section,
+            StudentEnrollment.school_year,
+            func.count(StudentEnrollment.student_id)
+        )
+        .where(StudentEnrollment.teacher_id.in_(all_teacher_ids))
+        .group_by(
+            StudentEnrollment.teacher_id,
+            StudentEnrollment.grade_level,
+            StudentEnrollment.section,
+            StudentEnrollment.school_year
+        )
+    )
+    enrollment_count_map = {}
+    enrolled_teachers_years = set()
+    for r in enrollment_counts.fetchall():
+        teacher_id_val, grade_val, section_val, year_val, cnt = r
+        enrollment_count_map[(teacher_id_val, grade_val, section_val, year_val)] = cnt
+        enrolled_teachers_years.add((teacher_id_val, year_val))
+
+    # Fallback: Batch-fetch student counts per (teacher_id, grade_level, section) directly from Student table
+    fallback_counts = await db.execute(
         select(Student.teacher_id, Student.grade_level, Student.section, func.count(Student.id))
         .where(Student.teacher_id.in_(all_teacher_ids))
         .group_by(Student.teacher_id, Student.grade_level, Student.section)
     )
-    count_map = {(r[0], r[1], r[2]): r[3] for r in count_result}
+    fallback_count_map = {(r[0], r[1], r[2]): r[3] for r in fallback_counts.fetchall()}
+
+    def get_count_for_card(t_id, grade, sec, sy):
+        if (t_id, sy) in enrolled_teachers_years:
+            return enrollment_count_map.get((t_id, grade, sec, sy), 0)
+        return fallback_count_map.get((t_id, grade, sec), 0)
 
     cards = []
     seen = set()  # (teacher_id, grade_level, section, school_year)
@@ -402,7 +433,7 @@ async def list_class_cards(
             "grade_level":   grade,
             "section":       asgn.section,
             "school_year":   asgn.school_year,
-            "student_count": count_map.get((t.id, asgn.grade_level, asgn.section), 0),
+            "student_count": get_count_for_card(t.id, asgn.grade_level, asgn.section, asgn.school_year),
         })
 
     # Current-year cards for any teacher whose current grade/section isn't in seen yet
@@ -421,7 +452,7 @@ async def list_class_cards(
             "grade_level":   t.grade_level.value,
             "section":       t.section,
             "school_year":   current_year,
-            "student_count": count_map.get((t.id, t.grade_level, t.section), 0),
+            "student_count": get_count_for_card(t.id, t.grade_level, t.section, current_year),
         })
 
     # Sort: latest school_year first, then grade, then section

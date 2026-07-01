@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ChevronLeft, ChevronRight, FileText, FileSpreadsheet, Pencil, Trash2, UserX } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText, FileSpreadsheet, Pencil, UserX } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import ExcelJS from "exceljs";
@@ -75,8 +75,6 @@ export default function ClassRecordPage() {
   const [editStudent, setEditStudent]       = useState(null);
   const [editStudentSaving, setEditStudentSaving] = useState(false);
   const [editStudentError, setEditStudentError]   = useState(null);
-  const [archiveSession, setArchiveSession] = useState(null);
-  const [archiving, setArchiving]           = useState(false);
   const [deleteStudent, setDeleteStudent]   = useState(null); // student object pending hard delete
   const [deletingStudent, setDeletingStudent] = useState(false);
   const [deleteStudentError, setDeleteStudentError] = useState(null);
@@ -167,20 +165,6 @@ export default function ClassRecordPage() {
       );
     } finally {
       setEditStudentSaving(false);
-    }
-  }
-
-  async function handleArchiveSession() {
-    if (!archiveSession) return;
-    setArchiving(true);
-    try {
-      await sessionsApi.archive(archiveSession.id);
-      setArchiveSession(null);
-      reload();
-    } catch (err) {
-      showError(parseApiError(err, "Failed to archive session. Please try again."));
-    } finally {
-      setArchiving(false);
     }
   }
 
@@ -613,20 +597,7 @@ export default function ClassRecordPage() {
               </div>
             </div>
 
-            {/* Archive confirmation banner */}
-            {archiveSession && (
-              <div className="cr-archive-confirm">
-                <span>Archive the session record for this student? The student will remain but their scores for this period will be removed.</span>
-                <div className="cr-archive-confirm__actions">
-                  <button className="cr-archive-confirm__btn cr-archive-confirm__btn--cancel" onClick={() => setArchiveSession(null)} disabled={archiving}>
-                    Cancel
-                  </button>
-                  <button className="cr-archive-confirm__btn cr-archive-confirm__btn--confirm" onClick={handleArchiveSession} disabled={archiving}>
-                    {archiving ? "Archiving…" : "Confirm Archive"}
-                  </button>
-                </div>
-              </div>
-            )}
+
 
             {/* Delete student confirmation banner */}
             {deleteStudent && (
@@ -773,14 +744,6 @@ export default function ClassRecordPage() {
                               title="Edit student"
                             >
                               <Pencil size={13} />
-                            </button>
-                            <button
-                              className="cr-action-btn cr-action-btn--archive"
-                              onClick={() => setArchiveSession(sess ?? null)}
-                              disabled={!sess}
-                              title={sess ? "Archive session" : "No session to archive"}
-                            >
-                              <Trash2 size={13} />
                             </button>
                             <button
                               className="cr-action-btn cr-action-btn--delete"

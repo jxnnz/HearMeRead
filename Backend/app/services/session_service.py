@@ -184,7 +184,7 @@ async def create_session(
 
     await _verify_passage_ownership(db, data.passage_id, teacher_id)
 
-    school_year = student.school_year if student.school_year else data.school_year
+    school_year = data.school_year
 
     duplicate = await check_duplicate(
         db=db,

@@ -99,21 +99,7 @@ async def get_students(
             query = query.where(Student.section == section)
 
     if school_year:
-        enrollment_subquery = select(StudentEnrollment.student_id).where(
-            StudentEnrollment.teacher_id == teacher_id,
-            StudentEnrollment.school_year == school_year
-        )
-        session_subquery = select(AssessmentSession.student_id).where(
-            AssessmentSession.teacher_id == teacher_id,
-            AssessmentSession.school_year == school_year
-        )
-        query = query.where(
-            or_(
-                Student.school_year == school_year,
-                Student.id.in_(enrollment_subquery),
-                Student.id.in_(session_subquery)
-            )
-        )
+        query = query.where(Student.school_year == school_year)
 
     result = await db.execute(query)
     students = list(result.scalars().all())
@@ -193,16 +179,6 @@ async def get_class_summaries(db: AsyncSession, teacher_id: int, school_year: Op
             for row in result
         ]
 
-    # Year-aware path — mirrors get_students()'s membership rule exactly.
-    enrollment_subquery = select(StudentEnrollment.student_id).where(
-        StudentEnrollment.teacher_id == teacher_id,
-        StudentEnrollment.school_year == school_year,
-    )
-    session_subquery = select(AssessmentSession.student_id).where(
-        AssessmentSession.teacher_id == teacher_id,
-        AssessmentSession.school_year == school_year,
-    )
-
     query = (
         select(
             Student.grade_level,
@@ -211,11 +187,7 @@ async def get_class_summaries(db: AsyncSession, teacher_id: int, school_year: Op
         )
         .where(
             Student.teacher_id == teacher_id,
-            or_(
-                Student.school_year == school_year,
-                Student.id.in_(enrollment_subquery),
-                Student.id.in_(session_subquery),
-            ),
+            Student.school_year == school_year,
         )
     )
     if grade_filter:

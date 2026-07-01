@@ -34,6 +34,19 @@ from app.core.encryption import encrypt, hash_lrn
 
 router = APIRouter(prefix="/students", tags=["Students"])
 
+from datetime import date
+
+def _current_school_year() -> str:
+    today = date.today()
+    if today.month >= 6:
+        return f"{today.year}-{today.year + 1}"
+    return f"{today.year - 1}-{today.year}"
+
+
+@router.get("/current-school-year", summary="Get the current school year")
+async def get_current_school_year():
+    return {"school_year": _current_school_year()}
+
 
 @router.get("", response_model=StudentListResponse, summary="List all students")
 async def list_students(
@@ -46,6 +59,9 @@ async def list_students(
     db: AsyncSession = Depends(get_db),
     current_teacher: Teacher = Depends(get_current_teacher),
 ):
+    if not school_year:
+        school_year = _current_school_year()
+
     total, students = await student_service.get_students(
         db=db,
         teacher_id=current_teacher.id,
@@ -64,13 +80,7 @@ async def list_school_years(
     db: AsyncSession = Depends(get_db),
     current_teacher: Teacher = Depends(get_current_teacher),
 ) -> dict:
-    result = await db.execute(
-        select(distinct(AssessmentSession.school_year))
-        .where(AssessmentSession.teacher_id == current_teacher.id)
-        .order_by(AssessmentSession.school_year.desc())
-    )
-    years: List[str] = [row[0] for row in result.fetchall()]
-    return {"school_years": years}
+    return {"school_years": [_current_school_year()]}
 
 
 @router.get("/classes", response_model=ClassListResponse, summary="List class summaries")
@@ -79,15 +89,16 @@ async def list_classes(
         None,
         description=(
             "Scope student counts to this school year, using the same "
-            "membership rule as GET /students (own school_year field, "
-            "StudentEnrollment, or AssessmentSession for that year). "
-            "If omitted, falls back to counting all students ever tied "
-            "to the teacher's current grade/section."
+            "membership rule as GET /students (own school_year field). "
+            "If omitted, falls back to the current school year."
         ),
     ),
     db: AsyncSession = Depends(get_db),
     current_teacher: Teacher = Depends(get_current_teacher),
 ):
+    if not school_year:
+        school_year = _current_school_year()
+
     classes = await student_service.get_class_summaries(
         db=db, teacher_id=current_teacher.id, school_year=school_year
     )

@@ -93,11 +93,8 @@ function parseRhymePairs(str) {
 }
 
 function initForm() {
-  const now = new Date();
-  const y   = now.getFullYear();
-  const m   = now.getMonth() + 1;
   return {
-    school_year:      m >= 6 ? `${y}-${y + 1}` : `${y - 1}-${y}`,
+    school_year:      "",
     assessment_type:  "BoSY",
     student_id:       null,
     first_name:       "",
@@ -222,6 +219,15 @@ export default function AssessmentPage() {
 
   // Teacher profile — used to pre-fill grade/section
   const [teacherProfile, setTeacherProfile] = useState(null);
+
+  useEffect(() => {
+    studentsApi.getCurrentSchoolYear().then((data) => {
+      setForm((prev) => ({
+        ...prev,
+        school_year: data.school_year,
+      }));
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     authApi.me().then((teacher) => {

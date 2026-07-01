@@ -17,13 +17,7 @@ import { dashboardApi, studentsApi, authApi } from "../services/api";
 
 import "./DashboardPage.css";
 
-// School year helper
-function currentSchoolYear() {
-  const now = new Date();
-  const y   = now.getFullYear();
-  const m   = now.getMonth() + 1;
-  return m >= 6 ? `${y}-${y + 1}` : `${y - 1}-${y}`;
-}
+
 
 // Score color logic
 function getScoreColor(value, type = "percent") {
@@ -100,7 +94,7 @@ function exportDashboardXlsx(students, profileData, genderData, schoolYear) {
 // ============================================================
 export default function DashboardPage() {
   const navigate   = useNavigate();
-  const schoolYear = currentSchoolYear();
+  const [schoolYear, setSchoolYear] = useState("");
 
   const [stats,       setStats]       = useState(null);
   const [profileData, setProfileData] = useState({});
@@ -113,6 +107,14 @@ export default function DashboardPage() {
   const [error,       setError]       = useState(null);
 
   useEffect(() => {
+    studentsApi.getCurrentSchoolYear().then((data) => {
+      setSchoolYear(data.school_year);
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!schoolYear) return;
+    setLoading(true);
     Promise.all([
       dashboardApi.getSummary(schoolYear),
       studentsApi.list({ school_year: schoolYear }),

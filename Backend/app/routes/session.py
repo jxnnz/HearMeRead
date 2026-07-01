@@ -95,7 +95,7 @@ async def create_session(
     if not student:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")
 
-    school_year = student.school_year if student.school_year else data.school_year
+    school_year = data.school_year
 
     existing = await session_service.check_duplicate(
         db=db,

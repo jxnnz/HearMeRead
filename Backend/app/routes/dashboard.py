@@ -66,7 +66,10 @@ async def get_dashboard_summary(
     # 1. Total students for this teacher
     total_students = (await db.scalar(
         select(func.count(Student.id))
-        .where(Student.teacher_id == teacher_id)
+        .where(
+            Student.teacher_id == teacher_id,
+            Student.school_year == sy,
+        )
     )) or 0
 
     # 2. Completed sessions this school year

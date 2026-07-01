@@ -9,24 +9,14 @@ const PERIOD_OPTIONS = [
   { value: "end",       label: "End"       },
 ];
 
-function currentSchoolYear() {
-  const now = new Date();
-  const y = now.getFullYear();
-  return now.getMonth() < 5 ? `${y - 1}-${y}` : `${y}-${y + 1}`;
-}
 
-function defaultYears() {
-  const now = new Date();
-  const cy = now.getMonth() < 5 ? now.getFullYear() - 1 : now.getFullYear();
-  return [`${cy}-${cy + 1}`, `${cy - 1}-${cy}`, `${cy - 2}-${cy - 1}`];
-}
 
 export default function ImportRecordsModal({ isOpen, onClose, onSuccess }) {
   const fileInputRef = useRef(null);
 
   const [file, setFile]               = useState(null);
-  const [schoolYear, setSchoolYear]   = useState(currentSchoolYear());
-  const [schoolYears, setSchoolYears] = useState(defaultYears());
+  const [schoolYear, setSchoolYear]   = useState("");
+  const [schoolYears, setSchoolYears] = useState([]);
   const [period, setPeriod]           = useState("beginning");
   const [dragging, setDragging]       = useState(false);
   const [loading, setLoading]         = useState(false);
@@ -35,12 +25,10 @@ export default function ImportRecordsModal({ isOpen, onClose, onSuccess }) {
 
   useEffect(() => {
     if (!isOpen) return;
-    studentsApi.listSchoolYears()
+    studentsApi.getCurrentSchoolYear()
       .then((data) => {
-        const apiYears = data.school_years || [];
-        const merged = [...new Set([...apiYears, ...defaultYears()])].sort((a, b) => b.localeCompare(a));
-        setSchoolYears(merged);
-        if (!merged.includes(schoolYear)) setSchoolYear(merged[0]);
+        setSchoolYear(data.school_year);
+        setSchoolYears([data.school_year]);
       })
       .catch(() => {});
   }, [isOpen]);

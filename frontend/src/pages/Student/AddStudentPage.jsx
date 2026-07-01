@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft, FileUp } from "lucide-react";
 
 import Layout                              from "../../components/Layout";
-import StudentDetailsForm, { currentSchoolYear } from "../../components/StudentDetailsForm";
+import StudentDetailsForm from "../../components/StudentDetailsForm";
 import BulkUploadStudentsModal             from "../../modals/BulkUploadStudentsModal";
 import { studentsApi, authApi }            from "../../services/api";
 
@@ -16,7 +16,7 @@ const EMPTY_FORM = {
   last_name:   "",
   grade_level: "",
   section:     "",
-  school_year: currentSchoolYear(),
+  school_year: "",
 };
 
 export default function AddStudentPage() {
@@ -28,15 +28,21 @@ export default function AddStudentPage() {
   const [showBulk, setShowBulk] = useState(false);   // NEW
 
   useEffect(() => {
-    authApi.me().then((user) => {
-      setForm((prev) => ({
-        ...prev,
-        grade_level: user.grade_level || prev.grade_level,
-        section:     user.section     || prev.section,
-      }));
-    }).catch((err) => {
-      console.error("Failed to load teacher profile for autofill", err);
-    });
+    Promise.all([
+      authApi.me(),
+      studentsApi.getCurrentSchoolYear()
+    ])
+      .then(([user, yearData]) => {
+        setForm((prev) => ({
+          ...prev,
+          grade_level: user.grade_level || prev.grade_level,
+          section:     user.section     || prev.section,
+          school_year: yearData.school_year || prev.school_year,
+        }));
+      })
+      .catch((err) => {
+        console.error("Failed to load details for autofill", err);
+      });
   }, []);
 
   function validate() {
