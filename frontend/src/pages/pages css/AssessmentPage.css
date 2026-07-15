@@ -5,7 +5,7 @@
    ============================================================ */
 
 .asp-page {
-  max-width: 640px;
+  max-width: 850px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -78,11 +78,11 @@
 .si-card {
   background: #fff;
   border-radius: 12px;
-  padding: 22px 28px;       /* tighter padding */
+  padding: 32px 40px;       /* larger padding */
   display: flex;
   flex-direction: column;
-  gap: 14px;                /* tighter gap */
-  box-shadow: 0 2px 14px rgba(44, 62, 107, 0.08);
+  gap: 20px;                /* larger gap */
+  box-shadow: 0 4px 22px rgba(44, 62, 107, 0.12);
 }
 
 .si-card__title {

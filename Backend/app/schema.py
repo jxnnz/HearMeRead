@@ -336,6 +336,9 @@ class ReadingResultResponse(BaseModel):
     part1_classification: Optional[str] = None
     part1_route:          Optional[str] = None
     reading_profile:      Optional[str] = None
+    part1_task1_alignments_json:  Optional[str] = None
+    part1_task2_alignments_json:  Optional[str] = None
+    part2_alignments_json:         Optional[str] = None
 
     created_at:           datetime
     updated_at:           Optional[datetime] = None

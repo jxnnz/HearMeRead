@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { sessionsApi, studentsApi } from "../services/api";
+import WordHighlightView from "../components/WordHighlightView";
 import "./StudentInfoModal.css";
 
 const PERIOD_MAP = { beginning: "Beginning of SY", middle: "Middle of SY", end: "End of SY" };
@@ -82,6 +83,10 @@ export default function StudentInfoModal({ sessionId, onClose }) {
   const wordsRead   = rr?.total_words != null && rr?.miscue_count != null
     ? rr.total_words - rr.miscue_count
     : null;
+
+  const task1Alignments = rr?.part1_task1_alignments_json ? JSON.parse(rr.part1_task1_alignments_json) : [];
+  const task2Alignments = rr?.part1_task2_alignments_json ? JSON.parse(rr.part1_task2_alignments_json) : [];
+  const part2Alignments = rr?.part2_alignments_json ? JSON.parse(rr.part2_alignments_json) : [];
 
   return (
     <div className="sim-overlay" onClick={onClose}>
@@ -191,6 +196,29 @@ export default function StudentInfoModal({ sessionId, onClose }) {
                     </div>
                   )}
                 </div>
+
+                {/* Part 1 Transcriptions */}
+                {(task1Alignments.length > 0 || task2Alignments.length > 0) && (
+                  <div style={{ marginTop: "16px", borderTop: "1.5px solid #e8ecf5", paddingTop: "16px" }}>
+                    <h4 className="sim-subsection-title" style={{ fontSize: "11px", fontWeight: 700, color: "#100c08", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px" }}>
+                      Assessment Part 1 Transcriptions
+                    </h4>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                      {task1Alignments.length > 0 && (
+                        <WordHighlightView
+                          alignments={task1Alignments}
+                          label="Task 1 — Words Read"
+                        />
+                      )}
+                      {task2Alignments.length > 0 && (
+                        <WordHighlightView
+                          alignments={task2Alignments}
+                          label={`Task 2 — ${route.includes("2l") ? "Words Read" : "Sentences Read"}`}
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Part 2 */}
@@ -242,6 +270,19 @@ export default function StudentInfoModal({ sessionId, onClose }) {
                     </div>
                   )}
                 </div>
+
+                {/* Part 2 Transcription */}
+                {part2Alignments.length > 0 && (
+                  <div style={{ marginTop: "16px", borderTop: "1.5px solid #e8ecf5", paddingTop: "16px" }}>
+                    <h4 className="sim-subsection-title" style={{ fontSize: "11px", fontWeight: 700, color: "#100c08", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px" }}>
+                      Assessment Part 2 Transcription
+                    </h4>
+                    <WordHighlightView
+                      alignments={part2Alignments}
+                      label="Story Reading Transcription"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Observation */}

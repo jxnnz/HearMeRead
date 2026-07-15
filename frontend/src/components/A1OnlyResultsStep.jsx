@@ -1,4 +1,6 @@
 import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { CheckCircle } from "lucide-react";
 import { OBSERVATION_LEVELS, EXPERIENCE_OPTIONS } from "../data/assessmentConstants";
 import WordHighlightView from "./WordHighlightView";
@@ -50,6 +52,107 @@ export default function A1OnlyResultsStep({
 
   const task1Alignments = part1Result?.task1_alignments ?? [];
   const task2Alignments = part1Result?.task2_alignments ?? [];
+
+  function handleSavePDF() {
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const langLabel = form.language === "filipino" ? "Filipino" : "English";
+    const gradeStr  = String(form.grade_level ?? "").replace("grade_", "Grade ").replace("kindergarten", "Kindergarten");
+
+    function hexRgb(hex) {
+      if (!hex || hex.length < 7) return [0, 0, 0];
+      return [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+    }
+
+    // Student name
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(17);
+    doc.setTextColor(26, 35, 64);
+    doc.text(`${form.first_name} ${form.last_name}`, 15, 17);
+
+    // Profile badge (colored pill next to name)
+    const labelText = classification ?? "—";
+    const [br, bg, bb] = hexRgb(profile.bg);
+    const [cr, cg, cb] = hexRgb(profile.color);
+    const nameW = doc.getTextWidth(`${form.first_name} ${form.last_name}`);
+    doc.setFillColor(br, bg, bb);
+    doc.roundedRect(17 + nameW, 11, doc.getTextWidth(labelText) + 6, 7, 2, 2, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(cr, cg, cb);
+    doc.text(labelText, 20 + nameW, 15.8);
+
+    // Meta strip
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 115);
+    doc.text(`${langLabel}  ·  ${gradeStr}  ·  A1 Only  ·  ${today}`, 15, 24);
+
+    // Divider
+    doc.setDrawColor(210, 218, 235);
+    doc.line(15, 29, 195, 29);
+
+    // Section helper
+    function sectionTitle(title, y) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(44, 62, 107);
+      doc.text(title, 15, y);
+      return y + 5;
+    }
+
+    const labelStyle = { fontStyle: "bold", textColor: [90, 95, 120], cellWidth: 80 };
+    const valueStyle = { textColor: [26, 35, 64] };
+    const tableOpts  = {
+      margin: { left: 15, right: 15 },
+      styles: { fontSize: 9, cellPadding: 2.5, font: "helvetica" },
+      columnStyles: { 0: labelStyle, 1: valueStyle },
+      theme: "plain",
+      alternateRowStyles: { fillColor: [248, 249, 253] },
+    };
+
+    // Assessment Part 1
+    let y = sectionTitle("ASSESSMENT 1 RESULTS", 36);
+    autoTable(doc, {
+      ...tableOpts,
+      startY: y,
+      body: [
+        ["Task 1 — Words Read Correctly", task1Correct !== "—" ? `${task1Correct}/10` : "—"],
+        ["Task 2 — Words Read Correctly", task2Correct !== "—" ? `${task2Correct}/10` : "—"],
+        ["Total Part 1 Score",            totalScore   !== "—" ? `${totalScore}/20`   : "—"],
+        ["Total Wrong Words",             String(totalWrong)],
+        ["Classification",                classification ?? "—"],
+      ],
+    });
+
+    // Learner & Teacher Feedback
+    y = sectionTitle("LEARNER & TEACHER FEEDBACK", doc.lastAutoTable.finalY + 7);
+    const obsLevelObj = OBSERVATION_LEVELS.find((l) => l.value === observationLevel);
+    const obsLevelDisplay = obsLevelObj ? `Level ${obsLevelObj.backendValue}: ${obsLevelObj.label}` : (observationLevel || "—");
+    autoTable(doc, {
+      ...tableOpts,
+      startY: y,
+      body: [
+        ["Learner Experience",    learnerExp],
+        ["Observation Level",     obsLevelDisplay],
+      ],
+    });
+
+    // Teacher Notes
+    const notesY = doc.lastAutoTable.finalY + 7;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(44, 62, 107);
+    doc.text("TEACHER NOTES", 15, notesY);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(60, 65, 80);
+    const noteLines = doc.splitTextToSize(teacherNotes || "No notes added.", 175);
+    doc.text(noteLines, 15, notesY + 6);
+
+    const filename = `${form.last_name}_${form.first_name}_A1_${form.assessment_type}_${form.school_year}`
+      .replace(/\s+/g, "_") + ".pdf";
+    doc.save(filename);
+  }
 
   function handleExport() {
     const wb = XLSX.utils.book_new();
@@ -125,7 +228,7 @@ export default function A1OnlyResultsStep({
             Assessment 1 Complete
           </div>
           <div className="asp-res-header__actions">
-            <button className="asp-res-action-btn" onClick={() => window.print()}>Save as PDF</button>
+            <button className="asp-res-action-btn" onClick={handleSavePDF}>Save as PDF</button>
             <button className="asp-res-action-btn" onClick={handleExport}>Export Excel</button>
           </div>
         </div>

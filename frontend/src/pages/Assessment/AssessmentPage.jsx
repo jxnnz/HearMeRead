@@ -997,7 +997,9 @@ export default function AssessmentPage() {
     if (form.student_id) {
       setCompletedStudentIds((prev) => new Set([...prev, String(form.student_id)]));
     }
-    setTimeout(handleReset, 1500);
+    setTimeout(() => {
+      window.location.reload();
+    }, 1500);
   }
 
   function handleReset() {

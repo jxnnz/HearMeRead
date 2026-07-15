@@ -5,7 +5,9 @@ import { ChevronLeft, FileUp } from "lucide-react";
 import Layout                              from "../../components/Layout";
 import StudentDetailsForm from "../../components/StudentDetailsForm";
 import BulkUploadStudentsModal             from "../../modals/BulkUploadStudentsModal";
-import { studentsApi, authApi }            from "../../services/api";
+import { studentsApi, authApi, clearApiCache }            from "../../services/api";
+import useToast from "../../hooks/Usetoast";
+import Toast from "../../modals/Toast";
 
 import "../pages css/AddStudentPage.css";
 
@@ -21,6 +23,7 @@ const EMPTY_FORM = {
 
 export default function AddStudentPage() {
   const navigate = useNavigate();
+  const { toasts, removeToast, showSaveSuccess } = useToast();
 
   const [form, setForm]     = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
@@ -66,7 +69,14 @@ export default function AddStudentPage() {
         lrn:         form.lrn.trim() || null,
         school_year: form.school_year || null,
       });
-      navigate("/students");
+      clearApiCache();
+      showSaveSuccess("Student");
+      setForm((prev) => ({
+        ...EMPTY_FORM,
+        grade_level: prev.grade_level,
+        section:     prev.section,
+        school_year: prev.school_year,
+      }));
     } catch (err) {
       const detail = err.response?.data?.detail;
       const msg = Array.isArray(detail)
@@ -136,6 +146,7 @@ export default function AddStudentPage() {
         onClose={() => setShowBulk(false)}
         onSuccess={() => navigate("/students")}
       />
+      <Toast toasts={toasts} onRemove={removeToast} />
     </Layout>
   );
 }
