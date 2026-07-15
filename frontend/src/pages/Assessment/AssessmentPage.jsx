@@ -1286,8 +1286,8 @@ export default function AssessmentPage() {
       <Layout>
         {studentStrip}
         <ComprehensionStep
-
           a2Passage={a2Passage}
+          sessionId={session?.id}
           answers={answers} setAnswers={setAnswers}
           onSubmit={() => setStep(STEPS.LEARNER_EXP)}
         />

@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.db import get_db
-from app.models import Teacher, ReadingResult, Language
+from app.models import Teacher, ReadingResult, Language, Question
 from app.services.asr_service import transcribe_audio, SUPPORTED_EXTENSIONS
 from app.services.storage_service import upload_audio, get_presigned_url
 from app.services.session_service import get_session_by_id
@@ -146,3 +146,98 @@ async def get_session_audio(
     
     from fastapi.responses import RedirectResponse
     return RedirectResponse(url=presigned_url)
+
+
+@router.post("/{session_id}/questions/{question_id}/score-answer")
+async def score_comprehension_answer(
+    session_id: int,
+    question_id: int,
+    audio: UploadFile = File(..., description="Audio recording of the student's answer"),
+    db: AsyncSession = Depends(get_db),
+    current_teacher: Teacher = Depends(get_current_teacher),
+):
+    # 1. Verify session exists and belongs to this teacher
+    session = await get_session_by_id(db, session_id, current_teacher.id)
+
+    # 2. Fetch the question to get the question text and answer key
+    question_query = await db.execute(
+        select(Question).where(Question.id == question_id, Question.passage_id == session.passage_id)
+    )
+    question = question_query.scalar_one_or_none()
+    if not question:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Question with ID {question_id} not found in this passage."
+        )
+
+    # 3. Validate audio file type and read bytes
+    ext = ".webm"
+    if audio.filename:
+        file_ext = Path(audio.filename).suffix.lower()
+        if file_ext:
+            if file_ext not in SUPPORTED_EXTENSIONS:
+                raise HTTPException(
+                    status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                    detail=f"Unsupported audio format '{file_ext}'. Accepted: {', '.join(sorted(SUPPORTED_EXTENSIONS))}"
+                )
+            ext = file_ext
+
+    audio_bytes = await audio.read()
+    if len(audio_bytes) > MAX_AUDIO_SIZE_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="Audio file too large. Maximum size is 25 MB."
+        )
+    if not audio_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Uploaded audio file is empty."
+        )
+
+    # 4. Transcribe using Groq Whisper API (whisper-large-v3)
+    # We pass the expected answer as prompt to bias transcription and reduce hallucinations
+    lang_code = "fil" if session.language == Language.filipino else "en"
+    try:
+        result = await transcribe_audio(
+            audio_bytes=audio_bytes,
+            language=lang_code,
+            content_type=audio.content_type,
+            filename=audio.filename,
+            prompt=question.answer_key,
+        )
+    except Exception as e:
+        logger.error(f"Transcription failed for question {question_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Transcription failed. Please try again."
+        )
+
+    transcript = result.get("transcript", "").strip()
+
+    # 5. Check if transcript is empty or matches known silence hallucinations
+    HALLUCINATION_BLACKLIST = {
+        "thank you", "thank you.", "thank you for watching", "thank you for watching.",
+        "bye", "bye.", "please subscribe", "subscribe", "watching", "you"
+    }
+    cleaned_transcript = transcript.lower().strip(".,?! ")
+    if not cleaned_transcript or cleaned_transcript in HALLUCINATION_BLACKLIST:
+        return {
+            "transcript": "",
+            "mark": "no_answer",
+            "explanation": "No audio detected or empty speech."
+        }
+
+    # 6. Grade the answer via Groq LLM Grader (llama3-8b-8192)
+    from app.services.llm_service import grade_comprehension_answer
+    grading = await grade_comprehension_answer(
+        question_text=question.text,
+        reference_answer=question.answer_key or "",
+        student_transcript=transcript,
+    )
+
+    return {
+        "transcript": transcript,
+        "mark": grading["classification"],
+        "explanation": grading["explanation"]
+    }
+

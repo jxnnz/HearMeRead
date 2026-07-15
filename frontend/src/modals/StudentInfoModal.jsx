@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import { X, Download } from "lucide-react";
 import { sessionsApi, studentsApi } from "../services/api";
 import WordHighlightView from "../components/WordHighlightView";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import "./StudentInfoModal.css";
 
 const PERIOD_MAP = { beginning: "Beginning of SY", middle: "Middle of SY", end: "End of SY" };
@@ -36,14 +38,14 @@ function d(val) {
   return val !== null && val !== undefined ? val : "—";
 }
 
-export default function StudentInfoModal({ sessionId, onClose }) {
+export default function StudentInfoModal({ sessionId, studentId, onClose }) {
   const [session, setSession] = useState(null);
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState(null);
 
   useEffect(() => {
-    if (!sessionId) {
+    if (!sessionId && !studentId) {
       setSession(null);
       setStudent(null);
       return;
@@ -53,19 +55,28 @@ export default function StudentInfoModal({ sessionId, onClose }) {
     setSession(null);
     setStudent(null);
 
-    sessionsApi.get(sessionId)
-      .then(async (sess) => {
-        setSession(sess);
-        if (sess.student_id) {
-          const stu = await studentsApi.get(sess.student_id);
+    if (sessionId) {
+      sessionsApi.get(sessionId)
+        .then(async (sess) => {
+          setSession(sess);
+          if (sess.student_id) {
+            const stu = await studentsApi.get(sess.student_id);
+            setStudent(stu);
+          }
+        })
+        .catch((e) => setError(e.response?.data?.detail || e.message))
+        .finally(() => setLoading(false));
+    } else if (studentId) {
+      studentsApi.get(studentId)
+        .then((stu) => {
           setStudent(stu);
-        }
-      })
-      .catch((e) => setError(e.response?.data?.detail || e.message))
-      .finally(() => setLoading(false));
-  }, [sessionId]);
+        })
+        .catch((e) => setError(e.response?.data?.detail || e.message))
+        .finally(() => setLoading(false));
+    }
+  }, [sessionId, studentId]);
 
-  if (!sessionId) return null;
+  if (!sessionId && !studentId) return null;
 
   const rr  = session?.reading_result;
   const obs = session?.observation;

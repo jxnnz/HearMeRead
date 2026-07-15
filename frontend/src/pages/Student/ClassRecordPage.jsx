@@ -71,6 +71,7 @@ export default function ClassRecordPage() {
   const [totalStudents, setTotal]   = useState(0);
 
   const [selectedSessionId, setSelectedSessionId] = useState(null);
+  const [selectedStudentId, setSelectedStudentId] = useState(null);
 
   const [editStudent, setEditStudent]       = useState(null);
   const [editStudentSaving, setEditStudentSaving] = useState(false);
@@ -84,7 +85,7 @@ export default function ClassRecordPage() {
     setError(null);
     try {
       const stuParams  = { page, page_size: pageSize, ...(grade ? { grade_level: grade } : {}), ...(section ? { section } : {}), ...(year ? { school_year: year } : {}) };
-      const sessParams = { school_year: year, period, is_completed: true, page_size: pageSize, ...(grade ? { grade_level: grade } : {}), ...(section ? { section } : {}) };
+      const sessParams = { school_year: year, period, is_completed: true, page_size: 1000, ...(grade ? { grade_level: grade } : {}), ...(section ? { section } : {}) };
       const [me, stuData, sessData] = await Promise.all([
         authApi.me(),
         studentsApi.list(stuParams),
@@ -113,7 +114,7 @@ export default function ClassRecordPage() {
       setError(null);
       try {
         const stuParams  = { page, page_size: pageSize, ...(grade ? { grade_level: grade } : {}), ...(section ? { section } : {}), ...(year ? { school_year: year } : {}) };
-        const sessParams = { school_year: year, period, is_completed: true, page_size: pageSize, ...(grade ? { grade_level: grade } : {}), ...(section ? { section } : {}) };
+        const sessParams = { school_year: year, period, is_completed: true, page_size: 1000, ...(grade ? { grade_level: grade } : {}), ...(section ? { section } : {}) };
         const [me, stuData, sessData] = await Promise.all([
           authApi.me(),
           studentsApi.list(stuParams),
@@ -697,13 +698,8 @@ export default function ClassRecordPage() {
                               className="cr-student-link"
                               style={{ color: nameColor }}
                               onClick={() => {
-                                if (sess) {
-                                  setSelectedSessionId(sess.id);
-                                } else {
-                                  navigate(`/students/${s.id}`, {
-                                    state: { from: "/students/class", classState: { grade, section, year, period } }
-                                  });
-                                }
+                                setSelectedStudentId(s.id);
+                                setSelectedSessionId(sess ? sess.id : null);
                               }}
                             >
                               {s.last_name}, {s.first_name}
@@ -809,7 +805,11 @@ export default function ClassRecordPage() {
       {/* Session Detail Modal */}
       <StudentInfoModal
         sessionId={selectedSessionId}
-        onClose={() => setSelectedSessionId(null)}
+        studentId={selectedStudentId}
+        onClose={() => {
+          setSelectedSessionId(null);
+          setSelectedStudentId(null);
+        }}
       />
 
       {/* Edit Student Modal */}

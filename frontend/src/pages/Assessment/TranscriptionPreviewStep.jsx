@@ -2,40 +2,87 @@ import { useState, useEffect } from "react";
 import { ChevronRight, Volume2, Pencil, RotateCcw, Upload } from "lucide-react";
 import EditTranscriptionModal from "../../modals/EditTranscriptionModal";
 
-function alignWords(refText, transText) {
+function alignWordsLevenshtein(refText, transText) {
   const strip = (w) => w.toLowerCase().replace(/[^a-z0-9]/gi, "");
   const ref   = refText.trim().split(/\s+/).filter(Boolean);
   const trans = transText.trim().split(/\s+/).filter(Boolean);
 
-  if (!ref.length) return trans.map((w) => ({ word: w, correct: true,  source: "extra"  }));
-  if (!trans.length) return ref.map((w)  => ({ word: w, correct: false, source: "missed" }));
+  if (!ref.length) {
+    return trans.map((w) => ({
+      reference: null,
+      transcribed: w,
+      miscue_type: "insertion",
+      correct: false,
+    }));
+  }
+  if (!trans.length) {
+    return ref.map((w) => ({
+      reference: w,
+      transcribed: null,
+      miscue_type: "deletion",
+      correct: false,
+    }));
+  }
 
   const m = ref.length;
   const n = trans.length;
   const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+
   for (let i = 1; i <= m; i++) {
     for (let j = 1; j <= n; j++) {
-      dp[i][j] = strip(ref[i - 1]) === strip(trans[j - 1])
-        ? dp[i - 1][j - 1] + 1
-        : Math.max(dp[i - 1][j], dp[i][j - 1]);
+      if (strip(ref[i - 1]) === strip(trans[j - 1])) {
+        dp[i][j] = dp[i - 1][j - 1];
+      } else {
+        dp[i][j] = 1 + Math.min(
+          dp[i - 1][j - 1], // substitution
+          dp[i - 1][j],     // deletion
+          dp[i][j - 1]      // insertion
+        );
+      }
     }
   }
 
-  const result = [];
+  const alignments = [];
   let i = m, j = n;
   while (i > 0 || j > 0) {
     if (i > 0 && j > 0 && strip(ref[i - 1]) === strip(trans[j - 1])) {
-      result.unshift({ word: trans[j - 1], correct: true,  source: "match"  });
+      alignments.unshift({
+        reference: ref[i - 1],
+        transcribed: trans[j - 1],
+        miscue_type: "correct",
+        correct: true,
+      });
       i--; j--;
-    } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
-      result.unshift({ word: trans[j - 1], correct: false, source: "extra"  });
-      j--;
-    } else {
-      result.unshift({ word: ref[i - 1],  correct: false, source: "missed" });
+    } else if (i > 0 && j > 0 && dp[i][j] === dp[i - 1][j - 1] + 1) {
+      alignments.unshift({
+        reference: ref[i - 1],
+        transcribed: trans[j - 1],
+        miscue_type: "substitution",
+        correct: false,
+      });
+      i--; j--;
+    } else if (i > 0 && (j === 0 || dp[i][j] === dp[i - 1][j] + 1)) {
+      alignments.unshift({
+        reference: ref[i - 1],
+        transcribed: null,
+        miscue_type: "deletion",
+        correct: false,
+      });
       i--;
+    } else {
+      alignments.unshift({
+        reference: null,
+        transcribed: trans[j - 1],
+        miscue_type: "insertion",
+        correct: false,
+      });
+      j--;
     }
   }
-  return result;
+  return alignments;
 }
 
 function fmtTime(secs) {
@@ -77,8 +124,13 @@ export default function TranscriptionPreviewStep({
   const showHighlight = cutoffIdx >= 0 && words?.length > 0;
 
   const aligned = referenceText
-    ? alignWords(referenceText, edited)
-    : edited.trim().split(/\s+/).filter(Boolean).map((w) => ({ word: w, correct: true, source: "match" }));
+    ? alignWordsLevenshtein(referenceText, edited)
+    : edited.trim().split(/\s+/).filter(Boolean).map((w) => ({
+        reference: null,
+        transcribed: w,
+        miscue_type: "correct",
+        correct: true,
+      }));
 
   const totalRefWords = referenceText
     ? referenceText.trim().split(/\s+/).filter(Boolean).length
@@ -86,15 +138,31 @@ export default function TranscriptionPreviewStep({
   const correctCount = aligned.filter((a) => a.correct).length;
   const wrongCount   = totalRefWords - correctCount;
 
-  // Only show transcript words (matches + extras); missed reference words are
-  // already captured in the wrong count and would confuse the edit modal comparison.
-  const displayWords = aligned
-    .filter((a) => a.source !== "missed")
-    .map((a, tIdx) => ({
+  let spokenIndex = 0;
+  const displayWords = aligned.map((a) => {
+    const isSpoken = a.miscue_type !== "deletion";
+    let isCutoff = false;
+    let isPastLimit = false;
+
+    if (showHighlight && isSpoken) {
+      if (spokenIndex === cutoffIdx) {
+        isCutoff = true;
+      } else if (spokenIndex > cutoffIdx) {
+        isPastLimit = true;
+      }
+      spokenIndex++;
+    } else if (showHighlight && !isSpoken) {
+      if (spokenIndex > cutoffIdx) {
+        isPastLimit = true;
+      }
+    }
+
+    return {
       ...a,
-      isCutoff:    showHighlight && tIdx === cutoffIdx,
-      isPastLimit: showHighlight && tIdx > cutoffIdx,
-    }));
+      isCutoff,
+      isPastLimit,
+    };
+  });
 
   const stats = [
     { label: "Total Words", value: totalRefWords,                     color: "#1a2340" },
@@ -154,10 +222,14 @@ export default function TranscriptionPreviewStep({
             <span className="asp-preview-edit-label" style={{ marginBottom: 0 }}>Transcription:</span>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               {referenceText && (
-                <span style={{ display: "flex", gap: "10px", fontSize: "11px", fontWeight: 600, fontFamily: "Poppins, sans-serif", flexWrap: "wrap", justifyContent: "flex-end" }}>
-                  <span style={{ color: "#1a2340" }}>● Correct</span>
-                  <span style={{ color: "#c0392b" }}>● Wrong</span>
-                  {showHighlight && <span style={{ color: "#2c7fc1" }}>● Last in Limit</span>}
+                <span style={{ display: "flex", gap: "12px", fontSize: "11px", fontWeight: 600, fontFamily: "Poppins, sans-serif", flexWrap: "wrap", justifyContent: "flex-end", alignItems: "center" }}>
+                  <span className="asp-whl-word asp-whl--correct" style={{ fontSize: "11px" }}>● Correct</span>
+                  <span className="asp-whl-word asp-whl--substitution" style={{ fontSize: "11px" }}>● Wrong Word</span>
+                  <span className="asp-whl-word asp-whl--deletion" style={{ fontSize: "11px" }}>● Skipped</span>
+                  <span className="asp-whl-word asp-whl--insertion" style={{ fontSize: "11px" }}>● Added Word</span>
+                  {showHighlight && (
+                    <span style={{ color: "#2c7fc1", background: "#d6ecfb", padding: "0 3px", borderRadius: "3px", fontSize: "11px" }}>● Last in Limit</span>
+                  )}
                 </span>
               )}
               <button className="asp-edit-btn" onClick={() => setShowEditModal(true)} title="Edit transcription">
@@ -169,18 +241,32 @@ export default function TranscriptionPreviewStep({
           {displayWords.length > 0 ? (
             <div className="asp-word-highlight__text" style={{ borderRadius: "10px" }}>
               {displayWords.map((a, i) => {
-                let color, fontWeight, background, borderRadius, padding;
+                const type = a.miscue_type;
+                const word = type === "insertion"
+                  ? `[${a.transcribed ?? ""}]`
+                  : (a.reference ?? a.transcribed ?? "");
+
+                let className = `asp-whl-word asp-whl--${type}`;
+                let style = {};
+
                 if (a.isCutoff) {
-                  color = "#2c7fc1"; fontWeight = 700;
-                  background = "#d6ecfb"; borderRadius = "3px"; padding = "0 3px";
-                } else if (a.correct) {
-                  color = "#1a2340";
-                } else {
-                  color = "#c0392b"; fontWeight = 600;
+                  className += " word-chip--cutoff";
+                  style = {
+                    background: "#d6ecfb",
+                    borderRadius: "3px",
+                    padding: "0 3px",
+                    fontWeight: 700,
+                  };
+                } else if (a.isPastLimit) {
+                  style = {
+                    opacity: 0.5,
+                    color: "#888",
+                  };
                 }
+
                 return (
-                  <span key={i} style={{ color, fontWeight, background, borderRadius, padding }}>
-                    {a.word}{" "}
+                  <span key={i} className={className} style={style} title={type}>
+                    {word}{" "}
                   </span>
                 );
               })}

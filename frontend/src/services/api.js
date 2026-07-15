@@ -487,6 +487,13 @@ export const sessionsApi = {
     return res.data;
   },
 
+  scoreComprehensionAnswer: async (sessionId, questionId, formData) => {
+    const res = await api.post(`/sessions/${sessionId}/questions/${questionId}/score-answer`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return res.data;
+  },
+
   /**
    * Score Task 1 only using Levenshtein alignment.
    * Does NOT mark the session as complete.
