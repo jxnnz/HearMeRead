@@ -79,6 +79,7 @@ export default function ClassRecordPage() {
   const [deleteStudent, setDeleteStudent]   = useState(null); // student object pending hard delete
   const [deletingStudent, setDeletingStudent] = useState(false);
   const [deleteStudentError, setDeleteStudentError] = useState(null);
+  const [exportingExcel, setExportingExcel]         = useState(false);
 
   async function reload() {
     setLoading(true);
@@ -332,179 +333,26 @@ export default function ClassRecordPage() {
   }
 
   async function exportToExcel() {
-    const langLabel = language === "filipino" ? "Filipino" : "English";
-    const wb = new ExcelJS.Workbook();
-    const ws = wb.addWorksheet("Class Record");
-
-    // Column widths (A–V = 22 columns)
-    ws.columns = [
-      { width: 5  }, // # (A)
-      { width: 16 }, // LRN (B)
-      { width: 22 }, // Student Name (C)
-      { width: 8  }, // Sex (D)
-      { width: 12 }, // Date (E)
-      { width: 8  }, // Task 1 (F)
-      { width: 13 }, // Task 2L Words (G)
-      { width: 13 }, // Task 2H Sent. (H)
-      { width: 12 }, // Total Score (I)
-      { width: 18 }, // Part 1 Level (J)
-      { width: 10 }, // Story # (K)
-      { width: 12 }, // Total Words (L)
-      { width: 10 }, // Miscues (M)
-      { width: 13 }, // Words Read (N)
-      { width: 13 }, // Total Time (O)
-      { width: 8  }, // WPM (P)
-      { width: 12 }, // % Correct (Q)
-      { width: 15 }, // Correct Ans. (R)
-      { width: 14 }, // Learner Exp. (S)
-      { width: 13 }, // Obs. Level (T)
-      { width: 20 }, // Reading Profile (U)
-      { width: 26 }, // Remarks (V)
-    ];
-
-    const DARK   = "FF2C3E6B";
-    const WHITE  = "FFFFFFFF";
-    const GRP1BG = "FFD0DEFA";
-    const GRP1TX = "FF1E3C82";
-    const GRP2BG = "FFBEF0D7";
-    const GRP2TX = "FF146440";
-    const SUB1BG = "FFE8F0FC";
-    const SUB2BG = "FFE8FAF0";
-    const ALT    = "FFF8F9FD";
-
-    function applyBorder(cell) {
-      cell.border = {
-        top:    { style: "thin", color: { argb: "FFD0D8F0" } },
-        left:   { style: "thin", color: { argb: "FFD0D8F0" } },
-        bottom: { style: "thin", color: { argb: "FFD0D8F0" } },
-        right:  { style: "thin", color: { argb: "FFD0D8F0" } },
-      };
-    }
-
-    function styleHeader(cell, bgArgb, fgArgb, bold = true) {
-      cell.fill   = { type: "pattern", pattern: "solid", fgColor: { argb: bgArgb } };
-      cell.font   = { bold, color: { argb: fgArgb }, size: 10 };
-      cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
-      applyBorder(cell);
-    }
-
-    // ── Row 1: Title ─────────────────────────────────────────
-    ws.mergeCells("A1:V1");
-    const titleCell = ws.getCell("A1");
-    titleCell.value = `CLASS ASSESSMENT RECORD — ${formatGrade(grade)}${section ? ` — ${section}` : ""}`;
-    titleCell.font  = { bold: true, size: 13, color: { argb: "FF" + "1a2340".toUpperCase() } };
-    titleCell.alignment = { vertical: "middle", horizontal: "left" };
-    ws.getRow(1).height = 22;
-
-    // ── Row 2: Meta info ──────────────────────────────────────
-    const metaCols = [["A2:D2", `School Year: ${year}`], ["E2:H2", `Period: ${periodLabel}`], ["I2:L2", `Language: ${langLabel}`], ["M2:V2", `Teacher: ${teacherName}`]];
-    metaCols.forEach(([range, val]) => {
-      ws.mergeCells(range);
-      const c = ws.getCell(range.split(":")[0]);
-      c.value = val;
-      c.font  = { size: 10, color: { argb: "FF555E7A" } };
-      c.alignment = { vertical: "middle" };
-    });
-    ws.getRow(2).height = 16;
-
-    // ── Row 3: Spacer ─────────────────────────────────────────
-    ws.getRow(3).height = 6;
-
-    // ── Row 4: Group header ───────────────────────────────────
-    ws.getRow(4).height = 18;
-
-    // Identity columns (A–E): merge with row 5 below, handled after
-    const identityCols = ["A", "B", "C", "D", "E"];
-    const identityLabels = ["#", "LRN", "Student Name", "Sex", "Date"];
-    identityCols.forEach((col, i) => {
-      ws.mergeCells(`${col}4:${col}5`);
-      const c = ws.getCell(`${col}4`);
-      c.value = identityLabels[i];
-      styleHeader(c, DARK, WHITE);
-    });
-
-    // Assessment Part 1 (F–J)
-    ws.mergeCells("F4:J4");
-    const p1Cell = ws.getCell("F4");
-    p1Cell.value = "ASSESSMENT PART 1";
-    styleHeader(p1Cell, GRP1BG, GRP1TX);
-
-    // Assessment Part 2 (K–R)
-    ws.mergeCells("K4:R4");
-    const p2Cell = ws.getCell("K4");
-    p2Cell.value = "ASSESSMENT PART 2";
-    styleHeader(p2Cell, GRP2BG, GRP2TX);
-
-    // Observation columns (S–V): merge with row 5
-    const obsCols  = ["S", "T", "U", "V"];
-    const obsLabels = ["Learner Exp.", "Obs. Level", "Reading Profile", "Remarks"];
-    obsCols.forEach((col, i) => {
-      ws.mergeCells(`${col}4:${col}5`);
-      const c = ws.getCell(`${col}4`);
-      c.value = obsLabels[i];
-      styleHeader(c, DARK, WHITE);
-    });
-
-    // ── Row 5: Sub-headers ────────────────────────────────────
-    ws.getRow(5).height = 16;
-    const sub1Labels = ["Task 1", "Task 2L Words", "Task 2H Sent.", "Total Score", "Part 1 Level"];
-    const sub2Labels = ["Story #", "Total Words", "Miscues", "Words Read", "Total Time", "WPM", "% Correct", "Correct Ans."];
-    const sub1Cols = ["F", "G", "H", "I", "J"];
-    const sub2Cols = ["K", "L", "M", "N", "O", "P", "Q", "R"];
-
-    sub1Cols.forEach((col, i) => {
-      const c = ws.getCell(`${col}5`);
-      c.value = sub1Labels[i];
-      styleHeader(c, SUB1BG, GRP1TX);
-    });
-    sub2Cols.forEach((col, i) => {
-      const c = ws.getCell(`${col}5`);
-      c.value = sub2Labels[i];
-      styleHeader(c, SUB2BG, GRP2TX);
-    });
-
-    // ── Data rows ─────────────────────────────────────────────
-    const rows = buildExportRows();
-    rows.forEach((row, ri) => {
-      const exRow = ws.addRow(row);
-      exRow.height = 15;
-      const isAlt = ri % 2 === 1;
-      exRow.eachCell({ includeEmpty: true }, (cell, colNum) => {
-        applyBorder(cell);
-        cell.alignment = { vertical: "middle", wrapText: false };
-        // Group 1 tint (cols 6–10 = F–J)
-        if (colNum >= 6 && colNum <= 10) {
-          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: isAlt ? "FFE8F0FC" : "FFF0F5FF" } };
-        // Group 2 tint (cols 11–18 = K–R)
-        } else if (colNum >= 11 && colNum <= 18) {
-          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: isAlt ? "FFE8FAF0" : "FFF0FAF7" } };
-        } else if (isAlt) {
-          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ALT } };
-        }
-        // Color Reading Profile (col 21 = U)
-        if (colNum === 21 && row[20]) {
-          const profileColors = {
-            "Reading at Grade Level": "FF639922",
-            "Transitioning Reader":   "FF378ADD",
-            "Developing Reader":      "FFEF9F27",
-            "High Emerging Reader":   "FFD4537E",
-            "Low Emerging Reader":    "FFE24B4A",
-          };
-          const color = profileColors[row[20]];
-          if (color) { cell.font = { bold: true, color: { argb: color } }; }
-        }
+    setExportingExcel(true);
+    try {
+      await studentsApi.exportCRLAExcel({
+        grade_level: grade,
+        section,
+        school_year: year,
+        period,
       });
-    });
-
-    // Download
-    const buffer = await wb.xlsx.writeBuffer();
-    const blob   = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-    const url    = URL.createObjectURL(blob);
-    const a      = document.createElement("a");
-    a.href       = url;
-    a.download   = `${fileName}.xlsx`;
-    a.click();
-    URL.revokeObjectURL(url);
+      showSaveSuccess("XLSX");
+    } catch (err) {
+      console.error(err);
+      const detail = err.response?.data?.detail;
+      showError(
+        typeof detail === "string" ? detail
+        : Array.isArray(detail)   ? detail.map((d) => d.msg).join(", ")
+        : "Failed to export XLSX assessment record."
+      );
+    } finally {
+      setExportingExcel(false);
+    }
   }
 
   return (
@@ -547,9 +395,14 @@ export default function ClassRecordPage() {
               <FileText size={14} />
               PDF
             </button>
-            <button className="cr-export-btn cr-export-btn--excel" onClick={exportToExcel} title="Export as Excel">
+            <button
+              className="cr-export-btn cr-export-btn--excel"
+              onClick={exportToExcel}
+              title="Export as XLSX"
+              disabled={exportingExcel}
+            >
               <FileSpreadsheet size={14} />
-              Excel
+              {exportingExcel ? "Exporting..." : "XLSX"}
             </button>
           </div>
         </div>

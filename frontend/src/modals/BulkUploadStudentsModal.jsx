@@ -55,7 +55,7 @@ export default function BulkUploadStudentsModal({ isOpen, onClose, onSuccess }) 
   }
 
   async function handleUpload() {
-    if (!file) { setError("Please select an Excel file."); return; }
+    if (!file) { setError("Please select an XLSX file."); return; }
 
     setLoading(true);
     setError(null);
@@ -96,7 +96,7 @@ export default function BulkUploadStudentsModal({ isOpen, onClose, onSuccess }) 
 
           {/* Context note */}
           <p className="im-note">
-            Add multiple students to your roster at once using the HearMeRead Excel template.
+            Add multiple students to your roster at once using the HearMeRead XLSX template.
             This does <strong>not</strong> import assessment scores — use <em>Import Records</em> for that.
           </p>
 

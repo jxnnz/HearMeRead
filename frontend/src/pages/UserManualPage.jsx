@@ -47,7 +47,7 @@ With HearMeRead, you can:
 - Score the reading against the passage text to identify miscues — substitutions, insertions, and deletions.
 - Classify the student's reading level (Full Refresher, Moderate Refresher, Light Refresher, Grade Ready).
 - Track student reading profiles across the school year (BoSY, MoSY, EoSY).
-- Export results to Excel or PDF for DepEd reporting.
+- Export results to XLSX or PDF for DepEd reporting.
 
 Role Responsibilities:
 - Teacher: Conducts assessments, manages students and class passages, views class records, and exports results.
@@ -149,11 +149,11 @@ View the final results summary. Reading Profiles are determined by accuracy and 
 - Developing Reader: Read 25%–50% of the passage correctly; comprehension score of 1–2.
 - Transitioning Reader: Read 51%–75% of the passage correctly; comprehension score of 3–4.
 - Reading at Grade Level: Read > 75% of the passage correctly; comprehension score of 5–6.
-* Note: If accuracy and comprehension fall into different levels, accuracy acts as a tiebreaker. You can export results to Excel, print a PDF, or start a new session.
+* Note: If accuracy and comprehension fall into different levels, accuracy acts as a tiebreaker. You can export results to XLSX, print a PDF, or start a new session.
 
 3.3 Student Records
 - Add Student: Enter LRN (exactly 12 digits), Sex, First Name, Last Name, Grade Level, and Section.
-- Import Students: Upload an Excel file with required columns (LRN, First Name, Last Name, Sex, Grade Level, Section).
+- Import Students: Upload an XLSX file with required columns (LRN, First Name, Last Name, Sex, Grade Level, Section).
 - Student profile: View individual statistics (average accuracy, WPM, sessions) and history.
 
 3.4 Passage Library
@@ -363,7 +363,7 @@ A: Use the Download Template button in the upload modal. Rhyme pairs must follow
                 <li>Score the reading against the passage text to identify miscues (substitutions, insertions, and deletions).</li>
                 <li>Classify the student's reading level (Full Refresher, Moderate Refresher, Light Refresher, Grade Ready).</li>
                 <li>Track student reading profiles across the school year (BoSY, MoSY, EoSY).</li>
-                <li>Export results to Excel or PDF for DepEd reporting.</li>
+                <li>Export results to XLSX or PDF for DepEd reporting.</li>
               </ul>
               <p><strong>Role Responsibilities:</strong></p>
               <ul>
@@ -439,7 +439,7 @@ A: Use the Download Template button in the upload modal. Rhyme pairs must follow
 
               <h4>3.4 Passage & Student Management</h4>
               <ul>
-                <li><strong>Student LRN:</strong> LRNs must be exactly 12 digits. You can import class rosters via Excel.</li>
+                <li><strong>Student LRN:</strong> LRNs must be exactly 12 digits. You can import class rosters via XLSX.</li>
                 <li><strong>Passages & Templates:</strong> Upload `.docx` or `.txt` files. Click <strong>Download Template</strong> inside the upload modal to get the correct structure for your grade level. You can also import multiple passages in bulk.</li>
                 <li><strong>Profile Lock:</strong> Your <strong>Employee ID</strong> (max 7 characters) is permanently locked after your initial save.</li>
               </ul>

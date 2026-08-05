@@ -423,6 +423,20 @@ export const studentsApi = {
     });
     _downloadBlob(res.data, "HearMeRead_BulkStudentUpload_Template.xlsx");
   },
+
+  exportCRLAExcel: async (params = {}) => {
+    const res = await api.get("/students/export-crla", {
+      params,
+      responseType: "blob",
+    });
+    const cd = res.headers["content-disposition"] || res.headers["Content-Disposition"];
+    let filename = `CRLA_Assessment_Record_${params.grade_level || 'Grade'}_${params.section || 'Class'}.xlsx`;
+    if (cd) {
+      const match = cd.match(/filename="?([^"]+)"?/);
+      if (match && match[1]) filename = match[1];
+    }
+    _downloadBlob(res.data, filename);
+  },
 };
 
 // Sessions

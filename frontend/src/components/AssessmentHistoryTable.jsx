@@ -308,13 +308,13 @@ export default function AssessmentHistoryTable({
             Export PDF
           </button>
 
-          {/* Export Excel */}
+          {/* Export XLSX */}
           <button
             className="aht-btn aht-btn--export"
             onClick={() => exportExcel(sorted, student)}
           >
             <FileSpreadsheet size={14} />
-            Export Excel
+            Export XLSX
           </button>
         </div>
       </div>

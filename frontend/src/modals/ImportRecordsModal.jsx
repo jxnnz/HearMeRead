@@ -61,7 +61,7 @@ export default function ImportRecordsModal({ isOpen, onClose, onSuccess }) {
   }
 
   async function handleImport() {
-    if (!file)       { setError("Please select an Excel file."); return; }
+    if (!file)       { setError("Please select an XLSX file."); return; }
     if (!schoolYear) { setError("School year is required.");     return; }
 
     setLoading(true);
@@ -95,7 +95,7 @@ export default function ImportRecordsModal({ isOpen, onClose, onSuccess }) {
 
         {/* Header */}
         <div className="im-header">
-          <h2 className="im-title">Import Records from Excel</h2>
+          <h2 className="im-title">Import Records from XLSX</h2>
           <button className="im-close" onClick={handleClose} aria-label="Close">
             <X size={18} />
           </button>
@@ -139,7 +139,7 @@ export default function ImportRecordsModal({ isOpen, onClose, onSuccess }) {
               <div className="im-dropzone-prompt">
                 <Upload size={28} className="im-upload-icon" />
                 <p className="im-dropzone-text">
-                  Drag &amp; drop your CRLA Excel file here,<br />
+                  Drag &amp; drop your CRLA XLSX file here,<br />
                   or <span className="im-dropzone-link">click to browse</span>
                 </p>
                 <p className="im-dropzone-hint">.xlsx files only</p>

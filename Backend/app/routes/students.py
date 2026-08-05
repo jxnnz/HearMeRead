@@ -133,6 +133,282 @@ async def download_bulk_template():
     )
 
 
+# ─── NEW: Export CRLA records using Excel Template ───────────────────────────
+@router.get(
+    "/export-crla",
+    summary="Export student reading records using the official CRLA Excel template",
+    response_class=Response,
+)
+async def export_crla(
+    grade_level: str = Query(...),
+    section: str = Query(...),
+    school_year: str = Query(...),
+    period: str = Query(...),
+    db: AsyncSession = Depends(get_db),
+    current_teacher: Teacher = Depends(get_current_teacher),
+):
+    import io
+    import openpyxl
+    from sqlalchemy.orm import selectinload
+    from app.services.student_service import _decrypt_student
+    import pathlib
+
+    try:
+        grade_enum = GradeLevel(grade_level)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid grade level: {grade_level}")
+
+    try:
+        period_enum = AssessmentPeriod(period)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid period: {period}")
+
+    grade_num = 2
+    if grade_enum == GradeLevel.grade_1:
+        grade_num = 1
+    elif grade_enum == GradeLevel.grade_3:
+        grade_num = 3
+
+    mt_label = "ENG" if grade_num == 3 else "MT"
+    old_mt_name = "G2 MT Reading Scoresheet"
+    old_fil_name = "G2 FIL Reading Scoresheet"
+    new_mt_name = f"G{grade_num} {mt_label} Reading Scoresheet"
+    new_fil_name = f"G{grade_num} FIL Reading Scoresheet"
+
+    # Fetch students
+    stmt = (
+        select(Student)
+        .where(
+            Student.teacher_id == current_teacher.id,
+            Student.grade_level == grade_enum,
+            Student.section == section,
+            Student.school_year == school_year,
+        )
+    )
+    res = await db.execute(stmt)
+    students = res.scalars().all()
+
+    # Decrypt students
+    for s in students:
+        _decrypt_student(s)
+
+    # Sort students: Male first, then Female; alphabetically by name
+    students = sorted(
+        students,
+        key=lambda s: (
+            0 if s.sex == Sex.male else 1,
+            (s.last_name or "").lower(),
+            (s.first_name or "").lower()
+        )
+    )
+
+    male_count = sum(1 for s in students if s.sex == Sex.male)
+    female_count = sum(1 for s in students if s.sex == Sex.female)
+
+    # Fetch sessions
+    student_ids = [s.id for s in students]
+    sessions = []
+    if student_ids:
+        sessions_stmt = (
+            select(AssessmentSession)
+            .options(
+                selectinload(AssessmentSession.reading_result),
+                selectinload(AssessmentSession.observation),
+                selectinload(AssessmentSession.passage)
+            )
+            .where(
+                AssessmentSession.student_id.in_(student_ids),
+                AssessmentSession.period == period_enum,
+                AssessmentSession.is_completed == True,
+                AssessmentSession.is_archived == False,
+            )
+        )
+        sessions_res = await db.execute(sessions_stmt)
+        sessions = sessions_res.scalars().all()
+
+    # Map sessions: student_id -> {language_str -> AssessmentSession}
+    session_map = {}
+    for sess in sessions:
+        sid = sess.student_id
+        lang_str = sess.language.value if hasattr(sess.language, "value") else str(sess.language)
+        if sid not in session_map:
+            session_map[sid] = {}
+        session_map[sid][lang_str] = sess
+
+    # Load Excel template
+    template_path = pathlib.Path(__file__).parent.parent / "utils" / "templates" / "BOSY-CRLA-GR2-Template.xlsx"
+    if not template_path.exists():
+        raise HTTPException(status_code=404, detail="CRLA Export template not found on server.")
+
+    wb = openpyxl.load_workbook(template_path, data_only=False)
+
+    # Rename worksheets
+    ws_mt = wb[old_mt_name]
+    ws_mt.title = new_mt_name
+    ws_fil = wb[old_fil_name]
+    ws_fil.title = new_fil_name
+
+    def replace_text(val: str) -> str:
+        if not val or val.startswith("="):
+            return val
+        new_val = val
+        new_val = new_val.replace("GRADE 2", f"GRADE {grade_num}")
+        new_val = new_val.replace("Grade 2", f"Grade {grade_num}")
+        new_val = new_val.replace("grade 2", f"grade {grade_num}")
+        if grade_num == 3:
+            new_val = new_val.replace("Mother Tongue", "English")
+            new_val = new_val.replace("MOTHER TONGUE", "ENGLISH")
+            new_val = new_val.replace("mother tongue", "english")
+        return new_val
+
+    # Rename formula references and update raw labels
+    for ws in wb.worksheets:
+        for r in range(1, ws.max_row + 1):
+            for c in range(1, ws.max_column + 1):
+                cell = ws.cell(row=r, column=c)
+                val = cell.value
+                if isinstance(val, str):
+                    if val.startswith("="):
+                        new_val = val
+                        if old_mt_name in new_val:
+                            new_val = new_val.replace(old_mt_name, new_mt_name)
+                        if old_fil_name in new_val:
+                            new_val = new_val.replace(old_fil_name, new_fil_name)
+                        if new_val != val:
+                            cell.value = new_val
+                    else:
+                        new_val = replace_text(val)
+                        if new_val != val:
+                            cell.value = new_val
+
+    # Replace specific text labels on Class Record/Summary sheets
+    for ws in wb.worksheets:
+        if ws.title == "Class Record":
+            cell_e5 = ws.cell(row=5, column=5)
+            if isinstance(cell_e5.value, str) and "GRADE 2" in cell_e5.value:
+                cell_e5.value = cell_e5.value.replace("GRADE 2", f"GRADE {grade_num}")
+            if grade_num == 3:
+                cell_e6 = ws.cell(row=6, column=5)
+                if isinstance(cell_e6.value, str) and "MOTHER TONGUE" in cell_e6.value:
+                    cell_e6.value = cell_e6.value.replace("MOTHER TONGUE", "ENGLISH")
+
+        elif ws.title == "Class Summary":
+            cell_a2 = ws.cell(row=2, column=1)
+            if isinstance(cell_a2.value, str) and "GRADE 2" in cell_a2.value:
+                cell_a2.value = cell_a2.value.replace("GRADE 2", f"GRADE {grade_num}")
+            cell_a8 = ws.cell(row=8, column=1)
+            if cell_a8.value == "Grade 2":
+                cell_a8.value = f"Grade {grade_num}"
+
+    # Write teacher metadata and school information
+    teacher_name = f"{current_teacher.first_name} {current_teacher.last_name}"
+    try:
+        t_first = decrypt(current_teacher.first_name) if current_teacher.first_name else ""
+        t_last = decrypt(current_teacher.last_name) if current_teacher.last_name else ""
+        teacher_name = f"{t_first} {t_last}"
+    except Exception:
+        pass
+
+    ws_mt.cell(row=6, column=3).value = teacher_name
+    ws_mt.cell(row=7, column=3).value = f"Grade {grade_num}"
+    ws_mt.cell(row=8, column=3).value = section
+    ws_mt.cell(row=9, column=3).value = "English" if grade_num == 3 else "Tagalog"
+    ws_mt.cell(row=6, column=4).value = male_count
+    ws_mt.cell(row=6, column=5).value = female_count
+
+    # Write student lists and scores
+    N = len(students)
+    for idx, s in enumerate(students, start=1):
+        row_num = 10 + idx
+        
+        # Write identity info on MT sheet
+        ws_mt.cell(row=row_num, column=1).value = idx
+        ws_mt.cell(row=row_num, column=2).value = s.lrn
+        ws_mt.cell(row=row_num, column=3).value = f"{s.last_name}, {s.first_name}" + (f", {s.middle_name}" if s.middle_name else "")
+        ws_mt.cell(row=row_num, column=4).value = s.sex.value.capitalize() if s.sex else None
+        
+        # Write S/N on FIL sheet
+        ws_fil.cell(row=row_num, column=1).value = idx
+
+        # Look up Mother Tongue session (english in DB)
+        mt_sess = session_map.get(s.id, {}).get("english")
+        if mt_sess:
+            ws_mt.cell(row=row_num, column=5).value = mt_sess.created_at.date()
+            rr = mt_sess.reading_result
+            if rr:
+                ws_mt.cell(row=row_num, column=6).value = rr.part1_task1_correct
+                route = (rr.part1_route or "").lower()
+                if "2l" in route:
+                    ws_mt.cell(row=row_num, column=7).value = rr.part1_task2_correct
+                elif "2h" in route:
+                    ws_mt.cell(row=row_num, column=8).value = rr.part1_task2_correct
+                    
+                if mt_sess.passage:
+                    ws_mt.cell(row=row_num, column=11).value = mt_sess.passage.story_number or 1
+                ws_mt.cell(row=row_num, column=12).value = rr.miscue_count
+                
+                time_sec = rr.reading_time_seconds or 0
+                ws_mt.cell(row=row_num, column=14).value = int(time_sec) // 60
+                ws_mt.cell(row=row_num, column=15).value = int(time_sec) % 60
+                
+            obs = mt_sess.observation
+            if obs:
+                ws_mt.cell(row=row_num, column=18).value = obs.comprehension_correct
+                ws_mt.cell(row=row_num, column=19).value = obs.learner_experience
+                if obs.fluency_level:
+                    ws_mt.cell(row=row_num, column=20).value = f"Level {obs.fluency_level}"
+                ws_mt.cell(row=row_num, column=22).value = obs.teacher_remarks
+
+        # Look up Filipino session (filipino in DB)
+        fil_sess = session_map.get(s.id, {}).get("filipino")
+        if fil_sess:
+            ws_fil.cell(row=row_num, column=5).value = fil_sess.created_at.date()
+            rr = fil_sess.reading_result
+            if rr:
+                ws_fil.cell(row=row_num, column=6).value = rr.part1_task1_correct
+                route = (rr.part1_route or "").lower()
+                if "2l" in route:
+                    ws_fil.cell(row=row_num, column=7).value = rr.part1_task2_correct
+                elif "2h" in route:
+                    ws_fil.cell(row=row_num, column=8).value = rr.part1_task2_correct
+                    
+                if fil_sess.passage:
+                    ws_fil.cell(row=row_num, column=11).value = fil_sess.passage.story_number or 1
+                ws_fil.cell(row=row_num, column=12).value = rr.miscue_count
+                
+                time_sec = rr.reading_time_seconds or 0
+                ws_fil.cell(row=row_num, column=14).value = int(time_sec) // 60
+                ws_fil.cell(row=row_num, column=15).value = int(time_sec) % 60
+                
+            obs = fil_sess.observation
+            if obs:
+                ws_fil.cell(row=row_num, column=18).value = obs.comprehension_correct
+                ws_fil.cell(row=row_num, column=19).value = obs.learner_experience
+                if obs.fluency_level:
+                    ws_fil.cell(row=row_num, column=20).value = f"Level {obs.fluency_level}"
+                ws_fil.cell(row=row_num, column=22).value = obs.teacher_remarks
+
+    # Clear remaining rows (11 + N to 110)
+    for r in range(11 + N, 111):
+        for c in range(1, 23):
+            ws_mt.cell(row=r, column=c).value = None
+            ws_fil.cell(row=r, column=c).value = None
+
+    # Save to buffer and stream back
+    out = io.BytesIO()
+    wb.save(out)
+    out.seek(0)
+    
+    filename = f"CRLA_Assessment_Record_Grade{grade_num}_{section}_{school_year}_{period}.xlsx".replace(" ", "_")
+    return Response(
+        content=out.read(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}"
+        },
+    )
+
+
 # ─── NEW: Bulk student upload ────────────────────────────────────────────────
 @router.post(
     "/bulk-upload",

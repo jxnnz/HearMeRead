@@ -231,7 +231,7 @@ export default function A1OnlyResultsStep({
           </div>
           <div className="asp-res-header__actions">
             <button className="asp-res-action-btn" onClick={handleSavePDF}>Save as PDF</button>
-            <button className="asp-res-action-btn" onClick={handleExport}>Export Excel</button>
+            <button className="asp-res-action-btn" onClick={handleExport}>Export XLSX</button>
           </div>
         </div>
       </div>
