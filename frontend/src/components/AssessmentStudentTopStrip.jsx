@@ -3,6 +3,7 @@ import "./component css/AssessmentStudentTopStrip.css";
 export default function AssessmentStudentTopStrip({
   firstName,
   lastName,
+  middleName,
   lrn,
 }) {
   return (
@@ -10,7 +11,7 @@ export default function AssessmentStudentTopStrip({
       <div className="astop__left">
         <span className="astop__label">Name:</span>
         <span className="astop__value">
-          {firstName} {lastName}
+          {lastName}, {firstName}{middleName ? `, ${middleName}` : ""}
         </span>
         <span className="astop__sep" aria-hidden>
           ·

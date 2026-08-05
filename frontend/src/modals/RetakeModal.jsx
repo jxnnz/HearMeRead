@@ -19,7 +19,7 @@ export default function RetakeModal({
         <div className="rtm-icon">✓</div>
         <h3 className="rtm-title">Recording Complete</h3>
         <p className="rtm-body">
-          Would you like to keep this recording or retake it?
+          Would you like to proceed with this recording or retake it?
         </p>
         
         <div className="rtm-actions">
@@ -27,7 +27,7 @@ export default function RetakeModal({
             Retake
           </button>
           <button className="rtm-btn rtm-btn--primary" onClick={onKeep}>
-            End Recording
+            Proceed
           </button>
         </div>
       </div>

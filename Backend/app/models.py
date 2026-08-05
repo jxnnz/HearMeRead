@@ -161,6 +161,7 @@ class Student(Base):
     id          = Column(Integer, primary_key=True, index=True)
     first_name  = Column(String(500), nullable=False)   # stored encrypted
     last_name   = Column(String(500), nullable=False)   # stored encrypted
+    middle_name = Column(String(500), nullable=True)    # stored encrypted
     grade_level = Column(SAEnum(GradeLevel), nullable=False)
     section     = Column(String(100), nullable=True)
     school_year = Column(String(9),   nullable=True)

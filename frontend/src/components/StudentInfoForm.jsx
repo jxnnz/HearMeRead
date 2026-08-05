@@ -45,6 +45,7 @@ export default function StudentInfoForm({
       student_id:  student.id,
       first_name:  student.first_name,
       last_name:   student.last_name,
+      middle_name: student.middle_name ?? "",
       grade_level: String(student.grade_level ?? ""),
       section:     student.section ?? "",
       school_year: student.school_year ?? prev.school_year,
@@ -62,6 +63,7 @@ export default function StudentInfoForm({
       student_id: null,
       first_name: "",
       last_name:  "",
+      middle_name: "",
       section:    "",
       school_year: prev.school_year,
       // grade_level kept intentionally — it acts as the search filter

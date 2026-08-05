@@ -22,18 +22,32 @@ def _decrypt_student(s: Student) -> Student:
         d["first_name"] = decrypt(d["first_name"])
     if d.get("last_name"):
         d["last_name"] = decrypt(d["last_name"])
+    if d.get("middle_name"):
+        d["middle_name"] = decrypt(d["middle_name"])
     if d.get("lrn"):
         d["lrn"] = decrypt(d["lrn"])
     return s
 
 
+def _capitalize_name(name: str) -> Optional[str]:
+    if not name:
+        return name
+    return " ".join(word.capitalize() for word in name.strip().split())
+
+
 def _encrypt_fields(data: dict) -> dict:
-    """Return a copy of data with first_name, last_name, and lrn encrypted."""
+    """Return a copy of data with first_name, last_name, middle_name, and lrn encrypted."""
     out = dict(data)
-    if out.get("first_name"):
-        out["first_name"] = encrypt(out["first_name"])
-    if out.get("last_name"):
-        out["last_name"] = encrypt(out["last_name"])
+    if "first_name" in out and out["first_name"]:
+        out["first_name"] = encrypt(_capitalize_name(out["first_name"]))
+    if "last_name" in out and out["last_name"]:
+        out["last_name"] = encrypt(_capitalize_name(out["last_name"]))
+    if "middle_name" in out:
+        mname = out["middle_name"]
+        if mname:
+            out["middle_name"] = encrypt(_capitalize_name(mname))
+        else:
+            out["middle_name"] = None
     if "lrn" in data:
         lrn = data["lrn"]
         if lrn:

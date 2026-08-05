@@ -55,7 +55,7 @@ export default function ReadingStep({
                 <span className="asp-reading-wordcount">({wordCount} words)</span>
               </h2>
               <p className="asp-reading-meta">
-                {form.first_name} {form.last_name} · Grade {String(form.grade_level || "").replace("grade_", "")} ·{" "}
+                {form.last_name}, {form.first_name}{form.middle_name ? `, ${form.middle_name}` : ""} · Grade {String(form.grade_level || "").replace("grade_", "")} ·{" "}
                 {form.section} · {form.school_year}
               </p>
             </div>

@@ -52,7 +52,7 @@ export default function StudentProfileCard({ student, onEdit, onDelete }) {
 
         <div className="spc-info">
           <div className="spc-info__top">
-            <h2 className="spc-name">{first_name} {last_name}</h2>
+            <h2 className="spc-name">{last_name}, {first_name}{student.middle_name ? `, ${student.middle_name}` : ""}</h2>
             {reading_profile && (
               <span className="spc-level-badge" style={badgeStyle}>
                 {reading_profile}

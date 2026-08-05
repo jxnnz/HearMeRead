@@ -103,6 +103,7 @@ async def create_session(
         student_id=data.student_id,
         school_year=school_year,
         period=data.period,
+        language=data.language,
     )
     if existing:
         if not existing.is_completed:

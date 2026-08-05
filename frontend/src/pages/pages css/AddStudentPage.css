@@ -2,7 +2,8 @@
 
 /* Page shell */
 .as-page {
-  max-width: 640px;
+  max-width: 920px;
+  width: 100%;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -105,15 +106,31 @@
   align-items: start;
 }
 
+/* Three-column row for Last Name, First Name, Middle Name */
+.as-row--names {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
 /* LRN + Sex row — LRN takes ~55%, Sex takes remaining */
 .as-row--lrn-sex {
   grid-template-columns: 55% 1fr;
 }
 
+@media (max-width: 720px) {
+  .as-row--names {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 480px) {
   .as-row,
-  .as-row--lrn-sex {
+  .as-row--lrn-sex,
+  .as-row--names {
     grid-template-columns: 1fr;
+  }
+
+  .as-card {
+    padding: 20px 16px;
   }
 }
 

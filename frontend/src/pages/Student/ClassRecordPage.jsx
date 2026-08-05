@@ -222,7 +222,7 @@ export default function ClassRecordPage() {
       return [
         idx + 1,
         s.lrn ?? "—",
-        `${s.last_name}, ${s.first_name}`,
+        `${s.last_name}, ${s.first_name}${s.middle_name ? `, ${s.middle_name.charAt(0).toUpperCase()}.` : ""}`,
         s.sex ? s.sex.charAt(0).toUpperCase() + s.sex.slice(1) : "—",
         sess ? formatDate(sess.created_at) : "—",
         rr?.part1_task1_correct ?? "—",
@@ -702,7 +702,7 @@ export default function ClassRecordPage() {
                                 setSelectedSessionId(sess ? sess.id : null);
                               }}
                             >
-                              {s.last_name}, {s.first_name}
+                              {s.last_name}, {s.first_name}{s.middle_name ? `, ${s.middle_name.charAt(0).toUpperCase()}.` : ""}
                             </button>
                           </td>
                           <td className="cr-td cr-td--cap">{s.sex ?? "—"}</td>

@@ -99,6 +99,217 @@ export default function StudentInfoModal({ sessionId, studentId, onClose }) {
   const task2Alignments = rr?.part1_task2_alignments_json ? JSON.parse(rr.part1_task2_alignments_json) : [];
   const part2Alignments = rr?.part2_alignments_json ? JSON.parse(rr.part2_alignments_json) : [];
 
+  const exportToPDF = () => {
+    if (!student) return;
+
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const primaryColor = [26, 35, 64];
+
+    // Header
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.text("HEAR ME READ", 14, 20);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 110);
+    doc.text("Individual Student Assessment Report", 14, 25);
+
+    // Divider
+    doc.setDrawColor(210, 216, 240);
+    doc.setLineWidth(0.5);
+    doc.line(14, 28, 196, 28);
+
+    // Student Info
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.text("STUDENT INFORMATION", 14, 36);
+
+    const infoRows = [
+      [
+        { content: "Student Name:", styles: { fontStyle: "bold" } },
+        `${student.last_name}, ${student.first_name}${student.middle_name ? `, ${student.middle_name}` : ""}`,
+        { content: "LRN:", styles: { fontStyle: "bold" } },
+        student.lrn || "—"
+      ],
+      [
+        { content: "Grade & Section:", styles: { fontStyle: "bold" } },
+        `${fmtGrade(student.grade_level)}${student.section ? ` - ${student.section}` : ""}`,
+        { content: "Sex:", styles: { fontStyle: "bold" } },
+        student.sex ? student.sex.charAt(0).toUpperCase() + student.sex.slice(1) : "—"
+      ]
+    ];
+
+    autoTable(doc, {
+      body: infoRows,
+      startY: 39,
+      margin: { left: 14, right: 14 },
+      theme: "plain",
+      styles: { fontSize: 10, cellPadding: 1.5, textColor: [26, 35, 64] },
+      columnStyles: {
+        0: { cellWidth: 35 },
+        1: { cellWidth: 65 },
+        2: { cellWidth: 25 },
+        3: { cellWidth: 65 }
+      }
+    });
+
+    let currentY = doc.lastAutoTable.finalY + 8;
+
+    if (session) {
+      // Assessment Session Info
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.text("ASSESSMENT DETAILS", 14, currentY);
+
+      const detailsRows = [
+        [
+          { content: "School Year:", styles: { fontStyle: "bold" } },
+          session.school_year || "—",
+          { content: "Date assessed:", styles: { fontStyle: "bold" } },
+          fmtDate(session.created_at)
+        ],
+        [
+          { content: "Period:", styles: { fontStyle: "bold" } },
+          PERIOD_MAP[session.period] || session.period || "—",
+          { content: "Language:", styles: { fontStyle: "bold" } },
+          session.language ? session.language.charAt(0).toUpperCase() + session.language.slice(1) : "—"
+        ],
+        [
+          { content: "Reading Profile:", styles: { fontStyle: "bold" } },
+          {
+            content: profile || "—",
+            styles: {
+              textColor: profileColor === "#639922" ? [99, 153, 34]
+                       : profileColor === "#378ADD" ? [55, 138, 221]
+                       : profileColor === "#EF9F27" ? [239, 159, 39]
+                       : profileColor === "#D4537E" ? [212, 83, 126]
+                       : profileColor === "#E24B4A" ? [226, 75, 74]
+                       : [26, 35, 64],
+              fontStyle: "bold"
+            }
+          },
+          "", ""
+        ]
+      ];
+
+      autoTable(doc, {
+        body: detailsRows,
+        startY: currentY + 3,
+        margin: { left: 14, right: 14 },
+        theme: "plain",
+        styles: { fontSize: 10, cellPadding: 1.5, textColor: [26, 35, 64] },
+        columnStyles: {
+          0: { cellWidth: 35 },
+          1: { cellWidth: 65 },
+          2: { cellWidth: 30 },
+          3: { cellWidth: 60 }
+        }
+      });
+
+      currentY = doc.lastAutoTable.finalY + 8;
+
+      // Part 1 Results
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.text("PART 1: SCREENER RESULTS", 14, currentY);
+
+      const part1Rows = [
+        ["Task 1 (Rapid Literacy)", `${d(rr?.part1_task1_correct)} correct`],
+        [route.includes("2h") ? "Task 2H (Sentences)" : "Task 2L (Words)", `${d(rr?.part1_task2_correct)} correct`],
+        ["Total Screener Score", `${d(rr?.part1_total_score)} points`],
+        ["Part 1 Classification", rr?.part1_classification || "—"]
+      ];
+
+      autoTable(doc, {
+        head: [["Assessment Area", "Result / Score"]],
+        body: part1Rows,
+        startY: currentY + 3,
+        margin: { left: 14, right: 14 },
+        theme: "striped",
+        headStyles: { fillColor: [44, 62, 107], textColor: 255 },
+        styles: { fontSize: 9.5, cellPadding: 2, textColor: [26, 35, 64] }
+      });
+
+      currentY = doc.lastAutoTable.finalY + 8;
+
+      // Part 2 Results
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.text("PART 2: ORAL READING & COMPREHENSION", 14, currentY);
+
+      const getStoryLabel = (title) => {
+        if (!title) return "—";
+        const m = title.match(/^Story\s*(\d+)\s*:/i);
+        return m ? `Story ${m[1]}` : title;
+      };
+
+      const part2Rows = [
+        ["Story Title", session.passage?.title ? getStoryLabel(session.passage.title) : "—"],
+        ["Total Words in Passage", d(rr?.total_words)],
+        ["Miscues Count", d(rr?.miscue_count)],
+        ["Words Read Correctly", d(wordsRead)],
+        ["Reading Time", fmtTime(rr?.reading_time_seconds)],
+        ["Correct Words Per Minute (WPM)", rr?.cwpm != null ? Math.round(rr.cwpm) : "—"],
+        ["Word Accuracy Rate", pctCorrect != null ? `${pctCorrect}%` : "—"],
+        ["Comprehension Questions Answered", obs ? `${d(obs.comprehension_correct)}/${d(obs.comprehension_total)}` : "—"]
+      ];
+
+      autoTable(doc, {
+        head: [["Metric", "Result"]],
+        body: part2Rows,
+        startY: currentY + 3,
+        margin: { left: 14, right: 14 },
+        theme: "striped",
+        headStyles: { fillColor: [20, 100, 60], textColor: 255 },
+        styles: { fontSize: 9.5, cellPadding: 2, textColor: [26, 35, 64] }
+      });
+
+      currentY = doc.lastAutoTable.finalY + 8;
+
+      if (currentY > 220) {
+        doc.addPage();
+        currentY = 20;
+      }
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.text("OBSERVATIONS & FEEDBACK", 14, currentY);
+
+      const obsRows = [
+        ["Learner Experience", d(obs?.learner_experience)],
+        ["Observation / Fluency Level", d(obs?.fluency_level)],
+        ["Teacher's Remarks", obs?.teacher_remarks || "No remarks added."]
+      ];
+
+      autoTable(doc, {
+        body: obsRows,
+        startY: currentY + 3,
+        margin: { left: 14, right: 14 },
+        theme: "plain",
+        styles: { fontSize: 10, cellPadding: 2, textColor: [26, 35, 64] },
+        columnStyles: {
+          0: { cellWidth: 50, fontStyle: "bold" },
+          1: { cellWidth: 130 }
+        }
+      });
+    } else {
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(11);
+      doc.setTextColor(120, 120, 130);
+      doc.text("No completed assessment record found for this period.", 14, currentY + 10);
+    }
+
+    const pdfFileName = `AssessmentReport_${student.last_name}_${student.first_name}${student.middle_name ? `_${student.middle_name}` : ""}.pdf`;
+    doc.save(pdfFileName);
+  };
+
   return (
     <div className="sim-overlay" onClick={onClose}>
       <div className="sim-modal" onClick={(e) => e.stopPropagation()}>
@@ -108,7 +319,7 @@ export default function StudentInfoModal({ sessionId, studentId, onClose }) {
           <div className="sim-header__info">
             <h2 className="sim-name">
               {student
-                ? `${student.last_name}, ${student.first_name}`
+                ? `${student.last_name}, ${student.first_name}${student.middle_name ? `, ${student.middle_name}` : ""}`
                 : loading ? "Loading…" : "Assessment Record"}
             </h2>
             {student && (
@@ -122,9 +333,35 @@ export default function StudentInfoModal({ sessionId, studentId, onClose }) {
               </div>
             )}
           </div>
-          <button className="sim-close-btn" onClick={onClose} aria-label="Close">
-            <X size={18} />
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            {student && !loading && !error && (
+              <button
+                className="sim-download-btn"
+                onClick={exportToPDF}
+                title="Download PDF"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "6px 12px",
+                  borderRadius: "6px",
+                  border: "1px solid #d0d8f0",
+                  background: "#fff",
+                  color: "#1a2340",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.2s"
+                }}
+              >
+                <Download size={14} />
+                PDF
+              </button>
+            )}
+            <button className="sim-close-btn" onClick={onClose} aria-label="Close">
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Scrollable body */}
@@ -317,6 +554,13 @@ export default function StudentInfoModal({ sessionId, studentId, onClose }) {
                 </div>
               </div>
             </>
+          )}
+
+          {!loading && !error && !session && student && (
+            <div className="sim-state" style={{ padding: "60px 20px", textAlign: "center", color: "#8a94b2" }}>
+              <p style={{ fontSize: "15px", fontWeight: 500, marginBottom: "8px" }}>No assessment session completed for this period.</p>
+              <p style={{ fontSize: "13px", opacity: 0.8 }}>This student has not yet completed a Filipino or English assessment for the selected school year and period.</p>
+            </div>
           )}
         </div>
       </div>

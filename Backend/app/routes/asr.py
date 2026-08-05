@@ -161,13 +161,13 @@ async def score_comprehension_answer(
 
     # 2. Fetch the question to get the question text and answer key
     question_query = await db.execute(
-        select(Question).where(Question.id == question_id, Question.passage_id == session.passage_id)
+        select(Question).where(Question.id == question_id)
     )
     question = question_query.scalar_one_or_none()
     if not question:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Question with ID {question_id} not found in this passage."
+            detail=f"Question with ID {question_id} not found."
         )
 
     # 3. Validate audio file type and read bytes

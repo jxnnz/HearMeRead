@@ -851,9 +851,26 @@ async def list_public_passages(
     if language:
         query = query.where(Passage.language == language)
     if grade_level:
-        query = query.where(Passage.grade_level == grade_level)
+        query = query.where(
+            or_(Passage.grade_level == grade_level, Passage.grade_level.is_(None))
+        )
     if assessment_type is not None:
-        query = query.where(Passage.assessment_type == assessment_type)
+        if assessment_type == 1:
+            query = query.where(
+                or_(
+                    Passage.assessment_type == 1,
+                    and_(Passage.assessment_type.is_(None), Passage.task1_content.is_not(None)),
+                )
+            )
+        elif assessment_type == 2:
+            query = query.where(
+                or_(
+                    Passage.assessment_type == 2,
+                    and_(Passage.assessment_type.is_(None), Passage.task1_content.is_(None)),
+                )
+            )
+        else:
+            query = query.where(Passage.assessment_type == assessment_type)
     if not include_archived:
         query = query.where(Passage.is_archived == False)
 

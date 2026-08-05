@@ -20,7 +20,11 @@ export { currentSchoolYear };
 
 export default function StudentDetailsForm({ form, setForm }) {
   function update(field, val) {
-    setForm((prev) => ({ ...prev, [field]: val }));
+    let formattedVal = val;
+    if (["first_name", "last_name", "middle_name"].includes(field)) {
+      formattedVal = val.replace(/\b\w/g, c => c.toUpperCase());
+    }
+    setForm((prev) => ({ ...prev, [field]: formattedVal }));
   }
 
   return (
@@ -83,8 +87,23 @@ export default function StudentDetailsForm({ form, setForm }) {
         </div>
       </div>
 
-      {/* Row 2: First Name + Last Name */}
-      <div className="as-row">
+      {/* Row 2: Last Name + First Name + Middle Name */}
+      <div className="as-row as-row--names">
+        <div className="as-field">
+          <label className="as-label" htmlFor="student-lastname">
+            Last Name:
+          </label>
+          <input
+            id="student-lastname"
+            type="text"
+            className="as-input"
+            value={form.last_name}
+            onChange={(e) => update("last_name", e.target.value)}
+            placeholder="Last name"
+            required
+          />
+        </div>
+
         <div className="as-field">
           <label className="as-label" htmlFor="student-firstname">
             First Name:
@@ -101,17 +120,16 @@ export default function StudentDetailsForm({ form, setForm }) {
         </div>
 
         <div className="as-field">
-          <label className="as-label" htmlFor="student-lastname">
-            Last Name:
+          <label className="as-label" htmlFor="student-middlename">
+            Middle Name:
           </label>
           <input
-            id="student-lastname"
+            id="student-middlename"
             type="text"
             className="as-input"
-            value={form.last_name}
-            onChange={(e) => update("last_name", e.target.value)}
-            placeholder="Last name"
-            required
+            value={form.middle_name || ""}
+            onChange={(e) => update("middle_name", e.target.value)}
+            placeholder="Middle name"
           />
         </div>
       </div>

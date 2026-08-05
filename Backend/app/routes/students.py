@@ -202,8 +202,9 @@ async def bulk_upload_students(
                 )
 
         student = Student(
-            first_name  = encrypt(row["first_name"]),
-            last_name   = encrypt(row["last_name"]),
+            first_name  = encrypt(row["first_name"].strip().title()),
+            last_name   = encrypt(row["last_name"].strip().title()),
+            middle_name = encrypt(row["middle_name"].strip().title()) if row.get("middle_name") else None,
             lrn         = encrypt(row["lrn"]) if row.get("lrn") else None,
             lrn_hash    = hash_lrn(row["lrn"]) if row.get("lrn") else None,
             sex         = Sex(row["sex"]) if row.get("sex") in ("female", "male") else None,

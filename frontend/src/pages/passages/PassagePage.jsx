@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, FileText, Lock, Upload } from "lucide-react";
+import { Plus, FileText, Lock, Upload, Info } from "lucide-react";
 import { useWindowWidth } from "../../hooks/useWindowWidth";
 
 import Layout from "../../components/Layout";
@@ -37,6 +37,7 @@ export default function PassagePage() {
 
   // NEW — teacher's grade level, used to auto-select the right A1 template
   const [teacherGrade, setTeacherGrade] = useState(null);
+  const [userRole, setUserRole]         = useState("TEACHER");
 
   useEffect(() => {
     passagesApi
@@ -47,9 +48,13 @@ export default function PassagePage() {
 
     // NEW — load teacher profile to get grade_level
     const role = localStorage.getItem("role") || "TEACHER";
-    if (role !== "ADMIN") {
+    setUserRole(role);
+    if (role !== "ADMIN" && role !== "admin") {
       authApi.me()
-        .then((user) => { if (user?.grade_level) setTeacherGrade(user.grade_level); })
+        .then((user) => {
+          if (user?.role) setUserRole(user.role);
+          if (user?.grade_level) setTeacherGrade(user.grade_level);
+        })
         .catch(() => {}); // non-critical — falls back to admin picker behaviour
     }
   }, []);
@@ -248,6 +253,26 @@ export default function PassagePage() {
 
         {!loading && !pageError && (
           <>
+            {!teacherGrade && userRole !== "ADMIN" && userRole !== "admin" && (
+              <div
+                style={{
+                  background: "#fff8e6",
+                  border: "1px solid #ffe58f",
+                  borderRadius: 10,
+                  padding: "14px 18px",
+                  marginBottom: 20,
+                  color: "#8c6b00",
+                  fontSize: 14,
+                  fontWeight: 500,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                }}
+              >
+                <Info size={18} color="#d48806" style={{ flexShrink: 0 }} />
+                <span>Make sure the admin assign a grade and section to see the public passages for your grade level</span>
+              </div>
+            )}
             {publicA1.length > 0 && (
               <AssessmentSection label="Assessment 1" list={publicA1} readOnly icon={null} />
             )}

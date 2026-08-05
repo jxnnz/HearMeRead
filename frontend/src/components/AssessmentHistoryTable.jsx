@@ -71,12 +71,13 @@ function getCellText(col, record) {
 // Student info block shared by export + print
 function buildStudentInfo(student = {}) {
   const {
-    first_name = "", last_name = "", lrn = "—",
+    first_name = "", last_name = "", middle_name = "", lrn = "—",
     grade_level = "—", section = "—", teacher = "—",
     sex = "—", reading_profile = "—",
   } = student;
+  const middlePart = middle_name ? `, ${middle_name}` : "";
   return {
-    fullName: `${first_name} ${last_name}`.trim() || "—",
+    fullName: last_name ? `${last_name}, ${first_name}${middlePart}` : (first_name || "—"),
     lrn, grade_level, section, teacher,
     sex: sex ? sex.charAt(0).toUpperCase() + sex.slice(1) : "—",
     reading_profile,

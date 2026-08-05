@@ -5,6 +5,7 @@ import "./EditStudentModal.css";
 const EMPTY_FORM = {
   first_name:  "",
   last_name:   "",
+  middle_name: "",
   lrn:         "",
   sex:         "female",
   grade_level: "",
@@ -37,6 +38,7 @@ export default function EditStudentModal({
       setForm({
         first_name:  student.first_name  ?? "",
         last_name:   student.last_name   ?? "",
+        middle_name: student.middle_name ?? "",
         lrn:         student.lrn         ?? "",
         sex:         student.sex         ?? "female",
         grade_level: String(student.grade_level ?? ""),
@@ -48,7 +50,11 @@ export default function EditStudentModal({
   if (!isOpen) return null;
 
   function update(field, val) {
-    setForm((prev) => ({ ...prev, [field]: val }));
+    let formattedVal = val;
+    if (["first_name", "last_name", "middle_name"].includes(field)) {
+      formattedVal = val.replace(/\b\w/g, c => c.toUpperCase());
+    }
+    setForm((prev) => ({ ...prev, [field]: formattedVal }));
   }
 
   function handleSubmit(e) {
@@ -110,8 +116,20 @@ export default function EditStudentModal({
             </div>
           </div>
 
-          {/* Row 2: First Name + Last Name */}
+          {/* Row 2: Last Name + First Name + Middle Name */}
           <div className="esm-row">
+            <div className="esm-field">
+              <label className="esm-label" htmlFor="esm-lastname">Last Name</label>
+              <input
+                id="esm-lastname"
+                type="text"
+                className="esm-input"
+                value={form.last_name}
+                onChange={(e) => update("last_name", e.target.value)}
+                placeholder="Last name"
+                required
+              />
+            </div>
             <div className="esm-field">
               <label className="esm-label" htmlFor="esm-firstname">First Name</label>
               <input
@@ -125,15 +143,14 @@ export default function EditStudentModal({
               />
             </div>
             <div className="esm-field">
-              <label className="esm-label" htmlFor="esm-lastname">Last Name</label>
+              <label className="esm-label" htmlFor="esm-middlename">Middle Name</label>
               <input
-                id="esm-lastname"
+                id="esm-middlename"
                 type="text"
                 className="esm-input"
-                value={form.last_name}
-                onChange={(e) => update("last_name", e.target.value)}
-                placeholder="Last name"
-                required
+                value={form.middle_name || ""}
+                onChange={(e) => update("middle_name", e.target.value)}
+                placeholder="Middle name"
               />
             </div>
           </div>

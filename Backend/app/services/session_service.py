@@ -59,11 +59,12 @@ async def check_duplicate(
     student_id: int,
     school_year: str,
     period: AssessmentPeriod,
+    language: Optional[Language] = None,
     exclude_session_id: Optional[int] = None,
 ) -> Optional[AssessmentSession]:
     """
     Returns an existing session if this student already has one
-    for the same school_year + period. Used to warn (not block).
+    for the same school_year + period (+ language if specified). Used to warn (not block).
     """
     filters = [
         AssessmentSession.teacher_id == teacher_id,
@@ -72,6 +73,8 @@ async def check_duplicate(
         AssessmentSession.period == period,
         AssessmentSession.is_archived == False,
     ]
+    if language:
+        filters.append(AssessmentSession.language == language)
     if exclude_session_id:
         filters.append(AssessmentSession.id != exclude_session_id)
 
@@ -131,22 +134,25 @@ async def get_sessions(
     total = count_result.scalar_one()
 
     result = await db.execute(
-        query
+        query.where(and_(*filters))
         .options(
             selectinload(AssessmentSession.reading_result),
             selectinload(AssessmentSession.observation),
             selectinload(AssessmentSession.passage),
         )
-        .where(and_(*filters))
         .order_by(AssessmentSession.created_at.desc())
         .offset((page - 1) * page_size)
         .limit(page_size)
     )
-    return total, result.scalars().all()
+    sessions = list(result.scalars().all())
+
+    return total, sessions
 
 
 async def get_session_by_id(
-    db: AsyncSession, session_id: int, teacher_id: int
+    db: AsyncSession,
+    session_id: int,
+    teacher_id: int,
 ) -> AssessmentSession:
     result = await db.execute(
         select(AssessmentSession)
@@ -158,6 +164,7 @@ async def get_session_by_id(
         .where(
             AssessmentSession.id == session_id,
             AssessmentSession.teacher_id == teacher_id,
+            AssessmentSession.is_archived == False,
         )
     )
     session = result.scalar_one_or_none()
@@ -173,7 +180,7 @@ async def create_session(
 ) -> Tuple[AssessmentSession, Optional[AssessmentSession]]:
     """
     Creates a new session. Also returns any duplicate found (same student +
-    school_year + period) so the route can attach a warning to the response.
+    school_year + period + language) so the route can attach a warning to the response.
     """
     student_result = await db.execute(
         select(Student).where(Student.id == data.student_id, Student.teacher_id == teacher_id)
@@ -192,6 +199,7 @@ async def create_session(
         student_id=data.student_id,
         school_year=school_year,
         period=data.period,
+        language=data.language,
     )
 
     session = AssessmentSession(

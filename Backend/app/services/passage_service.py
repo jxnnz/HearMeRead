@@ -6,7 +6,7 @@ from sqlalchemy import select, func, and_, or_
 
 from app.models import (
     Passage, Language, Teacher, GradeLevel,
-    PassageVisibility, TeacherAssignment,
+    PassageVisibility, TeacherAssignment, UserRole,
 )
 from app.schema import PassageCreate, PassageUpdate
 from app.services.log_service import log_activity
@@ -140,23 +140,70 @@ async def get_passages(
     assessment_type: Optional[int] = None,
 ) -> Tuple[int, List[Passage]]:
     """
-    Returns the teacher's own passages (private) PLUS public passages that
-    match the teacher's assigned grade level and belong to the same school.
+    Returns the teacher's own passages (private) PLUS public passages visible
+    to the teacher's school (global default public passages + local school overrides).
     """
     assigned_grade = await _get_teacher_assigned_grade(db, teacher_id)
     school_id      = await _get_teacher_school_id(db, teacher_id)
 
     own_filter = Passage.teacher_id == teacher_id
 
-    if assigned_grade and school_id:
-        public_filter = and_(
-            Passage.visibility  == PassageVisibility.public,
-            Passage.grade_level == assigned_grade,
-            Passage.teacher_id.in_(
-                select(Teacher.id).where(Teacher.school_id == school_id)
+    # Check caller role
+    teacher_res = await db.execute(select(Teacher).where(Teacher.id == teacher_id))
+    caller_teacher = teacher_res.scalar_one_or_none()
+    is_admin = caller_teacher and caller_teacher.role == UserRole.admin
+
+    if school_id:
+        # Find overrides created in this school
+        override_subquery = (
+            select(Passage.original_passage_id)
+            .join(Teacher, Teacher.id == Passage.teacher_id)
+            .where(
+                Passage.visibility == PassageVisibility.public,
+                Passage.original_passage_id.is_not(None),
+                Teacher.school_id == school_id,
+            )
+        )
+
+        public_base = and_(
+            Passage.visibility == PassageVisibility.public,
+            or_(
+                # Global public passages not overridden by this school
+                and_(
+                    Passage.original_passage_id.is_(None),
+                    Passage.id.not_in(override_subquery),
+                ),
+                # Local public overrides for this school
+                and_(
+                    Passage.original_passage_id.is_not(None),
+                    Passage.teacher_id.in_(
+                        select(Teacher.id).where(Teacher.school_id == school_id)
+                    ),
+                ),
             ),
         )
-        visibility_filter = or_(own_filter, public_filter)
+
+        if is_admin:
+            # Admins see all public passages for their school
+            public_filter = public_base
+        elif assigned_grade:
+            # Teachers with an assigned grade ONLY see public passages matching their assigned grade
+            target_grade = grade_level or assigned_grade
+            public_filter = and_(
+                public_base,
+                or_(
+                    Passage.grade_level == target_grade,
+                    Passage.grade_level.is_(None),
+                ),
+            )
+        else:
+            # Teachers without an assigned grade see NO public passages
+            public_filter = None
+
+        if public_filter is not None:
+            visibility_filter = or_(own_filter, public_filter)
+        else:
+            visibility_filter = own_filter
     else:
         visibility_filter = own_filter
 
@@ -166,9 +213,26 @@ async def get_passages(
     if language:
         common_filters.append(Passage.language == language)
     if grade_level:
-        common_filters.append(Passage.grade_level == grade_level)
+        common_filters.append(
+            or_(Passage.grade_level == grade_level, Passage.grade_level.is_(None))
+        )
     if assessment_type is not None:
-        common_filters.append(Passage.assessment_type == assessment_type)
+        if assessment_type == 1:
+            common_filters.append(
+                or_(
+                    Passage.assessment_type == 1,
+                    and_(Passage.assessment_type.is_(None), Passage.task1_content.is_not(None)),
+                )
+            )
+        elif assessment_type == 2:
+            common_filters.append(
+                or_(
+                    Passage.assessment_type == 2,
+                    and_(Passage.assessment_type.is_(None), Passage.task1_content.is_(None)),
+                )
+            )
+        else:
+            common_filters.append(Passage.assessment_type == assessment_type)
 
     count_result = await db.execute(
         select(func.count()).select_from(Passage).where(and_(*common_filters))
@@ -194,7 +258,7 @@ async def get_passage_by_id(
     """
     Allow fetching a passage if:
     - The teacher owns it, OR
-    - It's a public passage in the same school
+    - It's a public passage visible to the teacher's school (global or local override)
     """
     from sqlalchemy.orm import selectinload
     result = await db.execute(
@@ -210,6 +274,11 @@ async def get_passage_by_id(
         return passage
 
     if passage.visibility == PassageVisibility.public:
+        # Global public passage (not an override) is readable by everyone
+        if passage.original_passage_id is None:
+            return passage
+
+        # Local override passage is readable by teachers in the same school
         school_id       = await _get_teacher_school_id(db, teacher_id)
         owner_school_id = await _get_teacher_school_id(db, passage.teacher_id)
         if school_id and school_id == owner_school_id:

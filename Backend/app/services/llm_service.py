@@ -34,22 +34,49 @@ async def grade_comprehension_answer(
             "explanation": "System grading failed due to missing Groq API Key configuration."
         }
 
+    import re
+    # 1. Deterministic word/phrase overlap pre-check
+    clean_transcript = re.sub(r"[^\w\s]", "", student_transcript.lower()).strip()
+    clean_reference = re.sub(r"[^\w\s]", "", reference_answer.lower()).strip()
+
+    if clean_transcript and clean_reference:
+        # Split reference answer into candidate words/options
+        raw_candidates = re.split(r"[,/\|\n\–\-]|\bor\b|\bo\b|any of these|kahit alin", reference_answer, flags=re.IGNORECASE)
+        candidate_words = set()
+        stop_words = {"any", "of", "these", "kahit", "alin", "dito", "sa", "ang", "si", "ng", "mga", "or", "o", "the", "a", "an", "is", "in", "on", "at", "to"}
+        
+        for cand in raw_candidates:
+            cand_clean = re.sub(r"[^\w\s]", "", cand.lower()).strip()
+            if cand_clean:
+                for w in cand_clean.split():
+                    if w not in stop_words and len(w) > 1:
+                        candidate_words.add(w)
+
+        transcript_words = {w for w in clean_transcript.split() if w not in stop_words and len(w) > 1}
+
+        # If any transcript word matches any candidate word in the reference answer or exact substring match
+        if transcript_words and (transcript_words.intersection(candidate_words) or clean_transcript in clean_reference):
+            return {
+                "classification": "right",
+                "explanation": "Matched key word or phrase from reference answer."
+            }
+
     system_prompt = (
         "You are an expert reading comprehension grader. You grade a student's spoken answer against a reference answer (answer key).\n"
         "The question, reference answer, and student answer can be in English, Filipino (Tagalog), or a mix of both (Taglish).\n\n"
-        "You must categorize the student's answer as:\n"
-        "1. \"right\": The student's answer is correct, has the same semantic meaning as the reference answer, or is a valid alternative answer to the question.\n"
-        "2. \"wrong\": The student's answer is incorrect, or is unrelated to the question/reference answer.\n"
-        "3. \"no_answer\": The student did not answer, the transcription contains only silence hallucinations (like \"thank you\", \"bye\", \"subscribe\", \"watching\", etc.), or contains only unintelligible speech/filler words (like \"um\", \"ah\", \"yung\").\n\n"
-        "Guidelines:\n"
-        "- Speech-to-text transcripts might contain slight spelling errors, phonetic variations, or transcription inaccuracies. Be lenient and focus on the meaning.\n"
-        "- Oral responses are often conversational and informal.\n"
-        "- If the student's answer is a synonym, paraphrase, or partial but correct part of the reference answer, mark it as \"right\".\n"
-        "- If the transcription is empty, whitespace, or just standard Whisper silence artifacts (\"Thank you\", \"Bye\", \"Thank you for watching\", \"Please subscribe\"), classify it as \"no_answer\".\n\n"
+        "CRITICAL MATCHING RULES (DO NOT BE STRICT):\n"
+        "- Do NOT require an exact full-sentence match. Be VERY LENIENT and focus on word matching and meaning.\n"
+        "- Reference answers often list choices or phrases (e.g. \"Any of these - paligsahan, pagtakbo\", \"pusa\", \"kuneho\").\n"
+        "- If the student's spoken answer contains ANY of the key words, options, synonyms, or partial phrases listed in the reference answer (e.g., spoken \"paligsahan\" matching \"paligsahan sa pagtakbo\"), you MUST classify it as \"right\".\n"
+        "- As long as the student spoken answer contains a correct word or concept from the reference answer, mark it \"right\".\n\n"
+        "Categorize as:\n"
+        "1. \"right\": Student's answer contains a matching key word, option, synonym, or valid concept from the reference answer.\n"
+        "2. \"wrong\": Student's answer is incorrect, or unrelated.\n"
+        "3. \"no_answer\": Student did not speak, or output contains only silence artifacts (\"thank you\", \"bye\", \"subscribe\").\n\n"
         "Respond ONLY in JSON format:\n"
         "{\n"
         "  \"classification\": \"right\" | \"wrong\" | \"no_answer\",\n"
-        "  \"explanation\": \"A very brief explanation in English or Filipino justifying the grade.\"\n"
+        "  \"explanation\": \"A brief explanation justifying the grade.\"\n"
         "}"
     )
 

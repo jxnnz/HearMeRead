@@ -67,13 +67,15 @@ export default function A1OnlyResultsStep({
     doc.setFont("helvetica", "bold");
     doc.setFontSize(17);
     doc.setTextColor(26, 35, 64);
-    doc.text(`${form.first_name} ${form.last_name}`, 15, 17);
+    const middlePart = form.middle_name ? `, ${form.middle_name}` : "";
+    const fullName = `${form.last_name}, ${form.first_name}${middlePart}`;
+    doc.text(fullName, 15, 17);
 
     // Profile badge (colored pill next to name)
     const labelText = classification ?? "—";
     const [br, bg, bb] = hexRgb(profile.bg);
     const [cr, cg, cb] = hexRgb(profile.color);
-    const nameW = doc.getTextWidth(`${form.first_name} ${form.last_name}`);
+    const nameW = doc.getTextWidth(fullName);
     doc.setFillColor(br, bg, bb);
     doc.roundedRect(17 + nameW, 11, doc.getTextWidth(labelText) + 6, 7, 2, 2, "F");
     doc.setFont("helvetica", "bold");
@@ -161,7 +163,7 @@ export default function A1OnlyResultsStep({
       ["HearMeRead — Assessment 1 Report"],
       [],
       ["STUDENT INFORMATION"],
-      ["Name",            `${form.first_name} ${form.last_name}`],
+      ["Name",            `${form.last_name}, ${form.first_name}${form.middle_name ? `, ${form.middle_name}` : ""}`],
       ["Classification",  classification ?? "—"],
       ["Grade Level",     gradeLabel(form.grade_level)],
       ["Section",         form.section],
@@ -200,7 +202,7 @@ export default function A1OnlyResultsStep({
         <div className="asp-res-header__left">
           <div className="asp-res-name-row">
             <h1 className="asp-res-header__name">
-              {form.first_name} {form.last_name}
+              {form.last_name}, {form.first_name}{form.middle_name ? `, ${form.middle_name}` : ""}
             </h1>
             <span
               className="asp-res-profile-badge"

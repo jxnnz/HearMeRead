@@ -99,6 +99,7 @@ function initForm() {
     student_id:       null,
     first_name:       "",
     last_name:        "",
+    middle_name:      "",
     grade_level:      "",
     section:          "",
     language:         "filipino",
@@ -175,12 +176,23 @@ export default function AssessmentPage() {
   const [isCompleting,   setIsCompleting]     = useState(false);
   const [completeError,  setCompleteError]    = useState(null);
 
+  // Background execution tracking
+  const task1ScorePromiseRef     = useRef(null);
+  const part1ScorePromiseRef     = useRef(null);
+  const a2TranscribePromiseRef   = useRef(null);
+  const [isA2TranscribingBg,          setIsA2TranscribingBg]          = useState(false);
+  const [a2TranscribeDone,            setA2TranscribeDone]            = useState(false);
+  const [storedLearnerExpBackendVal, setStoredLearnerExpBackendVal]  = useState(null);
+
   // Recording state
   const [showChoiceModal,    setShowChoiceModal]    = useState(false);
   const [recordingMode,      setRecordingMode]      = useState(null);
   const [isRecording,        setIsRecording]        = useState(false);
   const [isPaused,           setIsPaused]           = useState(false);
   const [audioFile,          setAudioFile]          = useState(null);
+  const audioFileRef                                = useRef(null);
+  const stopPromiseRef                              = useRef(null);
+  const resolveStopPromiseRef                       = useRef(null);
   const [showRetakeModal,    setShowRetakeModal]     = useState(false);
   const [showTimeLimitModal, setShowTimeLimitModal]  = useState(false);
   const [recordingTime,      setRecordingTime]       = useState(0);
@@ -212,6 +224,9 @@ export default function AssessmentPage() {
     const limit    = GRADE_TIME_LIMITS[gradeNum] ?? 120;
     if (recordingTime >= limit) {
       setTimeLimitReached(true);
+      if (mediaRecorderRef.current?.state === "recording") {
+        mediaRecorderRef.current.pause();
+      }
       setIsPaused(true);
       setShowTimeLimitModal(true);
     }
@@ -278,16 +293,29 @@ export default function AssessmentPage() {
       .finally(() => setLoadingSessions(false));
   }, [form.school_year]);
 
-  // Derive completed student IDs in-memory for the selected period
+  // Derive completed student IDs in-memory for the selected period (and language for Grade 3)
   useEffect(() => {
     const period = PERIOD_MAP[form.assessment_type] ?? "beginning";
+    const selectedLang = (form.language || "filipino").toLowerCase();
+    const gradeNum = getGradeNum(form.grade_level);
+
     const ids = new Set(
       yearSessions
-        .filter((s) => s.period === period)
+        .filter((s) => {
+          if (s.period !== period) return false;
+          // For Grade 3 students: check language so completing one language (e.g. Filipino)
+          // does not block the student from taking the assessment in another language (e.g. English)
+          const sessionGrade = getGradeNum(s.student?.grade_level || form.grade_level);
+          if (gradeNum === 3 || sessionGrade === 3) {
+            const sessLang = String(s.language || "").toLowerCase();
+            if (sessLang !== selectedLang) return false;
+          }
+          return true;
+        })
         .map((s) => String(s.student_id))
     );
     setCompletedStudentIds(ids);
-  }, [yearSessions, form.assessment_type]);
+  }, [yearSessions, form.assessment_type, form.language, form.grade_level]);
 
   // Auto-detect default period based on the class's assessment state
   useEffect(() => {
@@ -299,24 +327,35 @@ export default function AssessmentPage() {
       { key: "end",       type: "EoSY" }
     ];
 
+    const selectedLang = (form.language || "filipino").toLowerCase();
+    const gradeNum = getGradeNum(form.grade_level);
+
     for (const p of periods) {
       const assessedStudentIds = new Set(
         yearSessions
-          .filter(s => s.period === p.key)
-          .map(s => String(s.student_id))
+          .filter((s) => {
+            if (s.period !== p.key) return false;
+            const sessionGrade = getGradeNum(s.student?.grade_level || form.grade_level);
+            if (gradeNum === 3 || sessionGrade === 3) {
+              const sessLang = String(s.language || "").toLowerCase();
+              if (sessLang !== selectedLang) return false;
+            }
+            return true;
+          })
+          .map((s) => String(s.student_id))
       );
 
       // Check if any student in our roster has no session for this period
-      const hasUnassessed = students.some(student => !assessedStudentIds.has(String(student.id)));
+      const hasUnassessed = students.some((student) => !assessedStudentIds.has(String(student.id)));
       if (hasUnassessed) {
-        setForm(prev => ({
+        setForm((prev) => ({
           ...prev,
-          assessment_type: p.type
+          assessment_type: p.type,
         }));
         break;
       }
     }
-  }, [students, yearSessions, loadingStudents, loadingSessions]);
+  }, [students, yearSessions, loadingStudents, loadingSessions, form.language, form.grade_level]);
 
   // Fetch A1 passages when language or grade_level changes
   useEffect(() => {
@@ -565,8 +604,20 @@ export default function AssessmentPage() {
     setIsTranscribing(true);
     setTranscribeError(null);
 
+    const audioToUpload = file || audioFileRef.current || audioFile;
+    if (!audioToUpload) {
+      const errDetail = "No audio recording available for transcription.";
+      setTranscribeError(errDetail);
+      if (forTask === "a2") {
+        setIsA2TranscribingBg(false);
+        setA2TranscribeDone(false);
+      }
+      setIsTranscribing(false);
+      return null;
+    }
+
     const fd = new FormData();
-    fd.append("audio", file);
+    fd.append("audio", audioToUpload);
 
     // Pass the reference passage as a Whisper prompt to reduce hallucinations.
     // g2Passage is already set by handleProceedToG2 before this is called for "g2".
@@ -589,14 +640,28 @@ export default function AssessmentPage() {
       } else if (forTask === "a2") {
         setA2Transcript(result.transcript ?? "");
         setA2Words(result.words ?? []);
-        setStep(STEPS.A2_PREVIEW);
+        setA2TranscribeDone(true);
+        setIsA2TranscribingBg(false);
+        // If user was waiting on A2_LOADING step after learner experience, move to A2_PREVIEW
+        if (currentStepRef.current === STEPS.A2_LOADING) {
+          setStep(STEPS.A2_PREVIEW);
+        }
       }
+      return result;
     } catch (e) {
-      setTranscribeError(e.response?.data?.detail || e.message || "Transcription failed.");
+      const errDetail = e.response?.data?.detail || e.message || "Transcription failed.";
+      setTranscribeError(errDetail);
+      if (forTask === "a2") {
+        setIsA2TranscribingBg(false);
+        setA2TranscribeDone(false);
+      }
       // Return to the appropriate reading step on error
       if (forTask === "g1") setStep(STEPS.A1_G1);
       else if (forTask === "g2") setStep(STEPS.A1_G2);
-      else setStep(STEPS.A2);
+      else if (forTask === "a2" && currentStepRef.current === STEPS.A2_LOADING) {
+        setStep(STEPS.A2_PREVIEW);
+      }
+      throw e;
     } finally {
       setIsTranscribing(false);
     }
@@ -608,6 +673,7 @@ export default function AssessmentPage() {
     if (!file) return;
     e.target.value = "";
     setAudioFile(file);
+    audioFileRef.current = file;
     setRecordingMode("upload");
 
     // Extract exact duration from uploaded file
@@ -634,8 +700,11 @@ export default function AssessmentPage() {
       fireTranscription(file, "g2");
     } else if (s === STEPS.A2) {
       setA2RecordingTime(duration);
-      setStep(STEPS.A2_LOADING);
-      fireTranscription(file, "a2");
+      setA2TranscribeDone(false);
+      setIsA2TranscribingBg(true);
+      const p = fireTranscription(file, "a2");
+      a2TranscribePromiseRef.current = p;
+      setStep(STEPS.COMPREHENSION);
     }
   }
 
@@ -673,7 +742,13 @@ export default function AssessmentPage() {
     };
     recorder.onstop = () => {
       const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-      setAudioFile(new File([blob], "recording.webm", { type: "audio/webm" }));
+      const file = new File([blob], "recording.webm", { type: "audio/webm" });
+      audioFileRef.current = file;
+      setAudioFile(file);
+      if (resolveStopPromiseRef.current) {
+        resolveStopPromiseRef.current(file);
+        resolveStopPromiseRef.current = null;
+      }
       stream.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     };
@@ -704,16 +779,24 @@ export default function AssessmentPage() {
     setIsRecording(false);
     setIsPaused(false);
     if (mediaRecorderRef.current?.state !== "inactive") {
+      stopPromiseRef.current = new Promise((resolve) => {
+        resolveStopPromiseRef.current = resolve;
+      });
       mediaRecorderRef.current?.stop();
+    } else if (audioFileRef.current) {
+      stopPromiseRef.current = Promise.resolve(audioFileRef.current);
     }
     setShowRetakeModal(true);
   }
 
-  // Called from RetakeModal "Keep" button
-  function handleKeepRecording() {
+  // Called from RetakeModal "Proceed" button
+  async function handleKeepRecording() {
     setShowRetakeModal(false);
-    const file = audioFile;
-    const s    = step;
+    let file = audioFileRef.current || audioFile;
+    if (!file && stopPromiseRef.current) {
+      file = await stopPromiseRef.current;
+    }
+    const s = step;
 
     if (s === STEPS.A1_G1) {
       setG1RecordingTime(recordingTime);
@@ -724,8 +807,12 @@ export default function AssessmentPage() {
       setStep(STEPS.A1_G2_LOADING);
       fireTranscription(file, "g2");
     } else if (s === STEPS.A2) {
-      setStep(STEPS.A2_LOADING);
-      fireTranscription(file, "a2");
+      setA2RecordingTime(recordingTime);
+      setA2TranscribeDone(false);
+      setIsA2TranscribingBg(true);
+      const p = fireTranscription(file, "a2");
+      a2TranscribePromiseRef.current = p;
+      setStep(STEPS.COMPREHENSION);
     }
     setRecordingTime(0);
   }
@@ -741,6 +828,9 @@ export default function AssessmentPage() {
     setIsRecording(false);
     setIsPaused(false);
     setAudioFile(null);
+    audioFileRef.current = null;
+    stopPromiseRef.current = null;
+    resolveStopPromiseRef.current = null;
     setShowRetakeModal(false);
     setRecordingTime(0);
     setCountdown(0);
@@ -757,10 +847,7 @@ export default function AssessmentPage() {
   // TimeLimitModal handlers (A2 only)
   function handleTimeLimitContinue() {
     setShowTimeLimitModal(false);
-    setIsPaused(false); // resume timer + recording
-    if (mediaRecorderRef.current?.state === "paused") {
-      mediaRecorderRef.current.resume();
-    }
+    handleResumeRecording();
   }
 
   function handleTimeLimitSubmit() {
@@ -788,34 +875,60 @@ export default function AssessmentPage() {
     setShowChoiceModal(true);
   }
 
+  // Task 1 route calculator helper (non-blocking)
+  function computeTask1Route(referenceText, transcribedText, language) {
+    if ((language || "").toLowerCase() === "english") {
+      return { route: "task_2L", correct_words: 0 };
+    }
+    const normalize = (str) =>
+      (str || "").toLowerCase().replace(/[^\w\s]/g, "").trim().split(/\s+/).filter(Boolean);
+    const refWords = normalize(referenceText);
+    const hypWords = normalize(transcribedText);
+
+    let correctCount = 0;
+    const hypCopy = [...hypWords];
+    for (const w of refWords) {
+      const idx = hypCopy.indexOf(w);
+      if (idx !== -1) {
+        correctCount++;
+        hypCopy.splice(idx, 1);
+      }
+    }
+
+    const route = correctCount > 6 ? "task_2H" : "task_2L";
+    return { route, correct_words: correctCount };
+  }
+
   // Transcription preview confirm handlers
   async function handleConfirmG1Preview(editedText) {
     setG1Transcript(editedText);
-    setStep(STEPS.A1_G1_LOADING);
-    setIsScoring(true);
     setScoreError(null);
-    try {
-      const result = await sessionsApi.scoreTask1(session.id, {
-        task1_reference_text:   form.selected_passage?.task1_content ?? "",
-        task1_transcribed_text: editedText,
-        language:               form.language || "filipino",
-        grade_level:            getGradeNum(form.grade_level),
-      });
-      setTask1ScoreResult(result);
-      // Pass fresh result directly — state update above is async and would be
-      // stale inside handleProceedToG2 if we relied on task1ScoreResult there.
-      handleProceedToG2(result);
-    } catch (e) {
-      setScoreError(e.response?.data?.detail || e.message || "Scoring failed.");
-      setStep(STEPS.A1_G1_PREVIEW);
-    } finally {
-      setIsScoring(false);
-    }
+
+    const refText = form.selected_passage?.task1_content ?? form.passage_content ?? "";
+    const localResult = computeTask1Route(refText, editedText, form.language);
+
+    // Fire scoreTask1 in background to persist Task 1 intermediate result in session
+    const task1Promise = sessionsApi.scoreTask1(session.id, {
+      task1_reference_text:   refText,
+      task1_transcribed_text: editedText,
+      language:               form.language || "filipino",
+      grade_level:            getGradeNum(form.grade_level),
+    }).then((bgResult) => {
+      setTask1ScoreResult(bgResult);
+      return bgResult;
+    }).catch((e) => {
+      console.error("Task 1 background scoring error:", e);
+      setTask1ScoreResult(localResult);
+    });
+
+    task1ScorePromiseRef.current = task1Promise;
+
+    // Immediately proceed to Task 2 without showing A1_G1_LOADING screen!
+    handleProceedToG2(localResult);
   }
 
   async function handleConfirmG2Preview(editedText) {
     setG2Transcript(editedText);
-    setStep(STEPS.A1_G2_LOADING);
     setIsScoring(true);
     setScoreError(null);
 
@@ -824,29 +937,34 @@ export default function AssessmentPage() {
       ? (p?.task2_words     ?? "")
       : (p?.task2_sentences ?? "");
 
-    try {
-      const result = await sessionsApi.scorePart1(session.id, {
-        task1_reference_text:   p?.task1_content ?? "",
-        task1_transcribed_text: g1Transcript,
-        task2_reference_text:   task2Ref,
-        task2_transcribed_text: editedText,
-        language:               form.language || "filipino",
-        grade_level:            getGradeNum(form.grade_level),
-      });
+    // Fire Part 1 scoring in background
+    const scorePromise = sessionsApi.scorePart1(session.id, {
+      task1_reference_text:   p?.task1_content ?? "",
+      task1_transcribed_text: g1Transcript,
+      task2_reference_text:   task2Ref,
+      task2_transcribed_text: editedText,
+      language:               form.language || "filipino",
+      grade_level:            getGradeNum(form.grade_level),
+    }).then((result) => {
       setPart1Result(result);
-      if (result.route === "task_2H") handleProceedToA2();
-      else setStep(STEPS.LEARNER_EXP);
-    } catch (e) {
-      setScoreError(e.response?.data?.detail || e.message || "Scoring failed.");
-      setStep(STEPS.A1_G2_PREVIEW);
-    } finally {
       setIsScoring(false);
-    }
+      return result;
+    }).catch((e) => {
+      setScoreError(e.response?.data?.detail || e.message || "Scoring failed.");
+      setIsScoring(false);
+    });
+
+    part1ScorePromiseRef.current = scorePromise;
+
+    // Immediately proceed to Assessment 2 selection without waiting on A1_G2_LOADING screen
+    const isA2Path = (task1ScoreResult?.route ?? "task_2H") === "task_2H";
+    if (isA2Path) handleProceedToA2();
+    else setStep(STEPS.LEARNER_EXP);
   }
 
-  function handleConfirmA2Preview(editedText) {
+  async function handleConfirmA2Preview(editedText) {
     setA2Transcript(editedText);
-    setStep(STEPS.COMPREHENSION);
+    await handleCompleteSession(storedLearnerExpBackendVal);
   }
 
   // A1 G1 result — proceed to Task 2
@@ -942,6 +1060,19 @@ export default function AssessmentPage() {
     setIsCompleting(true);
     setCompleteError(null);
 
+    // Ensure background Task 1 scoring is finished
+    if (task1ScorePromiseRef.current) {
+      try { await task1ScorePromiseRef.current; } catch (e) { console.error(e); }
+    }
+    // Ensure background A1 scoring is finished
+    if (part1ScorePromiseRef.current) {
+      try { await part1ScorePromiseRef.current; } catch (e) { console.error(e); }
+    }
+    // Ensure background A2 transcription is finished
+    if (a2TranscribePromiseRef.current) {
+      try { await a2TranscribePromiseRef.current; } catch (e) { console.error(e); }
+    }
+
     const p        = form.selected_passage;
     const gradeNum = getGradeNum(form.grade_level);
     const route    = part1Result?.route ?? task1ScoreResult?.route ?? "";
@@ -993,44 +1124,44 @@ export default function AssessmentPage() {
   }
 
   function handleDoneAndSubmit() {
-    showSaveSuccess("Assessment");
-    if (form.student_id) {
-      setCompletedStudentIds((prev) => new Set([...prev, String(form.student_id)]));
-    }
-    setTimeout(() => {
-      window.location.reload();
-    }, 1500);
+    window.location.reload();
   }
 
   function handleReset() {
-    setStep(STEPS.INFO);
-    setForm({
-      ...initForm(),
-      grade_level: teacherProfile?.grade_level ?? "",
-      section:     teacherProfile?.section     ?? "",
-    });
-    setA1Passages([]);
-    setA2Passages([]);
-    setG2Passage(null);
-    setA2Passage(null);
-    setG1Transcript(""); setG1Words([]);
+    resetRecording();
+    setForm(initForm());
+    setSession(null);
+    setG1Transcript("");
+    setG1Words([]);
     setG2Transcript("");
-    setA2Transcript(""); setA2Words([]);
+    setA2Transcript("");
+    setA2Words([]);
+    setRhymeDetails(null);
     setTask1ScoreResult(null);
     setPart1Result(null);
     setFinalResult(null);
-    setRhymeDetails(null);
     setG1RecordingTime(0);
     setG2RecordingTime(0);
     setA2RecordingTime(0);
     setAnswers({});
-    setObservationLevel(""); setTeacherNotes(""); setLearnerExperience("");
-    setIsTranscribing(false); setTranscribeError(null);
-    setIsScoring(false); setScoreError(null);
-    setIsCompleting(false); setCompleteError(null);
-    setSession(null);
-    setTimeLimitReached(false);
-    resetRecording();
+    setObservationLevel("");
+    setTeacherNotes("");
+    setLearnerExperience("");
+    setG2Passage(null);
+    setA2Passage(null);
+    setA2Passages([]);
+    setIsTranscribing(false);
+    setTranscribeError(null);
+    setIsScoring(false);
+    setScoreError(null);
+    setIsCompleting(false);
+    setCompleteError(null);
+    part1ScorePromiseRef.current = null;
+    a2TranscribePromiseRef.current = null;
+    setIsA2TranscribingBg(false);
+    setA2TranscribeDone(false);
+    setStoredLearnerExpBackendVal(null);
+    setStep(STEPS.INFO);
   }
 
   function cycleFontSize() {
@@ -1118,6 +1249,7 @@ export default function AssessmentPage() {
     <AssessmentStudentTopStrip
       firstName={form.first_name}
       lastName={form.last_name}
+      middleName={form.middle_name}
       lrn={studentLrn}
     />
   ) : null;
@@ -1305,8 +1437,13 @@ export default function AssessmentPage() {
           onConfirm={(selectedValue) => {
             setLearnerExperience(selectedValue);
             const backendVal = EXPERIENCE_OPTIONS.find((e) => e.value === selectedValue)?.backendValue ?? null;
+            setStoredLearnerExpBackendVal(backendVal);
             if (isA2Path) {
-              handleCompleteSession(backendVal);
+              if (!a2TranscribeDone && isA2TranscribingBg) {
+                setStep(STEPS.A2_LOADING);
+              } else {
+                setStep(STEPS.A2_PREVIEW);
+              }
             } else {
               setStep(STEPS.A1_G1_OBSERVE);
             }
