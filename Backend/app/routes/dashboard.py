@@ -97,12 +97,18 @@ async def get_dashboard_summary(
     avg_error_rate = _safe_round(acc_result.avg_err)
 
     # 4. Reading profile distribution by sex (as %)
+    # Fallback to "Low Emerging Reader" for Full Refresher students who do not have a reading_profile
+    profile_expr = case(
+        (ReadingResult.part1_classification == "Full Refresher", "Low Emerging Reader"),
+        else_=ReadingResult.reading_profile
+    )
+
     profile_rows = (await db.execute(
-        select(Student.sex, ReadingResult.reading_profile, func.count().label("cnt"))
+        select(Student.sex, profile_expr.label("reading_profile"), func.count().label("cnt"))
         .join(AssessmentSession, AssessmentSession.student_id == Student.id)
         .join(ReadingResult, ReadingResult.session_id == AssessmentSession.id)
-        .where(completed_filter, ReadingResult.reading_profile.isnot(None))
-        .group_by(Student.sex, ReadingResult.reading_profile)
+        .where(completed_filter, profile_expr.isnot(None))
+        .group_by(Student.sex, profile_expr)
     )).all()
 
     raw_counts: dict = {"female": {}, "male": {}, "total": {}}

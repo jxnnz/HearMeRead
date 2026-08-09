@@ -8,7 +8,7 @@ from sqlalchemy import select, update, func, and_
 from sqlalchemy.orm import selectinload
 
 from app.models import (
-    AssessmentSession, AssessmentPeriod,
+    AssessmentSession, AssessmentPeriod, Language,
     Student, Passage, Teacher,
     ReadingResult, SessionObservation,
 )
@@ -378,7 +378,7 @@ async def complete_session(
     final_reading_profile = None
     if p2 and p2.reading_profile:
         final_reading_profile = p2.reading_profile.value
-    elif p1.total_score <= 10:
+    elif p1.classification and p1.classification.value == "Full Refresher":
         final_reading_profile = ReadingProfile.LOW_EMERGING.value
 
     scoring_fields = dict(

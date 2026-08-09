@@ -196,6 +196,7 @@ class Passage(Base):
     task2_sentences = Column(Text, nullable=True)      # Assessment 1: period-separated sentences
     file_path           = Column(String(500), nullable=True)   # R2 key for the original uploaded file
     original_passage_id = Column(Integer, ForeignKey("passages.id", ondelete="SET NULL"), nullable=True)
+    story_number    = Column(Integer, nullable=True)
     created_at      = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at      = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 

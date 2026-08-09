@@ -255,6 +255,17 @@ async def export_crla(
         new_val = new_val.replace("GRADE 2", f"GRADE {grade_num}")
         new_val = new_val.replace("Grade 2", f"Grade {grade_num}")
         new_val = new_val.replace("grade 2", f"grade {grade_num}")
+        
+        # Replace minutes
+        if grade_num == 1:
+            new_val = new_val.replace("2 minutes", "1 minute")
+            new_val = new_val.replace("2 Mins", "1 Min")
+            new_val = new_val.replace("2 mins", "1 min")
+        elif grade_num == 3:
+            new_val = new_val.replace("2 minutes", "3 minutes")
+            new_val = new_val.replace("2 Mins", "3 Mins")
+            new_val = new_val.replace("2 mins", "3 mins")
+
         if grade_num == 3:
             new_val = new_val.replace("Mother Tongue", "English")
             new_val = new_val.replace("MOTHER TONGUE", "ENGLISH")
@@ -281,9 +292,21 @@ async def export_crla(
                         if new_val != val:
                             cell.value = new_val
 
-    # Replace specific text labels on Class Record/Summary sheets
+    # Replace specific text labels on Class Record/Summary sheets and fix conditional formatting
     for ws in wb.worksheets:
+        # Fix conditional formatting rules to prevent endless black highlight on empty rows
+        for cf in list(ws.conditional_formatting):
+            for rule in cf.rules:
+                if rule.formula:
+                    formula_str = str(rule.formula[0]).replace(" ", "")
+                    if formula_str == "$F11<7":
+                        rule.formula = ["AND($F11<>\"\",$F11<7)"]
+                    elif formula_str == "$F11>6":
+                        rule.formula = ["AND($F11<>\"\",$F11>6)"]
+
         if ws.title == "Class Record":
+            # Update Grade label
+            ws.cell(row=7, column=3).value = f"Grade {grade_num}"
             cell_e5 = ws.cell(row=5, column=5)
             if isinstance(cell_e5.value, str) and "GRADE 2" in cell_e5.value:
                 cell_e5.value = cell_e5.value.replace("GRADE 2", f"GRADE {grade_num}")
@@ -330,34 +353,90 @@ async def export_crla(
         # Write S/N on FIL sheet
         ws_fil.cell(row=row_num, column=1).value = idx
 
+        # Clear score and observation columns (only raw input columns, keep formula columns!)
+        raw_cols = [5, 6, 7, 8, 11, 12, 14, 15, 18, 19, 20, 22]
+        for col_idx in raw_cols:
+            ws_mt.cell(row=row_num, column=col_idx).value = None
+            ws_fil.cell(row=row_num, column=col_idx).value = None
+
         # Look up Mother Tongue session (english in DB)
         mt_sess = session_map.get(s.id, {}).get("english")
         if mt_sess:
             ws_mt.cell(row=row_num, column=5).value = mt_sess.created_at.date()
             rr = mt_sess.reading_result
             if rr:
-                ws_mt.cell(row=row_num, column=6).value = rr.part1_task1_correct
+                t1 = rr.part1_task1_correct if rr.part1_task1_correct is not None else 0
+                t2 = rr.part1_task2_correct if rr.part1_task2_correct is not None else 0
                 route = (rr.part1_route or "").lower()
+                
+                # Calculate CRLA Total Score
+                if "2h" in route:
+                    calculated_total_score = t1 + 10 + t2
+                else:
+                    calculated_total_score = t1 + t2
+                
+                # Calculate CRLA Classification
+                if t1 < 7:
+                    if calculated_total_score <= 10:
+                        calculated_classification = "Full Refresher"
+                    else:
+                        calculated_classification = "Moderate Refresher"
+                else:
+                    if calculated_total_score < 27:
+                        calculated_classification = "Light Refresher"
+                    else:
+                        calculated_classification = "Grade Ready"
+                
+                ws_mt.cell(row=row_num, column=6).value = t1
                 if "2l" in route:
-                    ws_mt.cell(row=row_num, column=7).value = rr.part1_task2_correct
+                    ws_mt.cell(row=row_num, column=7).value = t2
                 elif "2h" in route:
-                    ws_mt.cell(row=row_num, column=8).value = rr.part1_task2_correct
+                    ws_mt.cell(row=row_num, column=8).value = t2
+                
+                # Write calculated values directly to Scoresheet
+                ws_mt.cell(row=row_num, column=9).value = calculated_total_score
+                ws_mt.cell(row=row_num, column=10).value = calculated_classification
+                if rr.total_words is not None and rr.miscue_count is not None:
+                    ws_mt.cell(row=row_num, column=13).value = rr.total_words - rr.miscue_count
+                if rr.cwpm is not None:
+                    ws_mt.cell(row=row_num, column=16).value = rr.cwpm
+                if rr.total_words is not None and rr.total_words > 0 and rr.miscue_count is not None:
+                    ws_mt.cell(row=row_num, column=17).value = (rr.total_words - rr.miscue_count) / rr.total_words
+                profile_val = rr.reading_profile
+                if not profile_val or str(profile_val).strip() == "":
+                    profile_val = "Low Emerging Reader"
+                ws_mt.cell(row=row_num, column=21).value = profile_val
+
+                is_full_refresher = (calculated_classification == "Full Refresher" or calculated_total_score <= 10)
+                if not is_full_refresher:
+                    if mt_sess.passage:
+                        ws_mt.cell(row=row_num, column=11).value = mt_sess.passage.story_number or 1
+                    ws_mt.cell(row=row_num, column=12).value = rr.miscue_count if rr.miscue_count is not None else 0
                     
-                if mt_sess.passage:
-                    ws_mt.cell(row=row_num, column=11).value = mt_sess.passage.story_number or 1
-                ws_mt.cell(row=row_num, column=12).value = rr.miscue_count
-                
-                time_sec = rr.reading_time_seconds or 0
-                ws_mt.cell(row=row_num, column=14).value = int(time_sec) // 60
-                ws_mt.cell(row=row_num, column=15).value = int(time_sec) % 60
-                
-            obs = mt_sess.observation
-            if obs:
-                ws_mt.cell(row=row_num, column=18).value = obs.comprehension_correct
-                ws_mt.cell(row=row_num, column=19).value = obs.learner_experience
-                if obs.fluency_level:
-                    ws_mt.cell(row=row_num, column=20).value = f"Level {obs.fluency_level}"
-                ws_mt.cell(row=row_num, column=22).value = obs.teacher_remarks
+                    time_sec = rr.reading_time_seconds or 0
+                    ws_mt.cell(row=row_num, column=14).value = int(time_sec) // 60
+                    ws_mt.cell(row=row_num, column=15).value = int(time_sec) % 60
+                    
+                    obs = mt_sess.observation
+                    if obs:
+                        ws_mt.cell(row=row_num, column=18).value = obs.comprehension_correct if obs.comprehension_correct is not None else 0
+                        ws_mt.cell(row=row_num, column=19).value = obs.learner_experience if obs.learner_experience is not None else 0
+                        if obs.fluency_level:
+                            ws_mt.cell(row=row_num, column=20).value = f"Level {obs.fluency_level}"
+                        ws_mt.cell(row=row_num, column=22).value = obs.teacher_remarks
+                    else:
+                        ws_mt.cell(row=row_num, column=18).value = 0
+                        ws_mt.cell(row=row_num, column=19).value = 0
+                else:
+                    ws_mt.cell(row=row_num, column=14).value = 0
+                    ws_mt.cell(row=row_num, column=15).value = 0
+                    
+                    obs = mt_sess.observation
+                    if obs:
+                        ws_mt.cell(row=row_num, column=19).value = obs.learner_experience if obs.learner_experience is not None else 0
+                        if obs.fluency_level:
+                            ws_mt.cell(row=row_num, column=20).value = f"Level {obs.fluency_level}"
+                        ws_mt.cell(row=row_num, column=22).value = obs.teacher_remarks
 
         # Look up Filipino session (filipino in DB)
         fil_sess = session_map.get(s.id, {}).get("filipino")
@@ -365,34 +444,169 @@ async def export_crla(
             ws_fil.cell(row=row_num, column=5).value = fil_sess.created_at.date()
             rr = fil_sess.reading_result
             if rr:
-                ws_fil.cell(row=row_num, column=6).value = rr.part1_task1_correct
+                t1 = rr.part1_task1_correct if rr.part1_task1_correct is not None else 0
+                t2 = rr.part1_task2_correct if rr.part1_task2_correct is not None else 0
                 route = (rr.part1_route or "").lower()
+                
+                # Calculate CRLA Total Score
+                if "2h" in route:
+                    calculated_total_score = t1 + 10 + t2
+                else:
+                    calculated_total_score = t1 + t2
+                
+                # Calculate CRLA Classification
+                if t1 < 7:
+                    if calculated_total_score <= 10:
+                        calculated_classification = "Full Refresher"
+                    else:
+                        calculated_classification = "Moderate Refresher"
+                else:
+                    if calculated_total_score < 27:
+                        calculated_classification = "Light Refresher"
+                    else:
+                        calculated_classification = "Grade Ready"
+                
+                ws_fil.cell(row=row_num, column=6).value = t1
                 if "2l" in route:
-                    ws_fil.cell(row=row_num, column=7).value = rr.part1_task2_correct
+                    ws_fil.cell(row=row_num, column=7).value = t2
                 elif "2h" in route:
-                    ws_fil.cell(row=row_num, column=8).value = rr.part1_task2_correct
-                    
-                if fil_sess.passage:
-                    ws_fil.cell(row=row_num, column=11).value = fil_sess.passage.story_number or 1
-                ws_fil.cell(row=row_num, column=12).value = rr.miscue_count
+                    ws_fil.cell(row=row_num, column=8).value = t2
                 
-                time_sec = rr.reading_time_seconds or 0
-                ws_fil.cell(row=row_num, column=14).value = int(time_sec) // 60
-                ws_fil.cell(row=row_num, column=15).value = int(time_sec) % 60
-                
-            obs = fil_sess.observation
-            if obs:
-                ws_fil.cell(row=row_num, column=18).value = obs.comprehension_correct
-                ws_fil.cell(row=row_num, column=19).value = obs.learner_experience
-                if obs.fluency_level:
-                    ws_fil.cell(row=row_num, column=20).value = f"Level {obs.fluency_level}"
-                ws_fil.cell(row=row_num, column=22).value = obs.teacher_remarks
+                # Write calculated values directly to Scoresheet
+                ws_fil.cell(row=row_num, column=9).value = calculated_total_score
+                ws_fil.cell(row=row_num, column=10).value = calculated_classification
+                if rr.total_words is not None and rr.miscue_count is not None:
+                    ws_fil.cell(row=row_num, column=13).value = rr.total_words - rr.miscue_count
+                if rr.cwpm is not None:
+                    ws_fil.cell(row=row_num, column=16).value = rr.cwpm
+                if rr.total_words is not None and rr.total_words > 0 and rr.miscue_count is not None:
+                    ws_fil.cell(row=row_num, column=17).value = (rr.total_words - rr.miscue_count) / rr.total_words
+                profile_val = rr.reading_profile
+                if not profile_val or str(profile_val).strip() == "":
+                    profile_val = "Low Emerging Reader"
+                ws_fil.cell(row=row_num, column=21).value = profile_val
 
-    # Clear remaining rows (11 + N to 110)
+                is_full_refresher = (calculated_classification == "Full Refresher" or calculated_total_score <= 10)
+                if not is_full_refresher:
+                    if fil_sess.passage:
+                        ws_fil.cell(row=row_num, column=11).value = fil_sess.passage.story_number or 1
+                    ws_fil.cell(row=row_num, column=12).value = rr.miscue_count if rr.miscue_count is not None else 0
+                    
+                    time_sec = rr.reading_time_seconds or 0
+                    ws_fil.cell(row=row_num, column=14).value = int(time_sec) // 60
+                    ws_fil.cell(row=row_num, column=15).value = int(time_sec) % 60
+                    
+                    obs = fil_sess.observation
+                    if obs:
+                        ws_fil.cell(row=row_num, column=18).value = obs.comprehension_correct if obs.comprehension_correct is not None else 0
+                        ws_fil.cell(row=row_num, column=19).value = obs.learner_experience if obs.learner_experience is not None else 0
+                        if obs.fluency_level:
+                            ws_fil.cell(row=row_num, column=20).value = f"Level {obs.fluency_level}"
+                        ws_fil.cell(row=row_num, column=22).value = obs.teacher_remarks
+                    else:
+                        ws_fil.cell(row=row_num, column=18).value = 0
+                        ws_fil.cell(row=row_num, column=19).value = 0
+                else:
+                    ws_fil.cell(row=row_num, column=14).value = 0
+                    ws_fil.cell(row=row_num, column=15).value = 0
+                    
+                    obs = fil_sess.observation
+                    if obs:
+                        ws_fil.cell(row=row_num, column=19).value = obs.learner_experience if obs.learner_experience is not None else 0
+                        if obs.fluency_level:
+                            ws_fil.cell(row=row_num, column=20).value = f"Level {obs.fluency_level}"
+                        ws_fil.cell(row=row_num, column=22).value = obs.teacher_remarks
+
+    # Clear remaining rows (11 + N to 110) - ONLY clear raw data columns to preserve formulas!
+    raw_cols_to_clear = [1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 14, 15, 18, 19, 20, 22]
     for r in range(11 + N, 111):
-        for c in range(1, 23):
+        for c in raw_cols_to_clear:
             ws_mt.cell(row=r, column=c).value = None
             ws_fil.cell(row=r, column=c).value = None
+
+    # Write Top and Bottom text labels
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from openpyxl.drawing.image import Image as OpenpyxlImage
+
+    attribution_font = Font(name="Calibri", size=9, bold=False, color="000000")
+    left_align_wrap = Alignment(horizontal="left", vertical="top", wrap_text=True)
+    center_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+
+    attribution_text = (
+        "This Scoresheet is made possible with the assistance of USAID through ABC+: Advancing Basic Education in the Philippines. "
+        "ABC+ Project is an early grades education project of the Department of Education in partnership with USAID and implemented "
+        "by RTI International together with The Asia Foundation, SIL LEAD, and Florida State University."
+    )
+
+    def style_and_fill_scoresheet(ws, is_mt: bool):
+        # 1. Left side title labels beside DepEd logo
+        ws.merge_cells('F2:T2')
+        cell_f2 = ws.cell(row=2, column=6)
+        cell_f2.value = "Department of Education"
+        cell_f2.font = Font(name="Calibri", size=14, bold=True, color="000000")
+        cell_f2.alignment = Alignment(horizontal="left", vertical="center")
+        
+        ws.merge_cells('F3:T3')
+        cell_f3 = ws.cell(row=3, column=6)
+        cell_f3.value = "Comprehensive Rapid Literacy Assessment (CRLA)"
+        cell_f3.font = Font(name="Calibri", size=14, bold=True, color="000000")
+        cell_f3.alignment = Alignment(horizontal="left", vertical="center")
+
+        # 2. Bottom USAID attribution
+        ws.merge_cells('A112:R113')
+        attr_cell = ws.cell(row=112, column=1)
+        attr_cell.value = attribution_text
+        attr_cell.font = attribution_font
+        attr_cell.alignment = left_align_wrap
+
+    style_and_fill_scoresheet(ws_mt, is_mt=True)
+    style_and_fill_scoresheet(ws_fil, is_mt=False)
+
+    # Class Summary bottom attribution text
+    ws_summary = wb["Class Summary"]
+    ws_summary.merge_cells('A89:N91')
+    summary_attr_cell = ws_summary.cell(row=89, column=1)
+    summary_attr_cell.value = attribution_text
+    summary_attr_cell.font = attribution_font
+    summary_attr_cell.alignment = left_align_wrap
+
+    # Replace Scoring Reference Flowchart Image
+    ws_ref = wb["Scoring Reference"]
+    templates_dir = pathlib.Path(__file__).parent.parent / "utils" / "templates"
+
+    def get_resized_flowchart(path):
+        img = OpenpyxlImage(str(path))
+        w, h = img.width, img.height
+        ratio = h / w
+        img.width = 900
+        img.height = int(900 * ratio)
+        return img
+
+    if grade_num == 1:
+        grade1_flowchart = templates_dir / "Grade1.png"
+        if grade1_flowchart.exists():
+            ws_ref._images.clear()
+            img = get_resized_flowchart(grade1_flowchart)
+            ws_ref.add_image(img, "A13")
+    elif grade_num == 3:
+        eng_flowchart = templates_dir / "Grade3-English.png"
+        fil_flowchart = templates_dir / "Grade3-Filipino.png"
+        if eng_flowchart.exists() or fil_flowchart.exists():
+            ws_ref._images.clear()
+        if eng_flowchart.exists():
+            img_eng = get_resized_flowchart(eng_flowchart)
+            ws_ref.add_image(img_eng, "A13")
+        if fil_flowchart.exists():
+            img_fil = get_resized_flowchart(fil_flowchart)
+            ws_ref.add_image(img_fil, "A55")
+
+    # Protect Scoring Reference worksheet so it cannot be edited
+    ws_ref.protection.sheet = True
+
+    # Force automatic formula calculation on workbook open
+    wb.calculation.calcMode = 'auto'
+    wb.calculation.calcOnSave = True
+    wb.calculation.forceFullCalc = True
 
     # Save to buffer and stream back
     out = io.BytesIO()

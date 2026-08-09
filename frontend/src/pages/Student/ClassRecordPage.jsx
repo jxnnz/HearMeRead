@@ -54,7 +54,7 @@ function storyLabel(t) {
 }
 
 export default function ClassRecordPage() {
-  const { toasts, removeToast, showError } = useToast();
+  const { toasts, removeToast, showSaveSuccess, showError } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   const { grade = "", section = "", year = "", period = "beginning" } = location.state ?? {};
