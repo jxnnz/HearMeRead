@@ -51,8 +51,8 @@ class Part2CompleteIn(BaseModel):
     grade_level:             int   = Field(..., ge=1, le=3, description="Student grade level (1, 2, or 3)")
 
     # Comprehension (teacher-submitted after Q&A)
-    comprehension_correct:   int   = Field(..., ge=0, le=6)
-    comprehension_total:     int   = Field(6, description="Always 6 for CRLA")
+    comprehension_correct:   int   = Field(..., ge=0, description="Number of correct comprehension answers")
+    comprehension_total:     int   = Field(6, ge=1, description="Total comprehension questions (defaults to 6)")
 
     # Teacher-rated fields
     fluency_level:           Optional[int] = Field(None, ge=1, le=4, description="Observation level 1–4")
@@ -74,6 +74,9 @@ class CompleteSessionIn(BaseModel):
     @model_validator(mode="after")
     def validate_structure(self):
         # part2 can be None if student scored <=10 in Part 1 (Low Emerging)
+        if self.part2 is not None:
+            if self.part2.comprehension_correct > self.part2.comprehension_total:
+                raise ValueError("comprehension_correct cannot exceed comprehension_total")
         return self
 
 

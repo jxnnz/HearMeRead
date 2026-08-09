@@ -2,18 +2,42 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: auto;
   background: #f6f8ff;
-  border: 1px solid #dbe2ff;
-  border-radius: 12px;
-  padding: 10px 14px;
-  margin-top: -6px;
+  border-bottom: 1px solid #dbe2ff;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  border-radius: 0;
+  padding: 1px 24px; /* Align text columns with main layout */
+  margin-top: -10px; /* Pull flush to top of parent padding on desktop */
+  margin-left: -24px; /* Stretch to left edge */
+  margin-right: -24px; /* Stretch to right edge */
   margin-bottom: 18px;
   gap: 10px;
+
+  /* Sticky positioning at top of scroll container */
+  position: sticky;
+  top: 0; /* Stick flush to the top edge of viewport */
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(44, 62, 107, 0.05);
+}
+
+/* Mask top layout padding with matching solid background on scroll */
+.astop::before {
+  content: "";
+  position: absolute;
+  top: -20px;
+  left: 0;
+  right: 0;
+  height: 20px;
+  background: #f6f8ff;
+  z-index: -1;
 }
 
 .astop__left {
   display: flex;
-  align-items: baseline;
+  align-items: center; /* Center text vertically in the middle of the rectangle */
   flex-wrap: wrap;
   gap: 8px;
 }
@@ -29,21 +53,45 @@
 
 
 .astop__label {
-  font-size: 12px;
+  font-size: 16px; /* Desktop label font-size */
   font-weight: 600;
   color: #667085;
 }
 
 .astop__value {
-  font-size: 14px;
+  font-size: 18px; /* Desktop details/value font-size */
   font-weight: 700;
   color: #1a2340;
+}
+
+@media (max-width: 768px) {
+  .astop {
+    margin-top: -16px; /* Pull flush to top of parent padding on mobile */
+    margin-left: -14px; /* Stretch to left edge on mobile */
+    margin-right: -14px; /* Stretch to right edge on mobile */
+    padding: 10px 14px; /* Align with mobile parent padding */
+    top: 0; /* Stick flush to the top edge of viewport */
+  }
+  .astop::before {
+    top: -16px;
+    height: 16px;
+  }
+  .astop__label {
+    font-size: 12px; /* Scale down label on mobile */
+  }
+  .astop__value {
+    font-size: 14px; /* Scale down value on mobile */
+  }
 }
 
 @media (max-width: 480px) {
   .astop {
     flex-direction: column;
     align-items: flex-start;
+    gap: 4px;
   }
 }
+
+
+
 

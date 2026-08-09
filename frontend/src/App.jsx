@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoadingPage from "./pages/LoadingPage";
+import axios from "axios";
+import api, { authApi, dashboardApi } from "./services/api";
 
 // Lazy-loaded pages
 const LandingPage = React.lazy(() => import("./pages/LandingPage"));
@@ -75,12 +77,82 @@ function forceLogout() {
 
 export default function App() {
   const [appReady, setAppReady] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [firstCheckDone, setFirstCheckDone] = useState(false);
+  const [secondCheckDone, setSecondCheckDone] = useState(false);
   const idleTimer = useRef(null);
 
+  // Sync loading sequence with backend health check and optional auth details fetch
   useEffect(() => {
-    const t = setTimeout(() => setAppReady(true), 1200);
-    return () => clearTimeout(t);
+    const rootUrl = api.defaults.baseURL.replace('/routes', '');
+    
+    // Check 1: Ping root endpoint of backend
+    axios.get(rootUrl)
+      .then(() => {
+        setFirstCheckDone(true);
+        
+        // Check 2: If backend is online, check token validation or simulate asset load delay
+        const token = localStorage.getItem("token");
+        if (token) {
+          authApi.me()
+            .then(() => {
+              // Fetch dashboard summary stats to pre-cache / sync
+              return dashboardApi.getSummary()
+                .then(() => setSecondCheckDone(true))
+                .catch(() => setSecondCheckDone(true));
+            })
+            .catch(() => {
+              // If token is invalid or expired, continue load
+              setSecondCheckDone(true);
+            });
+        } else {
+          // Guest mode check: brief delay for resource allocation
+          setTimeout(() => setSecondCheckDone(true), 400);
+        }
+      })
+      .catch((err) => {
+        console.warn("Backend connection failed, proceeding with app load:", err);
+        setFirstCheckDone(true);
+        setSecondCheckDone(true);
+      });
   }, []);
+
+  // Update progress state based on sync check status
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setLoadingProgress((prev) => {
+        if (prev < 70) {
+          // Normal progressive growth towards Green
+          return prev + 5;
+        } else if (prev === 70) {
+          // Halt at Green (70) until firstCheckDone (backend ping) is true
+          if (firstCheckDone) {
+            return prev + 5;
+          }
+          return prev;
+        } else if (prev < 85) {
+          // Progress towards Red
+          return prev + 5;
+        } else if (prev === 85) {
+          // Halt at Red (85) until secondCheckDone (details / auth pre-fetch) is true
+          if (secondCheckDone) {
+            return prev + 5;
+          }
+          return prev;
+        } else if (prev < 100) {
+          // Progress towards Dark Blue (100)
+          return prev + 5;
+        } else {
+          clearInterval(timer);
+          // Briefly display completed dark blue ring before transition
+          setTimeout(() => setAppReady(true), 350);
+          return 100;
+        }
+      });
+    }, 100);
+
+    return () => clearInterval(timer);
+  }, [firstCheckDone, secondCheckDone]);
 
   // Silently redirect to login on 401 — no modal
   useEffect(() => {
@@ -107,7 +179,7 @@ export default function App() {
     };
   }, []);
 
-  if (!appReady) return <LoadingPage />;
+  if (!appReady) return <LoadingPage progress={loadingProgress} />;
 
   return (
     <BrowserRouter>

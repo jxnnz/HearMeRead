@@ -1,11 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 
 .lp-bg {
   position: fixed;
   inset: 0;
-  background: linear-gradient(145deg, #1a2340, #2c3e6b, #3a5490, #1f4fa8, #1a2340);
-  background-size: 300% 300%;
-  animation: lpGradient 8s ease infinite;
+  background-color: #ffffff; /* White background as in sequence pages */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -13,51 +11,96 @@
   z-index: 9999;
 }
 
-@keyframes lpGradient {
-  0%   { background-position: 0% 50%; }
-  50%  { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-.lp-content {
+.lp-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  animation: lpFadeIn 0.5s ease both;
+  justify-content: center;
+  gap: 32px;
+  animation: lpFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes lpFadeIn {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
-.lp-title {
+.lp-logo-container {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lp-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.lp-track {
+  fill: none;
+  stroke: #e6effa; /* Faint track color matching the mockup background circle */
+}
+
+.lp-arc {
+  fill: none;
+  stroke-linecap: round;
+  transform: rotate(-30deg); /* Starts drawing at 2 o'clock */
+  transform-origin: center;
+  transition: stroke 0.25s ease, stroke-width 0.25s ease, stroke-dashoffset 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.lp-mascot {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+  z-index: 2;
+  animation: lpPulse 2s ease-in-out infinite;
+}
+
+@keyframes lpPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04);
+  }
+}
+
+.lp-text-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.lp-brand-name {
   margin: 0;
-  font-size: 36px;
+  font-size: 32px;
   font-weight: 800;
-  color: #fff;
-  letter-spacing: 0.5px;
+  color: #1e2d4a; /* Brand navy */
+  letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 
-.lp-sub {
+.lp-tagline {
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.6);
-  letter-spacing: 0.5px;
+  color: #64748b; /* Muted slate */
+  letter-spacing: -0.01em;
+  line-height: 1.2;
 }
 
-.lp-spinner {
-  margin-top: 28px;
-  width: 32px;
-  height: 32px;
-  border: 3px solid rgba(255, 255, 255, 0.2);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: lpSpin 0.75s linear infinite;
-}
-
-@keyframes lpSpin {
-  to { transform: rotate(360deg); }
-}

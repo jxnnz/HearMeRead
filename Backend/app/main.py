@@ -108,6 +108,20 @@ async def security_headers(request: Request, call_next):
     return response
 
 
+from fastapi.exceptions import RequestValidationError
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    import logging
+    logging.getLogger("uvicorn.error").error(
+        "Validation error for %s %s: %s", request.method, request.url.path, exc.errors()
+    )
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors(), "body": getattr(exc, "body", None)},
+    )
+
+
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception):
     import traceback, logging
@@ -116,6 +130,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
     )
     detail = str(exc) if settings.DEBUG else "Internal server error"
     return JSONResponse(status_code=500, content={"detail": detail})
+
 
 
 @app.get("/", tags=["Health"])

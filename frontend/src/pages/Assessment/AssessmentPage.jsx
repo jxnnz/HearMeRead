@@ -964,7 +964,7 @@ export default function AssessmentPage() {
 
   async function handleConfirmA2Preview(editedText) {
     setA2Transcript(editedText);
-    await handleCompleteSession(storedLearnerExpBackendVal);
+    await handleCompleteSession(storedLearnerExpBackendVal, editedText);
   }
 
   // A1 G1 result — proceed to Task 2
@@ -1055,7 +1055,7 @@ export default function AssessmentPage() {
   }
 
   // Final session completion
-  async function handleCompleteSession(learnerExpBackendValue = null) {
+  async function handleCompleteSession(learnerExpBackendValue = null, overrideA2Transcript = null) {
     if (!session?.id) { handleReset(); return; }
     setIsCompleting(true);
     setCompleteError(null);
@@ -1097,10 +1097,11 @@ export default function AssessmentPage() {
         ? {
             passage_id:              a2Passage?.id,
             reference_text:          a2Passage?.content ?? "",
-            transcribed_text:        a2Transcript,
+            transcribed_text:        overrideA2Transcript !== null ? overrideA2Transcript : a2Transcript,
             reading_time_sec:        a2RecordingTime > 0 ? a2RecordingTime : 1,
             grade_level:             gradeNum,
             comprehension_correct:   compCorrect,
+            comprehension_total:     a2Passage?.questions?.length ?? 6,
             fluency_level:           null,
             learner_experience:      learnerExpBackendValue,
             teacher_remarks:         null,

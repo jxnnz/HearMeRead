@@ -1,4 +1,17 @@
 import React, { useState, useEffect } from "react";
+import HmrLogo from "../assets/HMR-LOGO.png";
+import "../pages/LoadingPage.css";
+
+function getProgressColor(p) {
+  if (p < 15) return "transparent";
+  if (p < 30) return "#e63946"; // Red
+  if (p < 50) return "#f5c518"; // Yellow
+  if (p < 70) return "#3d5a8a"; // Blue
+  if (p < 85) return "#4caf50"; // Green
+  if (p < 95) return "#e63946"; // Red
+  if (p < 100) return "#f5c518"; // Yellow
+  return "#1e2d4a"; // Dark Blue (100%)
+}
 
 const SHORT_PASSAGES = [
   {
@@ -99,36 +112,55 @@ export default function LoadingScreen({ message = "Processing audio…", progres
   const roundedProgress = Math.round(progress);
   const currentPassage = SHORT_PASSAGES[passageIndex];
   const processStatus = getProcessStatusText(roundedProgress);
+  const color = getProgressColor(roundedProgress);
+
+  // Circle parameters for SVG
+  const radius = 68;
+  const strokeWidth = roundedProgress === 100 ? 10 : 8;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (roundedProgress / 100) * circumference;
 
   return (
     <div className="asp-loading-screen">
       <div className="asp-loading-card">
-        <h3 className="asp-loading-message">{message}</h3>
-
-        {/* Loading Bar Container matching sketch visual */}
-        <div className="asp-loading-bar-wrapper">
-          <div className="asp-loading-bar-track">
-            <div
-              className="asp-loading-bar-fill"
-              style={{ width: `${roundedProgress}%` }}
-            >
-              <div className="asp-loading-bar-shimmer" />
-            </div>
-
-            {/* Vertical segment tick marks */}
-            <div className="asp-loading-ticks">
-              {[...Array(10)].map((_, i) => (
-                <div key={i} className="asp-loading-tick" />
-              ))}
-            </div>
-          </div>
-
-          {/* Percentage badge below loading bar */}
-          <div className="asp-loading-percentage-badge">{roundedProgress}%</div>
+        {/* Mascot circular progress ring */}
+        <div className="lp-logo-container" style={{ marginBottom: "20px" }}>
+          <svg className="lp-svg" viewBox="0 0 160 160">
+            {/* Faint background track */}
+            <circle
+              cx="80"
+              cy="80"
+              r={radius}
+              className="lp-track"
+              strokeWidth={8}
+            />
+            {/* Drawing arc */}
+            {roundedProgress > 0 && (
+              <circle
+                cx="80"
+                cy="80"
+                r={radius}
+                className="lp-arc"
+                stroke={color}
+                strokeWidth={strokeWidth}
+                strokeDasharray={circumference}
+                strokeDashoffset={strokeDashoffset}
+              />
+            )}
+          </svg>
+          <img src={HmrLogo} alt="HearMeRead mascot" className="lp-mascot" />
         </div>
+
+        {/* Percentage badge below circle */}
+        <div className="asp-loading-percentage-badge" style={{ marginBottom: "16px" }}>
+          {roundedProgress}%
+        </div>
+
+        <h3 className="asp-loading-message" style={{ margin: "8px 0 12px 0" }}>{message}</h3>
 
         {/* Process status text showing step details */}
         <p className="asp-loading-process-text">{processStatus}</p>
+
 
         {/* Short passage container (always visible, click to change) */}
         <div
