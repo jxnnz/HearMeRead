@@ -72,6 +72,7 @@
 
 .cm-icon--danger  { background: #fdecea; color: #e63b2e; }
 .cm-icon--logout  { background: #eef1fc; color: #2c3e6b; }
+.cm-icon--success { background: #eafbf0; color: #2ecc71; }
 .cm-icon--default { background: #eef1fc; color: #2c3e6b; }
 
 .cm-icon__svg {
@@ -137,9 +138,16 @@
 
 .cm-btn--confirm-logout,
 .cm-btn--confirm-default {
-  background: #2c3e6b;
+  background: #FDC210;
+  color: #1a2340;
+}
+
+.cm-btn--confirm-success {
+  background: #2ecc71;
   color: #fff;
 }
 
 .cm-btn--confirm-logout:hover,
-.cm-btn--confirm-default:hover { background: #1a2a55; }
+.cm-btn--confirm-default:hover { background: #e0ab0b; color: #1a2340; }
+
+.cm-btn--confirm-success:hover { background: #27ae60; }

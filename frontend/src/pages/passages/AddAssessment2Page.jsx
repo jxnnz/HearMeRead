@@ -143,7 +143,7 @@ export default function AddAssessment2Page() {
             </button>
             <h1 className="ap-page__title">Add Assessment 2</h1>
           </div>
-          <button className="ap-save-btn" onClick={handleSave} disabled={saving}>
+          <button className="ap-save-btn" onClick={handleSave} disabled={saving} style={{ background: "#FDC210", color: "#1a2340", borderColor: "#FDC210" }}>
             {saving ? "Saving…" : "Save Passage"}
           </button>
         </div>
@@ -218,22 +218,6 @@ export default function AddAssessment2Page() {
           </div>
 
           {/* Content */}
-          <div className="ap-card__header-row" style={{ marginBottom: -8 }}>
-            <span />
-            <button type="button" className="ap-upload-btn" onClick={() => {
-              const input = document.createElement("input");
-              input.type = "file"; input.accept = ".txt";
-              input.onchange = (e) => {
-                const file = e.target.files[0]; if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (ev) => updateDetails("content", ev.target.result);
-                reader.readAsText(file);
-              };
-              input.click();
-            }} title="Upload from .txt file">
-              <Upload size={14} /> Upload .txt
-            </button>
-          </div>
           <div className="ap-field">
             <label className="ap-label" htmlFor="a2-content">
               Passage Content:

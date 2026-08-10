@@ -7,7 +7,7 @@ import "./component css/Layout.css";
 
 const EMP_PROMPT_KEY = "emp_id_prompted";
 
-export default function Layout({ children }) {
+export default function Layout({ children, style }) {
   const navigate = useNavigate();
   const [showEmpModal, setShowEmpModal] = useState(false);
 
@@ -25,7 +25,7 @@ export default function Layout({ children }) {
   return (
     <div className="layout">
       <Sidebar />
-      <main className="layout__main">{children}</main>
+      <main className="layout__main" style={style}>{children}</main>
 
       <ConfirmModal
         isOpen={showEmpModal}

@@ -5,6 +5,8 @@ import { authApi } from "../services/api";
 import Layout from "../components/Layout";
 import TopBar from "../components/TopBar";
 import ConfirmModal from "../modals/ConfirmModal";
+import Toast from "../modals/Toast";
+import useToast from "../hooks/Usetoast";
 import "./pages css/ProfilePage.css";
 
 function getInitials(first, last) {
@@ -24,9 +26,9 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
   const [showLockConfirm, setShowLockConfirm] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
+  const { toasts, removeToast, addToast } = useToast();
   const fileInputRef = useRef(null);
 
   function handleLogout() {
@@ -56,7 +58,6 @@ export default function ProfilePage() {
   async function saveProfile() {
     setLoading(true);
     setError(null);
-    setSuccess(null);
     try {
       const updatedUser = await authApi.updateProfile({
         first_name: firstName,
@@ -64,7 +65,7 @@ export default function ProfilePage() {
         employee_id: employeeId || null,
       });
       setUser(updatedUser);
-      setSuccess("Profile updated successfully!");
+      addToast("Profile updated successfully!");
     } catch (err) {
       setError(err.response?.data?.detail || "Failed to update profile.");
     } finally {
@@ -93,11 +94,10 @@ export default function ProfilePage() {
 
     setUploading(true);
     setError(null);
-    setSuccess(null);
     try {
       const updatedUser = await authApi.uploadProfilePicture(file);
       setUser(updatedUser);
-      setSuccess("Profile picture updated successfully!");
+      addToast("Profile picture updated successfully!");
     } catch (err) {
       const detail = err.response?.data?.detail;
       setError(detail || err.message || "Failed to upload picture.");
@@ -162,7 +162,6 @@ export default function ProfilePage() {
             <div className="pp-card">
               
               {error && <div className="pp-alert pp-alert--error">{error}</div>}
-              {success && <div className="pp-alert pp-alert--success">{success}</div>}
 
               <div className="pp-avatar-section">
                 <div className="pp-avatar-wrapper">
@@ -294,6 +293,7 @@ export default function ProfilePage() {
         confirmLabel="Sign Out"
         cancelLabel="Cancel"
       />
+      <Toast toasts={toasts} />
     </Layout>
   );
 }

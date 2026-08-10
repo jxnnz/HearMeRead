@@ -262,15 +262,16 @@
   border-color: #2c3e6b;
 }
 
-/* Save Student — dark navy filled */
+/* Save Student — primary theme */
 .as-btn--save {
-  background: #2c3e6b;
-  color: #fff;
-  border-color: #2c3e6b;
+  background: #FDC210;
+  color: #1a2340;
+  border-color: #FDC210;
 }
 
 .as-btn--save:hover:not(:disabled) {
-  background: #1e2d52;
+  background: #e0ab0b;
+  border-color: #e0ab0b;
 }
 
 .as-btn--upload {

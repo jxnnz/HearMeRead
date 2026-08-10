@@ -174,9 +174,9 @@
 .esm-btn--cancel:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .esm-btn--save {
-  background: #2c3e6b;
-  color: #fff;
+  background: #FDC210;
+  color: #1a2340;
 }
 
-.esm-btn--save:hover:not(:disabled) { background: #1a2a55; }
+.esm-btn--save:hover:not(:disabled) { background: #e0ab0b; color: #1a2340; }
 .esm-btn--save:disabled { opacity: 0.6; cursor: not-allowed; }

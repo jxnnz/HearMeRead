@@ -54,8 +54,8 @@
 .asp-continue-btn {
   width: 100%;
   padding: 13px;
-  background: #2c3e6b;
-  color: #fff;
+  background: #FDC210;
+  color: #1a2340;
   border: none;
   border-radius: 10px;
   font-size: 15px;
@@ -69,7 +69,7 @@
   transition: background 0.15s, opacity 0.15s;
 }
 
-.asp-continue-btn:hover:not(:disabled) { background: #1e2d52; }
+.asp-continue-btn:hover:not(:disabled) { background: #e0ab0b; color: #1a2340; }
 .asp-continue-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ============================================================
@@ -242,7 +242,8 @@ select.si-input {
   display: flex;
   flex-direction: column;
   height: calc(100vh - 64px);  /* full height minus layout padding */
-  background: #fff;
+  background: #f9f9f6 url('../../assets/Assessment-Read-1.png') no-repeat bottom center;
+  background-size: 100% auto;
   border-radius: 16px;
   box-shadow: 0 2px 20px rgba(44, 62, 107, 0.09);
   overflow: hidden;
@@ -292,6 +293,13 @@ select.si-input {
   flex-direction: column;
   gap: 3px;
   min-width: 0;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(5px);
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(200, 208, 228, 0.5);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
 }
 
 /* "Assessment 1 — Gawain 1" badge */
@@ -437,7 +445,8 @@ select.si-input {
   align-items: center;
   gap: 8px;
   padding: 16px 24px 24px;
-  border-top: 1.5px solid #eef0f8;
+  border-top: none;
+  background: transparent;
   flex-shrink: 0;
 }
 
@@ -637,10 +646,10 @@ select.si-input {
 .asp-modal__btn--secondary:hover { background: #dde2f0; }
 
 .asp-modal__btn--primary {
-  background: #2c3e6b;
-  color: #fff;
+  background: #FDC210;
+  color: #1a2340;
 }
-.asp-modal__btn--primary:hover { background: #1e2d52; }
+.asp-modal__btn--primary:hover { background: #e0ab0b; color: #1a2340; }
 
 /* ============================================================
    MOBILE — Student Information form
@@ -1778,7 +1787,8 @@ select.si-input {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 380px;
+  height: 72vh;
+  min-height: 420px;
   padding: 24px 16px;
   font-family: "Poppins", sans-serif;
   box-sizing: border-box;
@@ -1891,21 +1901,23 @@ select.si-input {
 /* Short Passage Entertainment Box (interactive) */
 .asp-loading-passage-box {
   width: 100%;
-  background: #ffffff;
-  border: 1.5px solid #cbd5e1;
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 14px;
   padding: 18px 22px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.04);
   text-align: left;
   cursor: pointer;
   user-select: none;
-  transition: opacity 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: opacity 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
   box-sizing: border-box;
 }
 
 .asp-loading-passage-box:hover {
-  border-color: #3b82f6;
-  box-shadow: 0 6px 18px rgba(59, 130, 246, 0.12);
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.07);
   transform: translateY(-1px);
 }
 
@@ -2319,7 +2331,7 @@ select.si-input {
 }
 
 .asp-recording-mode-label--ready {
-  color: #27ae60;
+  color: #000000;
 }
 
 /* ============================================================

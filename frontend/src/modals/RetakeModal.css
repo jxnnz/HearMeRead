@@ -100,14 +100,15 @@
 }
 
 .rtm-btn--primary {
-  background: #2c3e6b;
-  border: 1.5px solid #2c3e6b;
-  color: #fff;
+  background: #FDC210;
+  border: 1.5px solid #FDC210;
+  color: #1a2340;
 }
 
 .rtm-btn--primary:hover {
-  background: #1e2b4f;
-  border-color: #1e2b4f;
+  background: #e0ab0b;
+  border-color: #e0ab0b;
+  color: #1a2340;
 }
 
 @media (max-width: 768px) {

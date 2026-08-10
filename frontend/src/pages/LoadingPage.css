@@ -3,7 +3,8 @@
 .lp-bg {
   position: fixed;
   inset: 0;
-  background-color: #ffffff; /* White background as in sequence pages */
+  background: #ffffff url('../assets/bg1.png') no-repeat bottom center;
+  background-size: 100% auto;
   display: flex;
   align-items: center;
   justify-content: center;

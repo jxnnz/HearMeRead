@@ -26,5 +26,5 @@ export default function useToast() {
     [addToast]
   );
 
-  return { toasts, removeToast, showSaveSuccess, showError };
+  return { toasts, removeToast, showSaveSuccess, showError, addToast };
 }

@@ -101,8 +101,8 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: #1a2340;
-  color: white;
+  background: #FDC210;
+  color: #1a2340;
   border: 2.5px solid white;
   display: flex;
   align-items: center;
@@ -110,7 +110,7 @@
   cursor: pointer;
   transition: background 0.2s;
 }
-.pp-avatar-edit-btn:hover:not(:disabled) { background: #2c3e6b; }
+.pp-avatar-edit-btn:hover:not(:disabled) { background: #e0ab0b; }
 .pp-avatar-edit-btn:disabled { background: #8a94b2; cursor: not-allowed; }
 
 /* Form */
@@ -233,8 +233,8 @@
   transition: all 0.2s;
 }
 
-.pp-btn-primary { background: #1a2340; color: white; }
-.pp-btn-primary:hover:not(:disabled) { background: #2c3e6b; }
+.pp-btn-primary { background: #FDC210; color: #1a2340; }
+.pp-btn-primary:hover:not(:disabled) { background: #e0ab0b; }
 .pp-btn-primary:disabled { background: #8a94b2; cursor: not-allowed; }
 
 /* Mobile-only logout — hidden on desktop */
@@ -416,8 +416,8 @@
   gap: 6px;
   padding: 8px 16px;
   border-radius: 6px;
-  background: #2c3e6b;
-  color: #ffffff;
+  background: #FDC210;
+  color: #1a2340;
   border: none;
   font-size: 12px;
   font-weight: 600;
@@ -426,7 +426,7 @@
 }
 
 .pp-manual-download-btn:hover {
-  background: #1a2340;
+  background: #e0ab0b;
 }
 
 .pp-manual-section {

@@ -81,8 +81,8 @@
   gap: 7px;
   margin-top: 6px;
   padding: 10px 28px;
-  background: #2c3e6b;
-  color: #fff;
+  background: #FDC210;
+  color: #1a2340;
   border: none;
   border-radius: 10px;
   font-size: 14px;
@@ -92,4 +92,4 @@
   transition: background 0.15s;
 }
 
-.sem-btn:hover { background: #1a2a55; }
+.sem-btn:hover { background: #e0ab0b; }

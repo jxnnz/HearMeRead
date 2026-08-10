@@ -246,10 +246,10 @@
 .im-btn--ghost:hover:not(:disabled) { background: #f3f4f6; }
 
 .im-btn--primary {
-  background: #0d9488;
-  color: #fff;
+  background: #FDC210;
+  color: #1a2340;
 }
-.im-btn--primary:hover:not(:disabled) { background: #0f766e; }
+.im-btn--primary:hover:not(:disabled) { background: #e0ab0b; color: #1a2340; }
 
 /* Warning list item inside result summary (empty assessment, invalid rows) */
 .im-result__list-item--warn {

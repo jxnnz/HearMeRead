@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 
 import Layout               from "../../components/Layout";
+import assessmentRead1      from "../../assets/Assessment-Read-1.png";
+import bg1                  from "../../assets/bg1.png";
 import LoadingScreen        from "../../components/LoadingScreen";
 import ComprehensionStep    from "../../components/ComprehensionStep";
 import CountdownOverlay     from "../../components/CountdownOverlay";
@@ -75,7 +77,7 @@ const STEP_LABELS = {
   [STEPS.A2_PREVIEW]:    "Assessment 2",
 };
 
-const FONT_SIZES = [15, 18, 22, 26];
+const FONT_SIZES = [26, 28, 30];
 
 const GRADE_TIME_LIMITS = { 1: 60, 2: 120, 3: 180 };
 
@@ -204,8 +206,17 @@ export default function AssessmentPage() {
   const streamRef         = useRef(null);
   const currentStepRef    = useRef(step);  // track step in callbacks
 
-  const [fontSizeIdx, setFontSizeIdx] = useState(3); // default to 26px (largest)
+  const [fontSizeIdx, setFontSizeIdx] = useState(0); // default to 26px
   const fontSize = FONT_SIZES[fontSizeIdx];
+
+  // Set default font sizes: 30px (index 2) for Assessment 1 steps, 26px (index 0) for Assessment 2
+  useEffect(() => {
+    if ([STEPS.A1_G1, STEPS.A1_G2].includes(step)) {
+      setFontSizeIdx(2);
+    } else if (step === STEPS.A2) {
+      setFontSizeIdx(0);
+    }
+  }, [step]);
 
   // Keep currentStepRef in sync
   useEffect(() => { currentStepRef.current = step; }, [step]);
@@ -1190,6 +1201,30 @@ export default function AssessmentPage() {
 
   const isLiveReadingStep = [STEPS.A1_G1, STEPS.A1_G2, STEPS.A2].includes(step);
   const isLoadingStep     = [STEPS.A1_G1_LOADING, STEPS.A1_G2_LOADING, STEPS.A2_LOADING].includes(step);
+
+  // Set layout__main background dynamically based on the step (avoids recreating Layout component and scroll reset bugs)
+  useEffect(() => {
+    const mainEl = document.querySelector(".layout__main");
+    if (!mainEl) return;
+    if (step === STEPS.COMPREHENSION) {
+      mainEl.style.backgroundImage = `url(${assessmentRead1})`;
+      mainEl.style.backgroundSize = "100% auto";
+      mainEl.style.backgroundPosition = "bottom center";
+      mainEl.style.backgroundRepeat = "no-repeat";
+    } else if (isLoadingStep) {
+      mainEl.style.backgroundImage = `url(${bg1})`;
+      mainEl.style.backgroundSize = "100% auto";
+      mainEl.style.backgroundPosition = "bottom center";
+      mainEl.style.backgroundRepeat = "no-repeat";
+    } else {
+      mainEl.style.backgroundImage = "none";
+    }
+    return () => {
+      if (mainEl) {
+        mainEl.style.backgroundImage = "none";
+      }
+    };
+  }, [step, isLoadingStep]);
 
   // Shared modal / input props
   const fileInput = (

@@ -156,10 +156,7 @@ export default function LoadingScreen({ message = "Processing audio…", progres
           {roundedProgress}%
         </div>
 
-        <h3 className="asp-loading-message" style={{ margin: "8px 0 12px 0" }}>{message}</h3>
-
-        {/* Process status text showing step details */}
-        <p className="asp-loading-process-text">{processStatus}</p>
+        <h3 className="asp-loading-message" style={{ margin: "8px 0 16px 0" }}>{message}</h3>
 
 
         {/* Short passage container (always visible, click to change) */}
@@ -173,7 +170,6 @@ export default function LoadingScreen({ message = "Processing audio…", progres
           }}
         >
           <div className="asp-loading-passage-header">
-            <span className="asp-loading-passage-icon">📖</span>
             <span className="asp-loading-passage-cat">{currentPassage.category}</span>
             <span className="asp-loading-passage-title">— {currentPassage.title}</span>
           </div>

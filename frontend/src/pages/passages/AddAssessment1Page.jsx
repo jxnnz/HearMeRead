@@ -119,7 +119,7 @@ export default function AddAssessment1Page() {
             </button>
             <h1 className="ap-page__title">Add Assessment 1</h1>
           </div>
-          <button className="ap-save-btn" onClick={handleSave} disabled={saving} style={{ background: "#2c3e6b", color: "#fff", borderColor: "#2c3e6b" }}>
+          <button className="ap-save-btn" onClick={handleSave} disabled={saving} style={{ background: "#FDC210", color: "#1a2340", borderColor: "#FDC210" }}>
             {saving ? "Saving…" : "Save Passage"}
           </button>
         </div>

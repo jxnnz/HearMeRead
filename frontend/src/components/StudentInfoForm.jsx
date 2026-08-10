@@ -253,7 +253,7 @@ export default function StudentInfoForm({
           </div>
         ) : passages.length === 1 ? (
           <div className="si-input si-input--filled">
-            {passages[0].title ?? "Assessment 1"}
+            {passages[0].title ?? "Assessment 1"} — [{passages[0].visibility === "public" ? "Public" : "Private"}]
           </div>
         ) : (
           <select
@@ -277,11 +277,14 @@ export default function StudentInfoForm({
             }}
           >
             <option value="">— Select a passage —</option>
-            {passages.map((p) => (
-              <option key={p.id} value={String(p.id)}>
-                {p.title} ({p.word_count} items)
-              </option>
-            ))}
+            {passages.map((p) => {
+              const label = p.visibility === "public" ? "Public" : "Private";
+              return (
+                <option key={p.id} value={String(p.id)}>
+                  {p.title} ({p.word_count} items) — [{label}]
+                </option>
+              );
+            })}
           </select>
         )}
       </div>

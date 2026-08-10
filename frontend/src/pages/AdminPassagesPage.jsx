@@ -505,7 +505,7 @@ export default function AdminPassagesPage() {
               <button className="ap-back-btn" onClick={() => setView("list")}><ChevronLeft size={18} /></button>
               <h1 className="ap-page__title">{view === "edit" ? "Edit" : "Add"} Assessment {assType}</h1>
             </div>
-            <button className="ap-save-btn" onClick={handleSave} disabled={saving} style={{ background: "#2c3e6b", color: "#fff", borderColor: "#2c3e6b" }}>
+            <button className="ap-save-btn" onClick={handleSave} disabled={saving} style={{ background: "#FDC210", color: "#1a2340", borderColor: "#FDC210" }}>
               {saving ? "Saving…" : (view === "edit" ? "Save Changes" : "Save Passage")}
             </button>
           </div>
@@ -575,7 +575,7 @@ export default function AdminPassagesPage() {
             <button onClick={() => startAdd(1)} className="ap-save-btn" style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <Plus size={15} />{isMobile ? "A1" : " Assessment 1"}
             </button>
-            <button onClick={() => startAdd(2)} className="ap-save-btn" style={{ display: "flex", alignItems: "center", gap: 6, background: "#2c3e6b", color: "#fff", borderColor: "#2c3e6b" }}>
+            <button onClick={() => startAdd(2)} className="ap-save-btn" style={{ display: "flex", alignItems: "center", gap: 6, background: "#FDC210", color: "#1a2340", borderColor: "#FDC210" }}>
               <Plus size={15} />{isMobile ? "A2" : " Assessment 2"}
             </button>
           </div>
@@ -667,23 +667,94 @@ export default function AdminPassagesPage() {
           </div>
 
           {/* Table */}
-          {loading ? <div style={{ textAlign: "center", padding: 40, color: "#888" }}>Loading…</div>
-            : filtered.length === 0 ? (
-              <div style={{ textAlign: "center", padding: 60, color: "#888", border: "1px dashed #ccc", borderRadius: 12 }}>
-                <BookOpen size={40} style={{ marginBottom: 8, opacity: 0.4 }} />
-                <p>No public passages found. Adjust your filters or click an <strong>Add</strong> button above.</p>
-              </div>
-            ) : (
+          {(() => {
+            const headers = isMobile
+              ? [
+                  { label: "#", width: "8%" },
+                  { label: "Title", width: "55%" },
+                  { label: "Type", width: "20%" },
+                  { label: "Grade", width: "12%" },
+                  { label: "", width: "5%" }
+                ]
+              : [
+                  { label: "#", width: "5%" },
+                  { label: "Title", width: "42%" },
+                  { label: "Type", width: "15%" },
+                  { label: "Grade", width: "10%" },
+                  { label: "Lang", width: "10%" },
+                  { label: "Words", width: "8%" },
+                  { label: "Actions", width: "10%" }
+                ];
+
+            const titleWidths = ["60%", "45%", "80%", "50%", "65%"];
+
+            if (loading) {
+              return (
+                <div style={{ overflowX: "auto", borderRadius: 10, border: "1px solid #e5e7eb" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: isMobile ? 11 : 13 }}>
+                    <thead>
+                      <tr style={{ background: "#f1f3f8" }}>
+                        {headers.map((h, i) => (
+                          <th key={i} style={{ width: h.width, padding: isMobile ? "8px 8px" : "12px 14px", fontWeight: 700, color: "#1a2340", textAlign: "left", borderBottom: "2px solid #dde2f0", whiteSpace: "nowrap" }}>{h.label}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[1, 2, 3, 4, 5].map((rowId, idx) => (
+                        <tr key={rowId} style={{ borderBottom: "1px solid #eee", background: "#fff" }}>
+                          <td style={{ padding: isMobile ? "8px 8px" : "12px 14px" }}>
+                            <div className="sk" style={{ height: 14, width: 20, borderRadius: 4 }} />
+                          </td>
+                          <td style={{ padding: isMobile ? "8px 8px" : "12px 14px" }}>
+                            <div className="sk" style={{ height: 14, width: titleWidths[idx % 5], borderRadius: 4 }} />
+                          </td>
+                          <td style={{ padding: isMobile ? "8px 8px" : "12px 14px" }}>
+                            <div className="sk" style={{ height: 22, width: isMobile ? 50 : 95, borderRadius: 6 }} />
+                          </td>
+                          <td style={{ padding: isMobile ? "8px 8px" : "12px 14px" }}>
+                            <div className="sk" style={{ height: 14, width: 25, borderRadius: 4 }} />
+                          </td>
+                          {!isMobile && (
+                            <td style={{ padding: "12px 14px" }}>
+                              <div className="sk" style={{ height: 14, width: 50, borderRadius: 4 }} />
+                            </td>
+                          )}
+                          {!isMobile && (
+                            <td style={{ padding: "12px 14px" }}>
+                              <div className="sk" style={{ height: 14, width: 25, borderRadius: 4 }} />
+                            </td>
+                          )}
+                          <td style={{ padding: isMobile ? "8px 6px" : "12px 14px" }}>
+                            <div style={{ display: "flex", gap: isMobile ? 4 : 6 }}>
+                              <div className="sk" style={{ height: isMobile ? 24 : 28, width: isMobile ? 24 : 28, borderRadius: 6 }} />
+                              <div className="sk" style={{ height: isMobile ? 24 : 28, width: isMobile ? 24 : 28, borderRadius: 6 }} />
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            }
+
+            if (filtered.length === 0) {
+              return (
+                <div style={{ textAlign: "center", padding: 60, color: "#888", border: "1px dashed #ccc", borderRadius: 12 }}>
+                  <BookOpen size={40} style={{ marginBottom: 8, opacity: 0.4 }} />
+                  <p>No public passages found. Adjust your filters or click an <strong>Add</strong> button above.</p>
+                </div>
+              );
+            }
+
+            return (
               <>
                 <div style={{ overflowX: "auto", borderRadius: 10, border: "1px solid #e5e7eb" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: isMobile ? 11 : 13 }}>
                     <thead>
                       <tr style={{ background: "#f1f3f8" }}>
-                        {(isMobile
-                          ? ["#", "Title", "Type", "Grade", ""]
-                          : ["#", "Title", "Type", "Grade", "Lang", "Words", "Actions"]
-                        ).map((h, i) => (
-                          <th key={i} style={{ padding: isMobile ? "8px 8px" : "12px 14px", fontWeight: 700, color: "#1a2340", textAlign: "left", borderBottom: "2px solid #dde2f0", whiteSpace: "nowrap" }}>{h}</th>
+                        {headers.map((h, i) => (
+                          <th key={i} style={{ width: h.width, padding: isMobile ? "8px 8px" : "12px 14px", fontWeight: 700, color: "#1a2340", textAlign: "left", borderBottom: "2px solid #dde2f0", whiteSpace: "nowrap" }}>{h.label}</th>
                         ))}
                       </tr>
                     </thead>
@@ -729,7 +800,8 @@ export default function AdminPassagesPage() {
                   </div>
                 )}
               </>
-            )}
+            );
+          })()}
 
           {/* Preview modal */}
           {pv && (

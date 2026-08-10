@@ -305,8 +305,9 @@ async def export_crla(
                         rule.formula = ["AND($F11<>\"\",$F11>6)"]
 
         if ws.title == "Class Record":
-            # Update Grade label
-            ws.cell(row=7, column=3).value = f"Grade {grade_num}"
+            # Update Grade label to be one level lower for CRLA (since they are assessed on lower grade materials)
+            lower_grade_label = "Kindergarten" if grade_num == 1 else f"Grade {grade_num - 1}"
+            ws.cell(row=7, column=3).value = lower_grade_label
             cell_e5 = ws.cell(row=5, column=5)
             if isinstance(cell_e5.value, str) and "GRADE 2" in cell_e5.value:
                 cell_e5.value = cell_e5.value.replace("GRADE 2", f"GRADE {grade_num}")
@@ -339,6 +340,14 @@ async def export_crla(
     ws_mt.cell(row=6, column=4).value = male_count
     ws_mt.cell(row=6, column=5).value = female_count
 
+    # Write teacher metadata to FIL sheet as well to ensure identical data across MT and FIL sheets
+    ws_fil.cell(row=6, column=3).value = teacher_name
+    ws_fil.cell(row=7, column=3).value = f"Grade {grade_num}"
+    ws_fil.cell(row=8, column=3).value = section
+    ws_fil.cell(row=9, column=3).value = "Tagalog"
+    ws_fil.cell(row=6, column=4).value = male_count
+    ws_fil.cell(row=6, column=5).value = female_count
+
     # Write student lists and scores
     N = len(students)
     for idx, s in enumerate(students, start=1):
@@ -350,8 +359,11 @@ async def export_crla(
         ws_mt.cell(row=row_num, column=3).value = f"{s.last_name}, {s.first_name}" + (f", {s.middle_name}" if s.middle_name else "")
         ws_mt.cell(row=row_num, column=4).value = s.sex.value.capitalize() if s.sex else None
         
-        # Write S/N on FIL sheet
+        # Write identity info on FIL sheet directly (static values instead of formulas to be 100% robust)
         ws_fil.cell(row=row_num, column=1).value = idx
+        ws_fil.cell(row=row_num, column=2).value = s.lrn
+        ws_fil.cell(row=row_num, column=3).value = f"{s.last_name}, {s.first_name}" + (f", {s.middle_name}" if s.middle_name else "")
+        ws_fil.cell(row=row_num, column=4).value = s.sex.value.capitalize() if s.sex else None
 
         # Clear score and observation columns (only raw input columns, keep formula columns!)
         raw_cols = [5, 6, 7, 8, 11, 12, 14, 15, 18, 19, 20, 22]

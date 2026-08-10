@@ -299,7 +299,7 @@ export default function UploadModal({
               onClick={() => fileInputRef.current?.click()}
               disabled={loading}
               className="ap-save-btn"
-              style={{ background: "#2c3e6b", color: "#fff", borderColor: "#2c3e6b" }}
+              style={{ background: "#FDC210", color: "#1a2340", borderColor: "#FDC210" }}
             >
               Browse Files
             </button>

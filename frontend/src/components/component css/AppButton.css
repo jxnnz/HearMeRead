@@ -31,13 +31,14 @@
 
 /* Primary (dark navy, filled) */
 .app-btn--primary {
-  background: #2c3e6b;
-  color: #fff;
-  border-color: #2c3e6b;
+  background: #FDC210;
+  color: #1a2340;
+  border-color: #FDC210;
 }
 .app-btn--primary:hover:not(:disabled) {
-  background: #1e2d52;
-  border-color: #1e2d52;
+  background: #e0ab0b;
+  border-color: #e0ab0b;
+  color: #1a2340;
 }
 
 /* Teal / Add Student (matches the UI's teal-blue) */

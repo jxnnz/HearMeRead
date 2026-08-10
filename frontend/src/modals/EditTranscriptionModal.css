@@ -92,8 +92,8 @@
 .etm-btn--cancel:hover { background: #e8ecf7; }
 
 .etm-btn--save {
-  background: #2c3e6b;
-  color: #fff;
+  background: #FDC210;
+  color: #1a2340;
 }
 
-.etm-btn--save:hover { background: #1a2a55; }
+.etm-btn--save:hover { background: #e0ab0b; color: #1a2340; }

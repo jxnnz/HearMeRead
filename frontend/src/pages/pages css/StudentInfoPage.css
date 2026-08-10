@@ -509,8 +509,8 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  background: #2c3e6b;
-  color: #fff;
+  background: #FDC210;
+  color: #1a2340;
   border: none;
   border-radius: 9px;
   padding: 9px 18px;
@@ -521,7 +521,7 @@
   transition: background 0.15s;
 }
 
-.sip-edit-btn:hover { background: #1a2a55; }
+.sip-edit-btn:hover { background: #e0ab0b; }
 
 /* Edit modal */
 .sip-modal-overlay {
@@ -655,8 +655,8 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: #2c3e6b;
-  color: #fff;
+  background: #FDC210;
+  color: #1a2340;
   border: none;
   border-radius: 8px;
   padding: 9px 20px;
@@ -667,7 +667,7 @@
   transition: background 0.15s;
 }
 
-.sip-modal__save:hover:not(:disabled) { background: #1a2a55; }
+.sip-modal__save:hover:not(:disabled) { background: #e0ab0b; }
 .sip-modal__save:disabled { opacity: 0.6; cursor: not-allowed; }
 
 /* Student profile card kebab menu */

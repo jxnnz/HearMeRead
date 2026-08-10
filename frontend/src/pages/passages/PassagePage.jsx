@@ -216,7 +216,7 @@ export default function PassagePage() {
           <button className="ap-save-btn" onClick={() => navigate("/passages/add-assessment-1")} style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <Plus size={15} />{isMobile ? "A1" : "Add Assessment 1"}
           </button>
-          <button className="ap-save-btn" onClick={() => navigate("/passages/add-assessment-2")} style={{ display: "flex", alignItems: "center", gap: 6, background: "#2c3e6b", color: "#fff", borderColor: "#2c3e6b" }}>
+          <button className="ap-save-btn" onClick={() => navigate("/passages/add-assessment-2")} style={{ display: "flex", alignItems: "center", gap: 6, background: "#FDC210", color: "#1a2340", borderColor: "#FDC210" }}>
             <Plus size={15} />{isMobile ? "A2" : "Add Assessment 2"}
           </button>
         </TopBar>
