@@ -11,16 +11,10 @@ export default function PublicNav({ page }) {
         HearMeRead
       </span>
       <div className="pub-nav__actions">
-        <button
-          className={`pub-nav__btn ${page === "login" ? "pub-nav__btn--active" : "pub-nav__btn--ghost"}`}
-          onClick={() => navigate("/login")}
-        >
+        <button className="pub-nav__btn pub-nav__btn--login" onClick={() => navigate("/login")}>
           Log In
         </button>
-        <button
-          className={`pub-nav__btn ${page === "signup" ? "pub-nav__btn--active" : "pub-nav__btn--ghost"}`}
-          onClick={() => navigate("/signup")}
-        >
+        <button className="pub-nav__btn pub-nav__btn--signup" onClick={() => navigate("/signup")}>
           Sign Up
         </button>
       </div>
