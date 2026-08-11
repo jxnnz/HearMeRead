@@ -73,7 +73,12 @@ export default function StudentRecordPage() {
         {/* Header */}
         <TopBar title="Student Record">
           {/* Import Records (CRLA Excel) */}
-          <AppButton variant="ghost" size="sm" onClick={() => setShowImport(true)}>
+          <AppButton
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowImport(true)}
+            title="Import existing record"
+          >
             <Upload size={14} />
             <span className="sr-btn-full">Import Records</span>
             <span className="sr-btn-short">Import</span>

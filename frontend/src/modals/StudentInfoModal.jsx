@@ -339,20 +339,6 @@ export default function StudentInfoModal({ sessionId, studentId, onClose }) {
                 className="sim-download-btn"
                 onClick={exportToPDF}
                 title="Download PDF"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "6px 12px",
-                  borderRadius: "6px",
-                  border: "1px solid #d0d8f0",
-                  background: "#fff",
-                  color: "#1a2340",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  transition: "all 0.2s"
-                }}
               >
                 <Download size={14} />
                 PDF

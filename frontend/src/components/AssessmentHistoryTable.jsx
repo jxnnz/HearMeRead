@@ -2,7 +2,7 @@ import { useState } from "react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { Search, FileSpreadsheet, FileText, Trash2, ChevronsUpDown } from "lucide-react";
+import { Search, Download, Trash2, ChevronsUpDown } from "lucide-react";
 
 // Period labels
 const PERIOD_LABELS = {
@@ -304,7 +304,7 @@ export default function AssessmentHistoryTable({
             className="aht-btn aht-btn--print"
             onClick={() => exportPDF(sorted, student)}
           >
-            <FileText size={14} />
+            <Download size={14} />
             Export PDF
           </button>
 
@@ -313,7 +313,7 @@ export default function AssessmentHistoryTable({
             className="aht-btn aht-btn--export"
             onClick={() => exportExcel(sorted, student)}
           >
-            <FileSpreadsheet size={14} />
+            <Download size={14} />
             Export XLSX
           </button>
         </div>

@@ -411,16 +411,20 @@ export default function UploadModal({
                 onClick={handleDownloadTemplate}
                 disabled={downloading}
                 style={{
-                  display: "flex", alignItems: "center", gap: 5,
-                  background: "none", border: "1px solid #c8d0e4",
-                  borderRadius: 6, padding: "5px 10px",
+                  display: "flex", alignItems: "center", gap: 6,
+                  background: "#f0f4ff", border: "1px solid #c8d4f5",
+                  borderRadius: 7, padding: "6px 12px",
                   fontSize: isMobile ? 11 : 12, color: "#2c3e6b",
-                  cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap",
+                  cursor: downloading ? "not-allowed" : "pointer",
+                  fontWeight: 600, whiteSpace: "nowrap",
                   flexShrink: 0, marginLeft: 8,
                   opacity: downloading ? 0.55 : 1,
+                  transition: "background 0.15s ease",
                 }}
+                onMouseEnter={(e) => { if (!downloading) e.currentTarget.style.background = "#dce8ff"; }}
+                onMouseLeave={(e) => { if (!downloading) e.currentTarget.style.background = "#f0f4ff"; }}
               >
-                <Download size={12} />
+                <Download size={13} />
                 {downloading ? "Downloading…" : "Download Template"}
               </button>
             </div>
@@ -428,7 +432,7 @@ export default function UploadModal({
             {/* NEW — A1 grade picker (admin side only, shown after clicking Download Template) */}
             {showA1Picker && (
               <div style={{
-                marginTop: 10, background: "#fff", border: "1px solid #c8d0e4",
+                marginTop: 10, background: "#fff", border: "1px solid #c8d4f5",
                 borderRadius: 8, padding: "14px 16px",
               }}>
                 <p style={{ margin: "0 0 10px", fontSize: 13, color: "#444", fontWeight: 600 }}>
@@ -460,8 +464,19 @@ export default function UploadModal({
                   <button
                     onClick={() => doDownloadA1(pickerGrade, pickerLanguage)}
                     disabled={downloading}
-                    style={{ padding: "6px 14px", borderRadius: 6, border: "none", background: "#2c3e6b", color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 600 }}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 6,
+                      padding: "6px 14px", borderRadius: 7,
+                      border: "1px solid #c8d4f5", background: "#f0f4ff",
+                      color: "#2c3e6b", cursor: downloading ? "not-allowed" : "pointer",
+                      fontSize: 12, fontWeight: 600,
+                      opacity: downloading ? 0.55 : 1,
+                      transition: "background 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => { if (!downloading) e.currentTarget.style.background = "#dce8ff"; }}
+                    onMouseLeave={(e) => { if (!downloading) e.currentTarget.style.background = "#f0f4ff"; }}
                   >
+                    <Download size={13} />
                     {downloading ? "Downloading…" : "Download"}
                   </button>
                 </div>
@@ -493,15 +508,13 @@ export default function UploadModal({
                         <div>3</div>
                         <br />
                         <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Task 1:</div>
-                        <div>beautiful, environment, community, responsibility, friendship,</div>
-                        <div>knowledge, adventure, imagination, celebration, determination</div>
+                        <div>beautiful, environment, community, responsibility, friendship, knowledge, adventure, imagination, celebration, determination</div>
                         <br />
                         <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Task 2 Words:</div>
-                        <div>running, jumping, playing, reading, writing,</div>
-                        <div>eating, sleeping, helping, listening, learning</div>
+                        <div>running, jumping, playing, reading, writing, eating, sleeping, helping, listening, learning</div>
                       </>
 
-                    // ── A1 Grade 1 Filipino (default / no teacherGrade) ─
+                    // ── A1 Grade 2 Filipino ──────────────────────────────
                     ) : isGrade2Filipino ? (
                       <>
                         <div style={{ color: "#9333ea", fontWeight: 700 }}>Language:</div>
@@ -516,9 +529,10 @@ export default function UploadModal({
                         <div>aklat, lapis, mesa, silya, kotse, puno, bundok, ilog, dagat, langit</div>
                         <br />
                         <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Task 2 Sentences:</div>
-                        <div>Ang bata ay pumunta sa paaralan. Siya ay nagdala ng kanyang bag.</div>
+                        <div>Ang bata ay pumunta sa paaralan. Siya ay nagdala ng kanyang bag. Masaya siya sa klase.</div>
                       </>
 
+                    // ── A1 Grade 3 Filipino ──────────────────────────────
                     ) : isGrade3Filipino ? (
                       <>
                         <div style={{ color: "#9333ea", fontWeight: 700 }}>Language:</div>
@@ -527,20 +541,17 @@ export default function UploadModal({
                         <div>3</div>
                         <br />
                         <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Task 1:</div>
-                        <div>magulang, kaibigan, kalikasan, pamayanan, kasipagan,</div>
-                        <div>katapatan, pagmamahal, pagiging, katahimikan, responsibilidad</div>
+                        <div>magulang, kaibigan, kalikasan, pamayanan, kasipagan, katapatan, pagmamahal, pagiging, katahimikan, responsibilidad</div>
                         <br />
                         <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Task 2 Words:</div>
-                        <div>naglalaro, kumakain, nagaaral, tumatakbo, nagtatrabaho,</div>
-                        <div>natutulog, nagbabasa, sumusulat, naglalakad, nagtatanong</div>
+                        <div>naglalaro, kumakain, nagaaral, tumatakbo, nagtatrabaho, natutulog, nagbabasa, sumusulat, naglalakad, nagtatanong</div>
                         <br />
                         <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Task 2 Sentences:</div>
-                        <div>Ang mga bata ay masayang naglalaro sa parke tuwing hapon.</div>
-                        <div>Tinutulungan nila ang isa't isa sa oras ng pangangailangan.</div>
+                        <div>Ang mga bata ay masayang naglalaro sa parke tuwing hapon. Tinutulungan nila ang isa't isa sa oras ng pangangailangan. Ang pagkakaisa ay nagbibigay ng lakas sa bawat miyembro ng pangkat.</div>
                       </>
 
                     ) : (
-                      // Grade 1 Filipino (default)
+                      // ── A1 Grade 1 Filipino (default) ────────────────────
                       <>
                         <div style={{ color: "#9333ea", fontWeight: 700 }}>Language:</div>
                         <div>Filipino</div>
@@ -551,14 +562,13 @@ export default function UploadModal({
                         <div>b, ng, T, e, p, s, H, G, u, L</div>
                         <br />
                         <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Task 2:</div>
-                        <br />
                         <div><span style={{ color: "#d97706", fontWeight: 600 }}>W:</span> sanay, tunay</div>
                         <div><span style={{ color: "#059669", fontWeight: 600 }}>R:</span> Oo</div>
                         <div><span style={{ color: "#d97706", fontWeight: 600 }}>W:</span> ulam, anim</div>
                         <div><span style={{ color: "#059669", fontWeight: 600 }}>R:</span> Hindi</div>
                         <div><span style={{ color: "#d97706", fontWeight: 600 }}>W:</span> hinog, lamig</div>
                         <div><span style={{ color: "#059669", fontWeight: 600 }}>R:</span> Hindi</div>
-                        <div style={{ color: "#888", fontSize: 12, marginTop: 4 }}>… (10 pairs total)</div>
+                        <div style={{ color: "#888", fontSize: 12, marginTop: 2 }}>… (10 pairs total)</div>
                         <br />
                         <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Task 2 Sentences:</div>
                         <div>Ang bata ay masaya. Siya ay mabait. Mahal niya ang kanyang pamilya.</div>
@@ -567,23 +577,25 @@ export default function UploadModal({
 
                   ) : (
 
-                    // ── A2 ──────────────────────────────────────────────
+                    // ── A2 (Story Reading & Questions) ───────────────────
                     <>
                       <div style={{ color: "#9333ea", fontWeight: 700 }}>Language:</div>
                       <div>Filipino</div>
-                      <div style={{ color: "#9333ea", fontWeight: 700, marginTop: 4 }}>Grade Level:</div>
+                      <div style={{ color: "#9333ea", fontWeight: 700, marginTop: 4 }}>Grade:</div>
                       <div>2</div>
                       <br />
-                      <div style={{ color: "#2c5fc1", fontWeight: 700 }}>[PASSAGE]</div>
-                      <div>Si Juan ay isang mabuting bata.</div>
-                      <div>Minamahal niya ang kanyang pamilya.</div>
+                      <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Story Number:</div>
+                      <div>1</div>
                       <br />
-                      <div style={{ color: "#2c5fc1", fontWeight: 700 }}>[QUESTIONS]</div>
-                      <div><span style={{ color: "#d97706", fontWeight: 600 }}>Q:</span> Sino ang mabuting bata?</div>
-                      <div><span style={{ color: "#059669", fontWeight: 600 }}>A:</span> Si Juan</div>
+                      <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Title:</div>
+                      <div>Ang Pagong at ang Matsing</div>
                       <br />
-                      <div><span style={{ color: "#d97706", fontWeight: 600 }}>Q:</span> Ano ang ginagawa niya?</div>
-                      <div><span style={{ color: "#059669", fontWeight: 600 }}>A:</span> Minamahal ang pamilya</div>
+                      <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Content:</div>
+                      <div>Isulat dito ang buong teksto ng kwento.</div>
+                      <br />
+                      <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Questions:</div>
+                      <div><span style={{ color: "#d97706", fontWeight: 600 }}>Q:</span> Sino ang pangunahing tauhan ng kwento?</div>
+                      <div><span style={{ color: "#059669", fontWeight: 600 }}>A:</span> Ang Pagong at ang Matsing</div>
                     </>
                   )}
                 </div>

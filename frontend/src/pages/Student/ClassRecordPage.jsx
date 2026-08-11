@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ChevronLeft, ChevronRight, FileText, FileSpreadsheet, Pencil, UserX } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Pencil, UserX } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import ExcelJS from "exceljs";
@@ -248,31 +248,59 @@ export default function ClassRecordPage() {
 
   function exportToPDF() {
     const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    const pageWidth  = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const marginX    = 8;
 
-    // Title
+    // ---- Palette (matches HearMeRead brand) ----
+    const navy       = [30, 45, 82];    // #1e2d52
+    const navyMuted  = [200, 210, 235];
+    const ink        = [26, 35, 64];
+    const inkMuted   = [105, 112, 135];
+    const border     = [222, 226, 236];
+    const grp1bg     = [222, 234, 251];
+    const grp1txt    = [30,  60, 130];
+    const grp2bg     = [212, 242, 224];
+    const grp2txt    = [17,  94,  60];
+    const sub1bg     = [237, 243, 253];
+    const sub2bg     = [231, 249, 238];
+
+    const schoolName  = teacher?.school_name || "";
+    const generatedOn = new Date().toLocaleDateString("en-US", {
+      month: "long", day: "numeric", year: "numeric",
+    });
+
+    // ---- Letterhead title block (page 1 only — drawn before the table) ----
+    doc.setFillColor(...navy);
+    doc.rect(0, 0, pageWidth, 11, "F");
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(13);
-    doc.setTextColor(26, 35, 64);
-    doc.text(`${formatGrade(grade)}${section ? ` — ${section}` : ""}`, 8, 13);
+    doc.setFontSize(8.5);
+    doc.setTextColor(255, 255, 255);
+    doc.text("Classroom Reading Level Assessment (CRLA) — Class Record", marginX, 7.2);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(...navyMuted);
+    doc.text(schoolName || "Generated report", pageWidth - marginX, 7.2, { align: "right" });
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(15);
+    doc.setTextColor(...ink);
+    doc.text(`${formatGrade(grade)}${section ? ` — ${section}` : ""}`, marginX, 21);
+
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8.5);
-    doc.setTextColor(100, 100, 110);
+    doc.setTextColor(...inkMuted);
     doc.text(
-      `${year}  ·  ${periodLabel}  ·  ${language === "filipino" ? "Filipino" : "English"}  ·  ${teacherName}`,
-      8, 20,
+      `School Year ${year}   ·   ${periodLabel} Assessment   ·   ${language === "filipino" ? "Filipino" : "English"}   ·   Class Adviser: ${teacherName}`,
+      marginX, 27,
     );
 
-    // Two-row grouped header
-    const dark    = [44, 62, 107];
-    const grp1bg  = [200, 222, 250];
-    const grp1txt = [30,  60, 130];
-    const grp2bg  = [190, 240, 215];
-    const grp2txt = [20,  100, 60 ];
-    const sub1bg  = [220, 235, 255];
-    const sub2bg  = [215, 248, 232];
+    doc.setDrawColor(...border);
+    doc.setLineWidth(0.3);
+    doc.line(marginX, 30.5, pageWidth - marginX, 30.5);
 
-    const identityStyle = { fillColor: dark, textColor: 255, fontStyle: "bold", valign: "middle", halign: "center" };
-    const obsStyle      = { fillColor: dark, textColor: 255, fontStyle: "bold", valign: "middle", halign: "center" };
+    // ---- Two-row grouped table header ----
+    const identityStyle = { fillColor: navy, textColor: 255, fontStyle: "bold", valign: "middle", halign: "center" };
 
     const groupRow = [
       { content: "#",             rowSpan: 2, styles: identityStyle },
@@ -282,10 +310,10 @@ export default function ClassRecordPage() {
       { content: "Date",          rowSpan: 2, styles: identityStyle },
       { content: "Assessment Part 1", colSpan: 5, styles: { fillColor: grp1bg, textColor: grp1txt, fontStyle: "bold", halign: "center" } },
       { content: "Assessment Part 2", colSpan: 8, styles: { fillColor: grp2bg, textColor: grp2txt, fontStyle: "bold", halign: "center" } },
-      { content: "Learner Exp.",  rowSpan: 2, styles: obsStyle },
-      { content: "Obs. Level",    rowSpan: 2, styles: obsStyle },
-      { content: "Reading Profile", rowSpan: 2, styles: obsStyle },
-      { content: "Remarks",       rowSpan: 2, styles: obsStyle },
+      { content: "Learner Exp.",  rowSpan: 2, styles: identityStyle },
+      { content: "Obs. Level",    rowSpan: 2, styles: identityStyle },
+      { content: "Reading Profile", rowSpan: 2, styles: identityStyle },
+      { content: "Remarks",       rowSpan: 2, styles: identityStyle },
     ];
 
     const mk1 = (t) => ({ content: t, styles: { fillColor: sub1bg, textColor: grp1txt, fontStyle: "bold", halign: "center", fontSize: 6 } });
@@ -299,21 +327,30 @@ export default function ClassRecordPage() {
     autoTable(doc, {
       head: [groupRow, subRow],
       body: buildExportRows(),
-      startY: 25,
-      margin: { left: 8, right: 8 },
-      styles: { fontSize: 6, cellPadding: 1.5, font: "helvetica", textColor: [26, 35, 64] },
-      alternateRowStyles: { fillColor: [248, 249, 253] },
+      startY: 34,
+      margin: { left: marginX, right: marginX, top: 13, bottom: 15 },
+      styles: {
+        fontSize: 6.3,
+        cellPadding: { top: 1.8, right: 1.4, bottom: 1.8, left: 1.4 },
+        font: "helvetica",
+        textColor: ink,
+        lineColor: border,
+        lineWidth: 0.15,
+        valign: "middle",
+        minCellHeight: 6,
+      },
+      alternateRowStyles: { fillColor: [249, 250, 253] },
       columnStyles: {
-        0:  { cellWidth: 5,  halign: "center" },
+        0:  { cellWidth: 6,  halign: "center" },
         1:  { cellWidth: 18 },
-        2:  { cellWidth: 25 },
-        3:  { cellWidth: 7,  halign: "center" },
-        4:  { cellWidth: 13 },
+        2:  { cellWidth: 26 },
+        3:  { cellWidth: 8,  halign: "center" },
+        4:  { cellWidth: 13, halign: "center" },
         5:  { cellWidth: 8,  halign: "center" },
         6:  { cellWidth: 11, halign: "center" },
         7:  { cellWidth: 11, halign: "center" },
         8:  { cellWidth: 10, halign: "center" },
-        9:  { cellWidth: 16 },
+        9:  { cellWidth: 18 },
         10: { cellWidth: 9,  halign: "center" },
         11: { cellWidth: 11, halign: "center" },
         12: { cellWidth: 10, halign: "center" },
@@ -324,10 +361,66 @@ export default function ClassRecordPage() {
         17: { cellWidth: 11, halign: "center" },
         18: { cellWidth: 12, halign: "center" },
         19: { cellWidth: 10, halign: "center" },
-        20: { cellWidth: 18 },
+        20: { cellWidth: 20, fontStyle: "bold" },
         21: { cellWidth: 15 },
       },
+      // Keep long story titles from wrapping and blowing up row height
+      didParseCell: (data) => {
+        if (data.section === "body" && data.column.index === 9) {
+          const raw = Array.isArray(data.cell.text) ? data.cell.text.join(" ") : data.cell.text;
+          if (raw && raw.length > 16) {
+            data.cell.text = [`${raw.slice(0, 15)}…`];
+          }
+        }
+      },
+      // Thin repeating brand strip on every page (page 1 keeps the full letterhead above)
+      didDrawPage: (data) => {
+        if (data.pageNumber > 1) {
+          doc.setFillColor(...navy);
+          doc.rect(0, 0, pageWidth, 9, "F");
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(8);
+          doc.setTextColor(255, 255, 255);
+          doc.text(
+            `${formatGrade(grade)}${section ? ` — ${section}` : ""}  ·  ${periodLabel} ${year} (cont.)`,
+            marginX, 6,
+          );
+        }
+        doc.setDrawColor(...border);
+        doc.setLineWidth(0.2);
+        doc.line(marginX, pageHeight - 12, pageWidth - marginX, pageHeight - 12);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(6);
+        doc.setTextColor(160, 165, 182);
+        doc.text(`Generated by HearMeRead  ·  ${generatedOn}`, marginX, pageHeight - 7.5);
+        doc.text(`Page ${data.pageNumber}`, pageWidth - marginX, pageHeight - 7.5, { align: "right" });
+      },
     });
+
+    // ---- Signature block (once, beneath the final table row) ----
+    const finalY = doc.lastAutoTable?.finalY ?? 40;
+    const sigWidth = 65;
+    let sigY = finalY + 14;
+    if (sigY > pageHeight - 22) {
+      doc.addPage();
+      sigY = 20;
+    }
+
+    doc.setDrawColor(150, 155, 175);
+    doc.setLineWidth(0.25);
+    doc.line(marginX, sigY, marginX + sigWidth, sigY);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    doc.setTextColor(...ink);
+    doc.text(teacherName || " ", marginX, sigY - 1.5);
+    doc.setFontSize(6.8);
+    doc.setTextColor(...inkMuted);
+    doc.text("Prepared by — Class Adviser", marginX, sigY + 4);
+
+    const sig2X = pageWidth - marginX - sigWidth;
+    doc.line(sig2X, sigY, sig2X + sigWidth, sigY);
+    doc.setFontSize(6.8);
+    doc.text("Noted by — School Head", sig2X, sigY + 4);
 
     doc.save(`${fileName}.pdf`);
   }
@@ -392,7 +485,7 @@ export default function ClassRecordPage() {
             <div className="cr-topbar__divider" />
 
             <button className="cr-export-btn cr-export-btn--pdf" onClick={exportToPDF} title="Export as PDF">
-              <FileText size={14} />
+              <Download size={14} />
               PDF
             </button>
             <button
@@ -401,7 +494,7 @@ export default function ClassRecordPage() {
               title="Export as XLSX"
               disabled={exportingExcel}
             >
-              <FileSpreadsheet size={14} />
+              <Download size={14} />
               {exportingExcel ? "Exporting..." : "XLSX"}
             </button>
           </div>

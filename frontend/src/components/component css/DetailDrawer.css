@@ -30,6 +30,26 @@
   box-shadow: -10px 0 40px rgba(0, 0, 0, 0.12);
   animation: slideInRight 0.2s ease;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #c5cde8 #f4f6fb;
+}
+
+.drawer::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.drawer::-webkit-scrollbar-track {
+  background: #f4f6fb;
+}
+
+.drawer::-webkit-scrollbar-thumb {
+  background: #c5cde8;
+  border-radius: 10px;
+}
+
+.drawer::-webkit-scrollbar-thumb:hover {
+  background: #8fa3d4;
 }
 
 @keyframes slideInRight {

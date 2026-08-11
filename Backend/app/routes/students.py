@@ -1,4 +1,4 @@
-from typing import Optional, List
+﻿from typing import Optional, List
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from fastapi.responses import Response
@@ -169,11 +169,15 @@ async def export_crla(
     elif grade_enum == GradeLevel.grade_3:
         grade_num = 3
 
-    mt_label = "ENG" if grade_num == 3 else "MT"
+    # Period label for filename
+    period_label_map = {"beginning": "BoSY", "middle": "MoSY", "end": "EoSY"}
+    period_label = period_label_map.get(period, period)
+
     old_mt_name = "G2 MT Reading Scoresheet"
     old_fil_name = "G2 FIL Reading Scoresheet"
-    new_mt_name = f"G{grade_num} {mt_label} Reading Scoresheet"
+    new_mt_name = f"G{grade_num} MT Reading Scoresheet"
     new_fil_name = f"G{grade_num} FIL Reading Scoresheet"
+    new_eng_name = f"G{grade_num} ENG Reading Scoresheet"
 
     # Fetch students
     stmt = (
@@ -248,6 +252,12 @@ async def export_crla(
     ws_fil = wb[old_fil_name]
     ws_fil.title = new_fil_name
 
+    # For Grade 3, create a 3rd English scoresheet by copying the MT sheet
+    ws_eng = None
+    if grade_num == 3:
+        ws_eng = wb.copy_worksheet(ws_mt)
+        ws_eng.title = new_eng_name
+
     def replace_text(val: str) -> str:
         if not val or val.startswith("="):
             return val
@@ -266,10 +276,8 @@ async def export_crla(
             new_val = new_val.replace("2 Mins", "3 Mins")
             new_val = new_val.replace("2 mins", "3 mins")
 
-        if grade_num == 3:
-            new_val = new_val.replace("Mother Tongue", "English")
-            new_val = new_val.replace("MOTHER TONGUE", "ENGLISH")
-            new_val = new_val.replace("mother tongue", "english")
+        # NOTE: No longer replacing "Mother Tongue" -> "English" for Grade 3.
+        # MT stays as Mother Tongue for all grades; the separate ENG sheet handles English.
         return new_val
 
     # Rename formula references and update raw labels
@@ -311,10 +319,7 @@ async def export_crla(
             cell_e5 = ws.cell(row=5, column=5)
             if isinstance(cell_e5.value, str) and "GRADE 2" in cell_e5.value:
                 cell_e5.value = cell_e5.value.replace("GRADE 2", f"GRADE {grade_num}")
-            if grade_num == 3:
-                cell_e6 = ws.cell(row=6, column=5)
-                if isinstance(cell_e6.value, str) and "MOTHER TONGUE" in cell_e6.value:
-                    cell_e6.value = cell_e6.value.replace("MOTHER TONGUE", "ENGLISH")
+            # For Grade 3, Class Record E6 label stays as MOTHER TONGUE (no longer replaced to ENGLISH)
 
         elif ws.title == "Class Summary":
             cell_a2 = ws.cell(row=2, column=1)
@@ -333,201 +338,137 @@ async def export_crla(
     except Exception:
         pass
 
-    ws_mt.cell(row=6, column=3).value = teacher_name
-    ws_mt.cell(row=7, column=3).value = f"Grade {grade_num}"
-    ws_mt.cell(row=8, column=3).value = section
-    ws_mt.cell(row=9, column=3).value = "English" if grade_num == 3 else "Tagalog"
-    ws_mt.cell(row=6, column=4).value = male_count
-    ws_mt.cell(row=6, column=5).value = female_count
+    # Helper: write metadata header to a scoresheet
+    def write_sheet_metadata(ws, language_label):
+        ws.cell(row=6, column=3).value = teacher_name
+        ws.cell(row=7, column=3).value = f"Grade {grade_num}"
+        ws.cell(row=8, column=3).value = section
+        ws.cell(row=9, column=3).value = language_label
+        ws.cell(row=6, column=4).value = male_count
+        ws.cell(row=6, column=5).value = female_count
 
-    # Write teacher metadata to FIL sheet as well to ensure identical data across MT and FIL sheets
-    ws_fil.cell(row=6, column=3).value = teacher_name
-    ws_fil.cell(row=7, column=3).value = f"Grade {grade_num}"
-    ws_fil.cell(row=8, column=3).value = section
-    ws_fil.cell(row=9, column=3).value = "Tagalog"
-    ws_fil.cell(row=6, column=4).value = male_count
-    ws_fil.cell(row=6, column=5).value = female_count
+    write_sheet_metadata(ws_mt, "Tagalog")
+    write_sheet_metadata(ws_fil, "Tagalog")
+    if ws_eng:
+        write_sheet_metadata(ws_eng, "English")
+
+    # Helper: write student identity to a scoresheet row
+    def write_student_identity(ws, row_num, idx, s):
+        ws.cell(row=row_num, column=1).value = idx
+        ws.cell(row=row_num, column=2).value = s.lrn
+        ws.cell(row=row_num, column=3).value = f"{s.last_name}, {s.first_name}" + (f", {s.middle_name}" if s.middle_name else "")
+        ws.cell(row=row_num, column=4).value = s.sex.value.capitalize() if s.sex else None
+
+    # Helper: write session scores to a scoresheet row
+    def write_session_scores(ws, row_num, sess):
+        if not sess:
+            return
+        ws.cell(row=row_num, column=5).value = sess.created_at.date()
+        rr = sess.reading_result
+        if not rr:
+            return
+
+        t1 = rr.part1_task1_correct if rr.part1_task1_correct is not None else 0
+        t2 = rr.part1_task2_correct if rr.part1_task2_correct is not None else 0
+        route = (rr.part1_route or "").lower()
+
+        # Calculate CRLA Total Score
+        if "2h" in route:
+            calculated_total_score = t1 + 10 + t2
+        else:
+            calculated_total_score = t1 + t2
+
+        # Calculate CRLA Classification
+        if t1 < 7:
+            if calculated_total_score <= 10:
+                calculated_classification = "Full Refresher"
+            else:
+                calculated_classification = "Moderate Refresher"
+        else:
+            if calculated_total_score < 27:
+                calculated_classification = "Light Refresher"
+            else:
+                calculated_classification = "Grade Ready"
+
+        ws.cell(row=row_num, column=6).value = t1
+        if "2l" in route:
+            ws.cell(row=row_num, column=7).value = t2
+        elif "2h" in route:
+            ws.cell(row=row_num, column=8).value = t2
+
+        # Write calculated values directly to Scoresheet
+        ws.cell(row=row_num, column=9).value = calculated_total_score
+        ws.cell(row=row_num, column=10).value = calculated_classification
+        if rr.total_words is not None and rr.miscue_count is not None:
+            ws.cell(row=row_num, column=13).value = rr.total_words - rr.miscue_count
+        if rr.cwpm is not None:
+            ws.cell(row=row_num, column=16).value = rr.cwpm
+        if rr.total_words is not None and rr.total_words > 0 and rr.miscue_count is not None:
+            ws.cell(row=row_num, column=17).value = (rr.total_words - rr.miscue_count) / rr.total_words
+        profile_val = rr.reading_profile
+        if not profile_val or str(profile_val).strip() == "":
+            profile_val = "Low Emerging Reader"
+        ws.cell(row=row_num, column=21).value = profile_val
+
+        is_full_refresher = (calculated_classification == "Full Refresher" or calculated_total_score <= 10)
+        if not is_full_refresher:
+            if sess.passage:
+                ws.cell(row=row_num, column=11).value = sess.passage.story_number or 1
+            ws.cell(row=row_num, column=12).value = rr.miscue_count if rr.miscue_count is not None else 0
+
+            time_sec = rr.reading_time_seconds or 0
+            ws.cell(row=row_num, column=14).value = int(time_sec) // 60
+            ws.cell(row=row_num, column=15).value = int(time_sec) % 60
+
+            obs = sess.observation
+            if obs:
+                ws.cell(row=row_num, column=18).value = obs.comprehension_correct if obs.comprehension_correct is not None else 0
+                ws.cell(row=row_num, column=19).value = obs.learner_experience if obs.learner_experience is not None else 0
+                if obs.fluency_level:
+                    ws.cell(row=row_num, column=20).value = f"Level {obs.fluency_level}"
+                ws.cell(row=row_num, column=22).value = obs.teacher_remarks
+            else:
+                ws.cell(row=row_num, column=18).value = 0
+                ws.cell(row=row_num, column=19).value = 0
+        else:
+            ws.cell(row=row_num, column=14).value = 0
+            ws.cell(row=row_num, column=15).value = 0
+
+            obs = sess.observation
+            if obs:
+                ws.cell(row=row_num, column=19).value = obs.learner_experience if obs.learner_experience is not None else 0
+                if obs.fluency_level:
+                    ws.cell(row=row_num, column=20).value = f"Level {obs.fluency_level}"
+                ws.cell(row=row_num, column=22).value = obs.teacher_remarks
 
     # Write student lists and scores
     N = len(students)
+    raw_cols = [5, 6, 7, 8, 11, 12, 14, 15, 18, 19, 20, 22]
     for idx, s in enumerate(students, start=1):
         row_num = 10 + idx
         
-        # Write identity info on MT sheet
-        ws_mt.cell(row=row_num, column=1).value = idx
-        ws_mt.cell(row=row_num, column=2).value = s.lrn
-        ws_mt.cell(row=row_num, column=3).value = f"{s.last_name}, {s.first_name}" + (f", {s.middle_name}" if s.middle_name else "")
-        ws_mt.cell(row=row_num, column=4).value = s.sex.value.capitalize() if s.sex else None
-        
-        # Write identity info on FIL sheet directly (static values instead of formulas to be 100% robust)
-        ws_fil.cell(row=row_num, column=1).value = idx
-        ws_fil.cell(row=row_num, column=2).value = s.lrn
-        ws_fil.cell(row=row_num, column=3).value = f"{s.last_name}, {s.first_name}" + (f", {s.middle_name}" if s.middle_name else "")
-        ws_fil.cell(row=row_num, column=4).value = s.sex.value.capitalize() if s.sex else None
+        # Write identity info on all sheets
+        write_student_identity(ws_mt, row_num, idx, s)
+        write_student_identity(ws_fil, row_num, idx, s)
+        if ws_eng:
+            write_student_identity(ws_eng, row_num, idx, s)
 
         # Clear score and observation columns (only raw input columns, keep formula columns!)
-        raw_cols = [5, 6, 7, 8, 11, 12, 14, 15, 18, 19, 20, 22]
         for col_idx in raw_cols:
             ws_mt.cell(row=row_num, column=col_idx).value = None
             ws_fil.cell(row=row_num, column=col_idx).value = None
+            if ws_eng:
+                ws_eng.cell(row=row_num, column=col_idx).value = None
 
-        # Look up Mother Tongue session (english in DB)
-        mt_sess = session_map.get(s.id, {}).get("english")
-        if mt_sess:
-            ws_mt.cell(row=row_num, column=5).value = mt_sess.created_at.date()
-            rr = mt_sess.reading_result
-            if rr:
-                t1 = rr.part1_task1_correct if rr.part1_task1_correct is not None else 0
-                t2 = rr.part1_task2_correct if rr.part1_task2_correct is not None else 0
-                route = (rr.part1_route or "").lower()
-                
-                # Calculate CRLA Total Score
-                if "2h" in route:
-                    calculated_total_score = t1 + 10 + t2
-                else:
-                    calculated_total_score = t1 + t2
-                
-                # Calculate CRLA Classification
-                if t1 < 7:
-                    if calculated_total_score <= 10:
-                        calculated_classification = "Full Refresher"
-                    else:
-                        calculated_classification = "Moderate Refresher"
-                else:
-                    if calculated_total_score < 27:
-                        calculated_classification = "Light Refresher"
-                    else:
-                        calculated_classification = "Grade Ready"
-                
-                ws_mt.cell(row=row_num, column=6).value = t1
-                if "2l" in route:
-                    ws_mt.cell(row=row_num, column=7).value = t2
-                elif "2h" in route:
-                    ws_mt.cell(row=row_num, column=8).value = t2
-                
-                # Write calculated values directly to Scoresheet
-                ws_mt.cell(row=row_num, column=9).value = calculated_total_score
-                ws_mt.cell(row=row_num, column=10).value = calculated_classification
-                if rr.total_words is not None and rr.miscue_count is not None:
-                    ws_mt.cell(row=row_num, column=13).value = rr.total_words - rr.miscue_count
-                if rr.cwpm is not None:
-                    ws_mt.cell(row=row_num, column=16).value = rr.cwpm
-                if rr.total_words is not None and rr.total_words > 0 and rr.miscue_count is not None:
-                    ws_mt.cell(row=row_num, column=17).value = (rr.total_words - rr.miscue_count) / rr.total_words
-                profile_val = rr.reading_profile
-                if not profile_val or str(profile_val).strip() == "":
-                    profile_val = "Low Emerging Reader"
-                ws_mt.cell(row=row_num, column=21).value = profile_val
-
-                is_full_refresher = (calculated_classification == "Full Refresher" or calculated_total_score <= 10)
-                if not is_full_refresher:
-                    if mt_sess.passage:
-                        ws_mt.cell(row=row_num, column=11).value = mt_sess.passage.story_number or 1
-                    ws_mt.cell(row=row_num, column=12).value = rr.miscue_count if rr.miscue_count is not None else 0
-                    
-                    time_sec = rr.reading_time_seconds or 0
-                    ws_mt.cell(row=row_num, column=14).value = int(time_sec) // 60
-                    ws_mt.cell(row=row_num, column=15).value = int(time_sec) % 60
-                    
-                    obs = mt_sess.observation
-                    if obs:
-                        ws_mt.cell(row=row_num, column=18).value = obs.comprehension_correct if obs.comprehension_correct is not None else 0
-                        ws_mt.cell(row=row_num, column=19).value = obs.learner_experience if obs.learner_experience is not None else 0
-                        if obs.fluency_level:
-                            ws_mt.cell(row=row_num, column=20).value = f"Level {obs.fluency_level}"
-                        ws_mt.cell(row=row_num, column=22).value = obs.teacher_remarks
-                    else:
-                        ws_mt.cell(row=row_num, column=18).value = 0
-                        ws_mt.cell(row=row_num, column=19).value = 0
-                else:
-                    ws_mt.cell(row=row_num, column=14).value = 0
-                    ws_mt.cell(row=row_num, column=15).value = 0
-                    
-                    obs = mt_sess.observation
-                    if obs:
-                        ws_mt.cell(row=row_num, column=19).value = obs.learner_experience if obs.learner_experience is not None else 0
-                        if obs.fluency_level:
-                            ws_mt.cell(row=row_num, column=20).value = f"Level {obs.fluency_level}"
-                        ws_mt.cell(row=row_num, column=22).value = obs.teacher_remarks
-
-        # Look up Filipino session (filipino in DB)
+        # For ALL grades: MT and FIL both use the Filipino session
         fil_sess = session_map.get(s.id, {}).get("filipino")
-        if fil_sess:
-            ws_fil.cell(row=row_num, column=5).value = fil_sess.created_at.date()
-            rr = fil_sess.reading_result
-            if rr:
-                t1 = rr.part1_task1_correct if rr.part1_task1_correct is not None else 0
-                t2 = rr.part1_task2_correct if rr.part1_task2_correct is not None else 0
-                route = (rr.part1_route or "").lower()
-                
-                # Calculate CRLA Total Score
-                if "2h" in route:
-                    calculated_total_score = t1 + 10 + t2
-                else:
-                    calculated_total_score = t1 + t2
-                
-                # Calculate CRLA Classification
-                if t1 < 7:
-                    if calculated_total_score <= 10:
-                        calculated_classification = "Full Refresher"
-                    else:
-                        calculated_classification = "Moderate Refresher"
-                else:
-                    if calculated_total_score < 27:
-                        calculated_classification = "Light Refresher"
-                    else:
-                        calculated_classification = "Grade Ready"
-                
-                ws_fil.cell(row=row_num, column=6).value = t1
-                if "2l" in route:
-                    ws_fil.cell(row=row_num, column=7).value = t2
-                elif "2h" in route:
-                    ws_fil.cell(row=row_num, column=8).value = t2
-                
-                # Write calculated values directly to Scoresheet
-                ws_fil.cell(row=row_num, column=9).value = calculated_total_score
-                ws_fil.cell(row=row_num, column=10).value = calculated_classification
-                if rr.total_words is not None and rr.miscue_count is not None:
-                    ws_fil.cell(row=row_num, column=13).value = rr.total_words - rr.miscue_count
-                if rr.cwpm is not None:
-                    ws_fil.cell(row=row_num, column=16).value = rr.cwpm
-                if rr.total_words is not None and rr.total_words > 0 and rr.miscue_count is not None:
-                    ws_fil.cell(row=row_num, column=17).value = (rr.total_words - rr.miscue_count) / rr.total_words
-                profile_val = rr.reading_profile
-                if not profile_val or str(profile_val).strip() == "":
-                    profile_val = "Low Emerging Reader"
-                ws_fil.cell(row=row_num, column=21).value = profile_val
+        write_session_scores(ws_mt, row_num, fil_sess)
+        write_session_scores(ws_fil, row_num, fil_sess)
 
-                is_full_refresher = (calculated_classification == "Full Refresher" or calculated_total_score <= 10)
-                if not is_full_refresher:
-                    if fil_sess.passage:
-                        ws_fil.cell(row=row_num, column=11).value = fil_sess.passage.story_number or 1
-                    ws_fil.cell(row=row_num, column=12).value = rr.miscue_count if rr.miscue_count is not None else 0
-                    
-                    time_sec = rr.reading_time_seconds or 0
-                    ws_fil.cell(row=row_num, column=14).value = int(time_sec) // 60
-                    ws_fil.cell(row=row_num, column=15).value = int(time_sec) % 60
-                    
-                    obs = fil_sess.observation
-                    if obs:
-                        ws_fil.cell(row=row_num, column=18).value = obs.comprehension_correct if obs.comprehension_correct is not None else 0
-                        ws_fil.cell(row=row_num, column=19).value = obs.learner_experience if obs.learner_experience is not None else 0
-                        if obs.fluency_level:
-                            ws_fil.cell(row=row_num, column=20).value = f"Level {obs.fluency_level}"
-                        ws_fil.cell(row=row_num, column=22).value = obs.teacher_remarks
-                    else:
-                        ws_fil.cell(row=row_num, column=18).value = 0
-                        ws_fil.cell(row=row_num, column=19).value = 0
-                else:
-                    ws_fil.cell(row=row_num, column=14).value = 0
-                    ws_fil.cell(row=row_num, column=15).value = 0
-                    
-                    obs = fil_sess.observation
-                    if obs:
-                        ws_fil.cell(row=row_num, column=19).value = obs.learner_experience if obs.learner_experience is not None else 0
-                        if obs.fluency_level:
-                            ws_fil.cell(row=row_num, column=20).value = f"Level {obs.fluency_level}"
-                        ws_fil.cell(row=row_num, column=22).value = obs.teacher_remarks
+        # For Grade 3: ENG sheet uses the English session
+        if ws_eng:
+            eng_sess = session_map.get(s.id, {}).get("english")
+            write_session_scores(ws_eng, row_num, eng_sess)
 
     # Clear remaining rows (11 + N to 110) - ONLY clear raw data columns to preserve formulas!
     raw_cols_to_clear = [1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 14, 15, 18, 19, 20, 22]
@@ -535,6 +476,8 @@ async def export_crla(
         for c in raw_cols_to_clear:
             ws_mt.cell(row=r, column=c).value = None
             ws_fil.cell(row=r, column=c).value = None
+            if ws_eng:
+                ws_eng.cell(row=r, column=c).value = None
 
     # Write Top and Bottom text labels
     from openpyxl.styles import Font, PatternFill, Alignment
@@ -573,6 +516,8 @@ async def export_crla(
 
     style_and_fill_scoresheet(ws_mt, is_mt=True)
     style_and_fill_scoresheet(ws_fil, is_mt=False)
+    if ws_eng:
+        style_and_fill_scoresheet(ws_eng, is_mt=False)
 
     # Class Summary bottom attribution text
     ws_summary = wb["Class Summary"]
@@ -625,7 +570,7 @@ async def export_crla(
     wb.save(out)
     out.seek(0)
     
-    filename = f"CRLA_Assessment_Record_Grade{grade_num}_{section}_{school_year}_{period}.xlsx".replace(" ", "_")
+    filename = f"{period_label}_CRLA_Assessment_Record_Grade{grade_num}_{section}_{school_year}.xlsx".replace(" ", "_")
     return Response(
         content=out.read(),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

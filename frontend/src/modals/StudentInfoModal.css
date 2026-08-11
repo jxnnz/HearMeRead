@@ -83,6 +83,28 @@
 
 .sim-badge--cap { text-transform: capitalize; }
 
+.sim-download-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1.5px solid #fecaca;
+  background: #fff5f5;
+  color: #c0392b;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: "Poppins", sans-serif;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.sim-download-btn:hover {
+  background: #fee2e2;
+  border-color: #f87171;
+}
+
 .sim-close-btn {
   width: 34px;
   height: 34px;
@@ -111,6 +133,26 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  scrollbar-width: thin;
+  scrollbar-color: #c5cde8 #f4f6fb;
+}
+
+.sim-body::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.sim-body::-webkit-scrollbar-track {
+  background: #f4f6fb;
+}
+
+.sim-body::-webkit-scrollbar-thumb {
+  background: #c5cde8;
+  border-radius: 10px;
+}
+
+.sim-body::-webkit-scrollbar-thumb:hover {
+  background: #8fa3d4;
 }
 
 /* Loading / error */
