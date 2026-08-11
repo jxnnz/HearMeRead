@@ -37,9 +37,6 @@ function currentSchoolYear() {
 }
 
 function visiblePeriods() {
-  const m = new Date().getMonth() + 1;
-  if (m >= 6 && m <= 9)  return ["beginning"];
-  if (m >= 10 || m === 1) return ["beginning", "middle"];
   return ["beginning", "middle", "end"];
 }
 

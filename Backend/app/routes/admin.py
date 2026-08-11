@@ -56,11 +56,14 @@ async def admin_dashboard(
     )
     total_teachers = teacher_count_result.scalar() or 0
 
-    # Total unique students assessed (via sessions in this school)
+    # Total unique students assessed (via non-archived sessions in this school)
     student_count_result = await db.execute(
         select(func.count(func.distinct(AssessmentSession.student_id)))
         .join(Teacher, Teacher.id == AssessmentSession.teacher_id)
-        .where(Teacher.school_id == current_admin.school_id)
+        .where(
+            Teacher.school_id == current_admin.school_id,
+            AssessmentSession.is_archived == False,
+        )
     )
     total_students_assessed = student_count_result.scalar() or 0
 
@@ -68,14 +71,22 @@ async def admin_dashboard(
     sessions_result = await db.execute(
         select(
             func.count(AssessmentSession.id),
-            func.sum(AssessmentSession.is_completed.cast(sa.Integer)),
+            func.sum(sa.case((AssessmentSession.is_completed == True, 1), else_=0)),
         )
         .join(Teacher, Teacher.id == AssessmentSession.teacher_id)
-        .where(Teacher.school_id == current_admin.school_id)
+        .where(
+            Teacher.school_id == current_admin.school_id,
+            AssessmentSession.is_archived == False,
+        )
     )
     row = sessions_result.one()
     total_sessions = row[0] or 0
     completed_sessions = row[1] or 0
+
+    def _get_val(obj):
+        if obj is None:
+            return ""
+        return obj.value if hasattr(obj, "value") else str(obj)
 
     # Period breakdown — completed session counts grouped by period and student sex
     period_breakdown_result = await db.execute(
@@ -89,15 +100,16 @@ async def admin_dashboard(
         .where(
             Teacher.school_id == current_admin.school_id,
             AssessmentSession.is_completed == True,
+            AssessmentSession.is_archived == False,
         )
         .group_by(AssessmentSession.period, Student.sex)
     )
 
     raw_pb: dict[str, dict[str, int]] = {}
-    for row in period_breakdown_result:
-        p   = row[0].value
-        sex = row[1].value if row[1] else "unknown"
-        cnt = row[2]
+    for r_item in period_breakdown_result:
+        p   = _get_val(r_item[0]).lower()
+        sex = _get_val(r_item[1]).lower()
+        cnt = r_item[2]
         bucket = raw_pb.setdefault(p, {"female": 0, "male": 0, "total": 0})
         if sex in ("female", "male"):
             bucket[sex] += cnt
@@ -120,6 +132,7 @@ async def admin_dashboard(
         .where(
             Teacher.school_id == current_admin.school_id,
             AssessmentSession.is_completed == True,
+            AssessmentSession.is_archived == False,
             ReadingResult.reading_profile != None,
         )
         .group_by(AssessmentSession.period, ReadingResult.reading_profile)
@@ -127,10 +140,10 @@ async def admin_dashboard(
 
     # Build {period: {profile: pct}} structure
     raw_profile_period: dict[str, dict[str, int]] = {}
-    for row in profile_period_result:
-        p = row[0].value
-        profile = row[1]
-        count = row[2]
+    for r_item in profile_period_result:
+        p = _get_val(r_item[0]).lower()
+        profile = _get_val(r_item[1])
+        count = r_item[2]
         raw_profile_period.setdefault(p, {})[profile] = count
 
     profile_by_period: dict[str, dict[str, float]] = {}

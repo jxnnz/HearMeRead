@@ -136,10 +136,8 @@ export const authApi = {
 // Admin
 export const adminApi = {
   getDashboard: async () => {
-    return withCache("admin_dashboard", async () => {
-      const res = await api.get("/admin/dashboard");
-      return res.data;
-    });
+    const res = await api.get("/admin/dashboard");
+    return res.data;
   },
 
   getTeachers: async () => {
