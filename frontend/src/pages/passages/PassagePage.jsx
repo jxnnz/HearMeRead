@@ -18,8 +18,9 @@ import "../pages css/AddPassagePage.css";
 
 export default function PassagePage() {
   const navigate = useNavigate();
-  const { toasts, removeToast } = useToast();
+  const { toasts, removeToast, addToast } = useToast();
   const isMobile = useWindowWidth() <= 768;
+  const [savingDots, setSavingDots] = useState(".");
 
   const [passages, setPassages]   = useState([]);
   const [loading, setLoading]     = useState(true);
@@ -32,8 +33,19 @@ export default function PassagePage() {
   const [uploadOpen, setUploadOpen]   = useState(false);
 
   // Bulk upload state
-  const [bulkSaving, setBulkSaving]   = useState(false);
-  const [bulkResult, setBulkResult]   = useState(null);  // { saved, failed, total }
+  const [bulkSaving, setBulkSaving] = useState(false);
+  const [bulkResult, setBulkResult] = useState(null);
+
+  useEffect(() => {
+    if (!bulkSaving) {
+      setSavingDots(".");
+      return;
+    }
+    const timer = setInterval(() => {
+      setSavingDots((prev) => (prev.length >= 3 ? "." : prev + "."));
+    }, 400);
+    return () => clearInterval(timer);
+  }, [bulkSaving]);
 
   // NEW — teacher's grade level, used to auto-select the right A1 template
   const [teacherGrade, setTeacherGrade] = useState(null);
@@ -120,7 +132,11 @@ export default function PassagePage() {
     }
 
     setBulkSaving(false);
-    setBulkResult({ saved, failed, total });
+    if (failed === 0) {
+      addToast("Passages saved successfully", "success");
+    } else {
+      setBulkResult({ saved, failed, total });
+    }
 
     // Refresh passages list
     passagesApi
@@ -392,8 +408,9 @@ export default function PassagePage() {
       {/* Bulk saving overlay */}
       <ConfirmModal
         isOpen={bulkSaving}
-        title="Saving Passages…"
+        title={`Saving Passages${savingDots}`}
         message="Please wait while your passages are being saved."
+        hideIcon={true}
         confirmLabel={null}
         cancelLabel={null}
         onClose={() => {}}

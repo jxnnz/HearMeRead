@@ -1,4 +1,4 @@
-﻿from typing import Optional, List
+from typing import Optional, List
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from fastapi.responses import Response
@@ -144,6 +144,7 @@ async def export_crla(
     section: str = Query(...),
     school_year: str = Query(...),
     period: str = Query(...),
+    teacher_id: Optional[int] = Query(None),
     db: AsyncSession = Depends(get_db),
     current_teacher: Teacher = Depends(get_current_teacher),
 ):
@@ -169,6 +170,21 @@ async def export_crla(
     elif grade_enum == GradeLevel.grade_3:
         grade_num = 3
 
+    # Target teacher logic
+    target_teacher = current_teacher
+    target_teacher_id = current_teacher.id
+    if teacher_id is not None and current_teacher.role == UserRole.admin:
+        t_res = await db.execute(
+            select(Teacher).where(
+                Teacher.id == teacher_id,
+                Teacher.school_id == current_teacher.school_id,
+            )
+        )
+        found_t = t_res.scalar_one_or_none()
+        if found_t:
+            target_teacher = found_t
+            target_teacher_id = found_t.id
+
     # Period label for filename
     period_label_map = {"beginning": "BoSY", "middle": "MoSY", "end": "EoSY"}
     period_label = period_label_map.get(period, period)
@@ -179,16 +195,27 @@ async def export_crla(
     new_fil_name = f"G{grade_num} FIL Reading Scoresheet"
     new_eng_name = f"G{grade_num} ENG Reading Scoresheet"
 
-    # Fetch students
-    stmt = (
-        select(Student)
-        .where(
-            Student.teacher_id == current_teacher.id,
+    # Fetch students — check StudentEnrollment first for year-aware lookup
+    enrollment_res = await db.execute(
+        select(StudentEnrollment.student_id).where(
+            StudentEnrollment.teacher_id == target_teacher_id,
+            StudentEnrollment.school_year == school_year,
+        )
+    )
+    enrolled_ids = [r[0] for r in enrollment_res.all()]
+    if enrolled_ids:
+        stmt = select(Student).where(
+            Student.id.in_(enrolled_ids),
+            Student.grade_level == grade_enum,
+            Student.section == section,
+        )
+    else:
+        stmt = select(Student).where(
+            Student.teacher_id == target_teacher_id,
             Student.grade_level == grade_enum,
             Student.section == section,
             Student.school_year == school_year,
         )
-    )
     res = await db.execute(stmt)
     students = res.scalars().all()
 
@@ -330,10 +357,10 @@ async def export_crla(
                 cell_a8.value = f"Grade {grade_num}"
 
     # Write teacher metadata and school information
-    teacher_name = f"{current_teacher.first_name} {current_teacher.last_name}"
+    teacher_name = f"{target_teacher.first_name} {target_teacher.last_name}"
     try:
-        t_first = decrypt(current_teacher.first_name) if current_teacher.first_name else ""
-        t_last = decrypt(current_teacher.last_name) if current_teacher.last_name else ""
+        t_first = decrypt(target_teacher.first_name) if target_teacher.first_name else ""
+        t_last = decrypt(target_teacher.last_name) if target_teacher.last_name else ""
         teacher_name = f"{t_first} {t_last}"
     except Exception:
         pass

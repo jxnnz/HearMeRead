@@ -23,6 +23,7 @@ export default function ConfirmModal({
   confirmLabel = "Confirm",
   cancelLabel  = "Cancel",
   variant      = "default",
+  hideIcon     = false,
 }) {
   if (!isOpen) return null;
 
@@ -58,9 +59,11 @@ export default function ConfirmModal({
     <div className="cm-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="cm-title">
       <div className={`cm-modal cm-modal--${variant}`} onClick={(e) => e.stopPropagation()}>
 
-        <div className={`cm-icon cm-icon--${variant}`}>
-          {iconMap[variant] ?? iconMap.default}
-        </div>
+        {!hideIcon && (
+          <div className={`cm-icon cm-icon--${variant}`}>
+            {iconMap[variant] ?? iconMap.default}
+          </div>
+        )}
 
         <h3 className="cm-title" id="cm-title">{title}</h3>
         {message && <p className="cm-body">{message}</p>}

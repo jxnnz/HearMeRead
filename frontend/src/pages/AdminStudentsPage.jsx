@@ -2,11 +2,15 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   GraduationCap, ChevronLeft, Users,
-  Search, FileText, UserCheck,
+  Search, FileText, UserCheck, Download,
 } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import Layout from "../components/Layout";
-import { adminApi } from "../services/api";
+import { adminApi, studentsApi } from "../services/api";
 import StudentInfoModal from "../modals/StudentInfoModal";
+import Toast from "../modals/Toast";
+import useToast from "../hooks/Usetoast";
 import { useWindowWidth } from "../hooks/useWindowWidth";
 import "../pages/pages css/ClassRecordPage.css";
 
@@ -183,14 +187,17 @@ function ReassignModal({ card, onClose, onSuccess }) {
   );
 }
 
-// Class Record sub-view (reuses teacher-side cr-* CSS classes)
+// Class Record sub-view (mirrors teacher-side ClassRecordPage UI and export capabilities)
 function ClassRecordView({ card, onBack }) {
-  const [record,     setRecord]     = useState(null);
-  const [loading,    setLoading]    = useState(true);
+  const [record, setRecord] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [schoolYear, setSchoolYear] = useState(card.school_year || currentSchoolYear());
-  const [period,     setPeriod]     = useState("beginning");
-  const [language,   setLanguage]   = useState("filipino");
+  const [period, setPeriod] = useState("beginning");
+  const [language, setLanguage] = useState("filipino");
   const [selectedSessionId, setSelectedSessionId] = useState(null);
+  const [exportingExcel, setExportingExcel] = useState(false);
+
+  const { toasts, removeToast, showSaveSuccess, showError } = useToast();
 
   const SCHOOL_YEARS = (() => {
     const y = new Date().getFullYear();
@@ -213,16 +220,257 @@ function ClassRecordView({ card, onBack }) {
     } finally {
       setLoading(false);
     }
-  }, [card.teacher_id, schoolYear, period, language]);
+  }, [card.teacher_id, card.grade_level, card.section, schoolYear, period, language]);
 
   useEffect(() => { load(); }, [load]);
 
   const students = record?.students ?? [];
   const periodLabel = PERIOD_LABELS[period] ?? period;
+  const grade = card.grade_level;
+  const section = card.section;
+  const year = schoolYear;
+  const teacherName = card.teacher_name;
+  const fileName = `ClassRecord_${formatGrade(grade).replace(/\s+/g, "")}${section ? `_${section}` : ""}_${year}_${period}`;
+
+  function buildExportRows() {
+    return students.map((s, idx) => {
+      const rr = s.reading_result || null;
+      const obs = s.observation || null;
+      const profile = rr?.reading_profile ?? s.reading_profile ?? null;
+      const totalWords = rr?.total_words ?? null;
+      const miscues = rr?.miscue_count ?? null;
+      const wordsRead = totalWords !== null && miscues !== null ? totalWords - miscues : null;
+      const pctCorrect = totalWords && totalWords > 0 && miscues !== null
+        ? `${Math.round(((totalWords - miscues) / totalWords) * 100)}%` : "—";
+      const route = (rr?.part1_route ?? "").toLowerCase();
+      const task2L = route.includes("2l") ? (rr?.part1_task2_correct ?? "—") : "—";
+      const task2H = route.includes("2h") ? (rr?.part1_task2_correct ?? "—") : "—";
+
+      return [
+        idx + 1,
+        s.lrn ?? "—",
+        `${s.last_name}, {s.first_name}`,
+        s.sex ? s.sex.charAt(0).toUpperCase() + s.sex.slice(1) : "—",
+        s.session_date ? formatDate(s.session_date) : "—",
+        rr?.part1_task1_correct ?? "—",
+        task2L, task2H,
+        rr?.part1_total_score ?? "—",
+        rr?.part1_classification ?? "—",
+        s.passage_title ? storyLabel(s.passage_title) : "—",
+        totalWords ?? "—",
+        miscues ?? "—",
+        wordsRead ?? "—",
+        formatTime(rr?.reading_time_seconds),
+        rr?.cwpm ?? "—",
+        pctCorrect,
+        obs ? `${obs.comprehension_correct ?? "—"}/${obs.comprehension_total ?? "—"}` : "—",
+        obs?.learner_experience ?? "—",
+        obs?.fluency_level ?? "—",
+        profile ?? "—",
+        obs?.teacher_remarks ?? "—",
+      ];
+    });
+  }
+
+  function exportToPDF() {
+    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const marginX = 8;
+
+    const navy = [30, 45, 82];
+    const navyMuted = [200, 210, 235];
+    const ink = [26, 35, 64];
+    const inkMuted = [105, 112, 135];
+    const border = [222, 226, 236];
+    const grp1bg = [222, 234, 251];
+    const grp1txt = [30, 60, 130];
+    const grp2bg = [212, 242, 224];
+    const grp2txt = [17, 94, 60];
+    const sub1bg = [237, 243, 253];
+    const sub2bg = [231, 249, 238];
+
+    const generatedOn = new Date().toLocaleDateString("en-US", {
+      month: "long", day: "numeric", year: "numeric",
+    });
+
+    doc.setFillColor(...navy);
+    doc.rect(0, 0, pageWidth, 11, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5);
+    doc.setTextColor(255, 255, 255);
+    doc.text("Classroom Reading Level Assessment (CRLA) — Class Record", marginX, 7.2);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(...navyMuted);
+    doc.text("Generated report", pageWidth - marginX, 7.2, { align: "right" });
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(15);
+    doc.setTextColor(...ink);
+    doc.text(`${formatGrade(grade)}${section ? ` — ${section}` : ""}`, marginX, 21);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.5);
+    doc.setTextColor(...inkMuted);
+    doc.text(
+      `School Year ${year}   ·   ${periodLabel} Assessment   ·   ${language === "filipino" ? "Filipino" : "English"}   ·   Class Adviser: ${teacherName}`,
+      marginX, 27,
+    );
+
+    doc.setDrawColor(...border);
+    doc.setLineWidth(0.3);
+    doc.line(marginX, 30.5, pageWidth - marginX, 30.5);
+
+    const identityStyle = { fillColor: navy, textColor: 255, fontStyle: "bold", valign: "middle", halign: "center" };
+
+    const groupRow = [
+      { content: "#", rowSpan: 2, styles: identityStyle },
+      { content: "LRN", rowSpan: 2, styles: { ...identityStyle, halign: "left" } },
+      { content: "Student Name", rowSpan: 2, styles: { ...identityStyle, halign: "left" } },
+      { content: "Sex", rowSpan: 2, styles: identityStyle },
+      { content: "Date", rowSpan: 2, styles: identityStyle },
+      { content: "Assessment Part 1", colSpan: 5, styles: { fillColor: grp1bg, textColor: grp1txt, fontStyle: "bold", halign: "center" } },
+      { content: "Assessment Part 2", colSpan: 8, styles: { fillColor: grp2bg, textColor: grp2txt, fontStyle: "bold", halign: "center" } },
+      { content: "Learner Exp.", rowSpan: 2, styles: identityStyle },
+      { content: "Obs. Level", rowSpan: 2, styles: identityStyle },
+      { content: "Reading Profile", rowSpan: 2, styles: identityStyle },
+      { content: "Remarks", rowSpan: 2, styles: identityStyle },
+    ];
+
+    const mk1 = (t) => ({ content: t, styles: { fillColor: sub1bg, textColor: grp1txt, fontStyle: "bold", halign: "center", fontSize: 6 } });
+    const mk2 = (t) => ({ content: t, styles: { fillColor: sub2bg, textColor: grp2txt, fontStyle: "bold", halign: "center", fontSize: 6 } });
+
+    const subRow = [
+      mk1("Task 1"), mk1("Task 2L"), mk1("Task 2H"), mk1("Total"), mk1("Part 1 Lvl"),
+      mk2("Story #"), mk2("Tot. Wds"), mk2("Miscues"), mk2("Wds Read"), mk2("Time"), mk2("WPM"), mk2("% Corr."), mk2("Correct"),
+    ];
+
+    autoTable(doc, {
+      head: [groupRow, subRow],
+      body: buildExportRows(),
+      startY: 34,
+      margin: { left: marginX, right: marginX, top: 13, bottom: 15 },
+      styles: {
+        fontSize: 6.3,
+        cellPadding: { top: 1.8, right: 1.4, bottom: 1.8, left: 1.4 },
+        font: "helvetica",
+        textColor: ink,
+        lineColor: border,
+        lineWidth: 0.15,
+        valign: "middle",
+        minCellHeight: 6,
+      },
+      alternateRowStyles: { fillColor: [249, 250, 253] },
+      columnStyles: {
+        0:  { cellWidth: 6,  halign: "center" },
+        1:  { cellWidth: 18 },
+        2:  { cellWidth: 26 },
+        3:  { cellWidth: 8,  halign: "center" },
+        4:  { cellWidth: 13, halign: "center" },
+        5:  { cellWidth: 8,  halign: "center" },
+        6:  { cellWidth: 11, halign: "center" },
+        7:  { cellWidth: 11, halign: "center" },
+        8:  { cellWidth: 10, halign: "center" },
+        9:  { cellWidth: 18 },
+        10: { cellWidth: 9,  halign: "center" },
+        11: { cellWidth: 11, halign: "center" },
+        12: { cellWidth: 10, halign: "center" },
+        13: { cellWidth: 11, halign: "center" },
+        14: { cellWidth: 11, halign: "center" },
+        15: { cellWidth: 9,  halign: "center" },
+        16: { cellWidth: 10, halign: "center" },
+        17: { cellWidth: 11, halign: "center" },
+        18: { cellWidth: 12, halign: "center" },
+        19: { cellWidth: 10, halign: "center" },
+        20: { cellWidth: 20, fontStyle: "bold" },
+        21: { cellWidth: 15 },
+      },
+      didParseCell: (data) => {
+        if (data.section === "body" && data.column.index === 9) {
+          const raw = Array.isArray(data.cell.text) ? data.cell.text.join(" ") : data.cell.text;
+          if (raw && raw.length > 16) {
+            data.cell.text = [`${raw.slice(0, 15)}…`];
+          }
+        }
+      },
+      didDrawPage: (data) => {
+        if (data.pageNumber > 1) {
+          doc.setFillColor(...navy);
+          doc.rect(0, 0, pageWidth, 9, "F");
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(8);
+          doc.setTextColor(255, 255, 255);
+          doc.text(
+            `${formatGrade(grade)}${section ? ` — ${section}` : ""}  ·  ${periodLabel} ${year} (cont.)`,
+            marginX, 6,
+          );
+        }
+        doc.setDrawColor(...border);
+        doc.setLineWidth(0.2);
+        doc.line(marginX, pageHeight - 12, pageWidth - marginX, pageHeight - 12);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(6);
+        doc.setTextColor(160, 165, 182);
+        doc.text(`Generated by HearMeRead  ·  ${generatedOn}`, marginX, pageHeight - 7.5);
+        doc.text(`Page ${data.pageNumber}`, pageWidth - marginX, pageHeight - 7.5, { align: "right" });
+      },
+    });
+
+    const finalY = doc.lastAutoTable?.finalY ?? 40;
+    const sigWidth = 65;
+    let sigY = finalY + 14;
+    if (sigY > pageHeight - 22) {
+      doc.addPage();
+      sigY = 20;
+    }
+
+    doc.setDrawColor(150, 155, 175);
+    doc.setLineWidth(0.25);
+    doc.line(marginX, sigY, marginX + sigWidth, sigY);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    doc.setTextColor(...ink);
+    doc.text(teacherName || " ", marginX, sigY - 1.5);
+    doc.setFontSize(6.8);
+    doc.setTextColor(...inkMuted);
+    doc.text("Prepared by — Class Adviser", marginX, sigY + 4);
+
+    const sig2X = pageWidth - marginX - sigWidth;
+    doc.line(sig2X, sigY, sig2X + sigWidth, sigY);
+    doc.setFontSize(6.8);
+    doc.text("Noted by — School Head", sig2X, sigY + 4);
+
+    doc.save(`${fileName}.pdf`);
+  }
+
+  async function exportToExcel() {
+    setExportingExcel(true);
+    try {
+      await studentsApi.exportCRLAExcel({
+        grade_level: grade,
+        section,
+        school_year: year,
+        period,
+        teacher_id: card.teacher_id,
+      });
+      showSaveSuccess("XLSX");
+    } catch (err) {
+      console.error(err);
+      const detail = err.response?.data?.detail;
+      showError(
+        typeof detail === "string" ? detail
+        : Array.isArray(detail)   ? detail.map((d) => d.msg).join(", ")
+        : "Failed to export XLSX assessment record."
+      );
+    } finally {
+      setExportingExcel(false);
+    }
+  }
 
   return (
     <div className="cr-page">
-      {/* Top bar */}
+      {/* Top bar — mirrors teacher side */}
       <div className="cr-topbar">
         <div className="cr-topbar__left">
           <button className="cr-back-btn" onClick={onBack} aria-label="Back">
@@ -230,32 +478,49 @@ function ClassRecordView({ card, onBack }) {
           </button>
           <div>
             <h1 className="cr-title">
-              {formatGrade(card.grade_level)} — {card.section ?? "—"}
+              {formatGrade(card.grade_level)}{card.section ? ` — ${card.section}` : ""}
             </h1>
             <p className="cr-subtitle">
               Adviser: {card.teacher_name} &nbsp;·&nbsp; {schoolYear} &nbsp;·&nbsp; {periodLabel}
             </p>
           </div>
         </div>
-      </div>
 
-      {/* Filters */}
-      <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-        <label style={{ fontSize: 12, color: "#4a5568", fontWeight: 500 }}>School Year:</label>
-        <select className="cr-lang-select" value={schoolYear} onChange={e => setSchoolYear(e.target.value)}>
-          {SCHOOL_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
-        </select>
-        <label style={{ fontSize: 12, color: "#4a5568", fontWeight: 500, marginLeft: 8 }}>Period:</label>
-        <select className="cr-lang-select" value={period} onChange={e => setPeriod(e.target.value)}>
-          <option value="beginning">Beginning</option>
-          <option value="middle">Middle</option>
-          <option value="end">End</option>
-        </select>
-        <label style={{ fontSize: 12, color: "#4a5568", fontWeight: 500, marginLeft: 8 }}>Language:</label>
-        <select className="cr-lang-select" value={language} onChange={e => setLanguage(e.target.value)}>
-          <option value="filipino">Filipino</option>
-          <option value="english">English</option>
-        </select>
+        <div className="cr-topbar__right">
+          <label className="cr-lang-label">S.Y.:</label>
+          <select className="cr-lang-select" value={schoolYear} onChange={e => setSchoolYear(e.target.value)}>
+            {SCHOOL_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+
+          <label className="cr-lang-label">Period:</label>
+          <select className="cr-lang-select" value={period} onChange={e => setPeriod(e.target.value)}>
+            <option value="beginning">Beginning</option>
+            <option value="middle">Middle</option>
+            <option value="end">End</option>
+          </select>
+
+          <label className="cr-lang-label">Language:</label>
+          <select className="cr-lang-select" value={language} onChange={e => setLanguage(e.target.value)}>
+            <option value="filipino">Filipino</option>
+            <option value="english">English</option>
+          </select>
+
+          <div className="cr-topbar__divider" />
+
+          <button className="cr-export-btn cr-export-btn--pdf" onClick={exportToPDF} title="Export as PDF">
+            <Download size={14} />
+            PDF
+          </button>
+          <button
+            className="cr-export-btn cr-export-btn--excel"
+            onClick={exportToExcel}
+            title="Export as XLSX"
+            disabled={exportingExcel}
+          >
+            <Download size={14} />
+            {exportingExcel ? "Exporting..." : "XLSX"}
+          </button>
+        </div>
       </div>
 
       {/* States */}
@@ -266,7 +531,7 @@ function ClassRecordView({ card, onBack }) {
         </div>
       )}
 
-      {/* Class record card — reuses teacher-side CSS */}
+      {/* Class record card */}
       {!loading && (
         <div className="cr-card">
           {/* Info bar */}
@@ -295,7 +560,7 @@ function ClassRecordView({ card, onBack }) {
             </div>
           </div>
 
-          {/* Assessment table — same as teacher side, no actions column */}
+          {/* Assessment table */}
           <div className="cr-table-wrapper">
             <table className="cr-table">
               <thead>
@@ -314,15 +579,15 @@ function ClassRecordView({ card, onBack }) {
                 </tr>
                 <tr>
                   <th className="cr-th cr-th--sub cr-th--group1">Task 1</th>
-                  <th className="cr-th cr-th--sub cr-th--group1">Task 2L</th>
-                  <th className="cr-th cr-th--sub cr-th--group1">Task 2H</th>
-                  <th className="cr-th cr-th--sub cr-th--group1">Total</th>
+                  <th className="cr-th cr-th--sub cr-th--group1">Task 2L Words</th>
+                  <th className="cr-th cr-th--sub cr-th--group1">Task 2H Sent.</th>
+                  <th className="cr-th cr-th--sub cr-th--group1">Total Score</th>
                   <th className="cr-th cr-th--sub cr-th--group1">Part 1 Level</th>
                   <th className="cr-th cr-th--sub cr-th--group2">Story #</th>
                   <th className="cr-th cr-th--sub cr-th--group2">Total Words</th>
                   <th className="cr-th cr-th--sub cr-th--group2">Miscues</th>
                   <th className="cr-th cr-th--sub cr-th--group2">Words Read</th>
-                  <th className="cr-th cr-th--sub cr-th--group2">Time</th>
+                  <th className="cr-th cr-th--sub cr-th--group2">Total Time</th>
                   <th className="cr-th cr-th--sub cr-th--group2">WPM</th>
                   <th className="cr-th cr-th--sub cr-th--group2">% Correct</th>
                   <th className="cr-th cr-th--sub cr-th--group2">Correct Ans.</th>
@@ -352,9 +617,13 @@ function ClassRecordView({ card, onBack }) {
                       <td className="cr-td cr-td--center">{idx + 1}</td>
                       <td className="cr-td">{s.lrn ?? "—"}</td>
                       <td className="cr-td">
-                        <span style={{ color: nameColor, fontWeight: 600 }}>
+                        <button
+                          className="cr-student-link"
+                          style={{ color: nameColor }}
+                          onClick={() => setSelectedSessionId(s.student_id)}
+                        >
                           {s.last_name}, {s.first_name}
-                        </span>
+                        </button>
                       </td>
                       <td className="cr-td cr-td--cap">{s.sex ?? "—"}</td>
                       <td className="cr-td">{s.session_date ? formatDate(s.session_date) : "—"}</td>
@@ -396,6 +665,7 @@ function ClassRecordView({ card, onBack }) {
         sessionId={selectedSessionId}
         onClose={() => setSelectedSessionId(null)}
       />
+      <Toast toasts={toasts} onRemove={removeToast} />
     </div>
   );
 }
@@ -533,9 +803,9 @@ export default function AdminStudentsPage() {
             )}
 
             {loading && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginTop: 4 }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(4, minmax(0, 1fr))", gap: 16, marginTop: 4 }}>
                 {[1, 2, 3, 4].map(i => (
-                  <div key={i} className="sk-card" style={{ width: 280, height: 140, borderRadius: 14 }} />
+                  <div key={i} className="sk-card" style={{ width: "100%", height: 140, borderRadius: 14 }} />
                 ))}
               </div>
             )}
@@ -576,8 +846,8 @@ export default function AdminStudentsPage() {
                       <div style={{ flex: 1, height: 1, background: "#e8ecf4" }} />
                     </div>
 
-                    {/* Card grid */}
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
+                    {/* Card grid — max 4 cards per row */}
+                    <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(4, minmax(0, 1fr))", gap: 16 }}>
                       {grouped[year].map(card => {
                         const bg   = GRADE_BG[card.grade_level]   ?? "#f0f6ff";
                         const text = GRADE_TEXT[card.grade_level]  ?? "#2c7fc1";
@@ -590,7 +860,7 @@ export default function AdminStudentsPage() {
                               background: "#fff", border: "1.5px solid #e8ecf4",
                               borderRadius: 14, boxShadow: "0 2px 12px rgba(44,62,107,.06)",
                               padding: isMobile ? "16px" : "20px 24px",
-                              width: isMobile ? "100%" : 280,
+                              width: "100%",
                               fontFamily: "Poppins, sans-serif",
                               display: "flex", flexDirection: "column", gap: 0,
                               boxSizing: "border-box",
