@@ -1,30 +1,40 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 
-/* moving blobs */
+/* blob and wave */
 @keyframes authBlobFloat {
   0%   {
     background-position:
       left -50px top 30px,
-      right -30px top 90px,
+      right -20px top 90px,
       left -70px bottom -60px,
-      right -20px bottom 20px;
+      right -20px bottom 20px,
+      62% 34%,
+      18% 58%,
+      center 40%;
   }
   50%  {
     background-position:
       left -30px top 55px,
       right -55px top 60px,
       left -95px bottom -35px,
-      right -45px bottom 45px;
+      right -45px bottom 45px,
+      58% 40%,
+      22% 52%,
+      center 44%;
   }
   100% {
     background-position:
       left -50px top 30px,
       right -30px top 90px,
       left -70px bottom -60px,
-      right -20px bottom 20px;
+      right -20px bottom 20px,
+      62% 34%,
+      18% 58%,
+      center 40%;
   }
 }
 
+/* Full-screen background*/
 .auth-bg {
   min-height: 100vh;
   display: flex;
@@ -33,21 +43,23 @@
   position: relative;
   overflow: hidden;
   background-color: #f7f9fc;
-  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat;
+  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat;
   background-image:
-    url("../../assets/Heavy_Waves_1.png"),
+    url("../../assets/HeavyWaves_1.png"),
     url("../../assets/Blob_6.png"),
     url("../../assets/Blob_15.png"),
-    url("../../assets/Heavy_Waves_2.png");
+    url("../../assets/HeavyWaves_2.png"),
+    url("../../assets/Blob_15.png");
   background-size:
-    280px auto,
-    210px auto,
-    300px auto,
-    250px auto;
+    390px auto,
+    290px auto,
+    420px auto,
+    350px auto,
+    180px auto;
   animation: authBlobFloat 26s ease-in-out infinite;
 }
 
-/* Card wrapper — centers the card in remaining space */
+/* Card wrapper  */
 .auth-card-wrap {
   flex: 1;
   position: relative;
@@ -178,7 +190,7 @@
 
 .auth-field-float .auth-input:focus,
 .auth-field-float .auth-input:not(:placeholder-shown) {
-  padding: 16px 12px 6px;
+  padding: 16px 12px 6px; 
 }
 
 /* For password toggle button */
@@ -449,11 +461,11 @@
   }
 }
 
-/* Mobile View*/
+/* Mobile View  */
 @media (max-width: 600px) {
   .auth-card-wrap {
     padding: 12px 10px;
-    align-items: center; 
+    align-items: center;
   }
   
   .auth-card, .auth-card.auth-card--login {
@@ -480,7 +492,7 @@
   }
 
   .auth-form__row {
-    grid-template-columns: 1fr 1fr; 
+    grid-template-columns: 1fr 1fr;
     gap: 8px;
   }
 

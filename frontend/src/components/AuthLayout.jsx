@@ -5,15 +5,6 @@ export default function AuthLayout({ children, page }) {
   return (
     <div className="auth-bg">
 
-      {/* Aurora background */}
-      <div className="auth-aurora">
-        <div className="auth-aurora__band auth-aurora__band--1" />
-        <div className="auth-aurora__band auth-aurora__band--2" />
-        <div className="auth-aurora__band auth-aurora__band--3" />
-        <div className="auth-aurora__band auth-aurora__band--4" />
-        <div className="auth-aurora__band auth-aurora__band--5" />
-      </div>
-
       <PublicNav page={page} />
 
       {/* Card */}
