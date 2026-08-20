@@ -80,8 +80,9 @@ export default function PassagePage() {
 
     for (const item of parsedItems) {
       const { parsedData } = item;
+      const itemType = item.assessment_type || parsedData?.assessment_type || (typeof type === "number" ? type : 1);
       try {
-        if (type === 1) {
+        if (itemType === 1) {
           // Assessment 1
           const g1fil = (parsedData.language || "filipino") === "filipino" &&
                         (parsedData.grade_level || "grade_1") === "grade_1";
@@ -105,9 +106,12 @@ export default function PassagePage() {
           if (item.file) await passagesApi.uploadFile(passage.id, item.file).catch(() => {});
         } else {
           // Assessment 2
+          const sNum = parsedData.story_number ? parseInt(parsedData.story_number, 10) : 1;
+          const pTitle = (parsedData.title || "").trim();
+          const fullTitle = pTitle.match(/^Story\s*\d+:/i) ? pTitle : (pTitle ? `Story ${sNum}: ${pTitle}` : `Story ${sNum}`);
           const passage = await passagesApi.create({
-            title:           (parsedData.title || "").trim() || "Untitled",
-            story_number:    parsedData.story_number ? parseInt(parsedData.story_number, 10) : 1,
+            title:           fullTitle,
+            story_number:    sNum,
             content:         (parsedData.content || "").trim(),
             language:        parsedData.language || "filipino",
             grade_level:     parsedData.grade_level || "grade_2",

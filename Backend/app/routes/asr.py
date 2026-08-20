@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.db import get_db
-from app.models import Teacher, ReadingResult, Language, Question
+from app.models import Teacher, ReadingResult, Language, Question, UserRole
 from app.services.asr_service import transcribe_audio, SUPPORTED_EXTENSIONS
 from app.services.storage_service import upload_audio, get_presigned_url
 from app.services.session_service import get_session_by_id
@@ -16,6 +16,12 @@ from app.dependencies import get_current_teacher
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/sessions", tags=["ASR"])
+
+def _is_admin(teacher: Teacher) -> bool:
+    if not teacher or not hasattr(teacher, "role"):
+        return False
+    r = teacher.role
+    return r == UserRole.admin or str(r).upper() in ("ADMIN", "USERROLE.ADMIN")
 
 MAX_AUDIO_SIZE_BYTES = 25 * 1024 * 1024
 
@@ -123,7 +129,11 @@ async def get_session_audio(
     db: AsyncSession = Depends(get_db),
     current_teacher: Teacher = Depends(get_current_teacher),
 ):
-    # 1. Verify session ownership
+    if _is_admin(current_teacher):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only teachers can view individual student assessment records."
+        )
     await get_session_by_id(db, session_id, current_teacher.id)
 
     # 2. Fetch ReadingResult; 404 if no row or audio not stored

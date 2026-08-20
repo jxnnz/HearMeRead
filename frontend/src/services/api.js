@@ -268,19 +268,22 @@ export const passagesApi = {
     return res.data;
   },
 
-  downloadA1Template: async (grade, language) => {
+  downloadA1Template: async (grade, language, format = "txt") => {
     const res = await api.get("/passages/template/a1", {
-      params:       { grade, language },
+      params:       { grade, language, file_format: format },
       responseType: "blob",
     });
-    _downloadBlob(res.data, `a1_template_${grade}_${language}.txt`);
+    const ext = format === "docx" ? "docx" : "txt";
+    _downloadBlob(res.data, `hearmeread_template_${grade}_${language}.${ext}`);
   },
 
-   downloadA2Template: async () => {
+  downloadA2Template: async (format = "txt") => {
     const res = await api.get("/passages/template/a2", {
+      params:       { file_format: format },
       responseType: "blob",
     });
-    _downloadBlob(res.data, "a2_template.txt");
+    const ext = format === "docx" ? "docx" : "txt";
+    _downloadBlob(res.data, `hearmeread_template_grade_2_filipino.${ext}`);
   },
 
   uploadCombined: async (formData) => {

@@ -8,7 +8,6 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import Layout from "../components/Layout";
 import { adminApi, studentsApi } from "../services/api";
-import StudentInfoModal from "../modals/StudentInfoModal";
 import Toast from "../modals/Toast";
 import useToast from "../hooks/Usetoast";
 import { useWindowWidth } from "../hooks/useWindowWidth";
@@ -194,7 +193,6 @@ function ClassRecordView({ card, onBack }) {
   const [schoolYear, setSchoolYear] = useState(card.school_year || currentSchoolYear());
   const [period, setPeriod] = useState("beginning");
   const [language, setLanguage] = useState("filipino");
-  const [selectedSessionId, setSelectedSessionId] = useState(null);
   const [exportingExcel, setExportingExcel] = useState(false);
 
   const { toasts, removeToast, showSaveSuccess, showError } = useToast();
@@ -617,13 +615,9 @@ function ClassRecordView({ card, onBack }) {
                       <td className="cr-td cr-td--center">{idx + 1}</td>
                       <td className="cr-td">{s.lrn ?? "—"}</td>
                       <td className="cr-td">
-                        <button
-                          className="cr-student-link"
-                          style={{ color: nameColor }}
-                          onClick={() => setSelectedSessionId(s.student_id)}
-                        >
+                        <span style={{ color: nameColor, fontWeight: 600 }}>
                           {s.last_name}, {s.first_name}
-                        </button>
+                        </span>
                       </td>
                       <td className="cr-td cr-td--cap">{s.sex ?? "—"}</td>
                       <td className="cr-td">{s.session_date ? formatDate(s.session_date) : "—"}</td>
@@ -661,10 +655,6 @@ function ClassRecordView({ card, onBack }) {
         </div>
       )}
 
-      <StudentInfoModal
-        sessionId={selectedSessionId}
-        onClose={() => setSelectedSessionId(null)}
-      />
       <Toast toasts={toasts} onRemove={removeToast} />
     </div>
   );

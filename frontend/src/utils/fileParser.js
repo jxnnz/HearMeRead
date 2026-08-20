@@ -20,32 +20,59 @@ export async function parseFile(file) {
   }
 }
 
-export function parseDocument(rawText, type, eng3) {
-  const text = (rawText || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-  const result = {};
+export function parseDocument(rawText, forceType = null, eng3 = false) {
+  let fullText = (rawText || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+
+  // Strip sample header section if combined template marker is present
+  const fillableMarker = /FILL OUT YOUR CONTENT BELOW|ISULAT ANG NILALAMAN DITO/i;
+  let text = fullText;
+  if (fillableMarker.test(fullText)) {
+    const parts = fullText.split(fillableMarker);
+    text = parts[parts.length - 1];
+  }
 
   // Extract Language & Grade Level metadata
-  const langMatch = text.match(/Language[\s:-]+(filipino|english)/i);
+  let language = "filipino";
+  const langMatch = text.match(/Language[\s:-]+(filipino|english)/i) || fullText.match(/Language[\s:-]+(filipino|english)/i);
   if (langMatch) {
-    result.language = langMatch[1].toLowerCase();
+    language = langMatch[1].toLowerCase();
   }
 
+  let grade_level = "grade_1";
   const gradeMatch =
     text.match(/Grade\s*Level[\s:-]+(?:grade[\s:-]*)?([123])/i) ||
-    text.match(/Grade[\s:-]+(?:grade[\s:-]*)?([123])/i);
+    text.match(/Grade[\s:-]+(?:grade[\s:-]*)?([123])/i) ||
+    fullText.match(/Grade[\s:-]+(?:grade[\s:-]*)?([123])/i);
   if (gradeMatch) {
-    result.grade_level = `grade_${gradeMatch[1]}`;
+    grade_level = `grade_${gradeMatch[1]}`;
   }
 
-  if (type === 1) {
-    const task1Match = text.match(/Task 1[\s:-]+([\s\S]*?)(?:Task 2|$)/i);
-    if (task1Match) result.task1 = task1Match[1].trim();
+  const results = [];
 
-    // Extract raw Task 2 block (everything after "Task 2:")
-    const task2Block = text.match(/Task 2[\s:-]+([\s\S]*?)(?:Task 2\s*Sentences[\s:-]|$)/i);
+  // Helper to check if string contains meaningful non-sample user text
+  const isUserText = (str) => {
+    if (!str || !str.trim()) return false;
+    const clean = str.trim().toLowerCase();
+    if (clean.includes("isulat dito") || clean.includes("sample title") || clean.includes("write the full story")) {
+      return false;
+    }
+    return true;
+  };
+
+  // ── Parse Assessment 1 (if not forced to A2 only) ───────────────────
+  if (forceType !== 2) {
+    const a1Obj = { assessment_type: 1, language, grade_level };
+    let hasA1Content = false;
+
+    const task1Match = text.match(/Task 1[\s:-]+([\s\S]*?)(?:Task 2|FILLABLE ASSESSMENT 2|--- ASSESSMENT 2|$)/i);
+    if (task1Match && isUserText(task1Match[1])) {
+      a1Obj.task1 = task1Match[1].trim();
+      hasA1Content = true;
+    }
+
+    const task2Block = text.match(/Task 2[\s:-]+([\s\S]*?)(?:Task 2\s*Sentences|FILLABLE ASSESSMENT 2|--- ASSESSMENT 2|$)/i);
     const task2Raw = task2Block ? task2Block[1].trim() : "";
 
-    // Detect W:/R: rhyme pair format
     if (task2Raw && /^W:/im.test(task2Raw)) {
       const pairs = [];
       const lines = task2Raw.split("\n").map((l) => l.trim()).filter(Boolean);
@@ -61,59 +88,110 @@ export function parseDocument(rawText, type, eng3) {
           current.answer = ans === "yes" || ans === "oo" ? "Oo" : "Hindi";
         }
       }
-      result.task2Rhymes = pairs;
+      if (pairs.length > 0) {
+        a1Obj.task2Rhymes = pairs;
+        hasA1Content = true;
+      }
     } else {
-      const task2WordsMatch = text.match(/Task 2\s*Words[\s:-]+([\s\S]*?)(?:Task 2\s*Sentences|$)/i);
-      if (task2WordsMatch) {
-        result.task2Words = task2WordsMatch[1].trim();
-      } else if (task2Raw) {
-        result.task2Words = task2Raw;
+      const task2WordsMatch = text.match(/Task 2\s*Words[\s:-]+([\s\S]*?)(?:Task 2\s*Sentences|FILLABLE ASSESSMENT 2|--- ASSESSMENT 2|$)/i);
+      if (task2WordsMatch && isUserText(task2WordsMatch[1])) {
+        a1Obj.task2Words = task2WordsMatch[1].trim();
+        hasA1Content = true;
+      } else if (task2Raw && isUserText(task2Raw) && !task2Raw.includes("FILLABLE ASSESSMENT")) {
+        a1Obj.task2Words = task2Raw;
+        hasA1Content = true;
       }
     }
 
-    const task2SentencesMatch = text.match(/Task 2\s*Sentences[\s:-]+([\s\S]*?)$/i);
-    if (task2SentencesMatch) result.task2Sentences = task2SentencesMatch[1].trim();
-
-    // Fallback
-    if (!task1Match && !result.task2Words && !result.task2Rhymes && !result.task2Sentences) {
-      result.task1 = text.trim();
+    const task2SentencesMatch = text.match(/Task 2\s*Sentences[\s:-]+([\s\S]*?)(?:FILLABLE ASSESSMENT 2|--- ASSESSMENT 2|$)/i);
+    if (task2SentencesMatch && isUserText(task2SentencesMatch[1])) {
+      a1Obj.task2Sentences = task2SentencesMatch[1].trim();
+      hasA1Content = true;
     }
-  } else {
-    // ── Assessment 2 ──────────────────────────────────────────────────────
 
-    // Story Number: extract before Title so the template order doesn't matter
-    const storyNumMatch = text.match(/Story\s*(?:Number|No\.?)[\s:-]+(\d+)/i);
-    if (storyNumMatch) result.story_number = storyNumMatch[1];
+    if (hasA1Content) {
+      results.push(a1Obj);
+    }
+  }
+
+  // ── Parse Assessment 2 (if not forced to A1 only) ───────────────────
+  if (forceType !== 1) {
+    const a2Obj = { assessment_type: 2, language, grade_level };
+    let hasA2Content = false;
+
+    // Extract story_number strictly from fillable section (text)
+    let detectedStoryNum = null;
+    const sNumMatch =
+      text.match(/Story\s*(?:Number|No\.?|#)?[\s:-]*\n*\s*(\d+)/i) ||
+      text.match(/Kuwento\s*(?:Number|No\.?|#)?[\s:-]*\n*\s*(\d+)/i);
+
+    if (sNumMatch && sNumMatch[1]) {
+      detectedStoryNum = sNumMatch[1];
+    }
 
     const titleMatch = text.match(/Title[\s:-]+([^\n]+)/i);
-    if (titleMatch) result.title = titleMatch[1].trim();
+    if (titleMatch && isUserText(titleMatch[1])) {
+      a2Obj.title = titleMatch[1].trim();
+      hasA2Content = true;
+      if (!detectedStoryNum) {
+        const titleNumMatch = titleMatch[1].match(/^Story\s*(\d+)/i);
+        if (titleNumMatch) detectedStoryNum = titleNumMatch[1];
+      }
+    }
+
+    a2Obj.story_number = detectedStoryNum || "1";
 
     const contentMatch = text.match(/Content[\s:-]+([\s\S]*?)(?:Questions[\s:-]|$)/i);
-    if (contentMatch) {
-      result.content = contentMatch[1].trim();
-    } else {
-      result.content = text
-        .replace(/Story\s*(?:Number|No\.?)[\s:-]+\d+[^\n]*/gi, "")
-        .replace(/Title[\s:-]+.*?(\n|$)/i, "")
-        .trim();
+    if (contentMatch && isUserText(contentMatch[1])) {
+      a2Obj.content = contentMatch[1].trim();
+      hasA2Content = true;
     }
 
     const questionsMatch = text.match(/Questions[\s:-]+([\s\S]*)$/i);
     if (questionsMatch) {
       const qText = questionsMatch[1].trim();
       const qBlocks = qText.split(/Q\s*[\.:-]/i).filter(Boolean);
-      result.questions = [];
-      qBlocks.forEach(block => {
+      a2Obj.questions = [];
+      qBlocks.forEach((block) => {
         const parts = block.split(/A\s*[\.:-]/i);
-        if (parts.length > 0) {
-          result.questions.push({
+        if (parts.length > 0 && isUserText(parts[0])) {
+          a2Obj.questions.push({
             id: crypto.randomUUID(),
-            question: parts[0].trim().replace(/^\d+[\.\)]\s*/, ''),
-            answer: parts[1] ? parts[1].trim() : ""
+            question: parts[0].trim().replace(/^\d+[\.\)]\s*/, ""),
+            answer: parts[1] ? parts[1].trim() : "",
           });
         }
       });
+      if (a2Obj.questions.length > 0) {
+        hasA2Content = true;
+      }
+    }
+
+    if (hasA2Content) {
+      results.push(a2Obj);
     }
   }
-  return result;
-}
+
+  // Fallback: if nothing parsed but forceType was specified or raw text exists, default to A1/A2 fallback
+  if (results.length === 0) {
+    const defaultType = forceType || 1;
+    if (defaultType === 1) {
+      results.push({
+        assessment_type: 1,
+        language,
+        grade_level,
+        task1: text.trim(),
+      });
+    } else {
+      results.push({
+        assessment_type: 2,
+        language,
+        grade_level,
+        title: "Untitled Story",
+        content: text.trim(),
+      });
+    }
+  }
+
+  return results;
+}

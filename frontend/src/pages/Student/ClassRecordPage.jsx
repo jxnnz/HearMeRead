@@ -767,7 +767,6 @@ export default function ClassRecordPage() {
         saving={editStudentSaving}
         error={editStudentError}
       />
-
       <Toast toasts={toasts} onRemove={removeToast} />
     </Layout>
   );

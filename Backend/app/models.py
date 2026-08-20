@@ -358,7 +358,7 @@ class ActivityLog(Base):
     log_metadata = Column("metadata", JSONB, nullable=True, server_default="{}")
     created_at  = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
-    teacher = relationship("Teacher", foreign_keys=[teacher_id])
+    teacher = relationship("Teacher", foreign_keys=[teacher_id], overlaps="activity_logs")
 
 
 class TeacherAssignment(Base):

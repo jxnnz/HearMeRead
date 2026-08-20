@@ -16,7 +16,9 @@ from app.models import (
     Sex,
     SessionObservation,
     Student,
+    StudentEnrollment,
     Teacher,
+    UserRole,
 )
 from app.schema import (
     BulkStudentUploadResponse,   # NEW
@@ -173,7 +175,7 @@ async def export_crla(
     # Target teacher logic
     target_teacher = current_teacher
     target_teacher_id = current_teacher.id
-    if teacher_id is not None and current_teacher.role == UserRole.admin:
+    if teacher_id is not None and (current_teacher.role == UserRole.admin or str(current_teacher.role).upper() in ("ADMIN", "USERROLE.ADMIN")):
         t_res = await db.execute(
             select(Teacher).where(
                 Teacher.id == teacher_id,

@@ -90,7 +90,7 @@ async def check_duplicate(
 # CRUD
 async def get_sessions(
     db: AsyncSession,
-    teacher_id: int,
+    teacher_id: Optional[int],
     page: int,
     page_size: int,
     student_id: Optional[int],
@@ -101,7 +101,9 @@ async def get_sessions(
     section: Optional[str] = None,
     include_archived: bool = False,
 ) -> Tuple[int, List[AssessmentSession]]:
-    filters = [AssessmentSession.teacher_id == teacher_id]
+    filters = []
+    if teacher_id is not None:
+        filters.append(AssessmentSession.teacher_id == teacher_id)
 
     if not include_archived:
         filters.append(AssessmentSession.is_archived == False)
@@ -152,21 +154,21 @@ async def get_sessions(
 async def get_session_by_id(
     db: AsyncSession,
     session_id: int,
-    teacher_id: int,
+    teacher_id: Optional[int] = None,
 ) -> AssessmentSession:
-    result = await db.execute(
-        select(AssessmentSession)
-        .options(
-            selectinload(AssessmentSession.reading_result),
-            selectinload(AssessmentSession.observation),
-            selectinload(AssessmentSession.passage),
-        )
-        .where(
-            AssessmentSession.id == session_id,
-            AssessmentSession.teacher_id == teacher_id,
-            AssessmentSession.is_archived == False,
-        )
+    query = select(AssessmentSession).options(
+        selectinload(AssessmentSession.reading_result),
+        selectinload(AssessmentSession.observation),
+        selectinload(AssessmentSession.passage),
+    ).where(
+        AssessmentSession.id == session_id,
+        AssessmentSession.is_archived == False,
     )
+
+    if teacher_id is not None:
+        query = query.where(AssessmentSession.teacher_id == teacher_id)
+
+    result = await db.execute(query)
     session = result.scalar_one_or_none()
     if not session:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")

@@ -2,27 +2,34 @@ import { useState, useRef } from "react";
 import { Upload, FileText, X, ChevronDown, ChevronUp, Download } from "lucide-react";
 import { parseFile, parseDocument } from "../utils/fileParser";
 import { useWindowWidth } from "../hooks/useWindowWidth";
-import { passagesApi } from "../services/api";
+import { passagesApi, studentsApi } from "../services/api";
+
+const ALL_TEMPLATE_OPTIONS = [
+  { id: "a1_g1_fil", label: "Grade 1 — Filipino (Combined A1 & A2)", type: "Combined Grade Template", fileType: ".txt" },
+  { id: "a1_g2_fil", label: "Grade 2 — Filipino (Combined A1 & A2)", type: "Combined Grade Template", fileType: ".txt" },
+  { id: "a1_g3_fil", label: "Grade 3 — Filipino (Combined A1 & A2)", type: "Combined Grade Template", fileType: ".txt" },
+  { id: "a1_g3_eng", label: "Grade 3 — English (Combined A1 & A2)",  type: "Combined Grade Template", fileType: ".txt" },
+];
 
 export default function UploadModal({
   onClose,
   onUpload,
   onBulkUpload,
-  defaultType  = 2,
   eng3         = false,
-  teacherGrade = null,   // NEW — pass teacher's grade_level from authApi.me()
+  teacherGrade = null,   // pass teacher's grade_level from authApi.me()
 }) {
   const fileInputRef  = useRef(null);
   const [loading, setLoading]           = useState(false);
-  const [selectedType, setSelectedType] = useState(defaultType);
   const [guideOpen, setGuideOpen]       = useState(false);
 
-  // Template download state
-  const [downloading, setDownloading]         = useState(false);
-  // Admin picker: shown when admin clicks Download Template on A1
-  const [showA1Picker, setShowA1Picker]       = useState(false);
-  const [pickerGrade, setPickerGrade]         = useState("grade_1");
-  const [pickerLanguage, setPickerLanguage]   = useState("filipino");
+  // Template download & selection modal state (Admin role multi-select)
+  const [selectedFormat, setSelectedFormat]           = useState("docx");
+  const [downloading, setDownloading]                 = useState(false);
+  const [downloadProgress, setDownloadProgress]       = useState("");
+  const [showTemplateModal, setShowTemplateModal]     = useState(false);
+  const [selectedTemplateIds, setSelectedTemplateIds] = useState([
+    "a1_g1_fil", "a1_g2_fil", "a1_g3_fil", "a1_g3_eng"
+  ]);
 
   // Drag & drop state
   const [isDragging, setIsDragging]     = useState(false);
@@ -48,7 +55,7 @@ export default function UploadModal({
     return ACCEPTED_EXTENSIONS.some((ext) => name.endsWith(ext));
   }
 
-  // ── Stage files — adds to the preview list instead of uploading immediately ──
+  // ── Stage files — adds to the preview list ──────────────────────────
   function stageFiles(fileList) {
     if (!fileList || fileList.length === 0) return;
     setStageError(null);
@@ -98,8 +105,6 @@ export default function UploadModal({
   }
 
   function handleDragOver(e) {
-    // Required: without preventDefault here, onDrop never fires —
-    // the browser's default behavior is to navigate to the dropped file.
     e.preventDefault();
     e.stopPropagation();
   }
@@ -121,94 +126,108 @@ export default function UploadModal({
     stageFiles(e.dataTransfer?.files);
   }
 
-  // ── Submit handler — parses staged files and hands off to parent ────────
+  // ── Submit handler — parses staged files dynamically ─────────────────────
   const handleUploadStaged = async () => {
     if (stagedFiles.length === 0) return;
     setLoading(true);
     try {
-      const files = stagedFiles;
+      const allExtractedItems = [];
 
-      if (files.length === 1) {
-        // Single file → parse and send to form for editing
-        const rawText    = await parseFile(files[0]);
-        const parsedData = parseDocument(rawText, selectedType, eng3);
-        onUpload(selectedType, parsedData, files[0].name, files[0]);
-        onClose();
-      } else {
-        // Bulk (2+ files) → parse all, then let parent save directly
-        const parsedItems = [];
-        for (const file of files) {
-          const rawText    = await parseFile(file);
-          const parsedData = parseDocument(rawText, selectedType, eng3);
-          parsedItems.push({ parsedData, fileName: file.name, file });
-        }
-        onClose();
-        if (onBulkUpload) {
-          onBulkUpload(selectedType, parsedItems);
+      for (const file of stagedFiles) {
+        const rawText = await parseFile(file);
+        const parsedPassages = parseDocument(rawText);
+        for (const pData of parsedPassages) {
+          allExtractedItems.push({
+            assessment_type: pData.assessment_type,
+            parsedData: pData,
+            fileName: file.name,
+            file,
+          });
         }
       }
+
+      if (allExtractedItems.length === 0) {
+        alert("No valid passage content was found in the uploaded file(s). Please check the template format.");
+        return;
+      }
+
+      onClose();
+
+      if (allExtractedItems.length === 1 && onUpload) {
+        const item = allExtractedItems[0];
+        onUpload(item.assessment_type, item.parsedData, item.fileName, item.file);
+      } else if (onBulkUpload) {
+        onBulkUpload(allExtractedItems);
+      } else if (onUpload) {
+        const item = allExtractedItems[0];
+        onUpload(item.assessment_type, item.parsedData, item.fileName, item.file);
+      }
     } catch (err) {
-      alert("Failed to read file. Make sure it matches the format shown below.");
+      alert("Failed to read file. Make sure it matches the required template format.");
     } finally {
       setLoading(false);
     }
   };
 
   // ── Template download logic ─────────────────────────────────────────────
-  async function doDownloadA1(grade, language) {
-    setDownloading(true);
-    try {
-      await passagesApi.downloadA1Template(grade, language);
-    } catch {
-      alert("Failed to download template. Please try again.");
-    } finally {
-      setDownloading(false);
-      setShowA1Picker(false);
-    }
+  async function doDownloadSingle(templateId, format = selectedFormat) {
+    if (templateId === "a1_g1_fil") await passagesApi.downloadA1Template("grade_1", "filipino", format);
+    else if (templateId === "a1_g2_fil") await passagesApi.downloadA1Template("grade_2", "filipino", format);
+    else if (templateId === "a1_g3_fil") await passagesApi.downloadA1Template("grade_3", "filipino", format);
+    else if (templateId === "a1_g3_eng") await passagesApi.downloadA1Template("grade_3", "english", format);
+    else if (templateId === "student_bulk") await studentsApi.downloadBulkTemplate();
   }
 
-  async function handleDownloadTemplate() {
-    if (selectedType === 2) {
-      // A2: single template, no picker needed
-      setDownloading(true);
-      try {
-        await passagesApi.downloadA2Template();
-      } catch {
-        alert("Failed to download template. Please try again.");
-      } finally {
-        setDownloading(false);
+  function handleDownloadTemplateClick() {
+    if (teacherGrade) {
+      const lang = eng3 ? "english" : "filipino";
+      const gradeKey = teacherGrade;
+      if (gradeKey === "grade_3") {
+        doDownloadSingle(lang === "english" ? "a1_g3_eng" : "a1_g3_fil", selectedFormat);
+      } else if (gradeKey === "grade_2") {
+        doDownloadSingle("a1_g2_fil", selectedFormat);
+      } else {
+        doDownloadSingle("a1_g1_fil", selectedFormat);
       }
       return;
     }
 
-    // A1 — teacher side: use their grade automatically
-    if (teacherGrade) {
-      // Derive language: grade_3 can be english or filipino;
-      // all others are always filipino
-      const language = eng3 ? "english" : "filipino";
-      await doDownloadA1(teacherGrade, language);
-      return;
-    }
+    setShowTemplateModal(true);
+  }
 
-    // A1 — admin side: show picker
-    setShowA1Picker(true);
+  function toggleTemplateSelection(id) {
+    setSelectedTemplateIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  }
+
+  async function handleConfirmDownloadSelected() {
+    if (selectedTemplateIds.length === 0) return;
+    setDownloading(true);
+    try {
+      for (let i = 0; i < selectedTemplateIds.length; i++) {
+        const id = selectedTemplateIds[i];
+        setDownloadProgress(`Downloading ${i + 1} of ${selectedTemplateIds.length}...`);
+        await doDownloadSingle(id, selectedFormat);
+        if (i < selectedTemplateIds.length - 1) {
+          await new Promise((res) => setTimeout(res, 300));
+        }
+      }
+      setShowTemplateModal(false);
+    } catch (err) {
+      alert("Failed to download template file. Please try again.");
+    } finally {
+      setDownloading(false);
+      setDownloadProgress("");
+    }
   }
 
   // ── Derived label for grade format guide ────────────────────────────────
-  // Determine which guide to show based on selectedType + eng3 + teacherGrade
   const effectiveGrade    = teacherGrade || "grade_1";
   const isEnglishGrade3   = eng3 || (effectiveGrade === "grade_3" && !teacherGrade);
   const isGrade1Filipino  = !isEnglishGrade3 && (effectiveGrade === "grade_1" || (!teacherGrade && !eng3));
   const isGrade3Filipino  = !isEnglishGrade3 && effectiveGrade === "grade_3" && !eng3;
   const isGrade2Filipino  = effectiveGrade === "grade_2";
-
-  // ── A1 grade picker options ─────────────────────────────────────────────
-  const A1_PICKER_OPTIONS = [
-    { grade: "grade_1", language: "filipino", label: "Grade 1 — Filipino" },
-    { grade: "grade_2", language: "filipino", label: "Grade 2 — Filipino" },
-    { grade: "grade_3", language: "filipino", label: "Grade 3 — Filipino" },
-    { grade: "grade_3", language: "english",  label: "Grade 3 — English"  },
-  ];
 
   return (
     <div
@@ -237,7 +256,7 @@ export default function UploadModal({
         {/* Header */}
         <div style={{ padding: isMobile ? "14px 16px" : "20px 24px", borderBottom: "1px solid #eaecf8", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f8f9fd" }}>
           <h3 style={{ margin: 0, fontSize: isMobile ? 15 : 18, color: "#1a2340", display: "flex", alignItems: "center", gap: 8 }}>
-            <Upload size={isMobile ? 16 : 20} color="#2c3e6b" /> Upload Document
+            <Upload size={isMobile ? 16 : 20} color="#2c3e6b" /> Upload Passage Document
           </h3>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#666" }}>
             <X size={18} />
@@ -245,18 +264,6 @@ export default function UploadModal({
         </div>
 
         <div className="cr-modal-body" style={{ padding: isMobile ? "14px 16px" : "24px", overflowY: "auto" }}>
-
-          {/* Assessment type selector */}
-          <div style={{ display: "flex", gap: isMobile ? 10 : 16, marginBottom: isMobile ? 14 : 20 }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: isMobile ? 12 : 14, fontWeight: selectedType === 1 ? 700 : 500, color: selectedType === 1 ? "#2c3e6b" : "#666" }}>
-              <input type="radio" className="custom-radio" name="uploadType" checked={selectedType === 1} onChange={() => setSelectedType(1)} />
-              Assessment 1 Format
-            </label>
-            <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: isMobile ? 12 : 14, fontWeight: selectedType === 2 ? 700 : 500, color: selectedType === 2 ? "#2c3e6b" : "#666" }}>
-              <input type="radio" className="custom-radio" name="uploadType" checked={selectedType === 2} onChange={() => setSelectedType(2)} />
-              Assessment 2 Format
-            </label>
-          </div>
 
           {/* Drop zone — multiple files allowed */}
           <div
@@ -393,7 +400,7 @@ export default function UploadModal({
           <div style={{ background: "#f8f9fd", borderRadius: 8, border: "1px solid #eaecf8", padding: isMobile ? "12px 14px" : "16px 20px" }}>
 
             {/* Guide header row — title + Download Template button */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: (!isMobile || guideOpen) ? 0 : 0 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: (!isMobile || guideOpen) ? 16 : 0 }}>
               <button
                 onClick={() => isMobile && setGuideOpen((o) => !o)}
                 style={{ background: "none", border: "none", padding: 0, cursor: isMobile ? "pointer" : "default", textAlign: "left", flex: 1 }}
@@ -406,79 +413,293 @@ export default function UploadModal({
                 </h4>
               </button>
 
-              {/* NEW — Download Template button */}
-              <button
-                onClick={handleDownloadTemplate}
-                disabled={downloading}
-                style={{
-                  display: "flex", alignItems: "center", gap: 6,
-                  background: "#f0f4ff", border: "1px solid #c8d4f5",
-                  borderRadius: 7, padding: "6px 12px",
-                  fontSize: isMobile ? 11 : 12, color: "#2c3e6b",
-                  cursor: downloading ? "not-allowed" : "pointer",
-                  fontWeight: 600, whiteSpace: "nowrap",
-                  flexShrink: 0, marginLeft: 8,
-                  opacity: downloading ? 0.55 : 1,
-                  transition: "background 0.15s ease",
-                }}
-                onMouseEnter={(e) => { if (!downloading) e.currentTarget.style.background = "#dce8ff"; }}
-                onMouseLeave={(e) => { if (!downloading) e.currentTarget.style.background = "#f0f4ff"; }}
-              >
-                <Download size={13} />
-                {downloading ? "Downloading…" : "Download Template"}
-              </button>
+              {/* Format Toggle & Download Template button */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                {teacherGrade && (
+                  <div style={{
+                    display: "flex", alignItems: "center", gap: 2,
+                    background: "#fff", border: "1px solid #c8d4f5", borderRadius: 7, padding: "2px 3px",
+                  }}>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedFormat("docx")}
+                      disabled={downloading}
+                      style={{
+                        border: "none", borderRadius: 5, padding: "3px 8px", fontSize: 11, fontWeight: 700,
+                        background: selectedFormat === "docx" ? "#2c3e6b" : "transparent",
+                        color: selectedFormat === "docx" ? "#fff" : "#555",
+                        cursor: "pointer", transition: "all 0.15s ease",
+                      }}
+                    >
+                      .docx
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedFormat("txt")}
+                      disabled={downloading}
+                      style={{
+                        border: "none", borderRadius: 5, padding: "3px 8px", fontSize: 11, fontWeight: 700,
+                        background: selectedFormat === "txt" ? "#2c3e6b" : "transparent",
+                        color: selectedFormat === "txt" ? "#fff" : "#555",
+                        cursor: "pointer", transition: "all 0.15s ease",
+                      }}
+                    >
+                      .txt
+                    </button>
+                  </div>
+                )}
+
+                <button
+                  onClick={handleDownloadTemplateClick}
+                  disabled={downloading}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 6,
+                    background: "#f0f4ff", border: "1px solid #c8d4f5",
+                    borderRadius: 7, padding: "6px 12px",
+                    fontSize: isMobile ? 11 : 12, color: "#2c3e6b",
+                    cursor: downloading ? "not-allowed" : "pointer",
+                    fontWeight: 600, whiteSpace: "nowrap",
+                    flexShrink: 0,
+                    opacity: downloading ? 0.55 : 1,
+                    transition: "background 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => { if (!downloading) e.currentTarget.style.background = "#dce8ff"; }}
+                  onMouseLeave={(e) => { if (!downloading) e.currentTarget.style.background = "#f0f4ff"; }}
+                >
+                  <Download size={13} />
+                  {downloading ? (downloadProgress || "Downloading…") : (teacherGrade ? `Download .${selectedFormat}` : "Download Templates")}
+                </button>
+              </div>
             </div>
 
-            {/* NEW — A1 grade picker (admin side only, shown after clicking Download Template) */}
-            {showA1Picker && (
-              <div style={{
-                marginTop: 10, background: "#fff", border: "1px solid #c8d4f5",
-                borderRadius: 8, padding: "14px 16px",
-              }}>
-                <p style={{ margin: "0 0 10px", fontSize: 13, color: "#444", fontWeight: 600 }}>
-                  Select which template to download:
-                </p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
-                  {A1_PICKER_OPTIONS.map(({ grade, language, label }) => (
-                    <label
-                      key={`${grade}-${language}`}
-                      style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer", color: pickerGrade === grade && pickerLanguage === language ? "#2c3e6b" : "#555", fontWeight: pickerGrade === grade && pickerLanguage === language ? 600 : 400 }}
+            {/* Template Download Chooser & Confirmation Modal (Admin Role) */}
+            {showTemplateModal && (
+              <div
+                className="cr-modal-overlay"
+                style={{
+                  position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+                  backgroundColor: "rgba(0,0,0,0.55)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  zIndex: 10000, padding: 16,
+                }}
+                onClick={() => !downloading && setShowTemplateModal(false)}
+              >
+                <div
+                  className="cr-modal"
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    background: "#fff", borderRadius: 12, width: "100%",
+                    maxWidth: 520, overflow: "hidden",
+                    boxShadow: "0 12px 36px rgba(0,0,0,0.25)",
+                    display: "flex", flexDirection: "column",
+                  }}
+                >
+                  {/* Modal Header */}
+                  <div style={{
+                    padding: "16px 20px", borderBottom: "1px solid #eaecf8",
+                    display: "flex", justifyContent: "space-between", alignItems: "center",
+                    background: "#f8f9fd",
+                  }}>
+                    <h3 style={{ margin: 0, fontSize: 16, color: "#1a2340", display: "flex", alignItems: "center", gap: 8, fontWeight: 700 }}>
+                      <Download size={18} color="#2c3e6b" /> Select Templates to Download
+                    </h3>
+                    <button
+                      onClick={() => !downloading && setShowTemplateModal(false)}
+                      disabled={downloading}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "#666" }}
                     >
-                      <input
-                        type="radio"
-                        name="a1picker"
-                        checked={pickerGrade === grade && pickerLanguage === language}
-                        onChange={() => { setPickerGrade(grade); setPickerLanguage(language); }}
-                      />
-                      {label}
-                    </label>
-                  ))}
-                </div>
-                <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                  <button
-                    onClick={() => setShowA1Picker(false)}
-                    style={{ padding: "6px 14px", borderRadius: 6, border: "1px solid #c8d0e4", background: "#fff", color: "#555", cursor: "pointer", fontSize: 12 }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => doDownloadA1(pickerGrade, pickerLanguage)}
-                    disabled={downloading}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 6,
-                      padding: "6px 14px", borderRadius: 7,
-                      border: "1px solid #c8d4f5", background: "#f0f4ff",
-                      color: "#2c3e6b", cursor: downloading ? "not-allowed" : "pointer",
-                      fontSize: 12, fontWeight: 600,
-                      opacity: downloading ? 0.55 : 1,
-                      transition: "background 0.15s ease",
-                    }}
-                    onMouseEnter={(e) => { if (!downloading) e.currentTarget.style.background = "#dce8ff"; }}
-                    onMouseLeave={(e) => { if (!downloading) e.currentTarget.style.background = "#f0f4ff"; }}
-                  >
-                    <Download size={13} />
-                    {downloading ? "Downloading…" : "Download"}
-                  </button>
+                      <X size={18} />
+                    </button>
+                  </div>
+
+                  {/* Modal Body */}
+                  <div style={{ padding: "20px", overflowY: "auto", maxHeight: "70vh" }}>
+                    <p style={{ margin: "0 0 14px", fontSize: 13, color: "#555", lineHeight: 1.5 }}>
+                      Select the templates you want to download and choose your preferred file format.
+                    </p>
+
+                    {/* Format Selector Row */}
+                    <div style={{
+                      display: "flex", alignItems: "center", gap: 16,
+                      marginBottom: 14, background: "#f8f9fd", padding: "10px 14px",
+                      borderRadius: 8, border: "1px solid #e2e8f0",
+                    }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: "#1a2340" }}>Download Format:</span>
+                      
+                      {/* docx radio button */}
+                      <label
+                        onClick={() => !downloading && setSelectedFormat("docx")}
+                        style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, fontWeight: selectedFormat === "docx" ? 700 : 500, color: selectedFormat === "docx" ? "#1a2340" : "#555" }}
+                      >
+                        <span style={{
+                          width: 16, height: 16, borderRadius: "50%",
+                          border: `2px solid ${selectedFormat === "docx" ? "#2c3e6b" : "#64748b"}`,
+                          background: "transparent",
+                          display: "inline-flex", alignItems: "center", justifyContent: "center",
+                          flexShrink: 0, transition: "all 0.15s ease",
+                        }}>
+                          {selectedFormat === "docx" && (
+                            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#2c3e6b" }} />
+                          )}
+                        </span>
+                        .docx (Word)
+                      </label>
+
+                      {/* txt radio button */}
+                      <label
+                        onClick={() => !downloading && setSelectedFormat("txt")}
+                        style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, fontWeight: selectedFormat === "txt" ? 700 : 500, color: selectedFormat === "txt" ? "#1a2340" : "#555" }}
+                      >
+                        <span style={{
+                          width: 16, height: 16, borderRadius: "50%",
+                          border: `2px solid ${selectedFormat === "txt" ? "#2c3e6b" : "#64748b"}`,
+                          background: "transparent",
+                          display: "inline-flex", alignItems: "center", justifyContent: "center",
+                          flexShrink: 0, transition: "all 0.15s ease",
+                        }}>
+                          {selectedFormat === "txt" && (
+                            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#2c3e6b" }} />
+                          )}
+                        </span>
+                        .txt (Text)
+                      </label>
+                    </div>
+
+                    {/* Select All Row */}
+                    <div style={{
+                      display: "flex", justifyContent: "space-between", alignItems: "center",
+                      paddingBottom: 10, marginBottom: 12, borderBottom: "1px solid #edf0f8",
+                    }}>
+                      {/* Custom Select All Checkbox */}
+                      <label
+                        onClick={() => {
+                          if (downloading) return;
+                          if (selectedTemplateIds.length === ALL_TEMPLATE_OPTIONS.length) {
+                            setSelectedTemplateIds([]);
+                          } else {
+                            setSelectedTemplateIds(ALL_TEMPLATE_OPTIONS.map((t) => t.id));
+                          }
+                        }}
+                        style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#1a2340" }}
+                      >
+                        <span style={{
+                          width: 16, height: 16, borderRadius: 4,
+                          border: `2px solid ${selectedTemplateIds.length === ALL_TEMPLATE_OPTIONS.length ? "#2c3e6b" : "#64748b"}`,
+                          background: "transparent",
+                          display: "inline-flex", alignItems: "center", justifyContent: "center",
+                          flexShrink: 0, transition: "all 0.15s ease",
+                        }}>
+                          {selectedTemplateIds.length === ALL_TEMPLATE_OPTIONS.length && (
+                            <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                              <path d="M2.5 6L5 8.5L9.5 3.5" stroke="#2c3e6b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          )}
+                        </span>
+                        Select All ({ALL_TEMPLATE_OPTIONS.length})
+                      </label>
+                      <span style={{ fontSize: 12, color: "#7783a0", fontWeight: 500 }}>
+                        {selectedTemplateIds.length} of {ALL_TEMPLATE_OPTIONS.length} selected
+                      </span>
+                    </div>
+
+                    {/* Checkboxes List */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {ALL_TEMPLATE_OPTIONS.map((item) => {
+                        const isChecked = selectedTemplateIds.includes(item.id);
+                        return (
+                          <label
+                            key={item.id}
+                            style={{
+                              display: "flex", alignItems: "center", justifyContent: "space-between",
+                              padding: "10px 14px", borderRadius: 8,
+                              border: `1.5px solid ${isChecked ? "#2c3e6b" : "#e2e8f0"}`,
+                              background: isChecked ? "#f0f4ff" : "#fff",
+                              cursor: downloading ? "not-allowed" : "pointer",
+                              transition: "all 0.15s ease",
+                            }}
+                          >
+                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              {/* Custom Item Checkbox */}
+                              <span
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  if (!downloading) toggleTemplateSelection(item.id);
+                                }}
+                                style={{
+                                  width: 16, height: 16, borderRadius: 4,
+                                  border: `2px solid ${isChecked ? "#2c3e6b" : "#64748b"}`,
+                                  background: "transparent",
+                                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                                  flexShrink: 0, transition: "all 0.15s ease",
+                                }}
+                              >
+                                {isChecked && (
+                                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                                    <path d="M2.5 6L5 8.5L9.5 3.5" stroke="#2c3e6b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                  </svg>
+                                )}
+                              </span>
+                              <div>
+                                <div style={{ fontSize: 13, fontWeight: isChecked ? 600 : 500, color: isChecked ? "#1a2340" : "#444" }}>
+                                  {item.label}
+                                </div>
+                                <div style={{ fontSize: 11, color: "#7783a0" }}>
+                                  Category: {item.type}
+                                </div>
+                              </div>
+                            </div>
+                            <span style={{
+                              fontSize: 11, padding: "2px 8px", borderRadius: 4,
+                              background: selectedFormat === "docx" ? "#dcfce7" : "#e0f2fe",
+                              color: selectedFormat === "docx" ? "#15803d" : "#0369a1",
+                              fontWeight: 600, flexShrink: 0, marginLeft: 8
+                            }}>
+                              .{selectedFormat}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Modal Footer */}
+                  <div style={{
+                    padding: "14px 20px", borderTop: "1px solid #eaecf8",
+                    display: "flex", justifyContent: "flex-end", gap: 10,
+                    background: "#f8f9fd",
+                  }}>
+                    <button
+                      onClick={() => setShowTemplateModal(false)}
+                      disabled={downloading}
+                      style={{
+                        padding: "8px 16px", borderRadius: 7, border: "1px solid #c8d0e4",
+                        background: "#fff", color: "#555", cursor: "pointer", fontSize: 13, fontWeight: 500,
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleConfirmDownloadSelected}
+                      disabled={downloading || selectedTemplateIds.length === 0}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 6,
+                        padding: "8px 18px", borderRadius: 7,
+                        border: "none",
+                        background: selectedTemplateIds.length === 0 ? "#cbd5e1" : "#2c3e6b",
+                        color: "#fff",
+                        cursor: (downloading || selectedTemplateIds.length === 0) ? "not-allowed" : "pointer",
+                        fontSize: 13, fontWeight: 600,
+                        opacity: downloading ? 0.7 : 1,
+                        boxShadow: "0 2px 6px rgba(44,62,107,0.2)",
+                      }}
+                    >
+                      <Download size={14} />
+                      {downloading
+                        ? (downloadProgress || "Downloading...")
+                        : `Confirm & Download (${selectedTemplateIds.length} File${selectedTemplateIds.length > 1 ? "s" : ""})`
+                      }
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -486,10 +707,6 @@ export default function UploadModal({
             {/* Format guide body */}
             {(!isMobile || guideOpen) && (
               <>
-                <p style={{ fontSize: isMobile ? 11 : 12, color: "#666", margin: isMobile ? "8px 0 10px" : "8px 0 16px" }}>
-                  Format your document exactly like the preview below for auto-filling to work.
-                </p>
-
                 <div style={{
                   background: "#fff", border: "1px solid #dde2f0", borderRadius: 6,
                   padding: isMobile ? "10px 14px" : "16px 24px",
@@ -497,107 +714,34 @@ export default function UploadModal({
                   fontFamily: "monospace", fontSize: isMobile ? 11 : 13,
                   color: "#333", lineHeight: 1.6, overflowX: "auto", whiteSpace: "pre-wrap",
                 }}>
-                  {selectedType === 1 ? (
-
-                    // ── A1 Grade 3 English ──────────────────────────────
-                    eng3 ? (
-                      <>
-                        <div style={{ color: "#9333ea", fontWeight: 700 }}>Language:</div>
-                        <div>English</div>
-                        <div style={{ color: "#9333ea", fontWeight: 700, marginTop: 4 }}>Grade:</div>
-                        <div>3</div>
-                        <br />
-                        <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Task 1:</div>
-                        <div>beautiful, environment, community, responsibility, friendship, knowledge, adventure, imagination, celebration, determination</div>
-                        <br />
-                        <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Task 2 Words:</div>
-                        <div>running, jumping, playing, reading, writing, eating, sleeping, helping, listening, learning</div>
-                      </>
-
-                    // ── A1 Grade 2 Filipino ──────────────────────────────
-                    ) : isGrade2Filipino ? (
-                      <>
-                        <div style={{ color: "#9333ea", fontWeight: 700 }}>Language:</div>
-                        <div>Filipino</div>
-                        <div style={{ color: "#9333ea", fontWeight: 700, marginTop: 4 }}>Grade:</div>
-                        <div>2</div>
-                        <br />
-                        <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Task 1:</div>
-                        <div>aso, bata, kuya, isda, damit, bahay, paaralan, mahal, tahimik, maganda</div>
-                        <br />
-                        <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Task 2 Words:</div>
-                        <div>aklat, lapis, mesa, silya, kotse, puno, bundok, ilog, dagat, langit</div>
-                        <br />
-                        <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Task 2 Sentences:</div>
-                        <div>Ang bata ay pumunta sa paaralan. Siya ay nagdala ng kanyang bag. Masaya siya sa klase.</div>
-                      </>
-
-                    // ── A1 Grade 3 Filipino ──────────────────────────────
-                    ) : isGrade3Filipino ? (
-                      <>
-                        <div style={{ color: "#9333ea", fontWeight: 700 }}>Language:</div>
-                        <div>Filipino</div>
-                        <div style={{ color: "#9333ea", fontWeight: 700, marginTop: 4 }}>Grade:</div>
-                        <div>3</div>
-                        <br />
-                        <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Task 1:</div>
-                        <div>magulang, kaibigan, kalikasan, pamayanan, kasipagan, katapatan, pagmamahal, pagiging, katahimikan, responsibilidad</div>
-                        <br />
-                        <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Task 2 Words:</div>
-                        <div>naglalaro, kumakain, nagaaral, tumatakbo, nagtatrabaho, natutulog, nagbabasa, sumusulat, naglalakad, nagtatanong</div>
-                        <br />
-                        <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Task 2 Sentences:</div>
-                        <div>Ang mga bata ay masayang naglalaro sa parke tuwing hapon. Tinutulungan nila ang isa't isa sa oras ng pangangailangan. Ang pagkakaisa ay nagbibigay ng lakas sa bawat miyembro ng pangkat.</div>
-                      </>
-
-                    ) : (
-                      // ── A1 Grade 1 Filipino (default) ────────────────────
-                      <>
-                        <div style={{ color: "#9333ea", fontWeight: 700 }}>Language:</div>
-                        <div>Filipino</div>
-                        <div style={{ color: "#9333ea", fontWeight: 700, marginTop: 4 }}>Grade:</div>
-                        <div>1</div>
-                        <br />
-                        <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Task 1:</div>
-                        <div>b, ng, T, e, p, s, H, G, u, L</div>
-                        <br />
-                        <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Task 2:</div>
-                        <div><span style={{ color: "#d97706", fontWeight: 600 }}>W:</span> sanay, tunay</div>
-                        <div><span style={{ color: "#059669", fontWeight: 600 }}>R:</span> Oo</div>
-                        <div><span style={{ color: "#d97706", fontWeight: 600 }}>W:</span> ulam, anim</div>
-                        <div><span style={{ color: "#059669", fontWeight: 600 }}>R:</span> Hindi</div>
-                        <div><span style={{ color: "#d97706", fontWeight: 600 }}>W:</span> hinog, lamig</div>
-                        <div><span style={{ color: "#059669", fontWeight: 600 }}>R:</span> Hindi</div>
-                        <div style={{ color: "#888", fontSize: 12, marginTop: 2 }}>… (10 pairs total)</div>
-                        <br />
-                        <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Task 2 Sentences:</div>
-                        <div>Ang bata ay masaya. Siya ay mabait. Mahal niya ang kanyang pamilya.</div>
-                      </>
-                    )
-
-                  ) : (
-
-                    // ── A2 (Story Reading & Questions) ───────────────────
-                    <>
-                      <div style={{ color: "#9333ea", fontWeight: 700 }}>Language:</div>
-                      <div>Filipino</div>
-                      <div style={{ color: "#9333ea", fontWeight: 700, marginTop: 4 }}>Grade:</div>
-                      <div>2</div>
-                      <br />
-                      <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Story Number:</div>
-                      <div>1</div>
-                      <br />
-                      <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Title:</div>
-                      <div>Ang Pagong at ang Matsing</div>
-                      <br />
-                      <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Content:</div>
-                      <div>Isulat dito ang buong teksto ng kwento.</div>
-                      <br />
-                      <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Questions:</div>
-                      <div><span style={{ color: "#d97706", fontWeight: 600 }}>Q:</span> Sino ang pangunahing tauhan ng kwento?</div>
-                      <div><span style={{ color: "#059669", fontWeight: 600 }}>A:</span> Ang Pagong at ang Matsing</div>
-                    </>
-                  )}
+                  <div style={{ color: "#9333ea", fontWeight: 700 }}>Language:</div>
+                  <div>Filipino</div>
+                  <div style={{ color: "#9333ea", fontWeight: 700, marginTop: 4 }}>Grade:</div>
+                  <div>2</div>
+                  <br />
+                  <div style={{ color: "#2c5fc1", fontWeight: 700 }}>--- FILLABLE ASSESSMENT 1 (PIST) ---</div>
+                  <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Task 1:</div>
+                  <div>b, ng, T, e, p, s, H, G, u, L</div>
+                  <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Task 2 (Grade 1 Rhyme Pairs):</div>
+                  <div><span style={{ color: "#d97706", fontWeight: 600 }}>W:</span> sanay, tunay</div>
+                  <div><span style={{ color: "#059669", fontWeight: 600 }}>R:</span> Oo</div>
+                  <div><span style={{ color: "#d97706", fontWeight: 600 }}>W:</span> ulam, anim</div>
+                  <div><span style={{ color: "#059669", fontWeight: 600 }}>R:</span> Hindi</div>
+                  <div style={{ color: "#2c5fc1", fontWeight: 700, marginTop: 4 }}>Task 2 Words (Grade 2/3):</div>
+                  <div>aklat, lapis, mesa, silya, kotse, puno</div>
+                  <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Task 2 Sentences:</div>
+                  <div>Ang bata ay pumunta sa paaralan.</div>
+                  <br />
+                  <div style={{ color: "#2c5fc1", fontWeight: 700 }}>--- FILLABLE ASSESSMENT 2 (STORY & QUESTIONS) ---</div>
+                  <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Story Number:</div>
+                  <div>1</div>
+                  <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Title:</div>
+                  <div>Ang Pagong at ang Matsing</div>
+                  <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Content:</div>
+                  <div>Isulat dito ang buong teksto ng kwento.</div>
+                  <div style={{ color: "#2c5fc1", fontWeight: 700 }}>Questions:</div>
+                  <div><span style={{ color: "#d97706", fontWeight: 600 }}>Q:</span> Sino ang pangunahing tauhan?</div>
+                  <div><span style={{ color: "#059669", fontWeight: 600 }}>A:</span> Ang Pagong at ang Matsing</div>
                 </div>
               </>
             )}

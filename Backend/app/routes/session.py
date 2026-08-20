@@ -24,6 +24,13 @@ from app.schemas.session_schemas import Part1ResultOut, WordAlignmentOut
 from app.services import session_service
 
 router = APIRouter(prefix="/sessions", tags=["Sessions"])
+from app.models import Teacher, UserRole, AssessmentPeriod
+
+def _is_admin(teacher: Teacher) -> bool:
+    if not teacher or not hasattr(teacher, "role"):
+        return False
+    r = teacher.role
+    return r == UserRole.admin or str(r).upper() in ("ADMIN", "USERROLE.ADMIN")
 
 
 # List
@@ -41,9 +48,10 @@ async def list_sessions(
     db:               AsyncSession             = Depends(get_db),
     current_teacher:  Teacher                  = Depends(get_current_teacher),
 ):
+    t_id = None if _is_admin(current_teacher) else current_teacher.id
     total, sessions = await session_service.get_sessions(
         db=db,
-        teacher_id=current_teacher.id,
+        teacher_id=t_id,
         page=page,
         page_size=page_size,
         student_id=student_id,
@@ -143,6 +151,11 @@ async def get_session(
     db:              AsyncSession = Depends(get_db),
     current_teacher: Teacher      = Depends(get_current_teacher),
 ):
+    if _is_admin(current_teacher):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only teachers can view individual student assessment records."
+        )
     return await session_service.get_session_by_id(
         db=db, session_id=session_id, teacher_id=current_teacher.id
     )
@@ -452,6 +465,11 @@ async def list_student_sessions(
     db:           AsyncSession               = Depends(get_db),
     current_teacher: Teacher                 = Depends(get_current_teacher),
 ):
+    if _is_admin(current_teacher):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only teachers can view individual student assessment records."
+        )
     total, sessions = await session_service.get_sessions(
         db=db,
         teacher_id=current_teacher.id,

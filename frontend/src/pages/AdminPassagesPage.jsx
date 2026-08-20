@@ -289,9 +289,9 @@ export default function AdminPassagesPage() {
     const total = parsedItems.length;
 
     for (const item of parsedItems) {
-      const { parsedData } = item;
+      const itemType = item.assessment_type || parsedData?.assessment_type || (typeof type === "number" ? type : 1);
       try {
-        if (type === 1) {
+        if (itemType === 1) {
           // Assessment 1
           const g1fil = (parsedData.language || "filipino") === "filipino" &&
                         (parsedData.grade_level || "grade_1") === "grade_1";
@@ -315,8 +315,11 @@ export default function AdminPassagesPage() {
           if (item.file) await adminApi.uploadPassageFile(passage.id, item.file).catch(() => {});
         } else {
           // Assessment 2
+          const sNum = parsedData.story_number || "1";
+          const rawTitle = (parsedData.title || "").trim();
+          const fullTitle = rawTitle.match(/^Story\s*\d+:/i) ? rawTitle : (rawTitle ? `Story ${sNum}: ${rawTitle}` : `Story ${sNum}`);
           const passage = await adminApi.createPassage({
-            title:           parsedData.title ? `Story 1: ${parsedData.title.trim()}` : "Untitled",
+            title:           fullTitle,
             content:         (parsedData.content || "").trim(),
             language:        parsedData.language || "filipino",
             grade_level:     parsedData.grade_level || "grade_2",
@@ -366,8 +369,9 @@ export default function AdminPassagesPage() {
         initForm.task2_sentences = parsedData.task2Sentences || "";
       } else {
         const { num, title } = parseStoryTitle(parsedData.title || "");
-        initForm.story_number = num;
-        initForm.title = title;
+        const extractedNum = parsedData.story_number ? String(parsedData.story_number) : (num || "1");
+        initForm.story_number = extractedNum;
+        initForm.title = title || (parsedData.title || "");
         initForm.content = parsedData.content || "";
       }
     }
