@@ -155,6 +155,7 @@ async def export_crla(
     from sqlalchemy.orm import selectinload
     from app.services.student_service import _decrypt_student
     import pathlib
+    import copy
 
     try:
         grade_enum = GradeLevel(grade_level)
@@ -286,6 +287,13 @@ async def export_crla(
     if grade_num == 3:
         ws_eng = wb.copy_worksheet(ws_mt)
         ws_eng.title = new_eng_name
+        # Copy embedded header and footer logo images from ws_mt
+        if hasattr(ws_mt, "_images") and ws_mt._images:
+            ws_eng._images = [copy.deepcopy(img) for img in ws_mt._images]
+        # Reorder worksheets so English is placed alongside MT and FIL (MT, FIL, ENG, followed by other sheets)
+        wb._sheets.remove(ws_eng)
+        fil_idx = wb._sheets.index(ws_fil)
+        wb._sheets.insert(fil_idx + 1, ws_eng)
 
     def replace_text(val: str) -> str:
         if not val or val.startswith("="):
@@ -599,7 +607,8 @@ async def export_crla(
     wb.save(out)
     out.seek(0)
     
-    filename = f"{period_label}_CRLA_Assessment_Record_Grade{grade_num}_{section}_{school_year}.xlsx".replace(" ", "_")
+    grade_str = grade_enum.value if hasattr(grade_enum, "value") else str(grade_level)
+    filename = f"CRLA_{period_label}_Assessment_Record_{grade_str}_{section}.xlsx".replace(" ", "_")
     return Response(
         content=out.read(),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

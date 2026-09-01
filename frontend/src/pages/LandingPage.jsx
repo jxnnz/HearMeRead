@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { Mic, Sparkles, Languages, SearchCheck, TrendingUp, ClipboardList, Globe } from "lucide-react";
 import HmrLogo    from "../assets/HMR-LOGO.png";
 import BlobBlue   from "../assets/Blob_15.png";
 import BlobPurple from "../assets/Blob_6.png";
@@ -136,9 +137,9 @@ export default function LandingPage() {
           </p>
           <button className="btn-hero" onClick={() => navigate("/signup")}>Get Started</button>
           <div className="hero-badges">
-            <div className="badge"><span className="badge-icon">🎙️</span> Voice-to-Text</div>
-            <div className="badge"><span className="badge-icon">📊</span> Auto Scoring</div>
-            <div className="badge"><span className="badge-icon">🇵🇭</span> Filipino &amp; English</div>
+            <div className="badge"><span className="badge-icon"><Mic size={15} /></span> Voice-to-Text</div>
+            <div className="badge"><span className="badge-icon"><Sparkles size={15} /></span> Auto Scoring</div>
+            <div className="badge"><span className="badge-icon"><Languages size={15} /></span> Filipino &amp; English</div>
           </div>
         </div>
       </section>
@@ -151,13 +152,15 @@ export default function LandingPage() {
 
           <div className="features-grid">
             {[
-              { icon: "🎙️", bg: "#dbeafe", title: "Smart Audio Assessment",    desc: "Record student reading in real time with playback and re-record options. AI speech-to-text transcription powered by Whisper ASR." },
-              { icon: "🔍", bg: "#fef3c7", title: "Automated Error Detection",  desc: "Identifies mispronounced, missing, and extra words using Levenshtein Distance — no manual marking needed." },
-              { icon: "📈", bg: "#dcfce7", title: "Automatic Reading Metrics",  desc: "CWPM, reading time, and miscue count are computed instantly. No more manual tallying after every session." },
-              { icon: "📋", bg: "#fce7f3", title: "Instant Evaluation Reports", desc: "Comprehension results, fluency rating, learner experience score, and teacher remarks computed instantly and displayed in one view." },
-            ].map(({ icon, bg, title, desc }) => (
+              { icon: Mic, iconColor: "#1d4ed8", bg: "#dbeafe", title: "Smart Audio Assessment",    desc: "Record student reading in real time with playback and re-record options. AI speech-to-text transcription powered by Whisper ASR." },
+              { icon: SearchCheck, iconColor: "#d97706", bg: "#fef3c7", title: "Automated Error Detection",  desc: "Identifies mispronounced, missing, and extra words using Levenshtein Distance — no manual marking needed." },
+              { icon: TrendingUp, iconColor: "#15803d", bg: "#dcfce7", title: "Automatic Reading Metrics",  desc: "CWPM, reading time, and miscue count are computed instantly. No more manual tallying after every session." },
+              { icon: ClipboardList, iconColor: "#be185d", bg: "#fce7f3", title: "Instant Evaluation Reports", desc: "Comprehension results, fluency rating, learner experience score, and teacher remarks computed instantly and displayed in one view." },
+            ].map(({ icon: Icon, iconColor, bg, title, desc }) => (
               <div key={title} className="feat-card">
-                <div className="feat-icon" style={{ background: bg }}>{icon}</div>
+                <div className="feat-icon" style={{ background: bg }}>
+                  <Icon size={24} color={iconColor} strokeWidth={2.2} />
+                </div>
                 <h3>{title}</h3>
                 <p>{desc}</p>
               </div>
@@ -212,8 +215,8 @@ export default function LandingPage() {
                 <p>Built with support for both English and Filipino, HearMeRead empowers teachers with a smarter, data-driven approach to monitoring student progress and improving literacy outcomes.</p>
               </div>
               <div className="lang-pills">
-                <span className="pill">🇬🇧 English</span>
-                <span className="pill">🇵🇭 Filipino</span>
+                <span className="pill"><Globe size={14} color="#3d5a8a" /> English</span>
+                <span className="pill"><Globe size={14} color="#3d5a8a" /> Filipino</span>
               </div>
             </div>
 

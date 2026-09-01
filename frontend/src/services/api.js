@@ -431,7 +431,11 @@ export const studentsApi = {
       responseType: "blob",
     });
     const cd = res.headers["content-disposition"] || res.headers["Content-Disposition"];
-    let filename = `CRLA_Assessment_Record_${params.grade_level || 'Grade'}_${params.section || 'Class'}.xlsx`;
+    const periodMap = { beginning: "BoSY", middle: "MoSY", end: "EoSY", BoSY: "BoSY", MoSY: "MoSY", EoSY: "EoSY" };
+    const pLabel = periodMap[params.period] || params.period || "Period";
+    const gLevel = params.grade_level || "grade";
+    const sec = params.section || "Class";
+    let filename = `CRLA_${pLabel}_Assessment_Record_${gLevel}_${sec}.xlsx`.replace(/\s+/g, "_");
     if (cd) {
       const match = cd.match(/filename="?([^"]+)"?/);
       if (match && match[1]) filename = match[1];

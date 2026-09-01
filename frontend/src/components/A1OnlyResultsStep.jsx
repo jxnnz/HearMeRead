@@ -1,4 +1,3 @@
-import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { CheckCircle } from "lucide-react";
@@ -156,44 +155,6 @@ export default function A1OnlyResultsStep({
     doc.save(filename);
   }
 
-  function handleExport() {
-    const wb = XLSX.utils.book_new();
-
-    const summaryRows = [
-      ["HearMeRead — Assessment 1 Report"],
-      [],
-      ["STUDENT INFORMATION"],
-      ["Name",            `${form.last_name}, ${form.first_name}${form.middle_name ? `, ${form.middle_name}` : ""}`],
-      ["Classification",  classification ?? "—"],
-      ["Grade Level",     gradeLabel(form.grade_level)],
-      ["Section",         form.section],
-      ["School Year",     form.school_year],
-      ["Assessment Type", form.assessment_type],
-      ["Language",        form.language === "filipino" ? "Filipino" : "English"],
-      ["Date",            today],
-      [],
-      ["ASSESSMENT 1 RESULTS"],
-      ["Task 1 — Words Read Correctly", task1Correct !== "—" ? `${task1Correct}/10` : "—"],
-      ["Task 2 — Words Read Correctly", task2Correct !== "—" ? `${task2Correct}/10` : "—"],
-      ["Total Part 1 Score",            totalScore   !== "—" ? `${totalScore}/20`   : "—"],
-      ["Total Wrong Words",             totalWrong],
-      ["Classification",                classification ?? "—"],
-      [],
-      ["LEARNER & TEACHER FEEDBACK"],
-      ["Learner Experience",    learnerExp],
-      ["Observation Level",     (obsLevel?.label ?? observationLevel) || "—"],
-      ["Teacher Remarks",       teacherNotes || "No notes added."],
-    ];
-
-    const ws1 = XLSX.utils.aoa_to_sheet(summaryRows);
-    ws1["!cols"] = [{ wch: 32 }, { wch: 44 }];
-    XLSX.utils.book_append_sheet(wb, ws1, "Summary");
-
-    const filename = `${form.last_name}_${form.first_name}_A1_${form.assessment_type}_${form.school_year}`
-      .replace(/\s+/g, "_") + ".xlsx";
-    XLSX.writeFile(wb, filename);
-  }
-
   return (
     <div className="asp-page asp-page--wide">
 
@@ -231,7 +192,6 @@ export default function A1OnlyResultsStep({
           </div>
           <div className="asp-res-header__actions">
             <button className="asp-res-action-btn" onClick={handleSavePDF}>Save as PDF</button>
-            <button className="asp-res-action-btn" onClick={handleExport}>Export XLSX</button>
           </div>
         </div>
       </div>

@@ -1,4 +1,3 @@
-import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { CheckCircle } from "lucide-react";
@@ -202,63 +201,6 @@ export default function ResultsStep({
     doc.save(filename);
   }
 
-  // Excel export
-  function handleExport() {
-    const langLabel = form.language === "filipino" ? "Filipino" : "English";
-    const gradeStr  = String(form.grade_level ?? "").replace("grade_", "Grade ").replace("kindergarten", "Kindergarten");
-
-    const rows = [
-      ["STUDENT ASSESSMENT REPORT"],
-      [],
-      ["Student Name",    `${form.last_name}, ${form.first_name}${form.middle_name ? `, ${form.middle_name}` : ""}`],
-      ["Reading Profile", profile.label],
-      ["Grade Level",     gradeStr],
-      ["Section",         form.section   ?? "—"],
-      ["School Year",     form.school_year ?? "—"],
-      ["Assessment Type", form.assessment_type ?? "—"],
-      ["Language",        langLabel],
-      ["Date",            today],
-      [],
-      ["ASSESSMENT PART 2 — RESULTS"],
-      ["Story",                                    storyNumber],
-      ["Total Reading Miscues",                    totalMiscues],
-      [`Words within ${timeLimitLabel(a2TimeLimit)}`, wordsWithinTime],
-      ["Total Time Used",                          totalTimeUsed],
-      ["Words Per Minute (WPM)",                   wpm],
-      ["Total Correct Answers",                    totalQuestions ? `${correctAnswers}/${totalQuestions}` : "—"],
-      ["Learner Experience",                       learnerExp],
-      ["Observation Level",                        obsLevelDisplay],
-      [],
-      ["ASSESSMENT PART 1 — SUMMARY"],
-      ["Task 1 Correct",     part1?.task1_correct  ?? "—"],
-      ["Task 2 Correct",     part1?.task2_correct  ?? "—"],
-      ["Total Part 1 Score", part1?.total_score    ?? "—"],
-      ["Classification",     part1?.classification ?? "—"],
-    ];
-
-    if (comprehensionQuestions?.length > 0) {
-      rows.push([]);
-      rows.push(["COMPREHENSION QUESTIONS"]);
-      rows.push(["#", "Question", "Teacher's Mark"]);
-      comprehensionQuestions.forEach((q, idx) => {
-        rows.push([idx + 1, q.text, answers[q.id] ?? "—"]);
-      });
-    }
-
-    rows.push([]);
-    rows.push(["TEACHER NOTES"]);
-    rows.push(["Remarks", teacherNotes || "No notes added."]);
-
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(rows);
-    ws["!cols"] = [{ wch: 36 }, { wch: 46 }, { wch: 18 }];
-    XLSX.utils.book_append_sheet(wb, ws, "Assessment Report");
-
-    const filename = `${form.last_name}_${form.first_name}_${form.assessment_type}_${form.school_year}`
-      .replace(/\s+/g, "_") + ".xlsx";
-    XLSX.writeFile(wb, filename);
-  }
-
   return (
     <div className="asp-page asp-page--wide">
 
@@ -296,7 +238,6 @@ export default function ResultsStep({
           </div>
           <div className="asp-res-header__actions">
             <button className="asp-res-action-btn" onClick={handleSavePDF}>Save as PDF</button>
-            <button className="asp-res-action-btn" onClick={handleExport}>Export XLSX</button>
           </div>
         </div>
       </div>
