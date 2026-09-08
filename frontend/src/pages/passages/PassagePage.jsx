@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, FileText, Lock, Upload, Info } from "lucide-react";
+import { Plus, FileText, Lock, Upload, Info, Search, X } from "lucide-react";
 import { useWindowWidth } from "../../hooks/useWindowWidth";
 
 import Layout from "../../components/Layout";
@@ -32,9 +32,9 @@ export default function PassagePage() {
   const [viewPassage, setViewPassage] = useState(null);
   const [uploadOpen, setUploadOpen]   = useState(false);
 
-  // Bulk upload state
   const [bulkSaving, setBulkSaving] = useState(false);
   const [bulkResult, setBulkResult] = useState(null);
+  const [mySearch, setMySearch]     = useState("");
 
   useEffect(() => {
     if (!bulkSaving) {
@@ -152,8 +152,19 @@ export default function PassagePage() {
   const myPassages     = useMemo(() => passages.filter((p) => p.visibility !== "public"), [passages]);
   const publicPassages = useMemo(() => passages.filter((p) => p.visibility === "public"), [passages]);
 
-  const myA1     = useMemo(() => myPassages.filter((p) => p.assessment_type === 1), [myPassages]);
-  const myA2     = useMemo(() => myPassages.filter((p) => p.assessment_type === 2), [myPassages]);
+  const filteredMyPassages = useMemo(() => {
+    if (!mySearch.trim()) return myPassages;
+    const q = mySearch.toLowerCase().trim();
+    return myPassages.filter((p) => {
+      const title = (p.title || "").toLowerCase();
+      const content = (p.content || p.task1_content || p.task2_words || "").toLowerCase();
+      const grade = (p.grade_level || "").toLowerCase();
+      return title.includes(q) || content.includes(q) || grade.includes(q);
+    });
+  }, [myPassages, mySearch]);
+
+  const myA1     = useMemo(() => filteredMyPassages.filter((p) => p.assessment_type === 1), [filteredMyPassages]);
+  const myA2     = useMemo(() => filteredMyPassages.filter((p) => p.assessment_type === 2), [filteredMyPassages]);
   const publicA1 = useMemo(() => publicPassages.filter((p) => p.assessment_type === 1), [publicPassages]);
   const publicA2 = useMemo(() => publicPassages.filter((p) => p.assessment_type === 2), [publicPassages]);
 
@@ -300,17 +311,49 @@ export default function PassagePage() {
               <AssessmentSection label="Assessment 2" list={publicA2} readOnly icon={null} />
             )}
 
-            {(myA1.length > 0 || myA2.length > 0) && (
+            {myPassages.length > 0 && (
               <>
-                <div className="ph-section-label">
-                  <Lock size={14} color="#6b7280" />
-                  <span>My Passages</span>
+                <div className="ph-section-header">
+                  <div className="ph-section-label">
+                    <Lock size={14} color="#6b7280" />
+                    <span>My Passages</span>
+                  </div>
+                  <div className="ph-section-search">
+                    <Search size={14} className="ph-section-search-icon" />
+                    <input
+                      type="text"
+                      className="ph-section-search-input"
+                      placeholder="Search my passages…"
+                      value={mySearch}
+                      onChange={(e) => setMySearch(e.target.value)}
+                    />
+                    {mySearch && (
+                      <button
+                        type="button"
+                        className="ph-section-search-clear"
+                        onClick={() => setMySearch("")}
+                        aria-label="Clear search"
+                      >
+                        <X size={13} />
+                      </button>
+                    )}
+                  </div>
                 </div>
-                {myA1.length > 0 && (
-                  <AssessmentSection label="Assessment 1" list={myA1} icon={null} />
-                )}
-                {myA2.length > 0 && (
-                  <AssessmentSection label="Assessment 2" list={myA2} icon={null} />
+
+                {myA1.length === 0 && myA2.length === 0 ? (
+                  <div className="ph-empty" style={{ background: "#fff", borderRadius: 14, margin: "10px 0" }}>
+                    <Search size={28} strokeWidth={1.2} color="#8a94b2" />
+                    <p>No private passages match "{mySearch}".</p>
+                  </div>
+                ) : (
+                  <>
+                    {myA1.length > 0 && (
+                      <AssessmentSection label="Assessment 1" list={myA1} icon={null} />
+                    )}
+                    {myA2.length > 0 && (
+                      <AssessmentSection label="Assessment 2" list={myA2} icon={null} />
+                    )}
+                  </>
                 )}
               </>
             )}

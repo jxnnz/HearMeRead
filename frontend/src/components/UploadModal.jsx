@@ -414,7 +414,7 @@ export default function UploadModal({
               </button>
 
               {/* Format Toggle & Download Template button */}
-              <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 6 : 8, flexShrink: 0 }}>
                 {teacherGrade && (
                   <div style={{
                     display: "flex", alignItems: "center", gap: 2,
@@ -425,7 +425,7 @@ export default function UploadModal({
                       onClick={() => setSelectedFormat("docx")}
                       disabled={downloading}
                       style={{
-                        border: "none", borderRadius: 5, padding: "3px 8px", fontSize: 11, fontWeight: 700,
+                        border: "none", borderRadius: 5, padding: isMobile ? "2px 6px" : "3px 8px", fontSize: 11, fontWeight: 700,
                         background: selectedFormat === "docx" ? "#2c3e6b" : "transparent",
                         color: selectedFormat === "docx" ? "#fff" : "#555",
                         cursor: "pointer", transition: "all 0.15s ease",
@@ -438,7 +438,7 @@ export default function UploadModal({
                       onClick={() => setSelectedFormat("txt")}
                       disabled={downloading}
                       style={{
-                        border: "none", borderRadius: 5, padding: "3px 8px", fontSize: 11, fontWeight: 700,
+                        border: "none", borderRadius: 5, padding: isMobile ? "2px 6px" : "3px 8px", fontSize: 11, fontWeight: 700,
                         background: selectedFormat === "txt" ? "#2c3e6b" : "transparent",
                         color: selectedFormat === "txt" ? "#fff" : "#555",
                         cursor: "pointer", transition: "all 0.15s ease",
@@ -453,9 +453,9 @@ export default function UploadModal({
                   onClick={handleDownloadTemplateClick}
                   disabled={downloading}
                   style={{
-                    display: "flex", alignItems: "center", gap: 6,
+                    display: "flex", alignItems: "center", gap: isMobile ? 4 : 6,
                     background: "#f0f4ff", border: "1px solid #c8d4f5",
-                    borderRadius: 7, padding: "6px 12px",
+                    borderRadius: 7, padding: isMobile ? "5px 8px" : "6px 12px",
                     fontSize: isMobile ? 11 : 12, color: "#2c3e6b",
                     cursor: downloading ? "not-allowed" : "pointer",
                     fontWeight: 600, whiteSpace: "nowrap",
@@ -465,9 +465,16 @@ export default function UploadModal({
                   }}
                   onMouseEnter={(e) => { if (!downloading) e.currentTarget.style.background = "#dce8ff"; }}
                   onMouseLeave={(e) => { if (!downloading) e.currentTarget.style.background = "#f0f4ff"; }}
+                  title={teacherGrade ? `Download .${selectedFormat}` : "Download Templates"}
                 >
                   <Download size={13} />
-                  {downloading ? (downloadProgress || "Downloading…") : (teacherGrade ? `Download .${selectedFormat}` : "Download Templates")}
+                  {downloading
+                    ? (downloadProgress || "Downloading…")
+                    : (isMobile
+                        ? (teacherGrade ? `.${selectedFormat}` : "Templates")
+                        : (teacherGrade ? `Download .${selectedFormat}` : "Download Templates")
+                      )
+                  }
                 </button>
               </div>
             </div>

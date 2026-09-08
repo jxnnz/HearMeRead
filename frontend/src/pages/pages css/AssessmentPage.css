@@ -291,15 +291,20 @@ select.si-input {
 .asp-reading-header__info {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(5px);
-  padding: 10px 16px;
-  border-radius: 12px;
-  border: 1px solid rgba(200, 208, 228, 0.5);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+}
+
+.asp-reading-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 /* "Assessment 1 — Gawain 1" badge */
@@ -313,6 +318,19 @@ select.si-input {
   padding: 2px 8px;
   font-family: "Poppins", sans-serif;
   letter-spacing: 0.02em;
+  width: fit-content;
+}
+
+.asp-reading-meta-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #4a5568;
+  background: #edf2f7;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-family: "Poppins", sans-serif;
+  letter-spacing: 0.01em;
   width: fit-content;
 }
 
@@ -450,6 +468,31 @@ select.si-input {
   flex-shrink: 0;
 }
 
+@media (max-width: 768px) {
+  .asp-reading-footer {
+    position: fixed;
+    bottom: 66px;
+    left: 0;
+    right: 0;
+    z-index: 300;
+    background: transparent;
+    border-top: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    padding: 8px 16px;
+    pointer-events: none;
+  }
+
+  .asp-reading-footer > * {
+    pointer-events: auto;
+  }
+
+  .asp-reading-body {
+    padding-bottom: 140px !important;
+  }
+}
+
 /* Mic button — large circle, matching mockup */
 .asp-mic-btn {
   width: 60px;
@@ -489,11 +532,33 @@ select.si-input {
 }
 
 .asp-recording-mode-label {
-  font-size: 12.5px;
-  color: #27ae60;
+  font-size: 12px;
+  color: #1a2340;
   font-weight: 600;
   font-family: "Poppins", sans-serif;
-  margin: 0;
+  margin: 2px 0 0 0;
+  padding: 5px 14px;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(220, 226, 242, 0.8);
+  border-radius: 20px;
+  box-shadow: 0 2px 10px rgba(44, 62, 107, 0.1);
+  text-align: center;
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+}
+
+.asp-recording-mode-label--active {
+  color: #d9381e;
+  background: rgba(255, 245, 245, 0.88);
+  border-color: rgba(245, 180, 180, 0.7);
+}
+
+.asp-recording-mode-label--ready {
+  color: #15803d;
+  background: rgba(240, 253, 244, 0.88);
+  border-color: rgba(187, 247, 208, 0.7);
 }
 
 .asp-recording-cancel {

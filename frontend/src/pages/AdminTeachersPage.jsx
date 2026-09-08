@@ -727,9 +727,7 @@ export default function AdminTeachersPage() {
   return (
     <Layout>
       <div style={{ fontFamily: "Poppins, sans-serif", width: "100%" }}>
-        <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 700, color: "#1a2340", margin: isMobile ? "0 0 16px" : "0 0 24px", fontFamily: "Poppins, sans-serif" }}>
-          Teachers
-        </h1>
+        <TopBar title="Teachers" />
 
         <div style={{
           background: "#fff", borderRadius: 16,

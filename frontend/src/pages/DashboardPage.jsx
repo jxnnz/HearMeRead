@@ -213,23 +213,7 @@ export default function DashboardPage() {
       <div className="db-page">
 
         {/* Page header */}
-        <TopBar title="Dashboard">
-          {user && (
-            <button 
-              className="db-avatar-btn" 
-              onClick={() => navigate("/profile")}
-              title="My Profile"
-            >
-              {user.profile_picture_url ? (
-                <img src={user.profile_picture_url} alt="Profile" className="db-avatar-img" />
-              ) : (
-                <span className="db-avatar-initials">
-                  {(user.first_name?.[0] || "") + (user.last_name?.[0] || "")}
-                </span>
-              )}
-            </button>
-          )}
-        </TopBar>
+        <TopBar title="Dashboard" />
 
         {/* School year indicator */}
         <p className="db-school-year">School Year: {schoolYear}</p>

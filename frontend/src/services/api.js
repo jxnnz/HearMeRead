@@ -91,12 +91,15 @@ export const authApi = {
    * Call this on app load to check if the token is still valid.
    */
   me: async () => {
-    const res = await api.get("/auth/me");
-    return res.data;
+    return withCache("/auth/me", async () => {
+      const res = await api.get("/auth/me");
+      return res.data;
+    }, 60000); // 1 min TTL
   },
 
   updateProfile: async (data) => {
     const res = await api.patch("/auth/me", data);
+    apiCache.delete("/auth/me");
     return res.data;
   },
 
@@ -106,6 +109,7 @@ export const authApi = {
     const res = await api.post("/auth/me/profile-picture", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
+    apiCache.delete("/auth/me");
     return res.data;
   },
 

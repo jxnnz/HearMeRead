@@ -80,7 +80,7 @@ export default function ComprehensionStep({
   }
 
   // Web Audio RMS silence detection
-  async function checkSilence(audioBlob, threshold = -50) {
+  async function checkSilence(audioBlob, threshold = -55) {
     try {
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
       if (!AudioContextClass) return { isSilent: false };
@@ -91,7 +91,7 @@ export default function ComprehensionStep({
       const channelData = audioBuffer.getChannelData(0);
 
       const duration = audioBuffer.duration;
-      if (duration < 0.8) {
+      if (duration < 0.4) {
         await audioContext.close();
         return { isSilent: true, reason: "Too short" };
       }
@@ -123,10 +123,26 @@ export default function ComprehensionStep({
       }
 
       setErrors((prev) => ({ ...prev, [questionId]: null }));
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: { ideal: 16000 },
+          channelCount: 1,
+        },
+      });
       streamRef.current = stream;
 
-      const recorder = new MediaRecorder(stream);
+      // Negotiate the best supported audio mimeType for cross-browser compatibility
+      const preferredTypes = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/mp4',
+      ];
+      const supportedType = preferredTypes.find(t => MediaRecorder.isTypeSupported(t)) || '';
+      const recorderOptions = supportedType ? { mimeType: supportedType } : {};
+      const recorder = new MediaRecorder(stream, recorderOptions);
       mediaRecorderRef.current = recorder;
       audioChunksRef.current = [];
 
@@ -137,7 +153,10 @@ export default function ComprehensionStep({
       };
 
       recorder.onstop = async () => {
-        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        // Use the actual mimeType the recorder used, not a hard-coded value
+        const actualMime = recorder.mimeType || 'audio/webm';
+        const ext = actualMime.includes('mp4') ? '.m4a' : '.webm';
+        const blob = new Blob(audioChunksRef.current, { type: actualMime });
         stream.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
 
@@ -161,7 +180,7 @@ export default function ComprehensionStep({
         // Upload and grade asynchronously
         try {
           const formData = new FormData();
-          formData.append("audio", blob, "answer.webm");
+          formData.append("audio", blob, `answer${ext}`);
 
           const result = await sessionsApi.scoreComprehensionAnswer(sessionId, questionId, formData);
 
@@ -181,7 +200,7 @@ export default function ComprehensionStep({
         }
       };
 
-      recorder.start();
+      recorder.start(1000); // 1s timeslice to prevent memory issues on low-RAM devices
       setRecordingQuestionId(questionId);
       setIsPaused(false);
     } catch (err) {

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Plus, Search, BookOpen, Pencil, Trash2, X, ChevronLeft, ChevronRight, Eye, Upload, FileText, Info } from "lucide-react";
 import Layout from "../components/Layout";
+import TopBar from "../components/TopBar";
 import ConfirmModal from "../modals/ConfirmModal";
 import UploadModal from "../components/UploadModal";
 import Toast from "../modals/Toast";
@@ -588,22 +589,17 @@ export default function AdminPassagesPage() {
       <div style={{ fontFamily: "'Poppins', sans-serif", width: "100%" }}>
 
         {/* Topbar matching other nav pages */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: isMobile ? 16 : 24 }}>
-          <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 700, color: "#1a2340", margin: 0, fontFamily: "Poppins, sans-serif" }}>
-            Public Passages
-          </h1>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button onClick={() => setGlobalUploadOpen(true)} className="ap-save-btn" style={{ display: "flex", alignItems: "center", gap: isMobile ? 0 : 6, background: "#fff", borderColor: "#c8d0e4", padding: isMobile ? "7px 10px" : undefined }}>
-              <Upload size={15} />{!isMobile && " Upload"}
-            </button>
-            <button onClick={() => startAdd(1)} className="ap-save-btn" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <Plus size={15} />{isMobile ? "A1" : " Assessment 1"}
-            </button>
-            <button onClick={() => startAdd(2)} className="ap-save-btn" style={{ display: "flex", alignItems: "center", gap: 6, background: "#FDC210", color: "#1a2340", borderColor: "#FDC210" }}>
-              <Plus size={15} />{isMobile ? "A2" : " Assessment 2"}
-            </button>
-          </div>
-        </div>
+        <TopBar title="Public Passages">
+          <button onClick={() => setGlobalUploadOpen(true)} className="ap-save-btn" style={{ display: "flex", alignItems: "center", gap: isMobile ? 0 : 6, background: "#fff", borderColor: "#c8d0e4", padding: isMobile ? "7px 10px" : undefined }}>
+            <Upload size={15} />{!isMobile && " Upload"}
+          </button>
+          <button onClick={() => startAdd(1)} className="ap-save-btn" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <Plus size={15} />{isMobile ? "A1" : " Assessment 1"}
+          </button>
+          <button onClick={() => startAdd(2)} className="ap-save-btn" style={{ display: "flex", alignItems: "center", gap: 6, background: "#FDC210", color: "#1a2340", borderColor: "#FDC210" }}>
+            <Plus size={15} />{isMobile ? "A2" : " Assessment 2"}
+          </button>
+        </TopBar>
 
         {/* Global Upload Modal */}
         {globalUploadOpen && (

@@ -727,7 +727,15 @@ export default function AssessmentPage() {
   async function handleStartRecording() {
     try {
       audioChunksRef.current = [];
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: { ideal: 16000 },
+          channelCount: 1,
+        },
+      });
       pendingStreamRef.current = stream;
 
       // Start 3-second countdown
@@ -745,15 +753,27 @@ export default function AssessmentPage() {
     pendingStreamRef.current = null;
 
     streamRef.current = stream;
-    const recorder = new MediaRecorder(stream);
+
+    // Negotiate the best supported audio mimeType for cross-browser compatibility
+    const preferredTypes = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/mp4',
+    ];
+    const supportedType = preferredTypes.find(t => MediaRecorder.isTypeSupported(t)) || '';
+    const recorderOptions = supportedType ? { mimeType: supportedType } : {};
+    const recorder = new MediaRecorder(stream, recorderOptions);
     mediaRecorderRef.current = recorder;
 
     recorder.ondataavailable = (e) => {
       if (e.data.size > 0) audioChunksRef.current.push(e.data);
     };
     recorder.onstop = () => {
-      const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-      const file = new File([blob], "recording.webm", { type: "audio/webm" });
+      // Use the actual mimeType the recorder used, not a hard-coded value
+      const actualMime = recorder.mimeType || 'audio/webm';
+      const ext = actualMime.includes('mp4') ? '.m4a' : '.webm';
+      const blob = new Blob(audioChunksRef.current, { type: actualMime });
+      const file = new File([blob], `recording${ext}`, { type: actualMime });
       audioFileRef.current = file;
       setAudioFile(file);
       if (resolveStopPromiseRef.current) {
@@ -764,7 +784,7 @@ export default function AssessmentPage() {
       streamRef.current = null;
     };
 
-    recorder.start();
+    recorder.start(1000); // 1s timeslice to prevent memory issues on low-RAM devices
     setIsRecording(true);
     setIsPaused(false);
     setTimeLimitReached(false);

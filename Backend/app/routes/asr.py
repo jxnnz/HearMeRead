@@ -227,7 +227,7 @@ async def score_comprehension_answer(
     # 5. Check if transcript is empty or matches known silence hallucinations
     HALLUCINATION_BLACKLIST = {
         "thank you", "thank you.", "thank you for watching", "thank you for watching.",
-        "bye", "bye.", "please subscribe", "subscribe", "watching", "you"
+        "please subscribe", "subscribe",
     }
     cleaned_transcript = transcript.lower().strip(".,?! ")
     if not cleaned_transcript or cleaned_transcript in HALLUCINATION_BLACKLIST:

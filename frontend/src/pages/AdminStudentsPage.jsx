@@ -7,6 +7,7 @@ import {
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import Layout from "../components/Layout";
+import TopBar from "../components/TopBar";
 import { adminApi, studentsApi } from "../services/api";
 import Toast from "../modals/Toast";
 import useToast from "../hooks/Usetoast";
@@ -742,9 +743,7 @@ export default function AdminStudentsPage() {
   return (
     <Layout>
       <div style={{ fontFamily: "Poppins, sans-serif", width: "100%" }}>
-        <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 700, color: "#1a2340", margin: isMobile ? "0 0 16px" : "0 0 24px", fontFamily: "Poppins, sans-serif" }}>
-          Students
-        </h1>
+        <TopBar title="Students" />
 
         {selected ? (
           <ClassRecordView card={selected} onBack={() => setSelected(null)} />

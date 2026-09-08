@@ -49,15 +49,18 @@ export default function ReadingStep({
               <ChevronLeft size={18} />
             </button>
             <div className="asp-reading-header__info">
-              <span className="asp-reading-badge">{stepLabel}</span>
+              <div className="asp-reading-badges">
+                <span className="asp-reading-badge">{stepLabel}</span>
+                {form.grade_level && (
+                  <span className="asp-reading-meta-badge">
+                    Grade {String(form.grade_level).replace("grade_", "")}{form.section ? ` · ${form.section}` : ""}
+                  </span>
+                )}
+              </div>
               <h2 className="asp-reading-title">
                 {passage?.title || "Untitled Passage"}
                 <span className="asp-reading-wordcount">({wordCount} words)</span>
               </h2>
-              <p className="asp-reading-meta">
-                {form.last_name}, {form.first_name}{form.middle_name ? `, ${form.middle_name}` : ""} · Grade {String(form.grade_level || "").replace("grade_", "")} ·{" "}
-                {form.section} · {form.school_year}
-              </p>
             </div>
           </div>
           <div className="asp-reading-header__right">
