@@ -16,7 +16,7 @@ from app.schema import (
     QuestionResponse,
 )
 from app.services import passage_service, question_service, storage_service
-from app.utils.docx_parser import validate_upload, parse_combined, parse_passage_only
+from app.utils.docx_parser import validate_upload, parse_passage_only
 
 
 router = APIRouter(prefix="/passages", tags=["Passages"])
@@ -622,73 +622,181 @@ async def upload_passage_only(
     )
 
 
-# ── NEW: Batch upload multiple passages ───────────────────────────────────────
-class BatchUploadResult(BaseModel):
-    filename:           str
-    passage_id:         Optional[int] = None
-    title:              str
-    questions_imported: int           = 0
-    error:              Optional[str] = None
+# ── Bulk create passages (JSON) ───────────────────────────────────────────────
+class BulkPassageQuestion(BaseModel):
+    text:       str
+    answer_key: Optional[str] = None
+    order:      int           = 0
 
 
-class BatchUploadResponse(BaseModel):
+class BulkPassageItem(BaseModel):
+    language:        Language
+    grade_level:     Optional[GradeLevel] = None
+    assessment_type: Optional[int]        = None
+    title:           Optional[str]        = None
+    content:         Optional[str]        = None
+    task1_content:   Optional[str]        = None
+    task2_words:     Optional[str]        = None
+    task2_sentences: Optional[str]        = None
+    story_number:    Optional[int]        = None
+    questions:       List[BulkPassageQuestion] = []
+
+
+class BulkCreateResult(BaseModel):
+    index:      int
+    passage_id: Optional[int] = None
+    title:      Optional[str] = None
+    error:      Optional[str] = None
+
+
+class BulkCreateResponse(BaseModel):
     created: int
     failed:  int
-    results: List[BatchUploadResult]
-
-
-def _title_from_filename(filename: str) -> str:
-    import os
-    name = os.path.splitext(filename)[0]
-    return name.replace("_", " ").replace("-", " ").title()
+    results: List[BulkCreateResult]
 
 
 @router.post(
-    "/upload/batch",
-    response_model=BatchUploadResponse,
+    "/bulk",
+    response_model=BulkCreateResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Upload multiple passage files in one request (max 10)",
+    summary="Create multiple passages with questions in a single request",
 )
-async def upload_batch(
-    files:           List[UploadFile] = File(...),
-    language:        Language         = Form(...),
-    grade_level:     GradeLevel       = Form(...),
-    db:              AsyncSession     = Depends(get_db),
-    current_teacher: Teacher          = Depends(get_current_teacher),
+async def bulk_create_passages(
+    items:           List[BulkPassageItem],
+    db:              AsyncSession = Depends(get_db),
+    current_teacher: Teacher      = Depends(get_current_teacher),
 ):
-    if len(files) > 10:
-        raise HTTPException(status_code=400, detail="Maximum 10 files per batch upload.")
+    """Create up to 20 passages (with inline questions) in one batched DB transaction."""
+    if len(items) > 20:
+        raise HTTPException(status_code=400, detail="Maximum 20 passages per bulk request.")
+
+    from app.models import Passage as PassageModel, Question, PassageVisibility, ActivityLog
 
     created = 0
     failed  = 0
-    results: List[BatchUploadResult] = []
+    results: List[BulkCreateResult] = []
+    passages_to_add = []
+    items_map = []  # (index, item, passage_obj) for question creation after flush
 
-    for upload in files:
-        filename = upload.filename or "unknown"
-        title    = _title_from_filename(filename)
+    # Pre-resolve titles for A1 items before attaching anything to session (avoids autoflush on dirty session)
+    resolved_titles = {}
+    for idx, item in enumerate(items):
+        if item.assessment_type == 1 and not item.title and item.grade_level and item.language:
+            lang_str = str(item.language.value if hasattr(item.language, "value") else item.language)
+            grade_str = str(item.grade_level.value if hasattr(item.grade_level, "value") else item.grade_level)
+            try:
+                resolved_titles[idx] = await passage_service._a1_title(
+                    db=db,
+                    teacher_id=current_teacher.id,
+                    language=lang_str,
+                    grade_level=grade_str,
+                )
+            except Exception:
+                resolved_titles[idx] = passage_service._a1_base_title(lang_str, grade_str)
+
+    # Build passage objects
+    for idx, item in enumerate(items):
         try:
-            file_bytes = await upload.read()
-            validate_upload(file_bytes, filename)
-            parsed     = parse_combined(file_bytes, filename)
-            passage    = await passage_service.create_passage_from_docx(
-                db=db, title=title, language=language, grade_level=grade_level,
-                content=parsed.passage_content, teacher_id=current_teacher.id,
-            )
-            questions = await question_service.bulk_create_questions(
-                db=db, passage_id=passage.id, texts=parsed.questions,
+            # Skip empty A1 items
+            if item.assessment_type == 1:
+                t1 = (item.task1_content or "").strip()
+                t2w = (item.task2_words or "").strip()
+                t2s = (item.task2_sentences or "").strip()
+                # Clean out boilerplate if present
+                if t2w.lower() in ("words:", "words:\n---", "words:\n\n---"):
+                    t2w = ""
+                if not t1 and not t2w and not t2s:
+                    results.append(BulkCreateResult(index=idx, error="Empty Assessment 1 passage ignored."))
+                    failed += 1
+                    continue
+
+            # Skip empty A2 items
+            if item.assessment_type == 2:
+                content = (item.content or "").strip()
+                title = (item.title or "").strip()
+                if not content and not title and not item.questions:
+                    results.append(BulkCreateResult(index=idx, error="Empty Assessment 2 passage ignored."))
+                    failed += 1
+                    continue
+
+            title = item.title or resolved_titles.get(idx)
+            content = item.content or ""
+            passage = PassageModel(
                 teacher_id=current_teacher.id,
+                title=title,
+                content=content if content.strip() else None,
+                language=item.language,
+                grade_level=item.grade_level,
+                word_count=len(content.split()) if content.strip() else 0,
+                visibility=PassageVisibility.private,
+                assessment_type=item.assessment_type,
+                task1_content=item.task1_content,
+                task2_words=item.task2_words,
+                task2_sentences=item.task2_sentences,
+                story_number=item.story_number,
             )
-            results.append(BatchUploadResult(
-                filename=filename, passage_id=passage.id,
-                title=title, questions_imported=len(questions),
-            ))
-            created += 1
+            db.add(passage)
+            passages_to_add.append(passage)
+            items_map.append((idx, item, passage))
         except Exception as exc:
-            results.append(BatchUploadResult(filename=filename, title=title, error=str(exc)))
+            results.append(BulkCreateResult(index=idx, error=str(exc)))
             failed += 1
 
-    await db.commit()
-    return BatchUploadResponse(created=created, failed=failed, results=results)
+    if not passages_to_add:
+        return BulkCreateResponse(created=0, failed=failed, results=results)
+
+    try:
+        # Flush to get auto-generated IDs for all passages
+        await db.flush()
+
+        # Create questions and activity logs in bulk
+        all_questions = []
+        all_logs = []
+        for idx, item, passage in items_map:
+            try:
+                for q_idx, q in enumerate(item.questions):
+                    if q.text.strip():
+                        all_questions.append(Question(
+                            passage_id=passage.id,
+                            text=q.text.strip(),
+                            answer_key=q.answer_key,
+                            order=q.order if q.order else q_idx,
+                        ))
+
+                # Prepare activity log
+                if current_teacher.school_id:
+                    all_logs.append(ActivityLog(
+                        teacher_id=current_teacher.id,
+                        school_id=current_teacher.school_id,
+                        action="uploaded_passage",
+                        entity_type="passage",
+                        entity_id=passage.id,
+                        log_metadata={"title": passage.title or "Untitled"},
+                    ))
+
+                results.append(BulkCreateResult(
+                    index=idx, passage_id=passage.id, title=passage.title,
+                ))
+                created += 1
+            except Exception as exc:
+                results.append(BulkCreateResult(index=idx, error=str(exc)))
+                failed += 1
+
+        if all_questions:
+            db.add_all(all_questions)
+        if all_logs:
+            db.add_all(all_logs)
+
+        # Single commit for everything
+        await db.commit()
+    except Exception as exc:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database transaction error during bulk create: {str(exc)}",
+        )
+
+    return BulkCreateResponse(created=created, failed=failed, results=results)
 
 
 # ── Upload original file to R2 ────────────────────────────────────────────────

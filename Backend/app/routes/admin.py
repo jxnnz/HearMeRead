@@ -1084,6 +1084,109 @@ async def update_public_passage(
         return passage
 
 
+@router.post("/passages/bulk", status_code=status.HTTP_201_CREATED, summary="Bulk create public passages")
+async def admin_bulk_create_passages(
+    items: List[dict],
+    current_admin: Teacher = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Create up to 20 public passages (with inline questions) in one batched DB transaction."""
+    if len(items) > 20:
+        raise HTTPException(status_code=400, detail="Maximum 20 passages per bulk request.")
+
+    from app.models import PassageVisibility, Question
+
+    created = 0
+    failed  = 0
+    results = []
+    passages_to_flush = []
+    items_with_passages = []  # (index, item_dict, passage_obj)
+
+    for idx, item in enumerate(items):
+        try:
+            ass_type = item.get("assessment_type", 2)
+            # Skip empty A1 items
+            if ass_type == 1:
+                t1 = (item.get("task1_content") or "").strip()
+                t2w = (item.get("task2_words") or "").strip()
+                t2s = (item.get("task2_sentences") or "").strip()
+                if t2w.lower() in ("words:", "words:\n---", "words:\n\n---"):
+                    t2w = ""
+                if not t1 and not t2w and not t2s:
+                    results.append({"index": idx, "error": "Empty Assessment 1 passage ignored."})
+                    failed += 1
+                    continue
+
+            # Skip empty A2 items
+            if ass_type == 2:
+                content = (item.get("content") or "").strip()
+                title = (item.get("title") or "").strip()
+                if not content and not title and not item.get("questions"):
+                    results.append({"index": idx, "error": "Empty Assessment 2 passage ignored."})
+                    failed += 1
+                    continue
+
+            content = item.get("content", "") or ""
+            passage = Passage(
+                teacher_id=current_admin.id,
+                title=item.get("title"),
+                content=content if content.strip() else None,
+                language=item.get("language", "filipino"),
+                grade_level=item.get("grade_level"),
+                word_count=len(content.split()) if content.strip() else 0,
+                visibility=PassageVisibility.public,
+                assessment_type=ass_type,
+                task1_content=item.get("task1_content"),
+                task2_words=item.get("task2_words"),
+                task2_sentences=item.get("task2_sentences"),
+                story_number=item.get("story_number"),
+            )
+            db.add(passage)
+            passages_to_flush.append(passage)
+            items_with_passages.append((idx, item, passage))
+        except Exception as exc:
+            results.append({"index": idx, "error": str(exc)})
+            failed += 1
+
+    if not passages_to_flush:
+        return {"created": 0, "failed": failed, "results": results}
+
+    try:
+        # Flush to assign IDs
+        await db.flush()
+
+        # Bulk-create all questions
+        all_questions = []
+        for idx, item, passage in items_with_passages:
+            try:
+                for q_idx, q in enumerate(item.get("questions", [])):
+                    if q.get("text", "").strip():
+                        all_questions.append(Question(
+                            passage_id=passage.id,
+                            text=q["text"].strip(),
+                            answer_key=q.get("answer_key"),
+                            order=q.get("order", q_idx),
+                        ))
+                results.append({"index": idx, "passage_id": passage.id, "title": passage.title})
+                created += 1
+            except Exception as exc:
+                results.append({"index": idx, "error": str(exc)})
+                failed += 1
+
+        if all_questions:
+            db.add_all(all_questions)
+
+        await db.commit()
+    except Exception as exc:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database transaction error during bulk create: {str(exc)}",
+        )
+
+    return {"created": created, "failed": failed, "results": results}
+
+
 @router.delete("/passages/{passage_id}", summary="Archive a public passage")
 async def archive_public_passage(
     passage_id: int,

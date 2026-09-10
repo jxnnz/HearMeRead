@@ -51,9 +51,24 @@ export function parseDocument(rawText, forceType = null, eng3 = false) {
 
   // Helper to check if string contains meaningful non-sample user text
   const isUserText = (str) => {
-    if (!str || !str.trim()) return false;
-    const clean = str.trim().toLowerCase();
-    if (clean.includes("isulat dito") || clean.includes("sample title") || clean.includes("write the full story")) {
+    if (!str || typeof str !== "string") return false;
+    // Strip common template headers, divider lines, and placeholders
+    const clean = str
+      .replace(/---[^-]*---/g, "")
+      .replace(/===[^=]*===/g, "")
+      .replace(/^[-\s=_*#:]+/gm, "")
+      .replace(/(?:Task\s*[12]|Task\s*2\s*Words|Task\s*2\s*Sentences|Words|Sentences|W:|R:|Q:|A:|Story\s*Number|Title|Content|Questions)[\s:-]*/gi, "")
+      .trim();
+    if (!clean) return false;
+    const lower = clean.toLowerCase();
+    if (
+      lower.includes("isulat dito") ||
+      lower.includes("sample title") ||
+      lower.includes("write the full story") ||
+      lower.includes("fillable assessment") ||
+      lower.includes("halimbawa") ||
+      lower.includes("sample assessment")
+    ) {
       return false;
     }
     return true;
@@ -73,14 +88,14 @@ export function parseDocument(rawText, forceType = null, eng3 = false) {
     const task2Block = text.match(/Task 2[\s:-]+([\s\S]*?)(?:Task 2\s*Sentences|FILLABLE ASSESSMENT 2|--- ASSESSMENT 2|$)/i);
     const task2Raw = task2Block ? task2Block[1].trim() : "";
 
-    if (task2Raw && /^W:/im.test(task2Raw)) {
+    if (task2Raw && /^W:\s*\S+/im.test(task2Raw)) {
       const pairs = [];
       const lines = task2Raw.split("\n").map((l) => l.trim()).filter(Boolean);
       let current = null;
       for (const line of lines) {
         const wm = line.match(/^W:\s*(.+)/i);
         const rm = line.match(/^R:\s*(Yes|No|Oo|Hindi)/i);
-        if (wm) {
+        if (wm && isUserText(wm[1])) {
           current = { pair: wm[1].trim(), answer: "Oo" };
           pairs.push(current);
         } else if (rm && current) {
@@ -97,7 +112,7 @@ export function parseDocument(rawText, forceType = null, eng3 = false) {
       if (task2WordsMatch && isUserText(task2WordsMatch[1])) {
         a1Obj.task2Words = task2WordsMatch[1].trim();
         hasA1Content = true;
-      } else if (task2Raw && isUserText(task2Raw) && !task2Raw.includes("FILLABLE ASSESSMENT")) {
+      } else if (task2Raw && isUserText(task2Raw) && !/^(?:Words|Sentences)[\s:-]*$/i.test(task2Raw)) {
         a1Obj.task2Words = task2Raw;
         hasA1Content = true;
       }
@@ -172,8 +187,8 @@ export function parseDocument(rawText, forceType = null, eng3 = false) {
     }
   }
 
-  // Fallback: if nothing parsed but forceType was specified or raw text exists, default to A1/A2 fallback
-  if (results.length === 0) {
+  // Fallback: if nothing parsed but forceType was specified or raw text exists with meaningful content
+  if (results.length === 0 && isUserText(text)) {
     const defaultType = forceType || 1;
     if (defaultType === 1) {
       results.push({

@@ -211,6 +211,11 @@ export const adminApi = {
     return res.data;
   },
 
+  bulkCreatePassages: async (items) => {
+    const res = await api.post('/admin/passages/bulk', items);
+    return res.data;
+  },
+
   updatePassage: async (id, data) => {
     const res = await api.patch(`/admin/passages/${id}`, data);
     return res.data;
@@ -250,6 +255,11 @@ export const passagesApi = {
   /** Create a passage manually with a plain JSON body. */
   create: async (data) => {
     const res = await api.post("/passages", data);
+    return res.data;
+  },
+
+  bulkCreate: async (items) => {
+    const res = await api.post('/passages/bulk', items);
     return res.data;
   },
 

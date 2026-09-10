@@ -283,72 +283,116 @@ export default function AdminPassagesPage() {
   function update(field, val) { setForm((prev) => ({ ...prev, [field]: val })); }
 
   // ── Bulk upload handler ──────────────────────────────────────────────
-  async function handleBulkUpload(type, parsedItems) {
+  async function handleBulkUpload(parsedItems) {
     setBulkSaving(true);
     let saved = 0;
     let failed = 0;
-    const total = parsedItems.length;
 
-    for (const item of parsedItems) {
-      const itemType = item.assessment_type || parsedData?.assessment_type || (typeof type === "number" ? type : 1);
-      try {
+    try {
+      // Build the payload array for the batch endpoint, filtering out items without real content
+      const bulkItems = [];
+      const validParsedItems = [];
+
+      for (const item of parsedItems) {
+        const { parsedData } = item;
+        const itemType = item.assessment_type || parsedData?.assessment_type || 1;
+
         if (itemType === 1) {
-          // Assessment 1
           const g1fil = (parsedData.language || "filipino") === "filipino" &&
                         (parsedData.grade_level || "grade_1") === "grade_1";
           let task2Words = parsedData.task2Words || "";
           if (g1fil && parsedData.task2Rhymes?.length > 0) {
             task2Words = parsedData.task2Rhymes
-              .filter((p) => p.pair.trim())
+              .filter((p) => p.pair && p.pair.trim())
               .map((p) => `${p.pair}|${p.answer}`)
               .join("\n");
           }
           const isE3 = (parsedData.language || "filipino") === "english" &&
                        (parsedData.grade_level || "grade_1") === "grade_3";
-          const passage = await adminApi.createPassage({
+
+          const t1 = (parsedData.task1 || "").trim();
+          const t2w = task2Words.trim();
+          const t2s = isE3 ? "" : (parsedData.task2Sentences || "").trim();
+
+          // Ignore A1 if there is zero content
+          if (!t1 && !t2w && !t2s) {
+            continue;
+          }
+
+          bulkItems.push({
             language:        parsedData.language || "filipino",
             grade_level:     parsedData.grade_level || "grade_1",
             assessment_type: 1,
-            task1_content:   (parsedData.task1 || "").trim(),
-            task2_words:     task2Words.trim(),
-            task2_sentences: isE3 ? "" : (parsedData.task2Sentences || "").trim(),
+            task1_content:   t1,
+            task2_words:     t2w,
+            task2_sentences: t2s,
+            questions:       [],
           });
-          if (item.file) await adminApi.uploadPassageFile(passage.id, item.file).catch(() => {});
+          validParsedItems.push(item);
         } else {
-          // Assessment 2
+          const content = (parsedData.content || "").trim();
+          const title = (parsedData.title || "").trim();
+          const questions = (parsedData.questions || []).filter((q) => q.question?.trim());
+
+          // Ignore A2 if there is zero content, title, and questions
+          if (!content && !title && questions.length === 0) {
+            continue;
+          }
+
           const sNum = parsedData.story_number || "1";
-          const rawTitle = (parsedData.title || "").trim();
-          const fullTitle = rawTitle.match(/^Story\s*\d+:/i) ? rawTitle : (rawTitle ? `Story ${sNum}: ${rawTitle}` : `Story ${sNum}`);
-          const passage = await adminApi.createPassage({
+          const fullTitle = title.match(/^Story\s*\d+:/i) ? title : (title ? `Story ${sNum}: ${title}` : `Story ${sNum}`);
+
+          bulkItems.push({
             title:           fullTitle,
-            content:         (parsedData.content || "").trim(),
+            story_number:    sNum,
+            content:         content,
             language:        parsedData.language || "filipino",
             grade_level:     parsedData.grade_level || "grade_2",
             assessment_type: 2,
+            questions:       questions.map((q, qi) => ({
+              text:       q.question.trim(),
+              answer_key: q.answer?.trim() || null,
+              order:      qi,
+            })),
           });
-          if (item.file) await adminApi.uploadPassageFile(passage.id, item.file).catch(() => {});
-          // Save questions if present
-          if (parsedData.questions?.length > 0) {
-            for (const q of parsedData.questions) {
-              if (!q.question?.trim()) continue;
-              await questionsApi.create(passage.id, {
-                text:       q.question.trim(),
-                answer_key: q.answer?.trim() || null,
-              });
-            }
-          }
+          validParsedItems.push(item);
         }
-        saved++;
-      } catch {
-        failed++;
       }
-    }
 
-    setBulkSaving(false);
-    if (failed === 0) {
-      addToast("Passages saved successfully", "success");
-    } else {
-      setBulkResult({ saved, failed, total });
+      if (bulkItems.length === 0) {
+        setBulkSaving(false);
+        setBulkResult({ saved: 0, failed: 0, total: 0, message: "No valid passage content was found in the file(s) to upload." });
+        return;
+      }
+
+      const total = bulkItems.length;
+
+      // Single API call for all passages + questions
+      const result = await adminApi.bulkCreatePassages(bulkItems);
+      saved = result.created || 0;
+      failed = result.failed || 0;
+
+      // Upload files to R2 in parallel for passages that were created
+      const fileUploads = validParsedItems
+        .map((item, i) => {
+          const passageId = result.results?.[i]?.passage_id;
+          if (item.file && passageId && !result.results[i]?.error) {
+            return adminApi.uploadPassageFile(passageId, item.file).catch(() => {});
+          }
+          return null;
+        })
+        .filter(Boolean);
+      if (fileUploads.length > 0) await Promise.allSettled(fileUploads);
+
+      setBulkSaving(false);
+      if (failed === 0) {
+        addToast("Passages saved successfully", "success");
+      } else {
+        setBulkResult({ saved, failed, total });
+      }
+    } catch {
+      setBulkSaving(false);
+      setBulkResult({ saved: 0, failed: parsedItems.length, total: parsedItems.length });
     }
     load(); // Refresh passages list
   }
@@ -631,13 +675,20 @@ export default function AdminPassagesPage() {
         {/* Bulk result modal */}
         <ConfirmModal
           isOpen={!!bulkResult}
-          title={bulkResult?.failed > 0 ? "Upload Complete" : "Passages Saved!"}
-          message={
-            bulkResult?.failed > 0
-              ? `${bulkResult.saved} of ${bulkResult.total} passages saved successfully. ${bulkResult.failed} failed to save.`
-              : `${bulkResult?.saved || 0} passage${(bulkResult?.saved || 0) !== 1 ? "s" : ""} saved successfully.`
+          title={
+            bulkResult?.saved === 0
+              ? "Upload Failed"
+              : bulkResult?.failed > 0
+              ? "Upload Completed with Errors"
+              : "Passages Saved!"
           }
-          variant={bulkResult?.failed > 0 ? "danger" : "default"}
+          message={
+            bulkResult?.message ||
+            (bulkResult?.failed > 0
+              ? `${bulkResult.saved} of ${bulkResult.total} passages saved successfully. ${bulkResult.failed} failed to save.`
+              : `${bulkResult?.saved || 0} passage${(bulkResult?.saved || 0) !== 1 ? "s" : ""} saved successfully.`)
+          }
+          variant={bulkResult?.saved === 0 || bulkResult?.failed > 0 ? "danger" : "default"}
           confirmLabel="OK"
           cancelLabel={null}
           onConfirm={() => setBulkResult(null)}
