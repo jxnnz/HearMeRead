@@ -14,6 +14,8 @@ from app.schema import (
     PassageResponse,
     PassageListResponse,
     QuestionResponse,
+    BulkPassageQuestion,
+    BulkPassageItem,
 )
 from app.services import passage_service, question_service, storage_service
 from app.utils.docx_parser import validate_upload, parse_passage_only
@@ -623,25 +625,6 @@ async def upload_passage_only(
 
 
 # ── Bulk create passages (JSON) ───────────────────────────────────────────────
-class BulkPassageQuestion(BaseModel):
-    text:       str
-    answer_key: Optional[str] = None
-    order:      int           = 0
-
-
-class BulkPassageItem(BaseModel):
-    language:        Language
-    grade_level:     Optional[GradeLevel] = None
-    assessment_type: Optional[int]        = None
-    title:           Optional[str]        = None
-    content:         Optional[str]        = None
-    task1_content:   Optional[str]        = None
-    task2_words:     Optional[str]        = None
-    task2_sentences: Optional[str]        = None
-    story_number:    Optional[int]        = None
-    questions:       List[BulkPassageQuestion] = []
-
-
 class BulkCreateResult(BaseModel):
     index:      int
     passage_id: Optional[int] = None

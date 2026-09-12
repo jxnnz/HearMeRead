@@ -253,6 +253,25 @@ class PassageListResponse(BaseModel):
     passages:  List[PassageResponse]
 
 
+class BulkPassageQuestion(BaseModel):
+    text:       str
+    answer_key: Optional[str] = None
+    order:      int           = 0
+
+
+class BulkPassageItem(BaseModel):
+    language:        Language
+    grade_level:     Optional[GradeLevel] = None
+    assessment_type: Optional[int]        = None
+    title:           Optional[str]        = None
+    content:         Optional[str]        = None
+    task1_content:   Optional[str]        = None
+    task2_words:     Optional[str]        = None
+    task2_sentences: Optional[str]        = None
+    story_number:    Optional[int]        = None
+    questions:       List[BulkPassageQuestion] = []
+
+
 # Student
 class StudentBase(BaseModel):
     first_name:  str           = Field(..., min_length=1, max_length=100, examples=["Maria"])

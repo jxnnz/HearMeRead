@@ -163,6 +163,9 @@ function A2Form({ form, update, questions, setQuestions }) {
             <select className="ap-input" value={form.story_number || "1"} onChange={(e) => update("story_number", e.target.value)}>
               <option value="1">Story 1</option>
               <option value="2">Story 2</option>
+              {form.story_number && !["1", "2"].includes(String(form.story_number)) && (
+                <option value={form.story_number}>Story {form.story_number}</option>
+              )}
             </select>
           </div>
           <div className="ap-field" style={{ flex: 1 }}>
@@ -277,8 +280,16 @@ export default function AdminPassagesPage() {
     const t = search.toLowerCase();
     return (p.title || "").toLowerCase().includes(t) || (p.content || "").toLowerCase().includes(t) || (p.task1_content || "").toLowerCase().includes(t);
   });
-  const totalPages = Math.ceil(filtered.length / PER);
-  const paginated = filtered.slice((page - 1) * PER, page * PER);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER));
+  const currentPage = Math.min(page, totalPages);
+  const paginated = filtered.slice((currentPage - 1) * PER, currentPage * PER);
+
+  // Auto-adjust to the previous/last valid page when passages are deleted or filtered
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [totalPages, page]);
 
   function update(field, val) { setForm((prev) => ({ ...prev, [field]: val })); }
 
@@ -339,7 +350,7 @@ export default function AdminPassagesPage() {
             continue;
           }
 
-          const sNum = parsedData.story_number || "1";
+          const sNum = parsedData.story_number ? parseInt(parsedData.story_number, 10) : 1;
           const fullTitle = title.match(/^Story\s*\d+:/i) ? title : (title ? `Story ${sNum}: ${title}` : `Story ${sNum}`);
 
           bulkItems.push({
@@ -451,7 +462,8 @@ export default function AdminPassagesPage() {
       setForm({ language: p.language, grade_level: p.grade_level, task1_content: p.task1_content || "", task2_words: p.task2_words || "", task2_sentences: p.task2_sentences || "" });
     } else {
       const { num, title } = parseStoryTitle(p.title || "");
-      setForm({ title, story_number: num, language: p.language, grade_level: p.grade_level, content: p.content || "" });
+      const sNum = p.story_number != null ? String(p.story_number) : (num || "");
+      setForm({ title: title || p.title || "", story_number: sNum, language: p.language, grade_level: p.grade_level, content: p.content || "" });
     }
     
     // Parse rhyme pairs for Grade 1 Filipino Assessment 1
@@ -507,9 +519,13 @@ export default function AdminPassagesPage() {
       const payload = { ...form, assessment_type: assType };
       if (assType === 1 && g1fil) payload.task2_words = serializeRhymePairs(rhymePairs);
       if (assType === 1 && eng3) payload.task2_sentences = "";
-      if (assType === 2) payload.title = `Story ${form.story_number || "1"}: ${(form.title || "").trim()}`;
       
       if (assType === 2) {
+        const sNum = form.story_number ? parseInt(form.story_number, 10) : 1;
+        payload.story_number = sNum;
+        const cleanT = (form.title || "").trim();
+        payload.title = cleanT.match(/^Story\s*\d+:/i) ? cleanT : `Story ${sNum}: ${cleanT}`;
+
         payload.questions = questions
           .filter(q => q.question?.trim())
           .map((q, idx) => ({
@@ -553,6 +569,9 @@ export default function AdminPassagesPage() {
     setArchiving(true);
     try {
       await adminApi.archivePassage(archiveTarget.id);
+      if (paginated.length === 1 && page > 1) {
+        setPage((p) => Math.max(1, p - 1));
+      }
       load();
     } catch {
       // ignore
@@ -856,7 +875,7 @@ export default function AdminPassagesPage() {
                           <td style={{ padding: isMobile ? "8px 6px" : "12px 14px" }} onClick={(e) => e.stopPropagation()}>
                             <div style={{ display: "flex", gap: isMobile ? 4 : 6 }}>
                               <button onClick={() => startEdit(p)} title="Edit" style={{ background: "#f8f9fd", border: "1px solid #dde2f0", borderRadius: 6, padding: isMobile ? "5px 6px" : "6px 8px", cursor: "pointer" }}><Pencil size={isMobile ? 12 : 14} color="#555" /></button>
-                              <button onClick={() => handleArchive(p)} title="Archive" style={{ background: "#fdf2f2", border: "1px solid #f9caca", borderRadius: 6, padding: isMobile ? "5px 6px" : "6px 8px", cursor: "pointer" }}><Trash2 size={isMobile ? 12 : 14} color="#c44" /></button>
+                              <button onClick={() => handleArchive(p)} title="Delete" style={{ background: "#fdf2f2", border: "1px solid #f9caca", borderRadius: 6, padding: isMobile ? "5px 6px" : "6px 8px", cursor: "pointer" }}><Trash2 size={isMobile ? 12 : 14} color="#c44" /></button>
                             </div>
                           </td>
                         </tr>
@@ -866,9 +885,9 @@ export default function AdminPassagesPage() {
                 </div>
                 {totalPages > 1 && (
                   <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12, marginTop: 20 }}>
-                    <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="ap-back-btn" style={{ width: 32, height: 32 }}><ChevronLeft size={16} /></button>
-                    <span style={{ fontSize: 13, color: "#555", fontWeight: 600 }}>Page {page} of {totalPages}</span>
-                    <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="ap-back-btn" style={{ width: 32, height: 32 }}><ChevronRight size={16} /></button>
+                    <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="ap-back-btn" style={{ width: 32, height: 32 }}><ChevronLeft size={16} /></button>
+                    <span style={{ fontSize: 13, color: "#555", fontWeight: 600 }}>Page {currentPage} of {totalPages}</span>
+                    <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="ap-back-btn" style={{ width: 32, height: 32 }}><ChevronRight size={16} /></button>
                   </div>
                 )}
               </>
@@ -909,9 +928,9 @@ export default function AdminPassagesPage() {
 
           <ConfirmModal
             isOpen={!!archiveTarget}
-            title="Archive Passage"
-            message={`Are you sure you want to archive "${archiveTarget?.title || 'this passage'}"? Teachers will no longer see it.`}
-            confirmLabel={archiving ? "Archiving..." : "Archive"}
+            title="Delete Passage"
+            message={`Are you sure you want to delete "${archiveTarget?.title || 'this passage'}"? Teachers will no longer see it.`}
+            confirmLabel={archiving ? "Deleting..." : "Delete"}
             variant="danger"
             onConfirm={handleArchiveConfirm}
             onClose={() => !archiving && setArchiveTarget(null)}

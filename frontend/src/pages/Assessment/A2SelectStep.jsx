@@ -1,15 +1,20 @@
 import { ChevronRight, CheckCircle } from "lucide-react";
 
 function getStoryParts(p) {
-  // Prefer the real story_number field. Fall back to regex-parsing
-  // the legacy "Story N: Title" format for passages created before
-  // story_number was a proper field.
+  const rawTitle = (p.title || "").trim();
+  const m = rawTitle.match(/^Story\s*(\d+)\s*:\s*(.+)$/i);
+  const cleanTitle = m ? m[2] : rawTitle;
+
+  // Prefer the real story_number field if present
   if (p.story_number != null) {
-    return { num: String(p.story_number), title: p.title || "" };
+    return { num: String(p.story_number), title: cleanTitle };
   }
-  if (!p.title) return { num: null, title: "" };
-  const m = p.title.match(/^Story\s*(\d+)\s*:\s*(.+)$/i);
-  return m ? { num: m[1], title: m[2] } : { num: null, title: p.title };
+  // Fall back to regex-parsing legacy "Story N: Title" format
+  if (m) {
+    return { num: m[1], title: m[2] };
+  }
+  // Optional story number (no badge, just title)
+  return { num: null, title: cleanTitle };
 }
 
 export default function A2SelectStep({ a2Stories, a2Passage, setA2Passage, onSelect }) {

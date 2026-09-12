@@ -34,13 +34,13 @@ export default function EditAssessment2Page() {
       .then((p) => {
         // Prefer the real story_number field; fall back to regex-parsing
         // the legacy "Story N: Title" concatenated format for old passages.
-        let num = "1";
+        let num = "";
         let titleOnly = p.title ?? "";
         if (p.story_number != null) {
           num = String(p.story_number);
         } else {
           const parsed = parseStoryTitle(p.title ?? "");
-          num = parsed.num;
+          num = parsed.num || "";
           titleOnly = parsed.title;
         }
         setStoryNum(num);
@@ -107,9 +107,13 @@ export default function EditAssessment2Page() {
     if (!validate()) return;
     setSaving(true);
     try {
+      const sNum = storyNum ? parseInt(storyNum, 10) : 1;
+      const cleanTitle = details.title.trim();
+      const finalTitle = cleanTitle.match(/^Story\s*\d+:/i) ? cleanTitle : `Story ${sNum}: ${cleanTitle}`;
+
       await passagesApi.update(id, {
-        title:        details.title.trim(),
-        story_number: parseInt(storyNum, 10),
+        title:        finalTitle,
+        story_number: sNum,
         content:      details.content.trim(),
         language:     details.language,
         grade_level:  details.grade_level,
@@ -131,25 +135,30 @@ export default function EditAssessment2Page() {
         }
       }
 
+      // Upload new original file to R2 if selected
+      if (selectedFile) {
+        await passagesApi.uploadFile(Number(id), selectedFile).catch(() => {});
+      }
+
       navigate("/passages");
     } catch (err) {
-      setError(err.response?.data?.detail || err.message);
+      setError(parseApiError(err, "Failed to save passage. Please try again."));
     } finally {
       setSaving(false);
     }
   }
 
-  const wordCount = details.content.trim().split(/\s+/).filter(Boolean).length;
-
   if (loading) {
     return (
       <Layout>
-        <div className="ap-page">
-          <p style={{ padding: "32px", color: "#8a94b2" }}>Loading…</p>
-        </div>
+        <div className="ap-loading">Loading passage…</div>
       </Layout>
     );
   }
+
+  const wordCount = details.content.trim()
+    ? details.content.trim().split(/\s+/).length
+    : 0;
 
   return (
     <Layout>
@@ -182,15 +191,18 @@ export default function EditAssessment2Page() {
 
           <div className="ap-row">
             <div className="ap-field" style={{ flex: "0 0 auto", minWidth: 130 }}>
-              <label className="ap-label" htmlFor="a2-story-num">Story Number:</label>
+              <label className="ap-label" htmlFor="a2-story-num">Story Number: *</label>
               <select
                 id="a2-story-num"
                 className="ap-input"
-                value={storyNum}
+                value={storyNum || "1"}
                 onChange={(e) => setStoryNum(e.target.value)}
               >
                 <option value="1">Story 1</option>
                 <option value="2">Story 2</option>
+                {storyNum && !["1", "2"].includes(String(storyNum)) && (
+                  <option value={storyNum}>Story {storyNum}</option>
+                )}
               </select>
             </div>
             <div className="ap-field" style={{ flex: 1 }}>

@@ -28,7 +28,7 @@ export default function AddAssessment2Page() {
 
   const [storyNum, setStoryNum] = useState(() => {
     const parsed = location.state?.parsedData;
-    return parsed?.story_number ? String(parsed.story_number) : "1";
+    return parsed?.story_number ? String(parsed.story_number) : "";
   });
   const [details, setDetails] = useState(() => {
     const parsed = location.state?.parsedData;
@@ -94,9 +94,13 @@ export default function AddAssessment2Page() {
     if (!validate()) return;
     setSaving(true);
     try {
+      const sNum = storyNum ? parseInt(storyNum, 10) : 1;
+      const cleanTitle = details.title.trim();
+      const finalTitle = cleanTitle.match(/^Story\s*\d+:/i) ? cleanTitle : `Story ${sNum}: ${cleanTitle}`;
+
       const passage = await passagesApi.create({
-        title:           details.title.trim(),
-        story_number:    parseInt(storyNum, 10),
+        title:           finalTitle,
+        story_number:    sNum,
         content:         details.content.trim(),
         language:        details.language,
         grade_level:     details.grade_level,
@@ -119,7 +123,7 @@ export default function AddAssessment2Page() {
 
       navigate("/passages");
     } catch (err) {
-      setError(parseApiError(err, "Failed to save passage. Please try again."));
+      setError(parseApiError(err, "Failed to create passage. Please try again."));
     } finally {
       setSaving(false);
     }
@@ -159,15 +163,18 @@ export default function AddAssessment2Page() {
           {/* Story Number + Title */}
           <div className="ap-row">
             <div className="ap-field" style={{ flex: "0 0 auto", minWidth: 130 }}>
-              <label className="ap-label" htmlFor="a2-story-num">Story Number:</label>
+              <label className="ap-label" htmlFor="a2-story-num">Story Number: *</label>
               <select
                 id="a2-story-num"
                 className="ap-input"
-                value={storyNum}
+                value={storyNum || "1"}
                 onChange={(e) => setStoryNum(e.target.value)}
               >
                 <option value="1">Story 1</option>
                 <option value="2">Story 2</option>
+                {storyNum && !["1", "2"].includes(String(storyNum)) && (
+                  <option value={storyNum}>Story {storyNum}</option>
+                )}
               </select>
             </div>
             <div className="ap-field" style={{ flex: 1 }}>

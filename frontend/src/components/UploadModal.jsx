@@ -135,8 +135,28 @@ export default function UploadModal({
 
       for (const file of stagedFiles) {
         const rawText = await parseFile(file);
-        const parsedPassages = parseDocument(rawText);
+        const parsedPassages = parseDocument(rawText, null, eng3);
         for (const pData of parsedPassages) {
+          // Extra guard: never include an A1 that has zero valid task content
+          if (pData.assessment_type === 1) {
+            const t1 = (pData.task1 || "").trim();
+            const t2w = (pData.task2Words || "").trim();
+            const t2s = (pData.task2Sentences || "").trim();
+            const rhymes = (pData.task2Rhymes || []).filter((r) => r.pair && r.pair.trim());
+            if (!t1 && !t2w && !t2s && rhymes.length === 0) {
+              continue;
+            }
+          }
+          // Extra guard: never include an A2 that has zero content, title, and questions
+          if (pData.assessment_type === 2) {
+            const content = (pData.content || "").trim();
+            const title = (pData.title || "").trim();
+            const questions = (pData.questions || []).filter((q) => q.question?.trim());
+            if (!content && !title && questions.length === 0) {
+              continue;
+            }
+          }
+
           allExtractedItems.push({
             assessment_type: pData.assessment_type,
             parsedData: pData,
