@@ -1,9 +1,9 @@
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, or_
+from sqlalchemy import select, func, or_, delete
 from fastapi import HTTPException, status
 
-from app.models import Student, AssessmentSession, ReadingResult, Teacher, StudentEnrollment
+from app.models import Student, AssessmentSession, ReadingResult, SessionObservation, Teacher, StudentEnrollment
 from app.schema import StudentCreate, StudentUpdate
 from app.core.encryption import encrypt, decrypt, hash_lrn
 from app.services.log_service import log_activity
@@ -100,7 +100,7 @@ async def get_students(
     section: Optional[str] = None,
     school_year: Optional[str] = None,
 ):
-    query = select(Student).where(Student.teacher_id == teacher_id)
+    query = select(Student).where(Student.teacher_id == teacher_id, Student.is_archived == False)
 
     # Non-encrypted fields can still be filtered in SQL
     if grade_level:
@@ -202,6 +202,7 @@ async def get_class_summaries(db: AsyncSession, teacher_id: int, school_year: Op
         .where(
             Student.teacher_id == teacher_id,
             Student.school_year == school_year,
+            Student.is_archived == False,
         )
     )
     if grade_filter:
@@ -226,7 +227,11 @@ async def get_class_summaries(db: AsyncSession, teacher_id: int, school_year: Op
 
 async def get_student_by_id(db: AsyncSession, student_id: int, teacher_id: int) -> Student:
     result = await db.execute(
-        select(Student).where(Student.id == student_id, Student.teacher_id == teacher_id)
+        select(Student).where(
+            Student.id == student_id,
+            Student.teacher_id == teacher_id,
+            Student.is_archived == False,
+        )
     )
     student = result.scalar_one_or_none()
     if not student:
@@ -314,9 +319,17 @@ async def update_student(
 
 
 async def delete_student(db: AsyncSession, student_id: int, teacher_id: int) -> None:
-    # get_student_by_id decrypts, but we only need the ORM object to delete
+    # Match student if created by teacher or enrolled in teacher's class
+    enrolled_subquery = select(StudentEnrollment.student_id).where(StudentEnrollment.teacher_id == teacher_id)
     result = await db.execute(
-        select(Student).where(Student.id == student_id, Student.teacher_id == teacher_id)
+        select(Student).where(
+            Student.id == student_id,
+            Student.is_archived == False,
+            or_(
+                Student.teacher_id == teacher_id,
+                Student.id.in_(enrolled_subquery)
+            )
+        )
     )
     student = result.scalar_one_or_none()
     if not student:
@@ -324,5 +337,15 @@ async def delete_student(db: AsyncSession, student_id: int, teacher_id: int) -> 
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Student with id {student_id} not found",
         )
-    await db.delete(student)
+
+    # Soft delete / archive: mark student as archived to hide from frontend while preserving DB records
+    student.is_archived = True
+
+    # Also archive associated assessment sessions
+    sessions_res = await db.execute(
+        select(AssessmentSession).where(AssessmentSession.student_id == student_id)
+    )
+    for sess in sessions_res.scalars().all():
+        sess.is_archived = True
+
     await db.commit()

@@ -20,7 +20,7 @@ export async function parseFile(file) {
   }
 }
 
-export function parseDocument(rawText, forceType = null, eng3 = false) {
+export function parseDocument(rawText, forceType = null, eng3 = false, defaultGrade = "grade_1") {
   let fullText = (rawText || "")
     .replace(/[\u200B-\u200D\uFEFF]/g, "") // strip zero-width characters
     .replace(/[\u00A0\u2000-\u200A\u202F\u205F\u3000]/g, " ") // normalize all non-breaking & wide Unicode spaces
@@ -48,7 +48,7 @@ export function parseDocument(rawText, forceType = null, eng3 = false) {
     language = langMatch[1].toLowerCase();
   }
 
-  let grade_level = "grade_1";
+  let grade_level = defaultGrade || "grade_1";
   const gradeRegex = /Grade(?:\s*Level)?[\s:-]+(?:grade[\s:-]*)?([123])/i;
   const gradeMatch = text.match(gradeRegex) || fullText.match(gradeRegex);
   if (gradeMatch) {

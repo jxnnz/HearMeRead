@@ -296,12 +296,44 @@
   border-color: #2c3e6b;
 }
 
+.as-btn--template {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #fff;
+  border: 1.5px solid #c8d0e4;
+  border-radius: 8px;
+  color: #1a2340;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: "Poppins", sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.as-btn--template:hover:not(:disabled) {
+  background: #f0f2fa;
+  border-color: #2c3e6b;
+}
+
+.as-btn--template:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 /* On very small screens, hide the label text and show only the icon */
-@media (max-width: 400px) {
-  .as-btn--upload span {
-    display: none;
+@media (max-width: 600px) {
+  .as-topbar__actions {
+    gap: 6px !important;
   }
+}
+
+@media (max-width: 480px) {
+  .as-btn--template,
   .as-btn--upload {
     padding: 8px 10px;
+    font-size: 12px;
   }
 }

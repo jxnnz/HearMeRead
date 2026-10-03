@@ -169,13 +169,14 @@ class Student(Base):
     lrn_hash    = Column(String(64),  unique=True, nullable=True, index=True)  # HMAC for uniqueness
     sex         = Column(SAEnum(Sex), nullable=True)
     teacher_id  = Column(Integer, ForeignKey("teachers.id"), nullable=False, index=True)
+    is_archived = Column(Boolean, nullable=False, default=False, server_default="false")
     created_at  = Column(DateTime(timezone=True), server_default=func.now())
     updated_at  = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Relationships
     teacher             = relationship("Teacher",           back_populates="students")
-    assessment_sessions = relationship("AssessmentSession", back_populates="student")
-    enrollments         = relationship("StudentEnrollment", back_populates="student")
+    assessment_sessions = relationship("AssessmentSession", back_populates="student", cascade="all, delete-orphan", passive_deletes=True)
+    enrollments         = relationship("StudentEnrollment", back_populates="student", cascade="all, delete-orphan", passive_deletes=True)
 
 
 class Passage(Base):
@@ -250,8 +251,8 @@ class AssessmentSession(Base):
     teacher     = relationship("Teacher", back_populates="assessment_sessions")
     student     = relationship("Student", back_populates="assessment_sessions")
     passage     = relationship("Passage", back_populates="assessment_sessions")
-    reading_result  = relationship("ReadingResult",      back_populates="session", uselist=False)
-    observation     = relationship("SessionObservation", back_populates="session", uselist=False)
+    reading_result  = relationship("ReadingResult",      back_populates="session", uselist=False, cascade="all, delete-orphan", passive_deletes=True)
+    observation     = relationship("SessionObservation", back_populates="session", uselist=False, cascade="all, delete-orphan", passive_deletes=True)
 
     # Validators
     @validates("school_year")

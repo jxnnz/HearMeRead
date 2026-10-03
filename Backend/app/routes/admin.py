@@ -416,7 +416,7 @@ async def list_class_cards(
     # Fallback: Batch-fetch student counts per (teacher_id, grade_level, section) directly from Student table
     fallback_counts = await db.execute(
         select(Student.teacher_id, Student.grade_level, Student.section, func.count(Student.id))
-        .where(Student.teacher_id.in_(all_teacher_ids))
+        .where(Student.teacher_id.in_(all_teacher_ids), Student.is_archived == False)
         .group_by(Student.teacher_id, Student.grade_level, Student.section)
     )
     fallback_count_map = {(r[0], r[1], r[2]): r[3] for r in fallback_counts.fetchall()}
@@ -528,6 +528,7 @@ async def get_teacher_class_record(
             students_result = await db.execute(
                 select(Student).where(
                     Student.id.in_(enrolled_ids),
+                    Student.is_archived == False,
                     *grade_filter,
                 ).order_by(Student.last_name, Student.first_name)
             )
@@ -536,6 +537,7 @@ async def get_teacher_class_record(
             students_result = await db.execute(
                 select(Student).where(
                     Student.teacher_id == teacher_id,
+                    Student.is_archived == False,
                     *grade_filter,
                 ).order_by(Student.last_name, Student.first_name)
             )
@@ -544,6 +546,7 @@ async def get_teacher_class_record(
         students_result = await db.execute(
             select(Student).where(
                 Student.teacher_id == teacher_id,
+                Student.is_archived == False,
                 *grade_filter,
             ).order_by(Student.last_name, Student.first_name)
         )

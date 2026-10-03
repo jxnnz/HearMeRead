@@ -211,6 +211,7 @@ async def export_crla(
             Student.id.in_(enrolled_ids),
             Student.grade_level == grade_enum,
             Student.section == section,
+            Student.is_archived == False,
         )
     else:
         stmt = select(Student).where(
@@ -218,6 +219,7 @@ async def export_crla(
             Student.grade_level == grade_enum,
             Student.section == section,
             Student.school_year == school_year,
+            Student.is_archived == False,
         )
     res = await db.execute(stmt)
     students = res.scalars().all()

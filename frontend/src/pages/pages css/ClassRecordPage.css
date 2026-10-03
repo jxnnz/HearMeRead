@@ -279,7 +279,7 @@
 .cr-th {
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: 2;
   background: #f4f6fb;
   color: #080808;
   font-weight: 600;
@@ -297,6 +297,88 @@
 .cr-th--name { min-width: 160px; text-align: left; }
 .cr-th--profile { min-width: 140px; }
 .cr-th--remarks { min-width: 180px; text-align: left; }
+
+/* ── Frozen (Sticky) Columns ─────────────────────────────────────── */
+.cr-freeze--num {
+  position: sticky;
+  left: 0;
+  width: 44px;
+  min-width: 44px;
+  max-width: 44px;
+  box-sizing: border-box;
+}
+
+.cr-freeze--lrn {
+  position: sticky;
+  left: 44px;
+  width: 130px;
+  min-width: 130px;
+  max-width: 130px;
+  box-sizing: border-box;
+}
+
+.cr-freeze--name {
+  position: sticky;
+  left: 174px;
+  width: 200px;
+  min-width: 200px;
+  max-width: 240px;
+  box-sizing: border-box;
+  box-shadow: 3px 0 6px -2px rgba(26, 35, 64, 0.12);
+  border-right: 1.5px solid #c8d0e4 !important;
+}
+
+.cr-freeze--actions {
+  position: sticky;
+  right: 0;
+  width: 76px;
+  min-width: 76px;
+  max-width: 76px;
+  box-sizing: border-box;
+  box-shadow: -3px 0 6px -2px rgba(26, 35, 64, 0.12);
+  border-left: 1.5px solid #c8d0e4 !important;
+}
+
+/* Header layer priority */
+.cr-th.cr-freeze--num,
+.cr-th.cr-freeze--lrn,
+.cr-th.cr-freeze--name,
+.cr-th.cr-freeze--actions {
+  z-index: 25;
+  background-color: #f4f6fb;
+}
+
+/* Body frozen cells */
+.cr-td.cr-freeze--num,
+.cr-td.cr-freeze--lrn,
+.cr-td.cr-freeze--name,
+.cr-td.cr-freeze--actions {
+  z-index: 5;
+  background-color: #ffffff;
+}
+
+/* Ensure alternating row colors apply to frozen cells */
+.cr-table tbody tr:nth-child(even) .cr-freeze--num,
+.cr-table tbody tr:nth-child(even) .cr-freeze--lrn,
+.cr-table tbody tr:nth-child(even) .cr-freeze--name,
+.cr-table tbody tr:nth-child(even) .cr-freeze--actions {
+  background-color: #fafbfe;
+}
+
+/* Ensure hover colors apply to frozen cells */
+.cr-table tbody tr:hover .cr-freeze--num,
+.cr-table tbody tr:hover .cr-freeze--lrn,
+.cr-table tbody tr:hover .cr-freeze--name,
+.cr-table tbody tr:hover .cr-freeze--actions {
+  background-color: #f8f9fd;
+}
+
+.cr-table tbody tr:nth-child(even):hover .cr-freeze--num,
+.cr-table tbody tr:nth-child(even):hover .cr-freeze--lrn,
+.cr-table tbody tr:nth-child(even):hover .cr-freeze--name,
+.cr-table tbody tr:nth-child(even):hover .cr-freeze--actions {
+  background-color: #f0f3fb;
+}
 
 /* Group header colours */
 .cr-th--group1 {
@@ -365,6 +447,11 @@
   text-decoration: underline;
   text-underline-offset: 2px;
   text-align: left;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 185px;
 }
 
 .cr-student-link:hover {

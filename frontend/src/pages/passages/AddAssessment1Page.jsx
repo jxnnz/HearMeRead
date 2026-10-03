@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronLeft, Info } from "lucide-react";
 
 import Layout from "../../components/Layout";
-import { passagesApi } from "../../services/api";
+import { passagesApi, authApi } from "../../services/api";
 import { parseApiError } from "../../utils/apiError";
 import "../pages css/AddPassagePage.css";
 
@@ -37,18 +37,34 @@ export default function AddAssessment1Page() {
 
   const [form, setForm] = useState(() => {
     const parsed = location.state?.parsedData;
+    const initialGrade = location.state?.teacherGrade || EMPTY_FORM.grade_level;
     if (parsed) {
       return {
         ...EMPTY_FORM,
         language: parsed.language || EMPTY_FORM.language,
-        grade_level: parsed.grade_level || EMPTY_FORM.grade_level,
+        grade_level: parsed.grade_level || initialGrade,
         task1_content: parsed.task1 || "",
         task2_words: parsed.task2Words || "",
         task2_sentences: parsed.task2Sentences || "",
       };
     }
-    return EMPTY_FORM;
+    return { ...EMPTY_FORM, grade_level: initialGrade };
   });
+
+  useEffect(() => {
+    const passedGrade = location.state?.teacherGrade;
+    if (passedGrade && !location.state?.parsedData?.grade_level) {
+      setForm((prev) => ({ ...prev, grade_level: passedGrade }));
+      return;
+    }
+    authApi.me()
+      .then((user) => {
+        if (user?.grade_level && !location.state?.parsedData?.grade_level) {
+          setForm((prev) => ({ ...prev, grade_level: user.grade_level }));
+        }
+      })
+      .catch(() => {});
+  }, [location.state]);
 
   const [rhymePairs, setRhymePairs] = useState(() => {
     const parsed = location.state?.parsedData;

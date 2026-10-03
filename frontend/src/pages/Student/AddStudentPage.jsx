@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, FileUp } from "lucide-react";
+import { ChevronLeft, FileUp, Download } from "lucide-react";
 
 import Layout                              from "../../components/Layout";
 import StudentDetailsForm from "../../components/StudentDetailsForm";
@@ -29,6 +29,18 @@ export default function AddStudentPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState(null);
   const [showBulk, setShowBulk] = useState(false);   // NEW
+  const [downloadingTemplate, setDownloadingTemplate] = useState(false);
+
+  async function handleDownloadTemplate() {
+    setDownloadingTemplate(true);
+    try {
+      await studentsApi.downloadBulkTemplate();
+    } catch {
+      setError("Failed to download template. Please try again.");
+    } finally {
+      setDownloadingTemplate(false);
+    }
+  }
 
   useEffect(() => {
     Promise.all([
@@ -92,7 +104,7 @@ export default function AddStudentPage() {
     <Layout>
       <div className="as-page">
 
-        {/* Top bar: back arrow + title + upload button */}
+        {/* Top bar: back arrow + title + download template & upload button */}
         <div className="as-topbar">
           <button
             className="as-back-btn"
@@ -104,15 +116,27 @@ export default function AddStudentPage() {
 
           <h1 className="as-page__title">Add Student</h1>
 
-          {/* NEW — Upload Student List, pushed to the far right */}
-          <button
-            className="as-btn as-btn--upload"
-            onClick={() => setShowBulk(true)}
-            style={{ marginLeft: "auto" }}
-          >
-            <FileUp size={14} style={{ flexShrink: 0 }} />
-            Upload Student List
-          </button>
+          <div className="as-topbar__actions" style={{ marginLeft: "auto", display: "flex", gap: "10px", alignItems: "center" }}>
+            <button
+              type="button"
+              className="as-btn as-btn--template"
+              onClick={handleDownloadTemplate}
+              disabled={downloadingTemplate}
+              title="Download Student List XLSX Template"
+            >
+              <Download size={14} style={{ flexShrink: 0 }} />
+              {downloadingTemplate ? "Downloading…" : "Download Template"}
+            </button>
+
+            <button
+              type="button"
+              className="as-btn as-btn--upload"
+              onClick={() => setShowBulk(true)}
+            >
+              <FileUp size={14} style={{ flexShrink: 0 }} />
+              Upload Student List
+            </button>
+          </div>
         </div>
 
         {error && (

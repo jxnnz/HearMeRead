@@ -69,6 +69,7 @@ async def get_dashboard_summary(
         .where(
             Student.teacher_id == teacher_id,
             Student.school_year == sy,
+            Student.is_archived == False,
         )
     )) or 0
 
@@ -107,7 +108,7 @@ async def get_dashboard_summary(
         select(Student.sex, profile_expr.label("reading_profile"), func.count().label("cnt"))
         .join(AssessmentSession, AssessmentSession.student_id == Student.id)
         .join(ReadingResult, ReadingResult.session_id == AssessmentSession.id)
-        .where(completed_filter, profile_expr.isnot(None))
+        .where(completed_filter, profile_expr.isnot(None), Student.is_archived == False)
         .group_by(Student.sex, profile_expr)
     )).all()
 

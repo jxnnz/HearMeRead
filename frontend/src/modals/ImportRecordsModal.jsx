@@ -104,6 +104,11 @@ export default function ImportRecordsModal({ isOpen, onClose, onSuccess }) {
         {/* Body */}
         <div className="im-body">
 
+          {/* Context note / description */}
+          <p className="im-note">
+            Import existing reading assessment records and student data directly from an official CRLA Excel (.xlsx) file. This will automatically populate student profiles, grade levels, sections, and assessment scores for the selected school year and period.
+          </p>
+
           {/* Drop zone */}
           <div
             className={`im-dropzone${dragging ? " im-dropzone--over" : ""}${file ? " im-dropzone--has-file" : ""}`}

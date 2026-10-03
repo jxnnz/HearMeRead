@@ -564,9 +564,9 @@ function ClassRecordView({ card, onBack }) {
             <table className="cr-table">
               <thead>
                 <tr>
-                  <th rowSpan={2} className="cr-th cr-th--id">#</th>
-                  <th rowSpan={2} className="cr-th cr-th--id">LRN</th>
-                  <th rowSpan={2} className="cr-th cr-th--name">Student Name</th>
+                  <th rowSpan={2} className="cr-th cr-th--id cr-freeze--num">#</th>
+                  <th rowSpan={2} className="cr-th cr-th--id cr-freeze--lrn">LRN</th>
+                  <th rowSpan={2} className="cr-th cr-th--name cr-freeze--name">Student Name</th>
                   <th rowSpan={2} className="cr-th">Sex</th>
                   <th rowSpan={2} className="cr-th">Date</th>
                   <th colSpan={5} className="cr-th cr-th--group1">Assessment Part 1</th>
@@ -613,9 +613,9 @@ function ClassRecordView({ card, onBack }) {
 
                   return (
                     <tr key={s.student_id}>
-                      <td className="cr-td cr-td--center">{idx + 1}</td>
-                      <td className="cr-td">{s.lrn ?? "—"}</td>
-                      <td className="cr-td">
+                      <td className="cr-td cr-td--center cr-freeze--num">{idx + 1}</td>
+                      <td className="cr-td cr-freeze--lrn">{s.lrn ?? "—"}</td>
+                      <td className="cr-td cr-freeze--name">
                         <span style={{ color: nameColor, fontWeight: 600 }}>
                           {s.last_name}, {s.first_name}
                         </span>

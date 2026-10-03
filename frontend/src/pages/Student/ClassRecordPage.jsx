@@ -8,6 +8,7 @@ import ExcelJS from "exceljs";
 import Layout from "../../components/Layout";
 import EditStudentModal from "../../modals/EditStudentModal";
 import StudentInfoModal from "../../modals/StudentInfoModal";
+import ConfirmModal from "../../modals/ConfirmModal";
 import { authApi, studentsApi, sessionsApi } from "../../services/api";
 import useToast from "../../hooks/Usetoast";
 import Toast from "../../modals/Toast";
@@ -54,7 +55,7 @@ function storyLabel(t) {
 }
 
 export default function ClassRecordPage() {
-  const { toasts, removeToast, showSaveSuccess, showError } = useToast();
+  const { toasts, removeToast, showSaveSuccess, showError, addToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   const { grade = "", section = "", year = "", period = "beginning" } = location.state ?? {};
@@ -177,9 +178,12 @@ export default function ClassRecordPage() {
     try {
       await studentsApi.delete(deleteStudent.id);
       setDeleteStudent(null);
+      addToast("Student deleted successfully.");
       reload();
     } catch (err) {
-      setDeleteStudentError(parseApiError(err, "Failed to delete student. Please try again."));
+      const msg = parseApiError(err, "Failed to delete student. Please try again.");
+      setDeleteStudentError(msg);
+      showError(msg);
     } finally {
       setDeletingStudent(false);
     }
@@ -546,40 +550,15 @@ export default function ClassRecordPage() {
 
 
 
-            {/* Delete student confirmation banner */}
-            {deleteStudent && (
-              <div className="cr-delete-confirm">
-                <span>
-                  Permanently delete <strong>{deleteStudent.first_name} {deleteStudent.last_name}</strong>?
-                  This removes the student and all of their assessment history across every school year.
-                  This cannot be undone.
-                  {deleteStudentError && (
-                    <>
-                      <br />
-                      <span className="cr-delete-confirm__error">{deleteStudentError}</span>
-                    </>
-                  )}
-                </span>
-                <div className="cr-archive-confirm__actions">
-                  <button className="cr-archive-confirm__btn cr-archive-confirm__btn--cancel" onClick={() => { setDeleteStudent(null); setDeleteStudentError(null); }} disabled={deletingStudent}>
-                    Cancel
-                  </button>
-                  <button className="cr-archive-confirm__btn cr-archive-confirm__btn--confirm" onClick={handleDeleteStudent} disabled={deletingStudent}>
-                    {deletingStudent ? "Deleting…" : "Delete Permanently"}
-                  </button>
-                </div>
-              </div>
-            )}
-
             {/* Scrollable assessment table */}
             <div className="cr-table-wrapper">
               <table className="cr-table">
                 <thead>
                   <tr>
                     {/* Group: Identity */}
-                    <th rowSpan={2} className="cr-th cr-th--id">#</th>
-                    <th rowSpan={2} className="cr-th cr-th--id">LRN</th>
-                    <th rowSpan={2} className="cr-th cr-th--name">Student Name</th>
+                    <th rowSpan={2} className="cr-th cr-th--id cr-freeze--num">#</th>
+                    <th rowSpan={2} className="cr-th cr-th--id cr-freeze--lrn">LRN</th>
+                    <th rowSpan={2} className="cr-th cr-th--name cr-freeze--name">Student Name</th>
                     <th rowSpan={2} className="cr-th">Sex</th>
                     <th rowSpan={2} className="cr-th">Date</th>
                     {/* Group: Assessment Part 1 */}
@@ -591,7 +570,7 @@ export default function ClassRecordPage() {
                     <th rowSpan={2} className="cr-th">Obs. Level</th>
                     <th rowSpan={2} className="cr-th cr-th--profile">Reading Profile</th>
                     <th rowSpan={2} className="cr-th cr-th--remarks">Remarks</th>
-                    <th rowSpan={2} className="cr-th cr-th--actions"></th>
+                    <th rowSpan={2} className="cr-th cr-th--actions cr-freeze--actions">Actions</th>
                   </tr>
                   <tr>
                     <th className="cr-th cr-th--sub cr-th--group1">Task 1</th>
@@ -637,12 +616,13 @@ export default function ClassRecordPage() {
 
                       return (
                         <tr key={s.id}>
-                          <td className="cr-td cr-td--center">{idx + 1}</td>
-                          <td className="cr-td">{s.lrn ?? "—"}</td>
-                          <td className="cr-td">
+                          <td className="cr-td cr-td--center cr-freeze--num">{idx + 1}</td>
+                          <td className="cr-td cr-freeze--lrn">{s.lrn ?? "—"}</td>
+                          <td className="cr-td cr-freeze--name">
                             <button
                               className="cr-student-link"
                               style={{ color: nameColor }}
+                              title={`${s.last_name}, ${s.first_name}${s.middle_name ? `, ${s.middle_name}` : ""}`}
                               onClick={() => {
                                 setSelectedStudentId(s.id);
                                 setSelectedSessionId(sess ? sess.id : null);
@@ -679,7 +659,7 @@ export default function ClassRecordPage() {
                             {profile ?? "—"}
                           </td>
                           <td className="cr-td cr-td--remarks">{obs?.teacher_remarks ?? "—"}</td>
-                          <td className="cr-td cr-td--actions">
+                          <td className="cr-td cr-td--actions cr-freeze--actions">
                             <button
                               className="cr-action-btn cr-action-btn--edit"
                               onClick={() => setEditStudent(s)}
@@ -767,6 +747,28 @@ export default function ClassRecordPage() {
         saving={editStudentSaving}
         error={editStudentError}
       />
+
+      {/* Delete Student Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteStudent !== null}
+        onClose={() => {
+          if (!deletingStudent) {
+            setDeleteStudent(null);
+            setDeleteStudentError(null);
+          }
+        }}
+        onConfirm={handleDeleteStudent}
+        variant="danger"
+        title="Delete Student?"
+        message={
+          deleteStudent
+            ? `Are you sure you want to delete ${deleteStudent.first_name} ${deleteStudent.last_name}? This will remove the student and all associated assessment records.`
+            : ""
+        }
+        confirmLabel={deletingStudent ? "Deleting…" : "Delete Student"}
+        cancelLabel="Cancel"
+      />
+
       <Toast toasts={toasts} onRemove={removeToast} />
     </Layout>
   );

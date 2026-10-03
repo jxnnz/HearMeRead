@@ -286,10 +286,10 @@ export default function PassagePage() {
             <Upload size={15} />
             {!isMobile && " Upload"}
           </button>
-          <button className="ap-save-btn" onClick={() => navigate("/passages/add-assessment-1")} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <button className="ap-save-btn" onClick={() => navigate("/passages/add-assessment-1", { state: { teacherGrade } })} style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <Plus size={15} />{isMobile ? "A1" : "Add Assessment 1"}
           </button>
-          <button className="ap-save-btn" onClick={() => navigate("/passages/add-assessment-2")} style={{ display: "flex", alignItems: "center", gap: 6, background: "#FDC210", color: "#1a2340", borderColor: "#FDC210" }}>
+          <button className="ap-save-btn" onClick={() => navigate("/passages/add-assessment-2", { state: { teacherGrade } })} style={{ display: "flex", alignItems: "center", gap: 6, background: "#FDC210", color: "#1a2340", borderColor: "#FDC210" }}>
             <Plus size={15} />{isMobile ? "A2" : "Add Assessment 2"}
           </button>
         </TopBar>
@@ -485,9 +485,9 @@ export default function PassagePage() {
           onClose={() => setUploadOpen(false)}
           onUpload={(type, parsedData, fileName, file) => {
             if (type === 1) {
-              navigate("/passages/add-assessment-1", { state: { parsedData, uploadedFile: file } });
+              navigate("/passages/add-assessment-1", { state: { parsedData, uploadedFile: file, teacherGrade } });
             } else {
-              navigate("/passages/add-assessment-2", { state: { parsedData, uploadedFile: file } });
+              navigate("/passages/add-assessment-2", { state: { parsedData, uploadedFile: file, teacherGrade } });
             }
           }}
           onBulkUpload={handleBulkUpload}

@@ -135,7 +135,7 @@ export default function UploadModal({
 
       for (const file of stagedFiles) {
         const rawText = await parseFile(file);
-        const parsedPassages = parseDocument(rawText, null, eng3);
+        const parsedPassages = parseDocument(rawText, null, eng3, teacherGrade || "grade_1");
         for (const pData of parsedPassages) {
           // Extra guard: never include an A1 that has zero valid task content
           if (pData.assessment_type === 1) {

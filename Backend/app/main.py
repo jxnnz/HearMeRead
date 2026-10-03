@@ -33,15 +33,16 @@ async def lifespan(app: FastAPI):
     from app.services.cleanup import create_scheduler
     ensure_audio_dir()
 
-    # Dynamic DB update: add original_passage_id to passages if not exists
+    # Dynamic DB update: add missing columns if not exists
     try:
         from sqlalchemy import text
         from app.db import AsyncSessionLocal
         async with AsyncSessionLocal() as session:
             await session.execute(text("ALTER TABLE passages ADD COLUMN IF NOT EXISTS original_passage_id INTEGER REFERENCES passages(id) ON DELETE SET NULL"))
+            await session.execute(text("ALTER TABLE students ADD COLUMN IF NOT EXISTS is_archived BOOLEAN NOT NULL DEFAULT FALSE"))
             await session.commit()
     except Exception as e:
-        logger.warning(f"Failed to auto-add column 'original_passage_id' on startup: {e}")
+        logger.warning(f"Failed to auto-add columns on startup: {e}")
 
     scheduler = create_scheduler()
     scheduler.start()
@@ -99,6 +100,10 @@ async def security_headers(request: Request, call_next):
         )
         detail = "Internal server error"
         response = JSONResponse(status_code=500, content={"detail": detail})
+        origin = request.headers.get("origin")
+        if origin and (origin in _cors_origins or not settings.is_production):
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"

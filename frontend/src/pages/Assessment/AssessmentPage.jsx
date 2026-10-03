@@ -77,7 +77,7 @@ const STEP_LABELS = {
   [STEPS.A2_PREVIEW]:    "Assessment 2",
 };
 
-const FONT_SIZES = [26, 28, 30];
+const FONT_SIZES = [30, 36, 40];
 
 const GRADE_TIME_LIMITS = { 1: 60, 2: 120, 3: 180 };
 
