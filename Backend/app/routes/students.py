@@ -352,18 +352,11 @@ async def export_crla(
                         rule.formula = ["AND($F11<>\"\",$F11>6)"]
 
         if ws.title == "Class Record":
-            # Update Grade label to be one level lower for CRLA (since they are assessed on lower grade materials)
-            lower_grade_label = "Kindergarten" if grade_num == 1 else f"Grade {grade_num - 1}"
-            ws.cell(row=7, column=3).value = lower_grade_label
-            cell_e5 = ws.cell(row=5, column=5)
-            if isinstance(cell_e5.value, str) and "GRADE 2" in cell_e5.value:
-                cell_e5.value = cell_e5.value.replace("GRADE 2", f"GRADE {grade_num}")
-            # For Grade 3, Class Record E6 label stays as MOTHER TONGUE (no longer replaced to ENGLISH)
+            # Set Grade label to current grade level (e.g. Grade 1, Grade 2, Grade 3)
+            ws.cell(row=7, column=3).value = f"Grade {grade_num}"
+            ws.cell(row=5, column=5).value = f"GRADE {grade_num} Reading Assessment CLASS RECORD"
 
         elif ws.title == "Class Summary":
-            cell_a2 = ws.cell(row=2, column=1)
-            if isinstance(cell_a2.value, str) and "GRADE 2" in cell_a2.value:
-                cell_a2.value = cell_a2.value.replace("GRADE 2", f"GRADE {grade_num}")
             cell_a8 = ws.cell(row=8, column=1)
             if cell_a8.value == "Grade 2":
                 cell_a8.value = f"Grade {grade_num}"
@@ -391,21 +384,140 @@ async def export_crla(
     if ws_eng:
         write_sheet_metadata(ws_eng, "English")
 
-    # Helper: write student identity to a scoresheet row
-    def write_student_identity(ws, row_num, idx, s):
-        ws.cell(row=row_num, column=1).value = idx
-        ws.cell(row=row_num, column=2).value = s.lrn
-        ws.cell(row=row_num, column=3).value = f"{s.last_name}, {s.first_name}" + (f", {s.middle_name}" if s.middle_name else "")
-        ws.cell(row=row_num, column=4).value = s.sex.value.capitalize() if s.sex else None
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.drawing.image import Image as OpenpyxlImage
 
-    # Helper: write session scores to a scoresheet row
-    def write_session_scores(ws, row_num, sess):
+    thin_border = Border(
+        left=Side(style="thin", color="BFBFBF"),
+        right=Side(style="thin", color="BFBFBF"),
+        top=Side(style="thin", color="BFBFBF"),
+        bottom=Side(style="thin", color="BFBFBF"),
+    )
+
+    from openpyxl.worksheet.cell_range import CellRange
+    from openpyxl.cell.cell import Cell
+
+    def safe_unmerge(ws, target_range_str):
+        for r in list(ws.merged_cells.ranges):
+            if str(r) == target_range_str or r.coord == target_range_str:
+                try:
+                    ws.merged_cells.remove(r)
+                    for row in range(r.min_row, r.max_row + 1):
+                        for col in range(r.min_col, r.max_col + 1):
+                            if (row, col) in ws._cells:
+                                ws._cells[(row, col)] = Cell(ws, row=row, column=col)
+                except Exception:
+                    pass
+
+    def safe_merge(ws, target_range_str):
+        try:
+            target_cr = CellRange(target_range_str)
+            for r in list(ws.merged_cells.ranges):
+                if str(r) == target_range_str or r.coord == target_range_str:
+                    return
+                if not (r.max_row < target_cr.min_row or r.min_row > target_cr.max_row or
+                        r.max_col < target_cr.min_col or r.min_col > target_cr.max_col):
+                    try:
+                        ws.merged_cells.remove(r)
+                        for row in range(r.min_row, r.max_row + 1):
+                            for col in range(r.min_col, r.max_col + 1):
+                                if (row, col) in ws._cells:
+                                    ws._cells[(row, col)] = Cell(ws, row=row, column=col)
+                    except Exception:
+                        pass
+            ws.merge_cells(target_range_str)
+        except Exception:
+            try:
+                ws.merge_cells(target_range_str)
+            except Exception:
+                pass
+
+    ws_cr = wb["Class Record"]
+
+    # For Grade 3, add another table for English on the Class Record tab
+    if grade_num == 3:
+        safe_unmerge(ws_cr, "E5:Q5")
+        safe_unmerge(ws_cr, "Q6:Q8")
+
+        eng_fill = PatternFill(start_color="E2EFDA", end_color="E2EFDA", fill_type="solid")
+        header_font_10 = Font(name="Arial", size=10, bold=True, color="000000")
+        header_font_9 = Font(name="Arial", size=9, bold=True, color="000000")
+        header_font_8 = Font(name="Arial", size=8, bold=True, color="000000")
+        center_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+
+        ws_cr.cell(row=5, column=5).value = "GRADE 3 Reading Assessment CLASS RECORD"
+
+        # Row 6
+        for c in range(17, 23):
+            cell = ws_cr.cell(row=6, column=c)
+            cell.fill = eng_fill
+            cell.border = thin_border
+        ws_cr.cell(row=6, column=17).value = "ENGLISH"
+        ws_cr.cell(row=6, column=17).font = header_font_10
+        ws_cr.cell(row=6, column=17).alignment = center_align
+
+        ws_cr.cell(row=6, column=23).value = "Remarks"
+        ws_cr.cell(row=6, column=23).font = header_font_10
+        ws_cr.cell(row=6, column=23).alignment = center_align
+        for r in range(6, 9):
+            ws_cr.cell(row=r, column=23).border = thin_border
+
+        # Row 7
+        for c in range(17, 23):
+            cell = ws_cr.cell(row=7, column=c)
+            cell.fill = eng_fill
+            cell.border = thin_border
+        ws_cr.cell(row=7, column=17).value = "Assessment Part 1"
+        ws_cr.cell(row=7, column=17).font = header_font_9
+        ws_cr.cell(row=7, column=17).alignment = center_align
+
+        ws_cr.cell(row=7, column=19).value = "Assessment Part 2"
+        ws_cr.cell(row=7, column=19).font = header_font_9
+        ws_cr.cell(row=7, column=19).alignment = center_align
+
+        ws_cr.cell(row=7, column=22).value = "READING PROFILE"
+        ws_cr.cell(row=7, column=22).font = header_font_9
+        ws_cr.cell(row=7, column=22).alignment = center_align
+
+        # Row 8
+        headers_r8 = {
+            17: ("Assessment Part 1 Reading Level", header_font_9),
+            18: ("% of Total Score", header_font_9),
+            19: ("Reading Fluency", header_font_9),
+            20: ("Reading Comprehension", header_font_8),
+            21: ("Average Word Per Minute", header_font_8),
+            22: (None, header_font_9),
+        }
+        for c, (h_text, h_font) in headers_r8.items():
+            cell = ws_cr.cell(row=8, column=c)
+            cell.fill = eng_fill
+            cell.border = thin_border
+            if h_text:
+                cell.value = h_text
+                cell.font = h_font
+                cell.alignment = center_align
+
+        safe_merge(ws_cr, "E5:W5")
+        safe_merge(ws_cr, "Q6:V6")
+        safe_merge(ws_cr, "W6:W8")
+        safe_merge(ws_cr, "Q7:R7")
+        safe_merge(ws_cr, "S7:U7")
+        safe_merge(ws_cr, "V7:V8")
+
+        # Widths
+        widths = {
+            "Q": 19.0, "R": 10.0, "S": 10.0, "T": 14.0, "U": 10.0, "V": 26.0, "W": 40.0
+        }
+        for col_l, w in widths.items():
+            ws_cr.column_dimensions[col_l].width = w
+
+    # Helper: calculate session summary metrics for scoresheet and class record
+    def get_session_metrics(sess):
         if not sess:
-            return
-        ws.cell(row=row_num, column=5).value = sess.created_at.date()
+            return None
         rr = sess.reading_result
         if not rr:
-            return
+            return None
 
         t1 = rr.part1_task1_correct if rr.part1_task1_correct is not None else 0
         t2 = rr.part1_task2_correct if rr.part1_task2_correct is not None else 0
@@ -429,87 +541,238 @@ async def export_crla(
             else:
                 calculated_classification = "Grade Ready"
 
-        ws.cell(row=row_num, column=6).value = t1
-        if "2l" in route:
-            ws.cell(row=row_num, column=7).value = t2
-        elif "2h" in route:
-            ws.cell(row=row_num, column=8).value = t2
+        pct_score = calculated_total_score / 30.0
 
-        # Write calculated values directly to Scoresheet
-        ws.cell(row=row_num, column=9).value = calculated_total_score
-        ws.cell(row=row_num, column=10).value = calculated_classification
-        if rr.total_words is not None and rr.miscue_count is not None:
-            ws.cell(row=row_num, column=13).value = rr.total_words - rr.miscue_count
-        if rr.cwpm is not None:
-            ws.cell(row=row_num, column=16).value = rr.cwpm
-        if rr.total_words is not None and rr.total_words > 0 and rr.miscue_count is not None:
-            ws.cell(row=row_num, column=17).value = (rr.total_words - rr.miscue_count) / rr.total_words
         profile_val = rr.reading_profile
         if not profile_val or str(profile_val).strip() == "":
             profile_val = "Low Emerging Reader"
-        ws.cell(row=row_num, column=21).value = profile_val
 
         is_full_refresher = (calculated_classification == "Full Refresher" or calculated_total_score <= 10)
-        if not is_full_refresher:
-            if sess.passage:
-                ws.cell(row=row_num, column=11).value = sess.passage.story_number or 1
-            ws.cell(row=row_num, column=12).value = rr.miscue_count if rr.miscue_count is not None else 0
 
-            time_sec = rr.reading_time_seconds or 0
+        fluency = None
+        comp = None
+        cwpm = None
+        obs = sess.observation
+        remarks = obs.teacher_remarks if (obs and obs.teacher_remarks) else ""
+
+        if not is_full_refresher:
+            if rr.total_words is not None and rr.total_words > 0 and rr.miscue_count is not None:
+                fluency = (rr.total_words - rr.miscue_count) / rr.total_words
+            if obs and obs.comprehension_correct is not None:
+                total_q = 6
+                if sess.passage and hasattr(sess.passage, "questions") and sess.passage.questions:
+                    total_q = len(sess.passage.questions)
+                comp = min(1.0, obs.comprehension_correct / float(total_q))
+            if rr.cwpm is not None:
+                cwpm = rr.cwpm
+
+        return {
+            "t1": t1,
+            "t2": t2,
+            "route": route,
+            "total_score": calculated_total_score,
+            "classification": calculated_classification,
+            "pct_score": pct_score,
+            "fluency": fluency,
+            "comp": comp,
+            "cwpm": cwpm,
+            "profile": profile_val,
+            "remarks": remarks,
+            "is_full_refresher": is_full_refresher,
+            "story_number": (sess.passage.story_number if sess.passage and sess.passage.story_number else 1),
+            "miscue_count": (rr.miscue_count if rr.miscue_count is not None else 0),
+            "total_words": rr.total_words,
+            "time_sec": (rr.reading_time_seconds or 0),
+            "comp_raw": (obs.comprehension_correct if (obs and obs.comprehension_correct is not None) else 0),
+            "learner_exp": (obs.learner_experience if (obs and obs.learner_experience is not None) else 0),
+            "fluency_level": (f"Level {obs.fluency_level}" if (obs and obs.fluency_level) else None),
+            "created_at": sess.created_at.date() if sess.created_at else None,
+        }
+
+    # Helper: write student identity to a scoresheet row
+    def write_student_identity(ws, row_num, idx, s):
+        ws.cell(row=row_num, column=1).value = idx
+        ws.cell(row=row_num, column=2).value = s.lrn
+        ws.cell(row=row_num, column=3).value = f"{s.last_name}, {s.first_name}" + (f", {s.middle_name}" if s.middle_name else "")
+        ws.cell(row=row_num, column=4).value = s.sex.value.capitalize() if s.sex else None
+
+    # Helper: write session scores to a scoresheet row
+    def write_session_scores(ws, row_num, m):
+        if not m:
+            return
+        if m["created_at"]:
+            ws.cell(row=row_num, column=5).value = m["created_at"]
+
+        ws.cell(row=row_num, column=6).value = m["t1"]
+        if "2l" in m["route"]:
+            ws.cell(row=row_num, column=7).value = m["t2"]
+        elif "2h" in m["route"]:
+            ws.cell(row=row_num, column=8).value = m["t2"]
+
+        # Write calculated values directly to Scoresheet
+        ws.cell(row=row_num, column=9).value = m["total_score"]
+        ws.cell(row=row_num, column=10).value = m["classification"]
+        if m["total_words"] is not None and m["miscue_count"] is not None:
+            ws.cell(row=row_num, column=13).value = m["total_words"] - m["miscue_count"]
+        if m["cwpm"] is not None:
+            ws.cell(row=row_num, column=16).value = m["cwpm"]
+        if m["fluency"] is not None:
+            ws.cell(row=row_num, column=17).value = m["fluency"]
+        ws.cell(row=row_num, column=21).value = m["profile"]
+
+        if not m["is_full_refresher"]:
+            ws.cell(row=row_num, column=11).value = m["story_number"]
+            ws.cell(row=row_num, column=12).value = m["miscue_count"]
+
+            time_sec = m["time_sec"]
             ws.cell(row=row_num, column=14).value = int(time_sec) // 60
             ws.cell(row=row_num, column=15).value = int(time_sec) % 60
 
-            obs = sess.observation
-            if obs:
-                ws.cell(row=row_num, column=18).value = obs.comprehension_correct if obs.comprehension_correct is not None else 0
-                ws.cell(row=row_num, column=19).value = obs.learner_experience if obs.learner_experience is not None else 0
-                if obs.fluency_level:
-                    ws.cell(row=row_num, column=20).value = f"Level {obs.fluency_level}"
-                ws.cell(row=row_num, column=22).value = obs.teacher_remarks
-            else:
-                ws.cell(row=row_num, column=18).value = 0
-                ws.cell(row=row_num, column=19).value = 0
+            ws.cell(row=row_num, column=18).value = m["comp_raw"]
+            ws.cell(row=row_num, column=19).value = m["learner_exp"]
+            if m["fluency_level"]:
+                ws.cell(row=row_num, column=20).value = m["fluency_level"]
+            ws.cell(row=row_num, column=22).value = m["remarks"]
         else:
             ws.cell(row=row_num, column=14).value = 0
             ws.cell(row=row_num, column=15).value = 0
-
-            obs = sess.observation
-            if obs:
-                ws.cell(row=row_num, column=19).value = obs.learner_experience if obs.learner_experience is not None else 0
-                if obs.fluency_level:
-                    ws.cell(row=row_num, column=20).value = f"Level {obs.fluency_level}"
-                ws.cell(row=row_num, column=22).value = obs.teacher_remarks
+            ws.cell(row=row_num, column=19).value = m["learner_exp"]
+            if m["fluency_level"]:
+                ws.cell(row=row_num, column=20).value = m["fluency_level"]
+            ws.cell(row=row_num, column=22).value = m["remarks"]
 
     # Write student lists and scores
     N = len(students)
     raw_cols = [5, 6, 7, 8, 11, 12, 14, 15, 18, 19, 20, 22]
+    align_center = Alignment(horizontal="center", vertical="center")
+    align_left = Alignment(horizontal="left", vertical="center")
+    align_left_wrap = Alignment(horizontal="left", vertical="center", wrap_text=True)
+
     for idx, s in enumerate(students, start=1):
-        row_num = 10 + idx
-        
-        # Write identity info on all sheets
-        write_student_identity(ws_mt, row_num, idx, s)
-        write_student_identity(ws_fil, row_num, idx, s)
-        if ws_eng:
-            write_student_identity(ws_eng, row_num, idx, s)
+        scoresheet_row = 10 + idx
+        cr_row = 8 + idx
 
-        # Clear score and observation columns (only raw input columns, keep formula columns!)
+        # Write identity info on all scoresheets
+        write_student_identity(ws_mt, scoresheet_row, idx, s)
+        write_student_identity(ws_fil, scoresheet_row, idx, s)
+        if ws_eng:
+            write_student_identity(ws_eng, scoresheet_row, idx, s)
+
+        # Clear score and observation columns on scoresheets
         for col_idx in raw_cols:
-            ws_mt.cell(row=row_num, column=col_idx).value = None
-            ws_fil.cell(row=row_num, column=col_idx).value = None
+            ws_mt.cell(row=scoresheet_row, column=col_idx).value = None
+            ws_fil.cell(row=scoresheet_row, column=col_idx).value = None
             if ws_eng:
-                ws_eng.cell(row=row_num, column=col_idx).value = None
+                ws_eng.cell(row=scoresheet_row, column=col_idx).value = None
 
-        # For ALL grades: MT and FIL both use the Filipino session
+        # Fetch sessions & calculate metrics
         fil_sess = session_map.get(s.id, {}).get("filipino")
-        write_session_scores(ws_mt, row_num, fil_sess)
-        write_session_scores(ws_fil, row_num, fil_sess)
+        mt_sess = session_map.get(s.id, {}).get("mother_tongue") or fil_sess
+        eng_sess = session_map.get(s.id, {}).get("english") if ws_eng else None
 
-        # For Grade 3: ENG sheet uses the English session
+        mt_metrics = get_session_metrics(mt_sess)
+        fil_metrics = get_session_metrics(fil_sess)
+        eng_metrics = get_session_metrics(eng_sess) if ws_eng else None
+
+        write_session_scores(ws_mt, scoresheet_row, mt_metrics)
+        write_session_scores(ws_fil, scoresheet_row, fil_metrics)
         if ws_eng:
-            eng_sess = session_map.get(s.id, {}).get("english")
-            write_session_scores(ws_eng, row_num, eng_sess)
+            write_session_scores(ws_eng, scoresheet_row, eng_metrics)
 
-    # Clear remaining rows (11 + N to 110) - ONLY clear raw data columns to preserve formulas!
+        # Write to Class Record
+        full_name = f"{s.last_name}, {s.first_name}" + (f", {s.middle_name}" if s.middle_name else "")
+        ws_cr.cell(row=cr_row, column=1).value = idx
+        ws_cr.cell(row=cr_row, column=1).alignment = align_center
+
+        ws_cr.cell(row=cr_row, column=2).value = s.lrn
+        ws_cr.cell(row=cr_row, column=2).alignment = align_left
+        ws_cr.cell(row=cr_row, column=2).number_format = "0"
+
+        ws_cr.cell(row=cr_row, column=3).value = full_name
+        ws_cr.cell(row=cr_row, column=3).alignment = align_left
+
+        ws_cr.cell(row=cr_row, column=4).value = s.sex.value.capitalize() if s.sex else None
+        ws_cr.cell(row=cr_row, column=4).alignment = align_center
+
+        # Mother Tongue (Cols 5-10: E..J)
+        if mt_metrics:
+            ws_cr.cell(row=cr_row, column=5).value = mt_metrics["classification"]
+            ws_cr.cell(row=cr_row, column=6).value = mt_metrics["pct_score"]
+            ws_cr.cell(row=cr_row, column=6).number_format = "0%"
+            ws_cr.cell(row=cr_row, column=7).value = mt_metrics["fluency"]
+            if mt_metrics["fluency"] is not None:
+                ws_cr.cell(row=cr_row, column=7).number_format = "0%"
+            ws_cr.cell(row=cr_row, column=8).value = mt_metrics["comp"]
+            if mt_metrics["comp"] is not None:
+                ws_cr.cell(row=cr_row, column=8).number_format = "0%"
+            ws_cr.cell(row=cr_row, column=9).value = mt_metrics["cwpm"]
+            if mt_metrics["cwpm"] is not None:
+                ws_cr.cell(row=cr_row, column=9).number_format = "0"
+            ws_cr.cell(row=cr_row, column=10).value = mt_metrics["profile"]
+        else:
+            for c in range(5, 11):
+                ws_cr.cell(row=cr_row, column=c).value = None
+
+        # Filipino (Cols 11-16: K..P)
+        if fil_metrics:
+            ws_cr.cell(row=cr_row, column=11).value = fil_metrics["classification"]
+            ws_cr.cell(row=cr_row, column=12).value = fil_metrics["pct_score"]
+            ws_cr.cell(row=cr_row, column=12).number_format = "0%"
+            ws_cr.cell(row=cr_row, column=13).value = fil_metrics["fluency"]
+            if fil_metrics["fluency"] is not None:
+                ws_cr.cell(row=cr_row, column=13).number_format = "0%"
+            ws_cr.cell(row=cr_row, column=14).value = fil_metrics["comp"]
+            if fil_metrics["comp"] is not None:
+                ws_cr.cell(row=cr_row, column=14).number_format = "0%"
+            ws_cr.cell(row=cr_row, column=15).value = fil_metrics["cwpm"]
+            if fil_metrics["cwpm"] is not None:
+                ws_cr.cell(row=cr_row, column=15).number_format = "0"
+            ws_cr.cell(row=cr_row, column=16).value = fil_metrics["profile"]
+        else:
+            for c in range(11, 17):
+                ws_cr.cell(row=cr_row, column=c).value = None
+
+        if grade_num == 3:
+            # English (Cols 17-22: Q..V)
+            if eng_metrics:
+                ws_cr.cell(row=cr_row, column=17).value = eng_metrics["classification"]
+                ws_cr.cell(row=cr_row, column=18).value = eng_metrics["pct_score"]
+                ws_cr.cell(row=cr_row, column=18).number_format = "0%"
+                ws_cr.cell(row=cr_row, column=19).value = eng_metrics["fluency"]
+                if eng_metrics["fluency"] is not None:
+                    ws_cr.cell(row=cr_row, column=19).number_format = "0%"
+                ws_cr.cell(row=cr_row, column=20).value = eng_metrics["comp"]
+                if eng_metrics["comp"] is not None:
+                    ws_cr.cell(row=cr_row, column=20).number_format = "0%"
+                ws_cr.cell(row=cr_row, column=21).value = eng_metrics["cwpm"]
+                if eng_metrics["cwpm"] is not None:
+                    ws_cr.cell(row=cr_row, column=21).number_format = "0"
+                ws_cr.cell(row=cr_row, column=22).value = eng_metrics["profile"]
+            else:
+                for c in range(17, 23):
+                    ws_cr.cell(row=cr_row, column=c).value = None
+
+            # Remarks (Col 23: W)
+            remarks_parts = []
+            if mt_metrics and mt_metrics.get("remarks"):
+                remarks_parts.append(f"MT: {mt_metrics['remarks']}")
+            if fil_metrics and fil_metrics.get("remarks"):
+                remarks_parts.append(f"FIL: {fil_metrics['remarks']}")
+            if eng_metrics and eng_metrics.get("remarks"):
+                remarks_parts.append(f"ENG: {eng_metrics['remarks']}")
+            ws_cr.cell(row=cr_row, column=23).value = " ".join(remarks_parts) if remarks_parts else None
+            ws_cr.cell(row=cr_row, column=23).alignment = align_left_wrap
+        else:
+            # Remarks (Col 17: Q)
+            remarks_parts = []
+            if mt_metrics and mt_metrics.get("remarks"):
+                remarks_parts.append(f"MT: {mt_metrics['remarks']}")
+            if fil_metrics and fil_metrics.get("remarks"):
+                remarks_parts.append(f"FIL: {fil_metrics['remarks']}")
+            ws_cr.cell(row=cr_row, column=17).value = " ".join(remarks_parts) if remarks_parts else None
+            ws_cr.cell(row=cr_row, column=17).alignment = align_left_wrap
+
+    # Clear remaining rows (11 + N to 110) on scoresheets - ONLY clear raw data columns to preserve formulas!
     raw_cols_to_clear = [1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 14, 15, 18, 19, 20, 22]
     for r in range(11 + N, 111):
         for c in raw_cols_to_clear:
@@ -518,9 +781,11 @@ async def export_crla(
             if ws_eng:
                 ws_eng.cell(row=r, column=c).value = None
 
-    # Write Top and Bottom text labels
-    from openpyxl.styles import Font, PatternFill, Alignment
-    from openpyxl.drawing.image import Image as OpenpyxlImage
+    # Clear remaining rows on Class Record (9 + N to 110)
+    max_cr_col = 23 if grade_num == 3 else 17
+    for r in range(9 + N, 111):
+        for c in range(1, max_cr_col + 1):
+            ws_cr.cell(row=r, column=c).value = None
 
     attribution_font = Font(name="Calibri", size=9, bold=False, color="000000")
     left_align_wrap = Alignment(horizontal="left", vertical="top", wrap_text=True)
@@ -533,21 +798,8 @@ async def export_crla(
     )
 
     def style_and_fill_scoresheet(ws, is_mt: bool):
-        # 1. Left side title labels beside DepEd logo
-        ws.merge_cells('F2:T2')
-        cell_f2 = ws.cell(row=2, column=6)
-        cell_f2.value = "Department of Education"
-        cell_f2.font = Font(name="Calibri", size=14, bold=True, color="000000")
-        cell_f2.alignment = Alignment(horizontal="left", vertical="center")
-        
-        ws.merge_cells('F3:T3')
-        cell_f3 = ws.cell(row=3, column=6)
-        cell_f3.value = "Comprehensive Rapid Literacy Assessment (CRLA)"
-        cell_f3.font = Font(name="Calibri", size=14, bold=True, color="000000")
-        cell_f3.alignment = Alignment(horizontal="left", vertical="center")
-
-        # 2. Bottom USAID attribution
-        ws.merge_cells('A112:R113')
+        # Bottom USAID attribution
+        safe_merge(ws, 'A112:R113')
         attr_cell = ws.cell(row=112, column=1)
         attr_cell.value = attribution_text
         attr_cell.font = attribution_font
@@ -560,7 +812,7 @@ async def export_crla(
 
     # Class Summary bottom attribution text
     ws_summary = wb["Class Summary"]
-    ws_summary.merge_cells('A89:N91')
+    safe_merge(ws_summary, "A89:N91")
     summary_attr_cell = ws_summary.cell(row=89, column=1)
     summary_attr_cell.value = attribution_text
     summary_attr_cell.font = attribution_font
@@ -596,8 +848,10 @@ async def export_crla(
             img_fil = get_resized_flowchart(fil_flowchart)
             ws_ref.add_image(img_fil, "A55")
 
-    # Protect Scoring Reference worksheet so it cannot be edited
-    ws_ref.protection.sheet = True
+    # Protect all worksheets so formulas, layout, and scoresheets cannot be accidentally edited
+    for ws_item in wb.worksheets:
+        ws_item.protection.sheet = True
+        ws_item.protection.enable()
 
     # Force automatic formula calculation on workbook open
     wb.calculation.calcMode = 'auto'
