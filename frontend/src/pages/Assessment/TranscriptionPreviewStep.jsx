@@ -138,26 +138,32 @@ export default function TranscriptionPreviewStep({
   const correctCount = aligned.filter((a) => a.correct).length;
   const wrongCount   = totalRefWords - correctCount;
 
-  const displayWords = aligned
-    .filter((a) => a.transcribed !== null)
-    .map((a, index) => {
-      let isCutoff = false;
-      let isPastLimit = false;
+  let transIdx = -1;
+  const displayWords = aligned.map((a) => {
+    let isCutoff = false;
+    let isPastLimit = false;
 
+    if (a.transcribed !== null) {
+      transIdx++;
       if (showHighlight) {
-        if (index === cutoffIdx) {
+        if (transIdx === cutoffIdx) {
           isCutoff = true;
-        } else if (index > cutoffIdx) {
+        } else if (transIdx > cutoffIdx) {
           isPastLimit = true;
         }
       }
+    } else {
+      if (showHighlight && cutoffIdx >= 0 && transIdx >= cutoffIdx) {
+        isPastLimit = true;
+      }
+    }
 
-      return {
-        ...a,
-        isCutoff,
-        isPastLimit,
-      };
-    });
+    return {
+      ...a,
+      isCutoff,
+      isPastLimit,
+    };
+  });
 
   const stats = [
     { label: "Total Words", value: totalRefWords,                     color: "#1a2340" },
@@ -220,6 +226,9 @@ export default function TranscriptionPreviewStep({
                 <span style={{ display: "flex", gap: "12px", fontSize: "11px", fontWeight: 600, fontFamily: "Poppins, sans-serif", flexWrap: "wrap", justifyContent: "flex-end", alignItems: "center" }}>
                   <span className="asp-whl-word asp-whl--correct" style={{ fontSize: "11px" }}>● Correct</span>
                   <span className="asp-whl-word asp-whl--substitution" style={{ fontSize: "11px" }}>● Wrong Word</span>
+                  <span className="asp-whl-word asp-whl--deletion" style={{ fontSize: "11px" }}>
+                    <span style={{ textDecoration: "none", display: "inline-block" }}>●</span> Missing Word
+                  </span>
                   <span className="asp-whl-word asp-whl--insertion" style={{ fontSize: "11px" }}>● Added Word</span>
                   {showHighlight && (
                     <span style={{ color: "#2c7fc1", background: "#d6ecfb", padding: "0 3px", borderRadius: "3px", fontSize: "11px" }}>● Last in Limit</span>
@@ -238,6 +247,8 @@ export default function TranscriptionPreviewStep({
                 const type = a.miscue_type;
                 const word = type === "insertion"
                   ? `[${a.transcribed ?? ""}]`
+                  : type === "deletion"
+                  ? (a.reference ?? "")
                   : (a.transcribed ?? "");
 
                 let className = `asp-whl-word asp-whl--${type}`;
@@ -262,6 +273,8 @@ export default function TranscriptionPreviewStep({
                   ? `Wrong word spoken for "${a.reference}"`
                   : type === "insertion"
                   ? "Added word"
+                  : type === "deletion"
+                  ? `Missing word (skipped "${a.reference}")`
                   : "Read correctly";
 
                 return (

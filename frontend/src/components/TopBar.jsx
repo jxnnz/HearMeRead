@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { CircleUserRound, LogOut } from "lucide-react";
-import { authApi } from "../services/api";
+import { authApi, clearApiCache } from "../services/api";
 import ConfirmModal from "../modals/ConfirmModal";
 import "./component css/TopBar.css";
 
@@ -49,6 +48,7 @@ export default function TopBar({ title, children, hideAvatar = false }) {
   const firstName = user ? user.first_name : "";
 
   function handleLogout() {
+    clearApiCache();
     localStorage.removeItem("token");
     localStorage.removeItem("role");
     navigate("/login");

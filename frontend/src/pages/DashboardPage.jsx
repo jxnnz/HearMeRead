@@ -232,7 +232,7 @@ export default function DashboardPage() {
           />
           <DashboardStatCard
             value={stats.totalAssessed}
-            label="Total Assessed"
+            label="Total Assessments"
             color="#1a2340"
           />
           <DashboardStatCard

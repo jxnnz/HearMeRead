@@ -199,6 +199,8 @@ export default function AssessmentPage() {
   const [showTimeLimitModal, setShowTimeLimitModal]  = useState(false);
   const [recordingTime,      setRecordingTime]       = useState(0);
   const [timeLimitReached,   setTimeLimitReached]    = useState(false);
+  const [isA2RetakeFromPreview, setIsA2RetakeFromPreview] = useState(false);
+  const isA2RetakeFromPreviewRef                          = useRef(false);
 
   const fileInputRef      = useRef(null);
   const mediaRecorderRef  = useRef(null);
@@ -713,9 +715,15 @@ export default function AssessmentPage() {
       setA2RecordingTime(duration);
       setA2TranscribeDone(false);
       setIsA2TranscribingBg(true);
+      const isRetake = isA2RetakeFromPreviewRef.current || storedLearnerExpBackendVal !== null;
+      if (isRetake) {
+        currentStepRef.current = STEPS.A2_LOADING;
+        setStep(STEPS.A2_LOADING);
+      } else {
+        setStep(STEPS.COMPREHENSION);
+      }
       const p = fireTranscription(file, "a2");
       a2TranscribePromiseRef.current = p;
-      setStep(STEPS.COMPREHENSION);
     }
   }
 
@@ -841,9 +849,15 @@ export default function AssessmentPage() {
       setA2RecordingTime(recordingTime);
       setA2TranscribeDone(false);
       setIsA2TranscribingBg(true);
+      const isRetake = isA2RetakeFromPreviewRef.current || storedLearnerExpBackendVal !== null;
+      if (isRetake) {
+        currentStepRef.current = STEPS.A2_LOADING;
+        setStep(STEPS.A2_LOADING);
+      } else {
+        setStep(STEPS.COMPREHENSION);
+      }
       const p = fireTranscription(file, "a2");
       a2TranscribePromiseRef.current = p;
-      setStep(STEPS.COMPREHENSION);
     }
     setRecordingTime(0);
   }
@@ -890,10 +904,14 @@ export default function AssessmentPage() {
   function handleRetakeFromPreview(forTask) {
     resetRecording();
     if (forTask === "g1") {
+      setIsA2RetakeFromPreview(false);
+      isA2RetakeFromPreviewRef.current = false;
       setG1Transcript("");
       setG1Words([]);
       setStep(STEPS.A1_G1);
     } else if (forTask === "g2") {
+      setIsA2RetakeFromPreview(false);
+      isA2RetakeFromPreviewRef.current = false;
       setG2Transcript("");
       setStep(STEPS.A1_G2);
     } else if (forTask === "a2") {
@@ -901,6 +919,10 @@ export default function AssessmentPage() {
       setA2Words([]);
       setA2RecordingTime(0);
       setTimeLimitReached(false);
+      setA2TranscribeDone(false);
+      setIsA2TranscribingBg(false);
+      setIsA2RetakeFromPreview(true);
+      isA2RetakeFromPreviewRef.current = true;
       setStep(STEPS.A2);
     }
     setShowChoiceModal(true);
@@ -908,9 +930,6 @@ export default function AssessmentPage() {
 
   // Task 1 route calculator helper (non-blocking)
   function computeTask1Route(referenceText, transcribedText, language) {
-    if ((language || "").toLowerCase() === "english") {
-      return { route: "task_2L", correct_words: 0 };
-    }
     const normalize = (str) =>
       (str || "").toLowerCase().replace(/[^\w\s]/g, "").trim().split(/\s+/).filter(Boolean);
     const refWords = normalize(referenceText);
@@ -924,6 +943,10 @@ export default function AssessmentPage() {
         correctCount++;
         hypCopy.splice(idx, 1);
       }
+    }
+
+    if ((language || "").toLowerCase() === "english") {
+      return { route: "task_2L", correct_words: correctCount };
     }
 
     const route = correctCount > 6 ? "task_2H" : "task_2L";
@@ -954,6 +977,12 @@ export default function AssessmentPage() {
 
     task1ScorePromiseRef.current = task1Promise;
 
+    // CRLA Grade 3 English: If Task 1 score is 0, end assessment (Full Refresher)
+    if ((form.language || "").toLowerCase() === "english" && localResult.correct_words === 0) {
+      setStep(STEPS.LEARNER_EXP);
+      return;
+    }
+
     // Immediately proceed to Task 2 without showing A1_G1_LOADING screen!
     handleProceedToG2(localResult);
   }
@@ -964,9 +993,27 @@ export default function AssessmentPage() {
     setScoreError(null);
 
     const p = form.selected_passage;
-    const task2Ref = task1ScoreResult?.route === "task_2L"
-      ? (p?.task2_words     ?? "")
-      : (p?.task2_sentences ?? "");
+    const isEnglish = (form.language || "").toLowerCase() === "english";
+    const task2Ref = (!isEnglish && task1ScoreResult?.route === "task_2H")
+      ? (p?.task2_sentences ?? "")
+      : (p?.task2_words     ?? "");
+
+    // Compute Task 2 correct words locally
+    const normalize = (str) =>
+      (str || "").toLowerCase().replace(/[^\w\s]/g, "").trim().split(/\s+/).filter(Boolean);
+    const ref2Words = normalize(task2Ref);
+    const hyp2Words = normalize(editedText);
+    let g2Correct = 0;
+    const hyp2Copy = [...hyp2Words];
+    for (const w of ref2Words) {
+      const idx = hyp2Copy.indexOf(w);
+      if (idx !== -1) {
+        g2Correct++;
+        hyp2Copy.splice(idx, 1);
+      }
+    }
+    const g1Correct = task1ScoreResult?.task1_correct ?? task1ScoreResult?.correct_words ?? 0;
+    const totalScore = g1Correct + g2Correct;
 
     // Fire Part 1 scoring in background
     const scorePromise = sessionsApi.scorePart1(session.id, {
@@ -987,8 +1034,13 @@ export default function AssessmentPage() {
 
     part1ScorePromiseRef.current = scorePromise;
 
-    // Immediately proceed to Assessment 2 selection without waiting on A1_G2_LOADING screen
-    const isA2Path = (task1ScoreResult?.route ?? "task_2H") === "task_2H";
+    // CRLA Routing to Assessment 2:
+    // English: Total score >= 11 (Light Refresher 11-16, Grade Ready 17-20) proceeds to Assessment 2.
+    // Filipino: Task 1 > 6 (Sentence route task_2H) proceeds to Assessment 2.
+    const isA2Path = isEnglish
+      ? totalScore >= 11
+      : (task1ScoreResult?.route ?? "task_2H") === "task_2H";
+
     if (isA2Path) handleProceedToA2();
     else setStep(STEPS.LEARNER_EXP);
   }
@@ -1065,6 +1117,8 @@ export default function AssessmentPage() {
 
   // A1 G2 result — proceed to A2 or finish
   function handleProceedToA2() {
+    setIsA2RetakeFromPreview(false);
+    isA2RetakeFromPreviewRef.current = false;
     resetRecording();
     setStep(STEPS.A2_SELECT);
   }
@@ -1080,6 +1134,8 @@ export default function AssessmentPage() {
       }
     }
     setA2Passage(updatedPassage);
+    setIsA2RetakeFromPreview(false);
+    isA2RetakeFromPreviewRef.current = false;
     resetRecording();
     setShowChoiceModal(true);
     setStep(STEPS.A2);
@@ -1192,6 +1248,8 @@ export default function AssessmentPage() {
     a2TranscribePromiseRef.current = null;
     setIsA2TranscribingBg(false);
     setA2TranscribeDone(false);
+    setIsA2RetakeFromPreview(false);
+    isA2RetakeFromPreviewRef.current = false;
     setStoredLearnerExpBackendVal(null);
     setStep(STEPS.INFO);
   }
@@ -1353,7 +1411,13 @@ export default function AssessmentPage() {
             resetRecording();
             if (step === STEPS.A1_G1) setStep(STEPS.INFO);
             if (step === STEPS.A1_G2) setStep(STEPS.A1_G1);
-            if (step === STEPS.A2)    setStep(STEPS.A2_SELECT);
+            if (step === STEPS.A2) {
+              if (isA2RetakeFromPreviewRef.current) {
+                setStep(STEPS.A2_PREVIEW);
+              } else {
+                setStep(STEPS.A2_SELECT);
+              }
+            }
           }}
           onCycleFontSize={cycleFontSize}
           onStartRecording={handleStartRecording}

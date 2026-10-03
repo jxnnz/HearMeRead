@@ -4,7 +4,7 @@ import sqlalchemy as sa
 from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_, update
+from sqlalchemy import select, func, and_, or_, update
 from sqlalchemy.orm import selectinload
 
 from app.db import get_db
@@ -389,42 +389,50 @@ async def list_class_cards(
 
     from app.models import StudentEnrollment
 
-    # Batch-fetch student counts per (teacher_id, grade_level, section, school_year) from enrollments
-    enrollment_counts = await db.execute(
+    # Batch-fetch student enrollments
+    enr_res = await db.execute(
         select(
+            StudentEnrollment.student_id,
             StudentEnrollment.teacher_id,
             StudentEnrollment.grade_level,
             StudentEnrollment.section,
             StudentEnrollment.school_year,
-            func.count(StudentEnrollment.student_id)
-        )
-        .where(StudentEnrollment.teacher_id.in_(all_teacher_ids))
-        .group_by(
-            StudentEnrollment.teacher_id,
-            StudentEnrollment.grade_level,
-            StudentEnrollment.section,
-            StudentEnrollment.school_year
-        )
+        ).where(StudentEnrollment.teacher_id.in_(all_teacher_ids))
     )
-    enrollment_count_map = {}
-    enrolled_teachers_years = set()
-    for r in enrollment_counts.fetchall():
-        teacher_id_val, grade_val, section_val, year_val, cnt = r
-        enrollment_count_map[(teacher_id_val, grade_val, section_val, year_val)] = cnt
-        enrolled_teachers_years.add((teacher_id_val, year_val))
 
-    # Fallback: Batch-fetch student counts per (teacher_id, grade_level, section) directly from Student table
-    fallback_counts = await db.execute(
-        select(Student.teacher_id, Student.grade_level, Student.section, func.count(Student.id))
-        .where(Student.teacher_id.in_(all_teacher_ids), Student.is_archived == False)
-        .group_by(Student.teacher_id, Student.grade_level, Student.section)
+    # Batch-fetch active students directly
+    stu_res = await db.execute(
+        select(
+            Student.id,
+            Student.teacher_id,
+            Student.grade_level,
+            Student.section,
+            Student.school_year,
+        ).where(
+            Student.teacher_id.in_(all_teacher_ids),
+            Student.is_archived == False,
+        )
     )
-    fallback_count_map = {(r[0], r[1], r[2]): r[3] for r in fallback_counts.fetchall()}
+
+    card_student_map = {}
+    for sid, tid, g, s, sy in enr_res.fetchall():
+        g_val = g.value if hasattr(g, "value") else str(g) if g else None
+        key = (tid, g_val, s, sy)
+        if key not in card_student_map:
+            card_student_map[key] = set()
+        card_student_map[key].add(sid)
+
+    for sid, tid, g, s, sy in stu_res.fetchall():
+        effective_sy = sy or current_year
+        g_val = g.value if hasattr(g, "value") else str(g) if g else None
+        key = (tid, g_val, s, effective_sy)
+        if key not in card_student_map:
+            card_student_map[key] = set()
+        card_student_map[key].add(sid)
 
     def get_count_for_card(t_id, grade, sec, sy):
-        if (t_id, sy) in enrolled_teachers_years:
-            return enrollment_count_map.get((t_id, grade, sec, sy), 0)
-        return fallback_count_map.get((t_id, grade, sec), 0)
+        g_val = grade.value if hasattr(grade, "value") else str(grade) if grade else None
+        return len(card_student_map.get((t_id, g_val, sec, sy), set()))
 
     cards = []
     seen = set()  # (teacher_id, grade_level, section, school_year)
@@ -514,9 +522,8 @@ async def get_teacher_class_record(
     if section:
         grade_filter.append(Student.section == section)
 
-    # Fetch students — use enrollments for year-aware queries
+    # Fetch students — check both StudentEnrollment AND direct Student assignment
     if school_year:
-        # Only students enrolled for this teacher + school year
         enrollment_result = await db.execute(
             select(StudentEnrollment.student_id).where(
                 StudentEnrollment.teacher_id == teacher_id,
@@ -524,23 +531,21 @@ async def get_teacher_class_record(
             )
         )
         enrolled_ids = [row[0] for row in enrollment_result]
-        if enrolled_ids:
-            students_result = await db.execute(
-                select(Student).where(
-                    Student.id.in_(enrolled_ids),
-                    Student.is_archived == False,
-                    *grade_filter,
-                ).order_by(Student.last_name, Student.first_name)
-            )
-        else:
-            # Fallback: use direct teacher_id if no enrollments exist yet
-            students_result = await db.execute(
-                select(Student).where(
-                    Student.teacher_id == teacher_id,
-                    Student.is_archived == False,
-                    *grade_filter,
-                ).order_by(Student.last_name, Student.first_name)
-            )
+
+        membership_condition = or_(
+            Student.id.in_(enrolled_ids) if enrolled_ids else False,
+            and_(
+                Student.teacher_id == teacher_id,
+                or_(Student.school_year == school_year, Student.school_year.is_(None)),
+            ),
+        )
+        students_result = await db.execute(
+            select(Student).where(
+                Student.is_archived == False,
+                membership_condition,
+                *grade_filter,
+            ).order_by(Student.last_name, Student.first_name)
+        )
     else:
         # No year filter — show all students linked to this teacher
         students_result = await db.execute(
@@ -1245,6 +1250,15 @@ async def reassign_students(
             Student.teacher_id == payload.from_teacher_id,
             Student.grade_level == grade,
             Student.section == payload.section,
+        )
+        .values(teacher_id=payload.to_teacher_id)
+    )
+    await db.execute(
+        update(StudentEnrollment)
+        .where(
+            StudentEnrollment.teacher_id == payload.from_teacher_id,
+            StudentEnrollment.grade_level == grade,
+            StudentEnrollment.section == payload.section,
         )
         .values(teacher_id=payload.to_teacher_id)
     )

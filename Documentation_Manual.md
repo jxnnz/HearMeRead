@@ -243,8 +243,8 @@ Admins can add, edit, or archive public passages in the sidebar. Public passages
   No. Once you save your Employee ID on the profile page, it is permanently locked to secure teacher identities. If you made a mistake, please contact system support to reset it.
 * **What happens if the student reads past the time limit in Assessment 2?**  
   The system automatically pauses when the time limit (60s, 120s, 180s) is reached. If you click continue, the recording continues, but the words read past the limit are tracked separately and do not inflate the student's Correct Words Per Minute (CWPM) score.
-* **Why did an English student skip Assessment 2?**  
-  Following the CRLA guidelines, English assessments do not have a sentences route (Task 2H) or connected story reading (Assessment 2). English students route to Task 2 Words (word list) and then proceed straight to Observation and results.
+* **When do English students proceed to Assessment 2?**  
+  Following CRLA guidelines, English students who score 11 to 20 on Assessment 1 (Light Refresher or Grade Ready) proceed to Assessment 2 (Story Reading). Students scoring 0 to 10 (Full Refresher or Moderate Refresher) skip Assessment 2 and proceed straight to Observation and results.
 * **How do I import rhyming word pairs for Grade 1 Filipino?**  
   You can click the **Download Template** button in the upload modal, which provides the correct structure: `word1, word2|Oo` or `word1, word2|Hindi` on separate lines under the `Task 2:` section.
 

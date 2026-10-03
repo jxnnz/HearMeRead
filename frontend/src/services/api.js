@@ -33,6 +33,7 @@ api.interceptors.response.use(
       url.includes("/auth/school-lookup");
 
     if (error.response?.status === 401 && !isUnauthRoute) {
+      clearApiCache();
       localStorage.removeItem("token");
       window.dispatchEvent(new CustomEvent("session-expired"));
     }
@@ -73,6 +74,7 @@ export const authApi = {
    * Returns { access_token, token_type }
    */
   login: async (email, password) => {
+    clearApiCache();
     const res = await api.post("/auth/login", { email, password });
     return res.data;
   },
@@ -562,11 +564,9 @@ export const dashboardApi = {
    *            fluency_accuracy, fluency_wpm }
    */
   getSummary: async (schoolYear) => {
-    return withCache(`dashboard_summary_${schoolYear || 'current'}`, async () => {
-      const params = schoolYear ? { school_year: schoolYear } : {};
-      const res = await api.get("/dashboard/summary", { params });
-      return res.data;
-    });
+    const params = schoolYear ? { school_year: schoolYear } : {};
+    const res = await api.get("/dashboard/summary", { params });
+    return res.data;
   },
 };
 

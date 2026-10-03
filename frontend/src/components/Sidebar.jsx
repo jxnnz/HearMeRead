@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import HmrLogo from "../assets/HMR-LOGO.png";
 import ConfirmModal from "../modals/ConfirmModal";
+import { clearApiCache } from "../services/api";
 import "./component css/Sidebar.css";
 
 const TEACHER_NAV = [
@@ -44,6 +45,7 @@ export default function Sidebar() {
   const navItems = isAdmin ? ADMIN_NAV : TEACHER_NAV;
 
   function handleLogout() {
+    clearApiCache();
     localStorage.removeItem("token");
     localStorage.removeItem("role");
     navigate("/login");

@@ -81,10 +81,10 @@ def _infer_resume_step(session) -> str:
 @router.post(
     "",
     summary="Start a new assessment session",
-    description="Creates a new session. Only one assessment per student per school year and period is allowed.",
+    description="Creates a new session. Only one assessment per student per language per school year and period is allowed.",
     responses={
         201: {"description": "Session created", "model": SessionResponse},
-        409: {"description": "Duplicate session — student already assessed this period"},
+        409: {"description": "Duplicate session — student already assessed this period in this language"},
     },
     status_code=status.HTTP_201_CREATED,
 )
@@ -114,12 +114,13 @@ async def create_session(
         language=data.language,
     )
     if existing:
+        lang_str = data.language.value.capitalize() if hasattr(data.language, "value") else str(data.language).capitalize()
         if not existing.is_completed:
             resume_step = _infer_resume_step(existing)
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail={
-                    "message": "An unfinished session exists for this student this period.",
+                    "message": f"An unfinished {lang_str} session exists for this student this period.",
                     "existing_session_id": existing.id,
                     "resume_state": resume_step,
                     "is_completed": False
@@ -131,8 +132,8 @@ async def create_session(
                 detail={
                     "message": (
                         f"This student already has a completed {data.period.value.capitalize()} "
-                        f"assessment for school year {existing.school_year}. "
-                        f"Only one assessment per period per school year is allowed."
+                        f"assessment in {lang_str} for school year {existing.school_year}. "
+                        f"Only one assessment per language per period per school year is allowed."
                     ),
                     "is_completed": True
                 }

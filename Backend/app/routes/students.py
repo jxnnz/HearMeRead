@@ -2,7 +2,7 @@ from typing import Optional, List
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from fastapi.responses import Response
-from sqlalchemy import select, distinct
+from sqlalchemy import select, distinct, or_, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db
@@ -198,7 +198,7 @@ async def export_crla(
     new_fil_name = f"G{grade_num} FIL Reading Scoresheet"
     new_eng_name = f"G{grade_num} ENG Reading Scoresheet"
 
-    # Fetch students — check StudentEnrollment first for year-aware lookup
+    # Fetch students — check both StudentEnrollment AND direct assignment for year-aware lookup
     enrollment_res = await db.execute(
         select(StudentEnrollment.student_id).where(
             StudentEnrollment.teacher_id == target_teacher_id,
@@ -206,21 +206,19 @@ async def export_crla(
         )
     )
     enrolled_ids = [r[0] for r in enrollment_res.all()]
-    if enrolled_ids:
-        stmt = select(Student).where(
-            Student.id.in_(enrolled_ids),
-            Student.grade_level == grade_enum,
-            Student.section == section,
-            Student.is_archived == False,
-        )
-    else:
-        stmt = select(Student).where(
+    membership_condition = or_(
+        Student.id.in_(enrolled_ids) if enrolled_ids else False,
+        and_(
             Student.teacher_id == target_teacher_id,
-            Student.grade_level == grade_enum,
-            Student.section == section,
-            Student.school_year == school_year,
-            Student.is_archived == False,
-        )
+            or_(Student.school_year == school_year, Student.school_year.is_(None)),
+        ),
+    )
+    stmt = select(Student).where(
+        membership_condition,
+        Student.grade_level == grade_enum,
+        Student.section == section,
+        Student.is_archived == False,
+    )
     res = await db.execute(stmt)
     students = res.scalars().all()
 
@@ -951,10 +949,24 @@ async def bulk_upload_students(
             sex         = Sex(row["sex"]) if row.get("sex") in ("female", "male") else None,
             grade_level = grade_level or GradeLevel.grade_1,
             section     = row.get("section"),
-            school_year = row.get("school_year"),
+            school_year = row.get("school_year") or _current_school_year(),
             teacher_id  = current_teacher.id,
         )
         db.add(student)
+        await db.flush()
+
+        if current_teacher.school_id:
+            sy = student.school_year or _current_school_year()
+            enrollment = StudentEnrollment(
+                student_id=student.id,
+                teacher_id=current_teacher.id,
+                school_id=current_teacher.school_id,
+                grade_level=student.grade_level,
+                section=student.section,
+                school_year=sy,
+            )
+            db.add(enrollment)
+
         students_created += 1
 
     await db.commit()
@@ -1034,6 +1046,7 @@ async def import_excel_records(
                     sex         = Sex(row.sex) if row.sex in ("female", "male") else None,
                     grade_level = grade_level or GradeLevel.grade_1,
                     section     = parsed.section,
+                    school_year = school_year,
                     teacher_id  = current_teacher.id,
                 )
                 db.add(student)
@@ -1041,6 +1054,25 @@ async def import_excel_records(
                 students_created += 1
             else:
                 students_found += 1
+
+            if current_teacher.school_id:
+                enr_check = await db.execute(
+                    select(StudentEnrollment).where(
+                        StudentEnrollment.student_id == student.id,
+                        StudentEnrollment.teacher_id == current_teacher.id,
+                        StudentEnrollment.school_year == school_year,
+                    )
+                )
+                if not enr_check.scalar_one_or_none():
+                    enrollment = StudentEnrollment(
+                        student_id=student.id,
+                        teacher_id=current_teacher.id,
+                        school_id=current_teacher.school_id,
+                        grade_level=student.grade_level,
+                        section=student.section,
+                        school_year=school_year,
+                    )
+                    db.add(enrollment)
 
             dup = await db.execute(
                 select(AssessmentSession).where(

@@ -1,7 +1,7 @@
 from typing import Optional
 from datetime import date
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, case, and_
 
@@ -42,10 +42,15 @@ def _safe_round(val, decimals=1):
 
 @router.get("/summary", summary="Get dashboard summary stats and chart data")
 async def get_dashboard_summary(
+    response: Response,
     school_year: Optional[str] = Query(None, description="e.g. 2024-2025"),
     db: AsyncSession = Depends(get_db),
     current_teacher: Teacher = Depends(get_current_teacher),
 ):
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+
     teacher_id = current_teacher.id
     sy = school_year or _current_school_year()
 

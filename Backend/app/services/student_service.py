@@ -1,6 +1,6 @@
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, or_, delete
+from sqlalchemy import select, func, or_, delete, update
 from fastapi import HTTPException, status
 
 from app.models import Student, AssessmentSession, ReadingResult, SessionObservation, Teacher, StudentEnrollment
@@ -311,6 +311,23 @@ async def update_student(
     encrypted = _encrypt_fields(update_data)
     for field, value in encrypted.items():
         setattr(student, field, value)
+
+    # Sync grade_level or section in StudentEnrollment if updated
+    if "grade_level" in update_data or "section" in update_data:
+        sync_vals = {}
+        if "grade_level" in update_data:
+            sync_vals["grade_level"] = student.grade_level
+        if "section" in update_data:
+            sync_vals["section"] = student.section
+        if sync_vals:
+            await db.execute(
+                update(StudentEnrollment)
+                .where(
+                    StudentEnrollment.student_id == student.id,
+                    StudentEnrollment.teacher_id == teacher_id,
+                )
+                .values(**sync_vals)
+            )
 
     await db.commit()
     await db.refresh(student)

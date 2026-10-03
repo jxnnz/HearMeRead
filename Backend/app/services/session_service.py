@@ -314,6 +314,7 @@ async def complete_session(
         task1_transcribed_text=p1_input.task1_transcribed_text,
         task2_reference_text=p1_input.task2_reference_text,
         task2_transcribed_text=p1_input.task2_transcribed_text,
+        language=session.language.value if hasattr(session.language, "value") else str(session.language or "filipino"),
     )
 
     part1_out = Part1ResultOut(
@@ -481,17 +482,19 @@ async def update_session(
     session = await get_session_by_id(db, session_id, teacher_id)
     duplicate = None
 
-    # Check for new duplicate if school_year or period is being changed
+    # Check for new duplicate if school_year, period, or language is being changed
     new_year   = data.school_year if data.school_year is not None else session.school_year
     new_period = data.period      if data.period      is not None else session.period
+    new_lang   = data.language    if data.language    is not None else session.language
 
-    if data.school_year is not None or data.period is not None:
+    if data.school_year is not None or data.period is not None or data.language is not None:
         duplicate = await check_duplicate(
             db=db,
             teacher_id=teacher_id,
             student_id=session.student_id,
             school_year=new_year,
             period=new_period,
+            language=new_lang,
             exclude_session_id=session_id,
         )
 

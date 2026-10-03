@@ -30,8 +30,8 @@ class Part1Route(str, Enum):
 
 class Part1Classification(str, Enum):
     FULL_REFRESHER     = "Full Refresher"      # Filipino 2L: 0–14 | English: 0
-    MODERATE_REFRESHER = "Moderate Refresher"  # Filipino 2L: 15–20 | English: 1–6
-    LIGHT_REFRESHER    = "Light Refresher"     # Filipino 2H: 7–16 | English: 8–16
+    MODERATE_REFRESHER = "Moderate Refresher"  # Filipino 2L: 15–20 | English: 1–10
+    LIGHT_REFRESHER    = "Light Refresher"     # Filipino 2H: 7–16 | English: 11–16
     GRADE_READY        = "Grade Ready"         # Filipino 2H: 17–20 | English: 17–20
 
 
@@ -259,7 +259,7 @@ def _classify_part1(
     if language == "english":
         if total_score == 0:
             return Part1Classification.FULL_REFRESHER
-        elif total_score <= 6:
+        elif total_score <= 10:
             return Part1Classification.MODERATE_REFRESHER
         elif total_score <= 16:
             return Part1Classification.LIGHT_REFRESHER

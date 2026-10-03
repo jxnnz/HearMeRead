@@ -342,8 +342,8 @@ A: No. Once you save your Employee ID on the profile page, it is permanently loc
 Q: What happens if the student reads past the time limit in Assessment 2?
 A: The system automatically pauses when the time limit (60s, 120s, or 180s) is reached. If you click continue, the recording resumes, but the words read past the limit are tracked separately and do not inflate the student's Correct Words Per Minute (CWPM) score.
 
-Q: Why do English students skip Assessment 2?
-A: Following the CRLA guidelines, English assessments do not have a sentences route (Task 2H) or connected story reading (Assessment 2). English students complete Task 2 Words and then proceed straight to Observation and results.
+Q: When do English students proceed to Assessment 2?
+A: Following CRLA guidelines, English students who score 11 to 20 on Assessment 1 (Light Refresher or Grade Ready) proceed to Assessment 2 (Story Reading). Students scoring 0 to 10 (Full Refresher or Moderate Refresher) skip Assessment 2 and proceed straight to Observation and results.
 
 Q: How do I upload rhyming word pairs for Grade 1 Filipino?
 A: Click the Download Template button in the upload modal. The template shows the correct structure: word1, word2|Oo or word1, word2|Hindi on separate lines under the Task 2 section.
@@ -969,8 +969,8 @@ A: Click the Download Template button in the upload modal. The template shows th
         </div>
         
         <div className="um-faq-item">
-          <p className="um-faq-q">Q: Why do English students skip Assessment 2?</p>
-          <p className="um-faq-a">A: Following the CRLA guidelines, English assessments do not have a sentences route (Task 2H) or connected story reading (Assessment 2). English students complete Task 2 Words and then proceed straight to Observation and results.</p>
+          <p className="um-faq-q">Q: When do English students proceed to Assessment 2?</p>
+          <p className="um-faq-a">A: Following CRLA guidelines, English students who score 11 to 20 on Assessment 1 (Light Refresher or Grade Ready) proceed to Assessment 2 (Story Reading). Students scoring 0 to 10 (Full Refresher or Moderate Refresher) skip Assessment 2 and proceed straight to Observation and results.</p>
         </div>
         
         <div className="um-faq-item">

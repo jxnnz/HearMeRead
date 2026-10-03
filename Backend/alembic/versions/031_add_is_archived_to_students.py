@@ -1,4 +1,4 @@
-﻿"""add is_archived column to students
+"""add is_archived column to students
 
 Revision ID: 031_add_is_archived_to_students
 Revises: 030_backfill_assessment_type
@@ -15,9 +15,8 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "students",
-        sa.Column("is_archived", sa.Boolean(), nullable=False, server_default="false"),
+    op.execute(
+        sa.text("ALTER TABLE students ADD COLUMN IF NOT EXISTS is_archived BOOLEAN NOT NULL DEFAULT false")
     )
 
 
