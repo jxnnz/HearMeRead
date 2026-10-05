@@ -16,6 +16,12 @@
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
+  position: sticky;
+  top: -20px;
+  background: #e8edf7;
+  z-index: 100;
+  margin: -20px -24px 16px -24px;
+  padding: 16px 24px;
 }
 
 .ph-topbar__actions {

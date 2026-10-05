@@ -226,8 +226,17 @@ async def score_comprehension_answer(
 
     # 5. Check if transcript is empty or matches known silence hallucinations
     HALLUCINATION_BLACKLIST = {
+        # English patterns
         "thank you", "thank you.", "thank you for watching", "thank you for watching.",
-        "please subscribe", "subscribe",
+        "please subscribe", "subscribe", "thanks for watching", "thanks for watching.",
+        "goodbye", "bye", "bye bye", "see you", "see you next time",
+        "like and subscribe", "don't forget to subscribe",
+        "thank you for listening", "thank you for listening.",
+        # Filipino patterns
+        "salamat", "salamat po", "maraming salamat",
+        "paalam", "babay",
+        # Generic single-word silence artifacts
+        "you", "the", "a", "i", "um", "uh", "hmm", "ah",
     }
     cleaned_transcript = transcript.lower().strip(".,?! ")
     if not cleaned_transcript or cleaned_transcript in HALLUCINATION_BLACKLIST:

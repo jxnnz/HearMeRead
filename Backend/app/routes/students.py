@@ -224,7 +224,7 @@ async def export_crla(
         Student.id.in_(enrolled_ids) if enrolled_ids else False,
         and_(
             Student.teacher_id == target_teacher_id,
-            or_(Student.school_year == school_year, Student.school_year.is_(None)),
+            Student.school_year == school_year,
         ),
     )
     stmt = select(Student).where(

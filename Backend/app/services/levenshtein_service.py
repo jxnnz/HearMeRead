@@ -131,12 +131,35 @@ class Part2Result:
 
 def preprocess(text: str) -> list[str]:
     """
-    Lowercase, strip punctuation, tokenize into words.
+    Lowercase, strip punctuation, normalize special characters, tokenize.
+    Handles:
+    - Punctuation stripping
+    - Hyphenated words (split into separate tokens)
+    - Multiple/irregular whitespace
+    - Filipino diacritics (ñ composed vs decomposed)
+    - Whisper artifacts (e.g., [Music], (inaudible))
     Returns a list of clean word tokens.
     """
+    import unicodedata
+
     text = text.lower()
-    text = re.sub(r"[^\w\s]", "", text)          # remove punctuation
-    text = re.sub(r"\s+", " ", text).strip()     # collapse whitespace
+
+    # Remove Whisper artifacts like [Music], (inaudible), etc.
+    text = re.sub(r"\[.*?\]", "", text)
+    text = re.sub(r"\(.*?\)", "", text)
+
+    # Normalize Unicode (e.g., ñ composed vs decomposed forms)
+    text = unicodedata.normalize("NFC", text)
+
+    # Replace hyphens/dashes with spaces (split hyphenated words)
+    text = text.replace("-", " ").replace("\u2014", " ").replace("\u2013", " ")
+
+    # Remove all punctuation (keep word characters and spaces)
+    text = re.sub(r"[^\w\s]", "", text)
+
+    # Collapse whitespace
+    text = re.sub(r"\s+", " ", text).strip()
+
     return text.split() if text else []
 
 
