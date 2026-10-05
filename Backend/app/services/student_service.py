@@ -214,14 +214,24 @@ async def get_class_summaries(db: AsyncSession, teacher_id: int, school_year: Op
         Student.grade_level, Student.section
     )
     result = await db.execute(query)
+    found_map = {
+        (row.grade_level, row.section if row.section else "No Section"): row.student_count
+        for row in result
+    }
+
+    # If teacher is actively assigned to a grade/section, ensure that class card appears even with 0 students
+    if grade_filter and section_filter:
+        key = (grade_filter, section_filter)
+        if key not in found_map:
+            found_map[key] = 0
 
     return [
         {
-            "grade_level": row.grade_level,
-            "section": row.section if row.section else "No Section",
-            "student_count": row.student_count,
+            "grade_level": g,
+            "section": s,
+            "student_count": cnt,
         }
-        for row in result
+        for (g, s), cnt in found_map.items()
     ]
 
 
@@ -254,7 +264,12 @@ async def create_student(db: AsyncSession, data: StudentCreate, teacher_id: int)
                 detail=f"A student with LRN {data.lrn} already exists",
             )
 
-    encrypted = _encrypt_fields(data.model_dump())
+    dump = data.model_dump()
+    if not dump.get("school_year"):
+        from datetime import date
+        today = date.today()
+        dump["school_year"] = f"{today.year}-{today.year + 1}" if today.month >= 6 else f"{today.year - 1}-{today.year}"
+    encrypted = _encrypt_fields(dump)
     student = Student(**encrypted, teacher_id=teacher_id)
     db.add(student)
     await db.commit()

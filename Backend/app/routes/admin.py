@@ -246,8 +246,16 @@ async def update_teacher(
         )
         existing_asgn = asgn_res.scalar_one_or_none()
         if existing_asgn and existing_asgn.school_year == current_year:
-            existing_asgn.grade_level = teacher.grade_level
-            existing_asgn.section = teacher.section
+            if existing_asgn.grade_level != teacher.grade_level or existing_asgn.section != teacher.section:
+                existing_asgn.is_active = False
+                db.add(TeacherAssignment(
+                    teacher_id=teacher_id,
+                    school_id=current_admin.school_id,
+                    grade_level=teacher.grade_level,
+                    section=teacher.section,
+                    school_year=current_year,
+                    is_active=True,
+                ))
         else:
             if existing_asgn:
                 existing_asgn.is_active = False
@@ -416,6 +424,8 @@ async def list_class_cards(
 
     card_student_map = {}
     for sid, tid, g, s, sy in enr_res.fetchall():
+        if not sy:
+            continue
         g_val = g.value if hasattr(g, "value") else str(g) if g else None
         key = (tid, g_val, s, sy)
         if key not in card_student_map:
@@ -423,9 +433,10 @@ async def list_class_cards(
         card_student_map[key].add(sid)
 
     for sid, tid, g, s, sy in stu_res.fetchall():
-        effective_sy = sy or current_year
+        if not sy:
+            continue
         g_val = g.value if hasattr(g, "value") else str(g) if g else None
-        key = (tid, g_val, s, effective_sy)
+        key = (tid, g_val, s, sy)
         if key not in card_student_map:
             card_student_map[key] = set()
         card_student_map[key].add(sid)
@@ -476,6 +487,25 @@ async def list_class_cards(
             "school_year":   current_year,
             "student_count": get_count_for_card(t.id, t.grade_level, t.section, current_year),
         })
+
+    # Active advisers lookup for current school year: (grade_level, section) -> teacher_id
+    current_adviser_by_class = {}
+    for t in current_teachers:
+        if t.grade_level and t.section:
+            current_adviser_by_class[(t.grade_level.value, t.section)] = t.id
+
+    for card in cards:
+        is_cur_sy = (card["school_year"] == current_year)
+        if is_cur_sy:
+            active_tid = current_adviser_by_class.get((card["grade_level"], card["section"]))
+            if active_tid is not None:
+                card["has_active_teacher"] = True
+            else:
+                card["has_active_teacher"] = False
+                card["teacher_name"] = "No Adviser Assigned"
+        else:
+            # Past school years are historical records
+            card["has_active_teacher"] = True
 
     # Sort: latest school_year first, then grade, then section
     cards.sort(key=lambda c: (c["school_year"] or "", c["grade_level"] or "", c["section"] or ""), reverse=True)
@@ -536,7 +566,7 @@ async def get_teacher_class_record(
             Student.id.in_(enrolled_ids) if enrolled_ids else False,
             and_(
                 Student.teacher_id == teacher_id,
-                or_(Student.school_year == school_year, Student.school_year.is_(None)),
+                Student.school_year == school_year,
             ),
         )
         students_result = await db.execute(
@@ -721,11 +751,25 @@ async def create_assignment(
     )
     existing = existing_result.scalar_one_or_none()
     if existing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"Teacher already has an active assignment for {payload.school_year}. "
-                   f"Update or deactivate the existing one first.",
-        )
+        existing.grade_level = payload.grade_level
+        existing.section = payload.section
+        teacher.grade_level = payload.grade_level
+        teacher.section = payload.section
+        await db.commit()
+        await db.refresh(existing)
+        t_first = decrypt(teacher.first_name) if teacher.first_name else ""
+        t_last = decrypt(teacher.last_name) if teacher.last_name else ""
+        return {
+            "id": existing.id,
+            "teacher_id": existing.teacher_id,
+            "school_id": existing.school_id,
+            "grade_level": existing.grade_level.value if existing.grade_level else None,
+            "section": existing.section,
+            "school_year": existing.school_year,
+            "is_active": existing.is_active,
+            "created_at": existing.created_at,
+            "teacher_name": f"{t_first} {t_last}",
+        }
 
     assignment = TeacherAssignment(
         teacher_id=payload.teacher_id,
@@ -1262,5 +1306,35 @@ async def reassign_students(
         )
         .values(teacher_id=payload.to_teacher_id)
     )
+
+    # Set new teacher as active adviser for this class
+    to_teacher_res = await db.execute(select(Teacher).where(Teacher.id == payload.to_teacher_id))
+    to_teacher = to_teacher_res.scalar_one_or_none()
+    if to_teacher:
+        to_teacher.grade_level = grade
+        to_teacher.section = payload.section
+
+    current_year = _current_school_year()
+    asgn_check = await db.execute(
+        select(TeacherAssignment).where(
+            TeacherAssignment.teacher_id == payload.to_teacher_id,
+            TeacherAssignment.grade_level == grade,
+            TeacherAssignment.section == payload.section,
+            TeacherAssignment.school_year == current_year,
+        )
+    )
+    existing_new_asgn = asgn_check.scalar_one_or_none()
+    if not existing_new_asgn:
+        db.add(TeacherAssignment(
+            teacher_id=payload.to_teacher_id,
+            school_id=current_admin.school_id,
+            grade_level=grade,
+            section=payload.section,
+            school_year=current_year,
+            is_active=True,
+        ))
+    else:
+        existing_new_asgn.is_active = True
+
     await db.commit()
     return {"detail": "Students reassigned successfully"}

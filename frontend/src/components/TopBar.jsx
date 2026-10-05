@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { CircleUserRound, LogOut } from "lucide-react";
 import { authApi, clearApiCache } from "../services/api";
 import ConfirmModal from "../modals/ConfirmModal";
 import "./component css/TopBar.css";

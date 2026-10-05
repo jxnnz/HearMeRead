@@ -262,11 +262,6 @@ export default function TranscriptionPreviewStep({
                     padding: "0 3px",
                     fontWeight: 700,
                   };
-                } else if (a.isPastLimit) {
-                  style = {
-                    opacity: 0.5,
-                    color: "#888",
-                  };
                 }
 
                 const tooltip = type === "substitution"

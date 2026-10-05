@@ -118,7 +118,7 @@ export default function AssessmentPage() {
   const [step, setStep] = useState(STEPS.INFO);
   const [form, setForm] = useState(initForm());
 
-  const { toasts, removeToast, showSaveSuccess } = useToast();
+  const { toasts, removeToast, showSaveSuccess, showError, addToast } = useToast();
 
   // Student & passage loading
   const [availableGrades,      setAvailableGrades]      = useState([]);
@@ -230,20 +230,16 @@ export default function AssessmentPage() {
     return () => clearInterval(id);
   }, [isRecording, isPaused]);
 
-  //  A2 grade-level time limit trigger
+  // A2 grade-level time limit trigger: show notification toast without stopping recording
   useEffect(() => {
     if (step !== STEPS.A2 || !isRecording || isPaused || timeLimitReached) return;
     const gradeNum = getGradeNum(form.grade_level);
     const limit    = GRADE_TIME_LIMITS[gradeNum] ?? 120;
     if (recordingTime >= limit) {
       setTimeLimitReached(true);
-      if (mediaRecorderRef.current?.state === "recording") {
-        mediaRecorderRef.current.pause();
-      }
-      setIsPaused(true);
-      setShowTimeLimitModal(true);
+      addToast(`Time limit reached (${limit / 60}m). Recording continues.`, "warning");
     }
-  }, [recordingTime, step, isRecording, isPaused, timeLimitReached, form.grade_level]);
+  }, [recordingTime, step, isRecording, isPaused, timeLimitReached, form.grade_level, addToast]);
 
   // Teacher profile — used to pre-fill grade/section
   const [teacherProfile, setTeacherProfile] = useState(null);
@@ -662,17 +658,22 @@ export default function AssessmentPage() {
       }
       return result;
     } catch (e) {
-      const errDetail = e.response?.data?.detail || e.message || "Transcription failed.";
+      let errDetail = e.response?.data?.detail || e.message || "Transcription failed.";
+      if (!navigator.onLine || e.code === "ERR_NETWORK" || e.message?.includes("Network Error")) {
+        errDetail = "Network connection interrupted while uploading audio. Please check your internet connection and try again.";
+      } else if (e.code === "ECONNABORTED" || e.message?.includes("timeout")) {
+        errDetail = "Audio processing timed out due to slow connection. Your recording is safe, please retry processing.";
+      }
       setTranscribeError(errDetail);
       if (forTask === "a2") {
         setIsA2TranscribingBg(false);
         setA2TranscribeDone(false);
       }
-      // Return to the appropriate reading step on error
-      if (forTask === "g1") setStep(STEPS.A1_G1);
-      else if (forTask === "g2") setStep(STEPS.A1_G2);
+      // For Assessment 2, if an error happens while waiting, remain on A2_LOADING so a retry button can be used directly
+      if (forTask === "g1") setStep(STEPS.A1_G1_LOADING);
+      else if (forTask === "g2") setStep(STEPS.A1_G2_LOADING);
       else if (forTask === "a2" && currentStepRef.current === STEPS.A2_LOADING) {
-        setStep(STEPS.A2_PREVIEW);
+        setStep(STEPS.A2_LOADING);
       }
       throw e;
     } finally {
@@ -769,7 +770,10 @@ export default function AssessmentPage() {
       'audio/mp4',
     ];
     const supportedType = preferredTypes.find(t => MediaRecorder.isTypeSupported(t)) || '';
-    const recorderOptions = supportedType ? { mimeType: supportedType } : {};
+    // Set explicit bitrate for consistent quality and smaller file sizes
+    const recorderOptions = supportedType
+      ? { mimeType: supportedType, audioBitsPerSecond: 64000 }
+      : { audioBitsPerSecond: 64000 };
     const recorder = new MediaRecorder(stream, recorderOptions);
     mediaRecorderRef.current = recorder;
 
@@ -792,7 +796,7 @@ export default function AssessmentPage() {
       streamRef.current = null;
     };
 
-    recorder.start(1000); // 1s timeslice to prevent memory issues on low-RAM devices
+    recorder.start(500); // 500ms timeslice — more frequent data events reduce loss on crash
     setIsRecording(true);
     setIsPaused(false);
     setTimeLimitReached(false);
@@ -1371,13 +1375,45 @@ export default function AssessmentPage() {
 
   if (isLoadingStep) {
     const msg = isScoring ? "Proceeding…" : "Processing audio…";
+    const currentTask =
+      step === STEPS.A1_G1_LOADING ? "g1" :
+      step === STEPS.A1_G2_LOADING ? "g2" : "a2";
+
     return (
       <Layout>
         <LoadingScreen message={msg} />
         {(transcribeError || scoreError) && (
-          <p className="asp-error" style={{ textAlign: "center" }}>
-            ⚠ {transcribeError || scoreError}
-          </p>
+          <div style={{ textAlign: "center", marginTop: "16px", padding: "0 20px" }}>
+            <p className="asp-error" style={{ marginBottom: "12px", fontWeight: 600 }}>
+              ⚠ {transcribeError || scoreError}
+            </p>
+            {transcribeError && audioFileRef.current && (
+              <div style={{ display: "flex", justifyContent: "center", gap: "10px" }}>
+                <button
+                  className="asp-continue-btn"
+                  style={{ width: "auto", padding: "10px 24px" }}
+                  onClick={() => {
+                    setTranscribeError(null);
+                    fireTranscription(audioFileRef.current, currentTask);
+                  }}
+                >
+                   Retry Processing
+                </button>
+                <button
+                  className="asp-retake-btn"
+                  style={{ padding: "10px 20px" }}
+                  onClick={() => {
+                    setTranscribeError(null);
+                    if (step === STEPS.A1_G1_LOADING) setStep(STEPS.A1_G1);
+                    else if (step === STEPS.A1_G2_LOADING) setStep(STEPS.A1_G2);
+                    else setStep(STEPS.A2);
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
         )}
       </Layout>
     );
@@ -1386,6 +1422,7 @@ export default function AssessmentPage() {
   if (isLiveReadingStep) {
     return (
       <Layout>
+        <Toast toasts={toasts} onRemove={removeToast} />
         {studentStrip}
         {fileInput}
         {countdown > 0 && (
