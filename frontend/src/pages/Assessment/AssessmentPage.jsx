@@ -627,6 +627,7 @@ export default function AssessmentPage() {
 
     const fd = new FormData();
     fd.append("audio", audioToUpload);
+    fd.append("part", forTask === "a2" ? "part2" : forTask === "g2" ? "task2" : "part1");
 
     // Pass the reference passage as a Whisper prompt to reduce hallucinations.
     // g2Passage is already set by handleProceedToG2 before this is called for "g2".

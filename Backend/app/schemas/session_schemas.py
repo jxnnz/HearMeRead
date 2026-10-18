@@ -167,3 +167,11 @@ class ObservationIn(BaseModel):
     observation_level:  int           = Field(..., ge=1, le=4)
     teacher_remarks:    Optional[str] = Field(None, max_length=1000)
     learner_experience: Optional[int] = Field(None, ge=1, le=5)
+
+
+class RecalculateSessionIn(BaseModel):
+    """Payload for PATCH /sessions/{id}/recalculate."""
+    part1_task1_transcript: Optional[str] = None
+    part1_task2_transcript: Optional[str] = None
+    part2_transcript:       Optional[str] = None
+    teacher_remarks:        Optional[str] = None

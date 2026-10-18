@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { Search, Download, Trash2, ChevronsUpDown } from "lucide-react";
+import { Search, Download, Trash2, ChevronsUpDown, Eye } from "lucide-react";
 
 // Period labels
 const PERIOD_LABELS = {
@@ -207,6 +208,7 @@ export default function AssessmentHistoryTable({
   student  = {},
   onDelete,
 }) {
+  const navigate = useNavigate();
   const [search,       setSearch]       = useState("");
   const [filterLang,   setFilterLang]   = useState("all");
   const [filterPeriod, setFilterPeriod] = useState("all");
@@ -361,8 +363,18 @@ export default function AssessmentHistoryTable({
                         : (record[col.key] ?? "—")}
                     </td>
                   ))}
-                  <td className="aht-td aht-td--actions">
+                  <td className="aht-td aht-td--actions" style={{ display: "flex", gap: "6px" }}>
                     <button
+                      type="button"
+                      className="aht-action-btn"
+                      style={{ color: "#2c3e6b", background: "#eef2fb", border: "1px solid #dce2f0", padding: "4px 8px", borderRadius: "6px", cursor: "pointer", display: "inline-flex", alignItems: "center" }}
+                      onClick={() => navigate(`/students/${student.id}/record/${record.id}`, { state: { from: `/students/${student.id}` } })}
+                      title="View Assessment Record, Audio & Transcription"
+                    >
+                      <Eye size={14} />
+                    </button>
+                    <button
+                      type="button"
                       className="aht-action-btn aht-action-btn--delete"
                       onClick={() => onDelete?.(record)}
                       title="Delete"

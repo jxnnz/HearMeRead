@@ -448,7 +448,39 @@
 .cr-td--g1 { background-color: rgba(232, 240, 252, 0.35); }
 .cr-td--g2 { background-color: rgba(232, 250, 240, 0.35); }
 
-/* Student name link */
+/* Student name link & clickable cell */
+.cr-clickable-cell {
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.cr-clickable-cell:hover {
+  background-color: #e8f0fe !important;
+}
+
+.cr-clickable-cell.cr-freeze--lrn:hover {
+  color: #1a73e8;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.cr-clickable-cell.cr-freeze--name:hover .cr-student-name {
+  text-decoration: underline;
+  opacity: 0.8;
+}
+
+.cr-student-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: "Poppins", sans-serif;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 185px;
+}
+
 .cr-student-link {
   background: none;
   border: none;

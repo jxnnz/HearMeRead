@@ -1,0 +1,429 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+.sarp-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+  color: #1a2340;
+  padding-bottom: 40px;
+}
+
+/* Sticky Header - pins Top Bar + Student Info Card to screen */
+.sarp-sticky-header {
+  position: sticky;
+  top: -20px;
+  background: #e8edf7;
+  z-index: 100;
+  margin: -20px -24px 0 -24px;
+  padding: 16px 24px 14px 24px;
+  border-bottom: 1.5px solid #dce2f0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 4px 12px rgba(44, 62, 107, 0.05);
+}
+
+.sarp-top-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.sarp-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border: 1.5px solid #dce2f0;
+  color: #2c3e6b;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+  padding: 8px 16px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 4px rgba(44, 62, 107, 0.04);
+}
+
+.sarp-back-btn:hover {
+  background: #f4f6fb;
+  border-color: #2c3e6b;
+  transform: translateX(-2px);
+}
+
+.sarp-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sarp-pdf-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #2c3e6b;
+  color: #ffffff;
+  border: none;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+  padding: 8px 18px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+  box-shadow: 0 2px 8px rgba(44, 62, 107, 0.18);
+}
+
+.sarp-pdf-btn:hover {
+  background: #1e2c4d;
+  transform: translateY(-1px);
+}
+
+/* Student Profile Banner */
+.sarp-student-card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 14px 22px;
+  border: 1.5px solid #e2e7f3;
+  box-shadow: 0 2px 10px rgba(44, 62, 107, 0.04);
+  margin-bottom: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.sarp-student-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sarp-student-name {
+  font-size: 22px;
+  font-weight: 700;
+  color: #101828;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.sarp-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.sarp-badge {
+  background: #f1f4fb;
+  color: #2c3e6b;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid #dce3f5;
+}
+
+.sarp-badge--cap {
+  text-transform: capitalize;
+}
+
+.sarp-meta-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 4px;
+  font-size: 13px;
+  color: #5d6b88;
+}
+
+.sarp-meta-chip strong {
+  color: #1a2340;
+}
+
+.sarp-profile-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  border-radius: 30px;
+  border: 2px solid;
+  font-weight: 700;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.sarp-profile-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+/* Part Audio Preview Bar (Next to Part text and extending to the end of the card) */
+.sarp-part-audio-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #f8fafd;
+  padding: 8px 14px;
+  border-radius: 12px;
+  border: 1.5px solid #e1e7f5;
+  margin-top: 10px;
+  margin-bottom: 18px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sarp-part-audio-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.sarp-part-audio-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sarp-part-audio-label {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #2c3e6b;
+  letter-spacing: -0.01em;
+}
+
+.sarp-part-audio-element {
+  flex: 1;
+  width: 100%;
+  height: 38px;
+  outline: none;
+  border-radius: 24px;
+}
+
+.sarp-audio-expired-notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px 18px;
+  color: #475569;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+/* Assessment Card Common */
+.sarp-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 26px 28px;
+  border: 1.5px solid #e2e7f3;
+  box-shadow: 0 2px 14px rgba(44, 62, 107, 0.04);
+  margin-bottom: 24px;
+}
+
+.sarp-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1.5px solid #edf1f8;
+  flex-wrap: wrap;
+}
+
+.sarp-card-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #101828;
+}
+
+.sarp-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #FDC210;
+  color: #1a2340;
+  border: 1.5px solid #eab308;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+  padding: 7px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.sarp-edit-btn:hover {
+  background: #e0ab0b;
+  border-color: #ca8a04;
+  color: #1a2340;
+  box-shadow: 0 3px 8px rgba(253, 194, 16, 0.35);
+}
+
+/* Stat Grid */
+.sarp-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.sarp-stat {
+  background: #f8fafd;
+  border: 1.5px solid #e8ecf5;
+  border-radius: 12px;
+  padding: 14px 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sarp-stat--wide {
+  grid-column: span 2;
+}
+
+.sarp-stat__val {
+  font-size: 22px;
+  font-weight: 700;
+  color: #101828;
+  line-height: 1.2;
+}
+
+.sarp-stat__val--sm {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.sarp-stat__lbl {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Transcriptions container */
+.sarp-transcriptions {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 16px;
+  padding-top: 18px;
+  border-top: 1.5px solid #edf1f8;
+}
+
+.sarp-transcription-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1e293b;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 8px;
+}
+
+/* Story Title */
+.sarp-story-title {
+  font-size: 15px;
+  color: #1e293b;
+  background: #f8fafc;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border-left: 4px solid #2c7fc1;
+  margin: 0 0 18px;
+}
+
+/* Observation section */
+.sarp-remarks-box {
+  background: #f8fafd;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-top: 16px;
+}
+
+.sarp-remarks-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.sarp-remarks-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sarp-remarks-text {
+  margin: 0;
+  font-size: 14px;
+  color: #1e293b;
+  line-height: 1.6;
+}
+
+/* Loading & Error States */
+.sarp-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+  color: #64748b;
+  font-size: 15px;
+}
+
+.sarp-spinner {
+  width: 38px;
+  height: 38px;
+  border: 3.5px solid #e2e8f0;
+  border-top-color: #2c3e6b;
+  border-radius: 50%;
+  animation: sarpSpin 0.75s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes sarpSpin {
+  to { transform: rotate(360deg); }
+}
+
+.sarp-state--error {
+  color: #c0392b;
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .sarp-container {
+    padding: 16px 16px 40px;
+  }
+  .sarp-student-card {
+    padding: 18px 20px;
+  }
+  .sarp-card {
+    padding: 20px 18px;
+  }
+  .sarp-stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .sarp-stat--wide {
+    grid-column: span 2;
+  }
+}
