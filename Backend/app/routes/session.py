@@ -153,9 +153,8 @@ async def get_session(
     current_teacher: Teacher      = Depends(get_current_teacher),
 ):
     if _is_admin(current_teacher):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only teachers can view individual student assessment records."
+        return await session_service.get_session_by_id(
+            db=db, session_id=session_id, school_id=current_teacher.school_id
         )
     return await session_service.get_session_by_id(
         db=db, session_id=session_id, teacher_id=current_teacher.id

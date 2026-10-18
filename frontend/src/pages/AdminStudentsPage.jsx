@@ -10,6 +10,7 @@ import Layout from "../components/Layout";
 import TopBar from "../components/TopBar";
 import { adminApi, studentsApi } from "../services/api";
 import Toast from "../modals/Toast";
+import StudentInfoModal from "../modals/StudentInfoModal";
 import useToast from "../hooks/Usetoast";
 import { useWindowWidth } from "../hooks/useWindowWidth";
 import "../pages/pages css/ClassRecordPage.css";
@@ -80,7 +81,7 @@ function ReassignModal({ card, onClose, onSuccess }) {
     adminApi.getTeachers()
       .then(data => {
         const others = (data.teachers || data || []).filter(
-          t => t.id !== card.teacher_id
+          t => t.id !== card.teacher_id && t.is_active !== false
         );
         setTeachers(others);
         if (others.length > 0) setToTeacherId(String(others[0].id));
@@ -196,6 +197,9 @@ function ClassRecordView({ card, onBack }) {
   const [language, setLanguage] = useState("filipino");
   const [exportingExcel, setExportingExcel] = useState(false);
 
+  const [selectedSessionId, setSelectedSessionId] = useState(null);
+  const [selectedStudentId, setSelectedStudentId] = useState(null);
+
   const { toasts, removeToast, showSaveSuccess, showError } = useToast();
 
   const SCHOOL_YEARS = (() => {
@@ -248,7 +252,7 @@ function ClassRecordView({ card, onBack }) {
       return [
         idx + 1,
         s.lrn ?? "—",
-        `${s.last_name}, {s.first_name}`,
+        `${s.last_name}, ${s.first_name}${s.middle_name ? `, ${s.middle_name.charAt(0).toUpperCase()}.` : ""}`,
         s.sex ? s.sex.charAt(0).toUpperCase() + s.sex.slice(1) : "—",
         s.session_date ? formatDate(s.session_date) : "—",
         rr?.part1_task1_correct ?? "—",
@@ -616,9 +620,17 @@ function ClassRecordView({ card, onBack }) {
                       <td className="cr-td cr-td--center cr-freeze--num">{idx + 1}</td>
                       <td className="cr-td cr-freeze--lrn">{s.lrn ?? "—"}</td>
                       <td className="cr-td cr-freeze--name">
-                        <span style={{ color: nameColor, fontWeight: 600 }}>
-                          {s.last_name}, {s.first_name}
-                        </span>
+                        <button
+                          className="cr-student-link"
+                          style={{ color: nameColor, fontWeight: 600, background: "none", border: "none", padding: 0, textAlign: "left", cursor: "pointer", font: "inherit" }}
+                          title={`${s.last_name}, ${s.first_name}${s.middle_name ? `, ${s.middle_name}` : ""}`}
+                          onClick={() => {
+                            setSelectedStudentId(s.student_id);
+                            setSelectedSessionId(s.session_id || null);
+                          }}
+                        >
+                          {s.last_name}, {s.first_name}{s.middle_name ? `, ${s.middle_name.charAt(0).toUpperCase()}.` : ""}
+                        </button>
                       </td>
                       <td className="cr-td cr-td--cap">{s.sex ?? "—"}</td>
                       <td className="cr-td">{s.session_date ? formatDate(s.session_date) : "—"}</td>
@@ -654,6 +666,18 @@ function ClassRecordView({ card, onBack }) {
         <div style={{ fontSize: 12, color: "#8a94b2" }}>
           {students.filter(s => s.reading_profile || s.reading_result).length} of {students.length} students assessed
         </div>
+      )}
+
+      {/* Detailed Student & Session Diagnostic Modal (mirrors teacher side) */}
+      {(selectedSessionId || selectedStudentId) && (
+        <StudentInfoModal
+          sessionId={selectedSessionId}
+          studentId={selectedStudentId}
+          onClose={() => {
+            setSelectedSessionId(null);
+            setSelectedStudentId(null);
+          }}
+        />
       )}
 
       <Toast toasts={toasts} onRemove={removeToast} />
@@ -854,12 +878,15 @@ export default function AdminStudentsPage() {
                         const text = GRADE_TEXT[card.grade_level]  ?? "#2c7fc1";
                         const cardKey = `${card.teacher_id}-${card.grade_level}-${card.section}-${year}`;
                         const isActiveAdvisory = card.school_year === currentSchoolYear();
+                        const isUnassigned = isActiveAdvisory && (!card.has_active_teacher || card.teacher_name === "No Adviser Assigned");
                         return (
                           <div
                             key={cardKey}
                             style={{
-                              background: "#fff", border: "1.5px solid #e8ecf4",
-                              borderRadius: 14, boxShadow: "0 2px 12px rgba(44,62,107,.06)",
+                              background: "#fff",
+                              border: isUnassigned ? "1.5px solid #fed7aa" : "1.5px solid #e8ecf4",
+                              borderRadius: 14,
+                              boxShadow: isUnassigned ? "0 2px 14px rgba(234,88,12,.08)" : "0 2px 12px rgba(44,62,107,.06)",
                               padding: isMobile ? "16px" : "20px 24px",
                               width: "100%",
                               fontFamily: "Poppins, sans-serif",
@@ -868,7 +895,7 @@ export default function AdminStudentsPage() {
                             }}
                           >
                             {/* Grade badge */}
-                            <div style={{ marginBottom: 10 }}>
+                            <div style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
                               <span style={{
                                 display: "inline-block", background: bg, color: text,
                                 borderRadius: 8, padding: "3px 12px",
@@ -876,6 +903,16 @@ export default function AdminStudentsPage() {
                               }}>
                                 {formatGrade(card.grade_level)}
                               </span>
+                              {isUnassigned && (
+                                <span style={{
+                                  display: "inline-block", background: "#fff7ed", color: "#c2410c",
+                                  border: "1px solid #ffedd5",
+                                  borderRadius: 8, padding: "2px 8px",
+                                  fontSize: 11, fontWeight: 600,
+                                }}>
+                                  Unassigned
+                                </span>
+                              )}
                             </div>
 
                             {/* Clickable area */}
@@ -889,7 +926,9 @@ export default function AdminStudentsPage() {
                                 {formatGrade(card.grade_level)} — {card.section ?? "No Section"}
                               </div>
                               <div style={{
-                                fontSize: 12, color: "#4a5568", fontWeight: 500,
+                                fontSize: 12,
+                                color: isUnassigned ? "#c2410c" : "#4a5568",
+                                fontWeight: isUnassigned ? 600 : 500,
                                 whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                                 marginBottom: 2,
                               }}>
@@ -908,24 +947,24 @@ export default function AdminStudentsPage() {
                             </button>
 
                             {/* Reassign button — only on current school year when no teacher is assigned */}
-                            {isActiveAdvisory && (!card.has_active_teacher || card.teacher_name === "No Adviser Assigned") && (
+                            {isUnassigned && (
                               <button
                                 onClick={() => setReassignCard(card)}
                                 style={{
                                   marginTop: 12, padding: "6px 0", borderRadius: 7,
-                                  border: "1.5px solid #dde1ee", background: "#f7f9ff",
-                                  color: "#2c3e6b", fontSize: 12, fontWeight: 600,
+                                  border: "1.5px solid #fdba74", background: "#fff7ed",
+                                  color: "#c2410c", fontSize: 12, fontWeight: 600,
                                   cursor: "pointer", fontFamily: "Poppins, sans-serif",
                                   display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
                                   transition: "background 0.15s, border-color 0.15s",
                                 }}
                                 onMouseEnter={e => {
-                                  e.currentTarget.style.background = "#eef3ff";
-                                  e.currentTarget.style.borderColor = "#c8d0ec";
+                                  e.currentTarget.style.background = "#ffedd5";
+                                  e.currentTarget.style.borderColor = "#fb923c";
                                 }}
                                 onMouseLeave={e => {
-                                  e.currentTarget.style.background = "#f7f9ff";
-                                  e.currentTarget.style.borderColor = "#dde1ee";
+                                  e.currentTarget.style.background = "#fff7ed";
+                                  e.currentTarget.style.borderColor = "#fdba74";
                                 }}
                               >
                                 <UserCheck size={13} />

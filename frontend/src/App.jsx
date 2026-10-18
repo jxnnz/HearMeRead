@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoadingPage from "./pages/LoadingPage";
 import axios from "axios";
-import api, { authApi, dashboardApi } from "./services/api";
+import api, { authApi, dashboardApi, adminApi } from "./services/api";
 
 // Lazy-loaded pages
 const LandingPage = React.lazy(() => import("./pages/LandingPage"));
@@ -95,9 +95,11 @@ export default function App() {
         const token = localStorage.getItem("token");
         if (token) {
           authApi.me()
-            .then(() => {
-              // Fetch dashboard summary stats to pre-cache / sync
-              return dashboardApi.getSummary()
+            .then((user) => {
+              // Fetch dashboard summary stats to pre-cache / sync according to role
+              const role = user?.role || getRole();
+              const prefetch = role === "ADMIN" ? adminApi.getDashboard() : dashboardApi.getSummary();
+              return prefetch
                 .then(() => setSecondCheckDone(true))
                 .catch(() => setSecondCheckDone(true));
             })

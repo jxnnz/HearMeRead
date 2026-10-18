@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     EMAIL_NAME: str
     FRONTEND_URL: str = "http://localhost:5173"
     BACKEND_URL: str = "http://localhost:8000"
+    SUPER_ADMIN_EMAIL: str = "senya.sign@gmail.com"
 
     # Field-level encryption key for student PII (Fernet key — generate with:
     # python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")

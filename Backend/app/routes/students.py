@@ -199,24 +199,35 @@ async def export_crla(
     new_eng_name = f"G{grade_num} ENG Reading Scoresheet"
 
     # Fetch students — check both StudentEnrollment AND direct assignment for year-aware lookup
+    enr_conds = [
+        StudentEnrollment.teacher_id == target_teacher_id,
+        StudentEnrollment.school_year == school_year,
+    ]
+    if grade_enum:
+        enr_conds.append(StudentEnrollment.grade_level == grade_enum)
+    if section:
+        enr_conds.append(StudentEnrollment.section == section)
+
     enrollment_res = await db.execute(
-        select(StudentEnrollment.student_id).where(
-            StudentEnrollment.teacher_id == target_teacher_id,
-            StudentEnrollment.school_year == school_year,
-        )
+        select(StudentEnrollment.student_id).where(*enr_conds)
     )
     enrolled_ids = [r[0] for r in enrollment_res.all()]
+
+    direct_conds = [
+        Student.teacher_id == target_teacher_id,
+        Student.school_year == school_year,
+    ]
+    if grade_enum:
+        direct_conds.append(Student.grade_level == grade_enum)
+    if section:
+        direct_conds.append(Student.section == section)
+
     membership_condition = or_(
         Student.id.in_(enrolled_ids) if enrolled_ids else False,
-        and_(
-            Student.teacher_id == target_teacher_id,
-            Student.school_year == school_year,
-        ),
+        and_(*direct_conds),
     )
     stmt = select(Student).where(
         membership_condition,
-        Student.grade_level == grade_enum,
-        Student.section == section,
         Student.is_archived == False,
     )
     res = await db.execute(stmt)
@@ -1173,6 +1184,11 @@ async def get_student(
     db: AsyncSession = Depends(get_db),
     current_teacher: Teacher = Depends(get_current_teacher),
 ):
+    from app.models import UserRole
+    if current_teacher.role == UserRole.admin:
+        return await student_service.get_student_by_id(
+            db=db, student_id=student_id, school_id=current_teacher.school_id
+        )
     return await student_service.get_student_by_id(
         db=db, student_id=student_id, teacher_id=current_teacher.id
     )

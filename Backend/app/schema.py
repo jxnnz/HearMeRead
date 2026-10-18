@@ -1,6 +1,6 @@
 import re
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
@@ -114,6 +114,7 @@ class TeacherResponse(BaseModel):
     is_verified: bool           = False
     profile_picture_url: Optional[str] = None
     employee_id: Optional[str] = None
+    is_super_admin: bool        = False
 
     class Config:
         from_attributes = True
@@ -158,10 +159,25 @@ class ProfilePictureUrlResponse(BaseModel):
     key: str
 
 
+class AdminPeriodGenderCount(BaseModel):
+    female: int = 0
+    male: int = 0
+    total: int = 0
+
+
 class AdminDashboardResponse(BaseModel):
     school_code: str
     school_name: str
-    teachers:    List["TeacherResponse"] = []
+    deped_school_id: Optional[str] = None
+    school_year: str
+    available_school_years: List[str] = []
+    total_teachers: int
+    total_students_assessed: int
+    total_sessions: int
+    completed_sessions: int
+    completion_rate: float
+    period_breakdown: Dict[str, AdminPeriodGenderCount]
+    profile_by_period: Dict[str, Dict[str, float]]
 
 
 # Question

@@ -155,6 +155,7 @@ async def get_session_by_id(
     db: AsyncSession,
     session_id: int,
     teacher_id: Optional[int] = None,
+    school_id: Optional[int] = None,
 ) -> AssessmentSession:
     query = select(AssessmentSession).options(
         selectinload(AssessmentSession.reading_result),
@@ -167,6 +168,14 @@ async def get_session_by_id(
 
     if teacher_id is not None:
         query = query.where(AssessmentSession.teacher_id == teacher_id)
+    elif school_id is not None:
+        from app.models import Teacher, Student, StudentEnrollment
+        query = query.join(Student, Student.id == AssessmentSession.student_id).where(
+            or_(
+                Student.teacher_id.in_(select(Teacher.id).where(Teacher.school_id == school_id)),
+                Student.id.in_(select(StudentEnrollment.student_id).where(StudentEnrollment.school_id == school_id)),
+            )
+        )
 
     result = await db.execute(query)
     session = result.scalar_one_or_none()
@@ -520,6 +529,23 @@ async def archive_session(
     session = await get_session_by_id(db, session_id, teacher_id)
     session.is_archived = True
     await db.commit()
+
+    teacher_res = await db.execute(select(Teacher.school_id).where(Teacher.id == teacher_id))
+    school_id = teacher_res.scalar_one_or_none()
+    if school_id:
+        await log_activity(
+            db=db,
+            teacher_id=teacher_id,
+            school_id=school_id,
+            action="archived_session",
+            entity_type="session",
+            entity_id=session.id,
+            metadata={
+                "student_id": session.student_id,
+                "school_year": session.school_year,
+                "period": session.period.value if hasattr(session.period, "value") else str(session.period or ""),
+            },
+        )
 
 
 async def save_observation(

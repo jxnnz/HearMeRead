@@ -235,14 +235,28 @@ async def get_class_summaries(db: AsyncSession, teacher_id: int, school_year: Op
     ]
 
 
-async def get_student_by_id(db: AsyncSession, student_id: int, teacher_id: int) -> Student:
-    result = await db.execute(
-        select(Student).where(
-            Student.id == student_id,
-            Student.teacher_id == teacher_id,
-            Student.is_archived == False,
-        )
+async def get_student_by_id(
+    db: AsyncSession,
+    student_id: int,
+    teacher_id: Optional[int] = None,
+    school_id: Optional[int] = None,
+) -> Student:
+    query = select(Student).where(
+        Student.id == student_id,
+        Student.is_archived == False,
     )
+    if teacher_id is not None:
+        query = query.where(Student.teacher_id == teacher_id)
+    elif school_id is not None:
+        from app.models import Teacher, StudentEnrollment
+        query = query.where(
+            or_(
+                Student.teacher_id.in_(select(Teacher.id).where(Teacher.school_id == school_id)),
+                Student.id.in_(select(StudentEnrollment.student_id).where(StudentEnrollment.school_id == school_id)),
+            )
+        )
+
+    result = await db.execute(query)
     student = result.scalar_one_or_none()
     if not student:
         raise HTTPException(
@@ -381,3 +395,20 @@ async def delete_student(db: AsyncSession, student_id: int, teacher_id: int) -> 
         sess.is_archived = True
 
     await db.commit()
+
+    # Audit log
+    teacher_res = await db.execute(select(Teacher.school_id).where(Teacher.id == teacher_id))
+    school_id = teacher_res.scalar_one_or_none()
+    if school_id:
+        await log_activity(
+            db=db,
+            teacher_id=teacher_id,
+            school_id=school_id,
+            action="archived_student",
+            entity_type="student",
+            entity_id=student.id,
+            metadata={
+                "grade_level": student.grade_level.value if hasattr(student.grade_level, "value") else str(student.grade_level or ""),
+                "section": student.section or "",
+            },
+        )

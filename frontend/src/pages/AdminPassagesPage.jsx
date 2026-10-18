@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Plus, Search, BookOpen, Pencil, Trash2, X, ChevronLeft, ChevronRight, Eye, Upload, FileText, Info } from "lucide-react";
+import { Plus, Search, BookOpen, Pencil, Trash2, X, ChevronLeft, ChevronRight, Eye, Upload, FileText, Info, RotateCcw } from "lucide-react";
 import Layout from "../components/Layout";
 import TopBar from "../components/TopBar";
 import ConfirmModal from "../modals/ConfirmModal";
 import UploadModal from "../components/UploadModal";
 import Toast from "../modals/Toast";
 import useToast from "../hooks/Usetoast";
-import { adminApi, questionsApi } from "../services/api";
+import { adminApi, questionsApi, authApi } from "../services/api";
 import { useWindowWidth } from "../hooks/useWindowWidth";
 import "./pages css/AddPassagePage.css";
 
@@ -132,10 +132,11 @@ function A1Form({ form, update, eng3, rhymePairs, setRhymePairs }) {
   );
 }
 
-function parseStoryTitle(t) {
-  if (!t) return { num: "1", title: "" };
+function parseStoryTitle(t, fallbackNum = "1") {
+  const fallbackStr = String(fallbackNum || "1");
+  if (!t) return { num: fallbackStr, title: "" };
   const m = t.match(/^Story\s*(\d+)\s*:\s*(.+)$/i);
-  return m ? { num: m[1], title: m[2] } : { num: "1", title: t };
+  return m ? { num: m[1], title: m[2] } : { num: fallbackStr, title: t };
 }
 
 function storyLabel(t) {
@@ -232,13 +233,23 @@ export default function AdminPassagesPage() {
   // Rhyme pairs for Grade 1 Filipino A1 passages
   const [rhymePairs, setRhymePairs] = useState(makeEmptyRhymePairs);
 
-  // Archive modal state
+  // Archive & restore modal state
   const [archiveTarget, setArchiveTarget] = useState(null);
   const [archiving, setArchiving] = useState(false);
+  const [restoreTarget, setRestoreTarget] = useState(null);
+  const [restoring, setRestoring] = useState(false);
+  const [includeArchived, setIncludeArchived] = useState(false);
 
   // Upload modal state
   const [uploadTargetField, setUploadTargetField] = useState(null);
   const [globalUploadOpen, setGlobalUploadOpen] = useState(false);
+
+  const [currentUser, setCurrentUser] = useState(null);
+  const isSuperAdmin = Boolean(currentUser?.is_super_admin);
+
+  useEffect(() => {
+    authApi.me().then(setCurrentUser).catch(() => {});
+  }, []);
 
   // Bulk upload state
   const [bulkSaving, setBulkSaving]   = useState(false);
@@ -267,11 +278,15 @@ export default function AdminPassagesPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const p = {}; if (langF) p.language = langF; if (gradeF) p.grade_level = gradeF; if (typeF) p.assessment_type = Number(typeF);
+      const p = {};
+      if (langF) p.language = langF;
+      if (gradeF) p.grade_level = gradeF;
+      if (typeF) p.assessment_type = Number(typeF);
+      if (includeArchived) p.include_archived = true;
       setPassages(await adminApi.listPassages(p));
     } catch { setPassages([]); }
     finally { setLoading(false); }
-  }, [langF, gradeF, typeF]);
+  }, [langF, gradeF, typeF, includeArchived]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -569,15 +584,31 @@ export default function AdminPassagesPage() {
     setArchiving(true);
     try {
       await adminApi.archivePassage(archiveTarget.id);
+      addToast({ type: "success", title: "Archived", message: `Passage "${archiveTarget.title || 'Untitled'}" archived successfully.` });
       if (paginated.length === 1 && page > 1) {
         setPage((p) => Math.max(1, p - 1));
       }
       load();
-    } catch {
-      // ignore
+    } catch (err) {
+      addToast({ type: "error", title: "Archive Failed", message: err.response?.data?.detail || "Failed to archive passage." });
     } finally {
       setArchiving(false);
       setArchiveTarget(null);
+    }
+  }
+
+  async function handleRestoreConfirm() {
+    if (!restoreTarget) return;
+    setRestoring(true);
+    try {
+      await adminApi.restorePassage(restoreTarget.id);
+      addToast({ type: "success", title: "Restored", message: `Passage "${restoreTarget.title || 'Untitled'}" restored successfully.` });
+      setRestoreTarget(null);
+      load();
+    } catch (err) {
+      addToast({ type: "error", title: "Restore Failed", message: err.response?.data?.detail || "Failed to restore passage." });
+    } finally {
+      setRestoring(false);
     }
   }
 
@@ -730,7 +761,7 @@ export default function AdminPassagesPage() {
             {/* Selects — 2-column grid on mobile, row on desktop */}
             <div style={{
               display: "grid",
-              gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(3, auto)",
+              gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, auto)",
               gap: 10,
               alignItems: "end",
             }}>
@@ -748,11 +779,23 @@ export default function AdminPassagesPage() {
                 </select>
               </div>
 
-              <div style={isMobile ? { gridColumn: "1 / -1" } : {}}>
+              <div>
                 <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 6 }}>Assessment Type</label>
                 <select value={typeF} onChange={(e) => { setTypeF(e.target.value); setPage(1); }} className="ap-input" style={{ width: "100%", boxSizing: "border-box" }}>
                   {TYPES.map(x => <option key={x.value} value={x.value}>{x.label}</option>)}
                 </select>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", height: 38, paddingBottom: 2 }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 500, color: "#4a5568", cursor: "pointer", userSelect: "none" }}>
+                  <input
+                    type="checkbox"
+                    checked={includeArchived}
+                    onChange={(e) => { setIncludeArchived(e.target.checked); setPage(1); }}
+                    style={{ cursor: "pointer", width: 15, height: 15 }}
+                  />
+                  Show Archived
+                </label>
               </div>
             </div>
           </div>
@@ -873,36 +916,109 @@ export default function AdminPassagesPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {paginated.map((p, idx) => (
-                        <tr key={p.id} onClick={() => setPreviewTarget(p)} style={{ borderBottom: "1px solid #eee", background: "#fff", cursor: "pointer" }}>
-                          <td style={{ padding: isMobile ? "8px 8px" : "12px 14px", color: "#888" }}>{(page - 1) * PER + idx + 1}</td>
-                          <td style={{ padding: isMobile ? "8px 8px" : "12px 14px", fontWeight: 600, color: "#1a2340", maxWidth: isMobile ? 110 : "none" }}>
-                            {p.assessment_type === 2 ? (() => {
-                              const { num, title } = parseStoryTitle(p.title);
-                              return num ? (
-                                <>
-                                  <span style={{ fontSize: isMobile ? 10 : 11, color: "#2c3e6b", fontWeight: 700, marginRight: 4 }}>Story {num}:</span>
-                                  <span style={{ fontWeight: 400, color: "#555" }}>{title}</span>
-                                </>
-                              ) : (p.title || "—");
-                            })() : (p.title || "(Assessment 1)")}
-                          </td>
-                          <td style={{ padding: isMobile ? "8px 8px" : "12px 14px", whiteSpace: "nowrap" }}>
-                            <span style={{ fontSize: isMobile ? 10 : 11, padding: isMobile ? "2px 6px" : "3px 10px", borderRadius: 6, background: p.assessment_type === 1 ? "#e0edff" : "#e8f5e9", color: p.assessment_type === 1 ? "#1e40af" : "#166534", fontWeight: 600, whiteSpace: "nowrap" }}>
-                              {isMobile ? `A${p.assessment_type}` : `Assessment ${p.assessment_type}`}
-                            </span>
-                          </td>
-                          <td style={{ padding: isMobile ? "8px 8px" : "12px 14px", whiteSpace: "nowrap" }}>{fmtGrade(p.grade_level)}</td>
-                          {!isMobile && <td style={{ padding: "12px 14px", textTransform: "capitalize" }}>{p.language}</td>}
-                          {!isMobile && <td style={{ padding: "12px 14px" }}>{p.word_count}</td>}
-                          <td style={{ padding: isMobile ? "8px 6px" : "12px 14px" }} onClick={(e) => e.stopPropagation()}>
-                            <div style={{ display: "flex", gap: isMobile ? 4 : 6 }}>
-                              <button onClick={() => startEdit(p)} title="Edit" style={{ background: "#f8f9fd", border: "1px solid #dde2f0", borderRadius: 6, padding: isMobile ? "5px 6px" : "6px 8px", cursor: "pointer" }}><Pencil size={isMobile ? 12 : 14} color="#555" /></button>
-                              <button onClick={() => handleArchive(p)} title="Delete" style={{ background: "#fdf2f2", border: "1px solid #f9caca", borderRadius: 6, padding: isMobile ? "5px 6px" : "6px 8px", cursor: "pointer" }}><Trash2 size={isMobile ? 12 : 14} color="#c44" /></button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                      {paginated.map((p, idx) => {
+                        const isArchived = Boolean(p.is_archived);
+                        return (
+                          <tr
+                            key={p.id}
+                            onClick={() => setPreviewTarget(p)}
+                            style={{
+                              borderBottom: "1px solid #eee",
+                              background: isArchived ? "#f9fafb" : "#fff",
+                              cursor: "pointer",
+                              opacity: isArchived ? 0.78 : 1,
+                            }}
+                          >
+                            <td style={{ padding: isMobile ? "8px 8px" : "12px 14px", color: isArchived ? "#9ca3af" : "#888" }}>
+                              {(page - 1) * PER + idx + 1}
+                            </td>
+                            <td style={{ padding: isMobile ? "8px 8px" : "12px 14px", fontWeight: 600, color: isArchived ? "#4b5563" : "#1a2340", maxWidth: isMobile ? 110 : "none" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                                {p.assessment_type === 2 ? (() => {
+                                  const { num, title } = parseStoryTitle(p.title, p.story_number);
+                                  return num ? (
+                                    <>
+                                      <span style={{ fontSize: isMobile ? 10 : 11, color: isArchived ? "#6b7280" : "#2c3e6b", fontWeight: 700, marginRight: 4 }}>Story {num}:</span>
+                                      <span style={{ fontWeight: 400, color: isArchived ? "#6b7280" : "#555" }}>{title}</span>
+                                    </>
+                                  ) : (p.title || "—");
+                                })() : (p.title || "(Assessment 1)")}
+                                {isArchived && (
+                                  <span style={{
+                                    fontSize: 10,
+                                    fontWeight: 700,
+                                    padding: "2px 6px",
+                                    borderRadius: 4,
+                                    background: "#e5e7eb",
+                                    color: "#4b5563",
+                                    textTransform: "uppercase",
+                                    letterSpacing: "0.5px"
+                                  }}>
+                                    Archived
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td style={{ padding: isMobile ? "8px 8px" : "12px 14px", whiteSpace: "nowrap" }}>
+                              <span style={{
+                                fontSize: isMobile ? 10 : 11,
+                                padding: isMobile ? "2px 6px" : "3px 10px",
+                                borderRadius: 6,
+                                background: isArchived ? "#f3f4f6" : (p.assessment_type === 1 ? "#e0edff" : "#e8f5e9"),
+                                color: isArchived ? "#6b7280" : (p.assessment_type === 1 ? "#1e40af" : "#166534"),
+                                fontWeight: 600,
+                                whiteSpace: "nowrap"
+                              }}>
+                                {isMobile ? `A${p.assessment_type}` : `Assessment ${p.assessment_type}`}
+                              </span>
+                            </td>
+                            <td style={{ padding: isMobile ? "8px 8px" : "12px 14px", whiteSpace: "nowrap", color: isArchived ? "#6b7280" : "inherit" }}>
+                              {fmtGrade(p.grade_level)}
+                            </td>
+                            {!isMobile && (
+                              <td style={{ padding: "12px 14px", textTransform: "capitalize", color: isArchived ? "#6b7280" : "inherit" }}>
+                                {p.language}
+                              </td>
+                            )}
+                            {!isMobile && (
+                              <td style={{ padding: "12px 14px", color: isArchived ? "#6b7280" : "inherit" }}>
+                                {p.word_count}
+                              </td>
+                            )}
+                            <td style={{ padding: isMobile ? "8px 6px" : "12px 14px" }} onClick={(e) => e.stopPropagation()}>
+                              <div style={{ display: "flex", gap: isMobile ? 4 : 6 }}>
+                                {isArchived ? (
+                                  <button
+                                    onClick={() => setRestoreTarget(p)}
+                                    title="Restore Passage"
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 4,
+                                      background: "#f0fdf4",
+                                      border: "1px solid #bbf7d0",
+                                      color: "#166534",
+                                      borderRadius: 6,
+                                      padding: isMobile ? "5px 8px" : "6px 10px",
+                                      fontSize: isMobile ? 11 : 12,
+                                      fontWeight: 600,
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    <RotateCcw size={isMobile ? 12 : 13} color="#166534" />
+                                    <span>Restore</span>
+                                  </button>
+                                ) : (
+                                  <>
+                                    <button onClick={() => startEdit(p)} title="Edit" style={{ background: "#f8f9fd", border: "1px solid #dde2f0", borderRadius: 6, padding: isMobile ? "5px 6px" : "6px 8px", cursor: "pointer" }}><Pencil size={isMobile ? 12 : 14} color="#555" /></button>
+                                    <button onClick={() => handleArchive(p)} title="Delete" style={{ background: "#fdf2f2", border: "1px solid #f9caca", borderRadius: 6, padding: isMobile ? "5px 6px" : "6px 8px", cursor: "pointer" }}><Trash2 size={isMobile ? 12 : 14} color="#c44" /></button>
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -982,7 +1098,7 @@ export default function AdminPassagesPage() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                   <h3 style={{ margin: 0, fontSize: 18, color: "#1a2340" }}>
                     {pv.assessment_type === 2 && pv.title ? (() => {
-                      const { num, title } = parseStoryTitle(pv.title);
+                      const { num, title } = parseStoryTitle(pv.title, pv.story_number);
                       return num ? <><span style={{ color: "#2c3e6b" }}>Story {num}:</span> {title}</> : pv.title;
                     })() : (pv.title || "Assessment 1 Passage")}
                   </h3>
@@ -1009,12 +1125,26 @@ export default function AdminPassagesPage() {
 
           <ConfirmModal
             isOpen={!!archiveTarget}
-            title="Delete Passage"
-            message={`Are you sure you want to delete "${archiveTarget?.title || 'this passage'}"? Teachers will no longer see it.`}
-            confirmLabel={archiving ? "Deleting..." : "Delete"}
+            title={isSuperAdmin ? "Delete Passage Globally (All Schools)" : "Delete Passage"}
+            message={
+              isSuperAdmin
+                ? `Are you sure you want to delete "${archiveTarget?.title || 'this passage'}"? As Super Admin, this will remove it for ALL schools.`
+                : `Are you sure you want to delete "${archiveTarget?.title || 'this passage'}"? Teachers in your school will no longer see it.`
+            }
+            confirmLabel={archiving ? "Deleting..." : isSuperAdmin ? "Delete for All Schools" : "Delete"}
             variant="danger"
             onConfirm={handleArchiveConfirm}
             onClose={() => !archiving && setArchiveTarget(null)}
+          />
+
+          <ConfirmModal
+            isOpen={!!restoreTarget}
+            title="Restore Passage"
+            message={`Are you sure you want to restore "${restoreTarget?.title || 'this passage'}"? It will become visible again to teachers.`}
+            confirmLabel={restoring ? "Restoring..." : "Restore"}
+            variant="primary"
+            onConfirm={handleRestoreConfirm}
+            onClose={() => !restoring && setRestoreTarget(null)}
           />
 
           <Toast toasts={toasts} onRemove={removeToast} />

@@ -141,8 +141,9 @@ export const authApi = {
 
 // Admin
 export const adminApi = {
-  getDashboard: async () => {
-    const res = await api.get("/admin/dashboard");
+  getDashboard: async (schoolYear) => {
+    const params = schoolYear ? { school_year: schoolYear } : {};
+    const res = await api.get("/admin/dashboard", { params });
     return res.data;
   },
 
@@ -158,6 +159,11 @@ export const adminApi = {
 
   archiveTeacher: async (teacherId) => {
     const res = await api.patch(`/admin/teachers/${teacherId}/archive`);
+    return res.data;
+  },
+
+  restoreTeacher: async (teacherId) => {
+    const res = await api.patch(`/admin/teachers/${teacherId}/restore`);
     return res.data;
   },
 
@@ -225,6 +231,11 @@ export const adminApi = {
 
   archivePassage: async (id) => {
     const res = await api.delete(`/admin/passages/${id}`);
+    return res.data;
+  },
+
+  restorePassage: async (id) => {
+    const res = await api.patch(`/admin/passages/${id}/restore`);
     return res.data;
   },
 

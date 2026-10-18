@@ -4,7 +4,7 @@ import sqlalchemy as sa
 from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_, or_, update
+from sqlalchemy import select, func, and_, or_, update, distinct
 from sqlalchemy.orm import selectinload
 
 from app.db import get_db
@@ -35,8 +35,9 @@ def _current_school_year() -> str:
 
 
 # Dashboard
-@router.get("/dashboard", summary="Admin dashboard — school stats and school code")
+@router.get("/dashboard", summary="Admin dashboard — school stats and school code", response_model=AdminDashboardResponse)
 async def admin_dashboard(
+    school_year: Optional[str] = Query(None, description="e.g. 2025-2026"),
     current_admin: Teacher = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
@@ -46,6 +47,24 @@ async def admin_dashboard(
     school = school_result.scalar_one_or_none()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
+
+    # Current / selected school year
+    current_sy = _current_school_year()
+    sy = school_year or current_sy
+
+    # Query distinct available school years across non-archived sessions in this school
+    sy_result = await db.execute(
+        select(distinct(AssessmentSession.school_year))
+        .join(Teacher, Teacher.id == AssessmentSession.teacher_id)
+        .where(
+            Teacher.school_id == current_admin.school_id,
+            AssessmentSession.is_archived == False,
+        )
+    )
+    db_school_years = [r[0] for r in sy_result.fetchall() if r[0]]
+    if current_sy not in db_school_years:
+        db_school_years.append(current_sy)
+    db_school_years.sort(reverse=True)
 
     # Total teachers (excluding admin accounts)
     teacher_count_result = await db.execute(
@@ -57,18 +76,20 @@ async def admin_dashboard(
     )
     total_teachers = teacher_count_result.scalar() or 0
 
-    # Total unique students assessed (via non-archived sessions in this school)
+    # Total unique students assessed (completed, non-archived sessions in this school and school year)
     student_count_result = await db.execute(
         select(func.count(func.distinct(AssessmentSession.student_id)))
         .join(Teacher, Teacher.id == AssessmentSession.teacher_id)
         .where(
             Teacher.school_id == current_admin.school_id,
+            AssessmentSession.school_year == sy,
+            AssessmentSession.is_completed == True,
             AssessmentSession.is_archived == False,
         )
     )
     total_students_assessed = student_count_result.scalar() or 0
 
-    # Total sessions and completed sessions
+    # Total sessions and completed sessions in selected school year
     sessions_result = await db.execute(
         select(
             func.count(AssessmentSession.id),
@@ -77,6 +98,7 @@ async def admin_dashboard(
         .join(Teacher, Teacher.id == AssessmentSession.teacher_id)
         .where(
             Teacher.school_id == current_admin.school_id,
+            AssessmentSession.school_year == sy,
             AssessmentSession.is_archived == False,
         )
     )
@@ -100,6 +122,7 @@ async def admin_dashboard(
         .join(Student, Student.id == AssessmentSession.student_id)
         .where(
             Teacher.school_id == current_admin.school_id,
+            AssessmentSession.school_year == sy,
             AssessmentSession.is_completed == True,
             AssessmentSession.is_archived == False,
         )
@@ -132,6 +155,7 @@ async def admin_dashboard(
         .join(ReadingResult, ReadingResult.session_id == AssessmentSession.id)
         .where(
             Teacher.school_id == current_admin.school_id,
+            AssessmentSession.school_year == sy,
             AssessmentSession.is_completed == True,
             AssessmentSession.is_archived == False,
             ReadingResult.reading_profile != None,
@@ -160,16 +184,14 @@ async def admin_dashboard(
         "school_code": school.school_code,
         "school_name": school.name,
         "deped_school_id": school.deped_school_id,
+        "school_year": sy,
+        "available_school_years": db_school_years,
         "total_teachers": total_teachers,
         "total_students_assessed": total_students_assessed,
         "total_sessions": total_sessions,
         "completed_sessions": completed_sessions,
         "completion_rate": round((completed_sessions / total_sessions * 100), 1) if total_sessions else 0.0,
-        "period_breakdown": {
-            "beginning": period_breakdown.get("beginning", 0),
-            "middle": period_breakdown.get("middle", 0),
-            "end": period_breakdown.get("end", 0),
-        },
+        "period_breakdown": period_breakdown,
         "profile_by_period": profile_by_period,
     }
 
@@ -301,12 +323,34 @@ async def archive_teacher(
     return {"detail": "Teacher archived successfully"}
 
 
+@router.patch("/teachers/{teacher_id}/restore", summary="Admin restores/unarchives an inactive teacher")
+async def restore_teacher(
+    teacher_id: int,
+    current_admin: Teacher = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Teacher).where(
+            Teacher.id == teacher_id,
+            Teacher.school_id == current_admin.school_id,
+            Teacher.role == UserRole.teacher,
+        )
+    )
+    teacher = result.scalar_one_or_none()
+    if not teacher:
+        raise HTTPException(status_code=404, detail="Teacher not found in your school")
+
+    teacher.is_active = True
+    await db.commit()
+    return {"detail": "Teacher restored successfully"}
+
+
 # Teacher Activity Logs
 @router.get("/teachers/{teacher_id}/logs", summary="Activity logs for a specific teacher")
 async def get_teacher_logs(
     teacher_id: int,
     page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
+    page_size: int = Query(20, ge=1, le=500),
     current_admin: Teacher = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
@@ -357,13 +401,12 @@ async def list_class_cards(
     """
     current_year = _current_school_year()
 
-    # 1. TeacherAssignment-based cards (all history)
+    # 1. TeacherAssignment-based cards (all history, including inactive teachers)
     asgn_result = await db.execute(
         select(TeacherAssignment)
         .join(Teacher, TeacherAssignment.teacher_id == Teacher.id)
         .where(
             TeacherAssignment.school_id == current_admin.school_id,
-            Teacher.is_active == True,
         )
         .order_by(
             TeacherAssignment.school_year.desc(),
@@ -373,21 +416,21 @@ async def list_class_cards(
     )
     assignments = asgn_result.scalars().all()
 
-    # 2. All active teachers with grade/section set (for current-year fallback)
+    # 2. All teachers with grade/section set (for current-year fallback)
     cur_result = await db.execute(
         select(Teacher).where(
             Teacher.school_id == current_admin.school_id,
             Teacher.role == UserRole.teacher,
-            Teacher.is_active == True,
             Teacher.grade_level != None,
             Teacher.section != None,
         )
     )
-    current_teachers = cur_result.scalars().all()
+    all_class_teachers = cur_result.scalars().all()
+    current_teachers = [t for t in all_class_teachers if t.is_active]
 
     # Build unified teacher ID set for batch queries
     all_teacher_ids = list(
-        {a.teacher_id for a in assignments} | {t.id for t in current_teachers}
+        {a.teacher_id for a in assignments} | {t.id for t in all_class_teachers}
     )
     if not all_teacher_ids:
         return []
@@ -450,6 +493,8 @@ async def list_class_cards(
 
     # Cards from TeacherAssignment history
     for asgn in assignments:
+        if asgn.school_year == current_year and not asgn.is_active:
+            continue
         t = teacher_map.get(asgn.teacher_id)
         if not t:
             continue
@@ -470,7 +515,7 @@ async def list_class_cards(
         })
 
     # Current-year cards for any teacher whose current grade/section isn't in seen yet
-    for t in current_teachers:
+    for t in all_class_teachers:
         if not t.grade_level or not t.section:
             continue
         key = (t.id, t.grade_level, t.section, current_year)
@@ -494,22 +539,27 @@ async def list_class_cards(
         if t.grade_level and t.section:
             current_adviser_by_class[(t.grade_level.value, t.section)] = t.id
 
+    final_cards = []
     for card in cards:
         is_cur_sy = (card["school_year"] == current_year)
         if is_cur_sy:
             active_tid = current_adviser_by_class.get((card["grade_level"], card["section"]))
             if active_tid is not None:
-                card["has_active_teacher"] = True
+                if card["teacher_id"] == active_tid:
+                    card["has_active_teacher"] = True
+                    final_cards.append(card)
             else:
                 card["has_active_teacher"] = False
                 card["teacher_name"] = "No Adviser Assigned"
+                final_cards.append(card)
         else:
             # Past school years are historical records
             card["has_active_teacher"] = True
+            final_cards.append(card)
 
     # Sort: latest school_year first, then grade, then section
-    cards.sort(key=lambda c: (c["school_year"] or "", c["grade_level"] or "", c["section"] or ""), reverse=True)
-    return cards
+    final_cards.sort(key=lambda c: (c["school_year"] or "", c["grade_level"] or "", c["section"] or ""), reverse=True)
+    return final_cards
 
 
 @router.get("/students/{teacher_id}", summary="Student class record for a specific teacher")
@@ -543,46 +593,72 @@ async def get_teacher_class_record(
     teacher_last = decrypt(teacher.last_name) if teacher.last_name else ""
 
     # Build grade/section filters to scope the query to the specific class card
-    grade_filter = []
+    grade_enum = None
     if grade_level:
         try:
-            grade_filter.append(Student.grade_level == GradeLevel(grade_level))
+            grade_enum = GradeLevel(grade_level)
         except ValueError:
             pass
-    if section:
-        grade_filter.append(Student.section == section)
 
     # Fetch students — check both StudentEnrollment AND direct Student assignment
-    if school_year:
-        enrollment_result = await db.execute(
-            select(StudentEnrollment.student_id).where(
-                StudentEnrollment.teacher_id == teacher_id,
-                StudentEnrollment.school_year == school_year,
-            )
-        )
-        enrolled_ids = [row[0] for row in enrollment_result]
+    # We maintain a map of student_id -> (enrolled_grade, enrolled_section) so historical
+    # records accurately reflect the student's grade/section during that school year.
+    enrolled_info_map = {}
 
+    if school_year:
+        enr_conditions = [
+            StudentEnrollment.teacher_id == teacher_id,
+            StudentEnrollment.school_year == school_year,
+        ]
+        if grade_enum:
+            enr_conditions.append(StudentEnrollment.grade_level == grade_enum)
+        if section:
+            enr_conditions.append(StudentEnrollment.section == section)
+
+        enrollment_result = await db.execute(
+            select(
+                StudentEnrollment.student_id,
+                StudentEnrollment.grade_level,
+                StudentEnrollment.section,
+            ).where(*enr_conditions)
+        )
+        for r_sid, r_g, r_s in enrollment_result.fetchall():
+            enrolled_info_map[r_sid] = (
+                r_g.value if hasattr(r_g, "value") else str(r_g) if r_g else None,
+                r_s,
+            )
+
+        direct_conditions = [
+            Student.teacher_id == teacher_id,
+            Student.school_year == school_year,
+        ]
+        if grade_enum:
+            direct_conditions.append(Student.grade_level == grade_enum)
+        if section:
+            direct_conditions.append(Student.section == section)
+
+        enrolled_ids = list(enrolled_info_map.keys())
         membership_condition = or_(
             Student.id.in_(enrolled_ids) if enrolled_ids else False,
-            and_(
-                Student.teacher_id == teacher_id,
-                Student.school_year == school_year,
-            ),
+            and_(*direct_conditions),
         )
         students_result = await db.execute(
             select(Student).where(
                 Student.is_archived == False,
                 membership_condition,
-                *grade_filter,
             ).order_by(Student.last_name, Student.first_name)
         )
     else:
         # No year filter — show all students linked to this teacher
+        direct_conditions = [Student.teacher_id == teacher_id]
+        if grade_enum:
+            direct_conditions.append(Student.grade_level == grade_enum)
+        if section:
+            direct_conditions.append(Student.section == section)
         students_result = await db.execute(
             select(Student).where(
-                Student.teacher_id == teacher_id,
                 Student.is_archived == False,
-                *grade_filter,
+                *direct_conditions,
             ).order_by(Student.last_name, Student.first_name)
         )
     students = students_result.scalars().all()
@@ -594,6 +670,8 @@ async def get_teacher_class_record(
             d["first_name"] = decrypt(d["first_name"])
         if d.get("last_name"):
             d["last_name"] = decrypt(d["last_name"])
+        if d.get("middle_name"):
+            d["middle_name"] = decrypt(d["middle_name"])
         if d.get("lrn"):
             d["lrn"] = decrypt(d["lrn"])
 
@@ -606,7 +684,11 @@ async def get_teacher_class_record(
             selectinload(AssessmentSession.observation),
             selectinload(AssessmentSession.passage),
         )
-        .where(AssessmentSession.student_id.in_(student_ids))
+        .where(
+            AssessmentSession.student_id.in_(student_ids),
+            AssessmentSession.is_archived == False,
+            AssessmentSession.is_completed == True,
+        )
         .order_by(AssessmentSession.created_at.desc())
     )
     if school_year:
@@ -633,12 +715,19 @@ async def get_teacher_class_record(
         obs = session.observation if session else None
         passage = session.passage if session else None
 
+        enr_grade, enr_sec = enrolled_info_map.get(
+            student.id,
+            (student.grade_level.value if student.grade_level else None, student.section)
+        )
+
         student_records.append({
             "student_id": student.id,
+            "session_id": session.id if session else None,
             "first_name": student.first_name,
             "last_name": student.last_name,
-            "grade_level": student.grade_level.value if student.grade_level else None,
-            "section": student.section,
+            "middle_name": student.middle_name,
+            "grade_level": enr_grade,
+            "section": enr_sec,
             "lrn": student.lrn,
             "sex": student.sex.value if student.sex else None,
             "session_date": session.created_at.isoformat() if session else None,
@@ -669,7 +758,8 @@ async def get_teacher_class_record(
 
     return {
         "teacher_id": teacher.id,
-        "teacher_name": f"{teacher_first} {teacher_last}",
+        "teacher_name": f"{teacher_first} {teacher_last}".strip(),
+        "is_active": teacher.is_active,
         "grade_level": teacher.grade_level.value if teacher.grade_level else None,
         "section": teacher.section,
         "students": student_records,
@@ -740,6 +830,8 @@ async def create_assignment(
     teacher = teacher_result.scalar_one_or_none()
     if not teacher:
         raise HTTPException(status_code=404, detail="Teacher not found in your school")
+    if not teacher.is_active:
+        raise HTTPException(status_code=400, detail="Cannot assign an archived teacher. Please restore the teacher first.")
 
     # Check for existing active assignment in the same school year
     existing_result = await db.execute(
@@ -961,18 +1053,27 @@ async def create_public_passage(
     content = payload.get("content", "") or ""
     word_count = len(content.split()) if content.strip() else 0
 
+    title = payload.get("title")
+    ass_type = payload.get("assessment_type", 2)
+    gl = payload.get("grade_level")
+    lang = payload.get("language", "filipino")
+    if ass_type == 1 and not title:
+        grade_str = f"Grade {gl.replace('grade_', '')}" if gl and gl != "kindergarten" else "Kindergarten" if gl == "kindergarten" else "Grade Level"
+        title = f"{grade_str} {str(lang).capitalize()} — Assessment 1"
+
     passage = Passage(
         teacher_id=current_admin.id,
-        title=payload.get("title"),
+        title=title,
         content=content if content.strip() else None,
-        language=payload.get("language", "filipino"),
-        grade_level=payload.get("grade_level"),
+        language=lang,
+        grade_level=gl,
         word_count=word_count,
         visibility=PassageVisibility.public,
-        assessment_type=payload.get("assessment_type", 2),
+        assessment_type=ass_type,
         task1_content=payload.get("task1_content"),
         task2_words=payload.get("task2_words"),
         task2_sentences=payload.get("task2_sentences"),
+        story_number=payload.get("story_number"),
     )
     db.add(passage)
     await db.commit()
@@ -1042,6 +1143,7 @@ async def update_public_passage(
             task1_content=payload.get("task1_content", passage.task1_content),
             task2_words=payload.get("task2_words", passage.task2_words),
             task2_sentences=payload.get("task2_sentences", passage.task2_sentences),
+            story_number=payload.get("story_number", passage.story_number),
             file_path=passage.file_path,
             original_passage_id=passage.id,
         )
@@ -1090,7 +1192,7 @@ async def update_public_passage(
     else:
         # Update directly (same school)
         for field in ["title", "content", "language", "grade_level",
-                       "assessment_type", "task1_content", "task2_words", "task2_sentences"]:
+                       "assessment_type", "task1_content", "task2_words", "task2_sentences", "story_number"]:
             if field in payload:
                 setattr(passage, field, payload[field])
 
@@ -1224,7 +1326,8 @@ async def archive_public_passage(
     current_admin: Teacher = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    from app.models import PassageVisibility
+    from app.models import PassageVisibility, Teacher
+    from app.services.log_service import log_activity
 
     result = await db.execute(
         select(Passage).where(
@@ -1236,9 +1339,173 @@ async def archive_public_passage(
     if not passage:
         raise HTTPException(status_code=404, detail="Public passage not found")
 
-    passage.is_archived = True
+    # Check if caller is Super Admin
+    from app.core.config import settings
+    is_super_admin = (
+        current_admin.email.lower() == settings.SUPER_ADMIN_EMAIL.lower()
+        if current_admin.email else False
+    )
+
+    target_passage_id = passage.id
+
+    if is_super_admin:
+        # Super Admin deletes for ALL schools:
+        # 1. Archive the target passage itself
+        passage.is_archived = True
+
+        # 2. Also archive any existing school copies/overrides of this passage
+        if passage.original_passage_id is None:
+            # This is a root passage, archive all children overrides across all schools
+            await db.execute(
+                update(Passage)
+                .where(Passage.original_passage_id == passage.id)
+                .values(is_archived=True)
+            )
+        else:
+            # If a copy was targeted directly by super admin, also archive its root if desired or just this record
+            passage.is_archived = True
+
+        await log_activity(
+            db=db,
+            teacher_id=current_admin.id,
+            school_id=current_admin.school_id,
+            action="superadmin_archived_passage_globally",
+            entity_type="passage",
+            entity_id=passage.id,
+            metadata={"title": passage.title, "global": True},
+        )
+        await db.commit()
+        return {"detail": "Passage and all school overrides archived globally"}
+
+    # Standard Admin flow (isolated to current school only):
+    # Check if creator belongs to a different school
+    creator_result = await db.execute(select(Teacher).where(Teacher.id == passage.teacher_id))
+    creator = creator_result.scalar_one_or_none()
+    is_different_school = creator and creator.school_id is not None and creator.school_id != current_admin.school_id
+
+    if is_different_school:
+        # Check if an override already exists for this admin's school
+        override_res = await db.execute(
+            select(Passage)
+            .join(Teacher, Teacher.id == Passage.teacher_id)
+            .where(
+                Passage.original_passage_id == passage.id,
+                Teacher.school_id == current_admin.school_id,
+            )
+        )
+        existing_override = override_res.scalar_one_or_none()
+        if existing_override:
+            existing_override.is_archived = True
+            target_passage_id = existing_override.id
+        else:
+            cloned_archive = Passage(
+                teacher_id=current_admin.id,
+                title=passage.title,
+                content=passage.content,
+                language=passage.language,
+                grade_level=passage.grade_level,
+                word_count=passage.word_count,
+                visibility=PassageVisibility.public,
+                assessment_type=passage.assessment_type,
+                task1_content=passage.task1_content,
+                task2_words=passage.task2_words,
+                task2_sentences=passage.task2_sentences,
+                story_number=passage.story_number,
+                file_path=passage.file_path,
+                original_passage_id=passage.id,
+                is_archived=True,
+            )
+            db.add(cloned_archive)
+            await db.flush()
+            target_passage_id = cloned_archive.id
+    else:
+        # Passage belongs to admin's school or is already a local override
+        passage.is_archived = True
+
+    await log_activity(
+        db=db,
+        teacher_id=current_admin.id,
+        school_id=current_admin.school_id,
+        action="archived_passage",
+        entity_type="passage",
+        entity_id=target_passage_id,
+        metadata={"title": passage.title, "original_passage_id": passage.id if is_different_school else passage.original_passage_id},
+    )
+
     await db.commit()
     return {"detail": "Passage archived successfully"}
+
+
+@router.patch("/passages/{passage_id}/restore", summary="Restore an archived public passage")
+async def restore_public_passage(
+    passage_id: int,
+    current_admin: Teacher = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.models import PassageVisibility, Teacher
+    from app.services.log_service import log_activity
+
+    result = await db.execute(
+        select(Passage).where(
+            Passage.id == passage_id,
+            Passage.visibility == PassageVisibility.public,
+        )
+    )
+    passage = result.scalar_one_or_none()
+    if not passage:
+        raise HTTPException(status_code=404, detail="Public passage not found")
+
+    # Check if caller is Super Admin
+    from app.core.config import settings
+    is_super_admin = (
+        current_admin.email.lower() == settings.SUPER_ADMIN_EMAIL.lower()
+        if current_admin.email else False
+    )
+
+    if is_super_admin:
+        passage.is_archived = False
+        if passage.original_passage_id is None:
+            await db.execute(
+                update(Passage)
+                .where(Passage.original_passage_id == passage.id)
+                .values(is_archived=False)
+            )
+    else:
+        creator_result = await db.execute(select(Teacher).where(Teacher.id == passage.teacher_id))
+        creator = creator_result.scalar_one_or_none()
+
+        if creator and creator.school_id == current_admin.school_id and passage.original_passage_id is not None:
+            passage.is_archived = False
+        elif creator and creator.school_id == current_admin.school_id:
+            passage.is_archived = False
+        else:
+            # Check if this school has an archived override of this passage
+            override_res = await db.execute(
+                select(Passage)
+                .join(Teacher, Teacher.id == Passage.teacher_id)
+                .where(
+                    Passage.original_passage_id == passage.id,
+                    Teacher.school_id == current_admin.school_id,
+                )
+            )
+            override = override_res.scalar_one_or_none()
+            if override:
+                override.is_archived = False
+            else:
+                passage.is_archived = False
+
+    await log_activity(
+        db=db,
+        teacher_id=current_admin.id,
+        school_id=current_admin.school_id,
+        action="restored_passage",
+        entity_type="passage",
+        entity_id=passage.id,
+        metadata={"title": passage.title},
+    )
+
+    await db.commit()
+    return {"detail": "Passage restored successfully"}
 
 
 @router.post("/passages/{passage_id}/file", status_code=status.HTTP_200_OK, summary="Upload the original passage file to R2 storage (admin)")
@@ -1277,15 +1544,27 @@ async def reassign_students(
     db: AsyncSession = Depends(get_db),
 ):
     # Validate both teachers belong to admin's school
-    for tid in [payload.from_teacher_id, payload.to_teacher_id]:
-        res = await db.execute(
-            select(Teacher).where(
-                Teacher.id == tid,
-                Teacher.school_id == current_admin.school_id,
-            )
+    from_res = await db.execute(
+        select(Teacher).where(
+            Teacher.id == payload.from_teacher_id,
+            Teacher.school_id == current_admin.school_id,
         )
-        if not res.scalar_one_or_none():
-            raise HTTPException(status_code=404, detail=f"Teacher {tid} not found in your school")
+    )
+    from_teacher = from_res.scalar_one_or_none()
+    if not from_teacher:
+        raise HTTPException(status_code=404, detail="Source teacher not found in your school")
+
+    to_res = await db.execute(
+        select(Teacher).where(
+            Teacher.id == payload.to_teacher_id,
+            Teacher.school_id == current_admin.school_id,
+        )
+    )
+    to_teacher = to_res.scalar_one_or_none()
+    if not to_teacher:
+        raise HTTPException(status_code=404, detail="Target teacher not found in your school")
+    if not to_teacher.is_active:
+        raise HTTPException(status_code=400, detail="Cannot reassign students to an inactive or archived teacher")
 
     grade = GradeLevel(payload.grade_level)
     await db.execute(
@@ -1307,14 +1586,29 @@ async def reassign_students(
         .values(teacher_id=payload.to_teacher_id)
     )
 
-    # Set new teacher as active adviser for this class
-    to_teacher_res = await db.execute(select(Teacher).where(Teacher.id == payload.to_teacher_id))
-    to_teacher = to_teacher_res.scalar_one_or_none()
-    if to_teacher:
-        to_teacher.grade_level = grade
-        to_teacher.section = payload.section
-
     current_year = _current_school_year()
+
+    # Clear old teacher's grade/section if it currently points to this class
+    if from_teacher.grade_level == grade and from_teacher.section == payload.section:
+        from_teacher.grade_level = None
+        from_teacher.section = None
+
+    # Deactivate old teacher's assignment for this class in current year
+    old_asgns_res = await db.execute(
+        select(TeacherAssignment).where(
+            TeacherAssignment.teacher_id == payload.from_teacher_id,
+            TeacherAssignment.grade_level == grade,
+            TeacherAssignment.section == payload.section,
+            TeacherAssignment.school_year == current_year,
+        )
+    )
+    for old_asgn in old_asgns_res.scalars().all():
+        old_asgn.is_active = False
+
+    # Set new teacher as active adviser for this class
+    to_teacher.grade_level = grade
+    to_teacher.section = payload.section
+
     asgn_check = await db.execute(
         select(TeacherAssignment).where(
             TeacherAssignment.teacher_id == payload.to_teacher_id,
@@ -1335,6 +1629,23 @@ async def reassign_students(
         ))
     else:
         existing_new_asgn.is_active = True
+
+    from app.services.log_service import log_activity
+    await log_activity(
+        db=db,
+        teacher_id=current_admin.id,
+        school_id=current_admin.school_id,
+        action="reassigned_class",
+        entity_type="class",
+        entity_id=payload.to_teacher_id,
+        metadata={
+            "grade_level": payload.grade_level,
+            "section": payload.section,
+            "from_teacher_id": payload.from_teacher_id,
+            "to_teacher_id": payload.to_teacher_id,
+            "school_year": current_year,
+        },
+    )
 
     await db.commit()
     return {"detail": "Students reassigned successfully"}

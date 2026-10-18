@@ -40,6 +40,45 @@
   color: #8a94b2;
 }
 
+.adm-banner__actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+/* School year picker */
+.adm-sy-picker {
+  background: #f8fafc;
+  border: 1.5px solid #dde1ee;
+  border-radius: 12px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.adm-sy-picker__label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #4a6fa5;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.adm-sy-picker__select {
+  border: 1px solid #c8d2e6;
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: "Poppins", sans-serif;
+  color: #1e2d52;
+  background: #fff;
+  cursor: pointer;
+  outline: none;
+}
+
 /* School code badge */
 .adm-school-code {
   background: #f0f6ff;

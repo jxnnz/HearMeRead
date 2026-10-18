@@ -429,6 +429,10 @@ async def get_me(
         response_data.deped_school_id = school.deped_school_id
     if current_teacher.profile_picture_url:
         response_data.profile_picture_url = get_presigned_url(current_teacher.profile_picture_url, expires_in=3600)
+    response_data.is_super_admin = (
+        current_teacher.email.lower() == settings.SUPER_ADMIN_EMAIL.lower()
+        if current_teacher.email else False
+    )
     return response_data
 
 

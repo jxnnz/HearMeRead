@@ -74,23 +74,30 @@ function StatCard({ icon: Icon, iconColor, label, value, sub }) {
 
 export default function AdminDashboardPage() {
   const navigate = useNavigate();
-  const [data,    setData]    = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState(null);
-  const [copied,  setCopied]  = useState(false);
+  const [schoolYear, setSchoolYear] = useState("");
+  const [data,       setData]       = useState(null);
+  const [loading,    setLoading]    = useState(true);
+  const [error,      setError]      = useState(null);
+  const [copied,     setCopied]     = useState(false);
 
   const windowWidth = useWindowWidth();
   const isMobile    = windowWidth <= 768;
 
   useEffect(() => {
-    adminApi.getDashboard()
-      .then(setData)
+    setLoading(true);
+    adminApi.getDashboard(schoolYear || undefined)
+      .then((res) => {
+        setData(res);
+        if (!schoolYear && res.school_year) {
+          setSchoolYear(res.school_year);
+        }
+      })
       .catch((err) => {
         if (err?.response?.status === 403) navigate("/dashboard");
         else setError("Failed to load dashboard. Please refresh.");
       })
       .finally(() => setLoading(false));
-  }, [navigate]);
+  }, [navigate, schoolYear]);
 
   function handleCopy() {
     if (!data?.school_code) return;
@@ -155,20 +162,37 @@ export default function AdminDashboardPage() {
             )}
           </div>
 
-          <div className="adm-school-code">
-            <span className="adm-school-code__label">School Code</span>
-            <div className="adm-school-code__row">
-              <span className="adm-school-code__value">{data.school_code}</span>
-              <button
-                onClick={handleCopy}
-                className="adm-copy-btn"
-                style={{ background: copied ? "#27ae60" : "#2c7fc1" }}
+          <div className="adm-banner__actions">
+            <div className="adm-sy-picker">
+              <span className="adm-sy-picker__label">School Year</span>
+              <select
+                className="adm-sy-picker__select"
+                value={schoolYear || data.school_year}
+                onChange={(e) => setSchoolYear(e.target.value)}
               >
-                {copied ? <Check size={12} /> : <Copy size={12} />}
-                <span>{copied ? "Copied!" : "Copy"}</span>
-              </button>
+                {(data.available_school_years || [data.school_year]).map((sy) => (
+                  <option key={sy} value={sy}>
+                    S.Y. {sy}
+                  </option>
+                ))}
+              </select>
             </div>
-            <span className="adm-school-code__hint">Share with teachers to link to your school.</span>
+
+            <div className="adm-school-code">
+              <span className="adm-school-code__label">School Code</span>
+              <div className="adm-school-code__row">
+                <span className="adm-school-code__value">{data.school_code}</span>
+                <button
+                  onClick={handleCopy}
+                  className="adm-copy-btn"
+                  style={{ background: copied ? "#27ae60" : "#2c7fc1" }}
+                >
+                  {copied ? <Check size={12} /> : <Copy size={12} />}
+                  <span>{copied ? "Copied!" : "Copy"}</span>
+                </button>
+              </div>
+              <span className="adm-school-code__hint">Share with teachers to link to your school.</span>
+            </div>
           </div>
         </div>
 
@@ -199,7 +223,7 @@ export default function AdminDashboardPage() {
             <BarChart3 size={16} color="#2c7fc1" />
             <span className="adm-chart-title">Completed Sessions by Period</span>
           </div>
-          <p className="adm-chart-sub">{currentSchoolYear()}</p>
+          <p className="adm-chart-sub">S.Y. {data?.school_year || currentSchoolYear()}</p>
           <ResponsiveContainer width="100%" height={sessionChartHeight}>
             <BarChart
               data={shown.map((key) => ({
@@ -255,7 +279,7 @@ export default function AdminDashboardPage() {
             <BarChart3 size={16} color="#2c7fc1" />
             <span className="adm-chart-title">Percentage of Students Assessed by Reading Profile</span>
           </div>
-          <p className="adm-chart-sub">Per assessment period — {currentSchoolYear()}</p>
+          <p className="adm-chart-sub">Per assessment period — S.Y. {data?.school_year || currentSchoolYear()}</p>
           <ResponsiveContainer width="100%" height={profileChartHeight}>
             <BarChart
               data={shown.map((key) => ({

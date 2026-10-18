@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Users, Pencil, Archive, X, ChevronLeft,
   ChevronRight, AlertCircle, Activity, CalendarDays,
-  Search, ArrowUpDown,
+  Search, ArrowUpDown, RotateCcw,
 } from "lucide-react";
 import Layout from "../components/Layout";
 import TopBar from "../components/TopBar";
@@ -263,8 +263,8 @@ function LogsDrawer({ teacher, onClose }) {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      // Fetch a large batch for client-side search/filter
-      const data = await adminApi.getTeacherLogs(teacher.id, { page: 1, page_size: 100 });
+      // Fetch up to 500 logs for client-side search/filter
+      const data = await adminApi.getTeacherLogs(teacher.id, { page: 1, page_size: 500 });
       setAllLogs(data.logs ?? []);
       setTotal(data.total ?? 0);
     } catch {
@@ -488,6 +488,8 @@ export default function AdminTeachersPage() {
   const [logsTeacher,   setLogsTeacher]   = useState(null);
   const [archiveTarget, setArchiveTarget] = useState(null);
   const [archiving,     setArchiving]     = useState(false);
+  const [restoreTarget, setRestoreTarget] = useState(null);
+  const [restoring,     setRestoring]     = useState(false);
 
   // Search, sort, pagination
   const [search, setSearch] = useState("");
@@ -528,7 +530,21 @@ export default function AdminTeachersPage() {
     }
   }
 
-  // Filtered + sorted list
+  async function handleRestore() {
+    if (!restoreTarget) return;
+    setRestoring(true);
+    try {
+      await adminApi.restoreTeacher(restoreTarget.id);
+      setRestoreTarget(null);
+      load();
+    } catch {
+      // keep modal open
+    } finally {
+      setRestoring(false);
+    }
+  }
+
+  // Filtered + sorted list: active teachers first, deactivated teachers at the bottom
   const filtered = useMemo(() => {
     let list = [...teachers];
     if (search.trim()) {
@@ -541,6 +557,10 @@ export default function AdminTeachersPage() {
       );
     }
     list.sort((a, b) => {
+      // Deactivated (archived) teachers always pushed down to bottom
+      if (Boolean(a.is_active) !== Boolean(b.is_active)) {
+        return a.is_active ? -1 : 1;
+      }
       if (sortBy === "grade") {
         return (a.grade_level || "zzz").localeCompare(b.grade_level || "zzz");
       }
@@ -653,47 +673,74 @@ export default function AdminTeachersPage() {
                 </thead>
                 <tbody>
                   {paginated.map(t => (
-                    <tr key={t.id} style={{ opacity: t.is_active ? 1 : 0.5 }}>
-                      <td style={{ ...tdStyle, fontWeight: 600 }}>
+                    <tr
+                      key={t.id}
+                      style={{
+                        background: t.is_active ? "transparent" : "#f1f3f7",
+                        transition: "background 0.15s ease",
+                      }}
+                    >
+                      <td style={{ ...tdStyle, fontWeight: 600, color: t.is_active ? "#1a2340" : "#64748b" }}>
                         {t.first_name} {t.last_name}
                       </td>
-                      <td style={{ ...tdStyle, color: "#4a5568" }}>{t.email}</td>
-                      <td style={{ ...tdStyle, fontFamily: "monospace", letterSpacing: 1 }}>
+                      <td style={{ ...tdStyle, color: t.is_active ? "#4a5568" : "#94a3b8" }}>{t.email}</td>
+                      <td style={{ ...tdStyle, fontFamily: "monospace", letterSpacing: 1, color: t.is_active ? "#1a2340" : "#94a3b8" }}>
                         {t.employee_id ?? <span style={{ color: "#c0c8d8" }}>—</span>}
                       </td>
-                      <td style={tdStyle}>{formatGrade(t.grade_level)}</td>
-                      <td style={tdStyle}>{t.section ?? <span style={{ color: "#c0c8d8" }}>—</span>}</td>
+                      <td style={{ ...tdStyle, color: t.is_active ? "#1a2340" : "#94a3b8" }}>{formatGrade(t.grade_level)}</td>
+                      <td style={{ ...tdStyle, color: t.is_active ? "#1a2340" : "#94a3b8" }}>{t.section ?? <span style={{ color: "#c0c8d8" }}>—</span>}</td>
                       <td style={tdStyle}>
                         <span style={{
                           fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 20,
-                          background: t.is_active ? "#e8f5e9" : "#f5f5f5",
-                          color: t.is_active ? "#27ae60" : "#9e9e9e",
+                          background: t.is_active ? "#e8f5e9" : "#e2e8f0",
+                          color: t.is_active ? "#27ae60" : "#64748b",
                         }}>
                           {t.is_active ? "Active" : "Archived"}
                         </span>
                       </td>
                       <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>
                         <div style={{ display: "flex", gap: 6 }}>
-                          <button
-                            onClick={() => setAssignTeacher(t)}
-                            title="Assign grade & section"
-                            style={{
-                              background: "#e8f5e9",
-                              border: "none", borderRadius: 7, padding: "5px 8px", cursor: "pointer",
-                              display: "flex", alignItems: "center", gap: 4,
-                              color: "#27ae60",
-                              fontSize: 11, fontFamily: "Poppins, sans-serif", fontWeight: 600,
-                            }}
-                          >
-                            <CalendarDays size={13} /> Assign
-                          </button>
-                          <button onClick={() => setLogsTeacher(t)} title="View activity logs" style={{ background: "#f0f6ff", border: "none", borderRadius: 7, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, color: "#2c7fc1", fontSize: 11, fontFamily: "Poppins, sans-serif" }}>
-                            <Activity size={13} /> Logs
-                          </button>
-                          {t.is_active && (
-                            <button onClick={() => setArchiveTarget(t)} title="Remove" style={{ background: "#fff3e0", border: "none", borderRadius: 7, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, color: "#e65100", fontSize: 11, fontFamily: "Poppins, sans-serif" }}>
-                              <Archive size={13} /> Remove
-                            </button>
+                          {t.is_active ? (
+                            <>
+                              <button
+                                onClick={() => setAssignTeacher(t)}
+                                title="Assign grade & section"
+                                style={{
+                                  background: "#e8f5e9",
+                                  border: "none", borderRadius: 7, padding: "5px 8px", cursor: "pointer",
+                                  display: "flex", alignItems: "center", gap: 4,
+                                  color: "#27ae60",
+                                  fontSize: 11, fontFamily: "Poppins, sans-serif", fontWeight: 600,
+                                }}
+                              >
+                                <CalendarDays size={13} /> Assign
+                              </button>
+                              <button onClick={() => setLogsTeacher(t)} title="View activity logs" style={{ background: "#f0f6ff", border: "none", borderRadius: 7, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, color: "#2c7fc1", fontSize: 11, fontFamily: "Poppins, sans-serif" }}>
+                                <Activity size={13} /> Logs
+                              </button>
+                              <button onClick={() => setArchiveTarget(t)} title="Remove" style={{ background: "#fff3e0", border: "none", borderRadius: 7, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, color: "#e65100", fontSize: 11, fontFamily: "Poppins, sans-serif" }}>
+                                <Archive size={13} /> Remove
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button onClick={() => setLogsTeacher(t)} title="View activity logs" style={{ background: "#f0f6ff", border: "none", borderRadius: 7, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, color: "#2c7fc1", fontSize: 11, fontFamily: "Poppins, sans-serif" }}>
+                                <Activity size={13} /> Logs
+                              </button>
+                              <button
+                                onClick={() => setRestoreTarget(t)}
+                                title="Restore teacher"
+                                style={{
+                                  background: "#e8f5e9",
+                                  border: "none", borderRadius: 7, padding: "5px 8px", cursor: "pointer",
+                                  display: "flex", alignItems: "center", gap: 4,
+                                  color: "#27ae60",
+                                  fontSize: 11, fontFamily: "Poppins, sans-serif", fontWeight: 600,
+                                }}
+                              >
+                                <RotateCcw size={13} /> Restore
+                              </button>
+                            </>
                           )}
                         </div>
                       </td>
@@ -743,13 +790,29 @@ export default function AdminTeachersPage() {
         message={archiveTarget ? (
           <>
             <strong>{archiveTarget.first_name} {archiveTarget.last_name}</strong> will be
-            deactivated and will no longer be able to log in. This can be undone by contacting support.
+            deactivated and will no longer be able to log in. You can restore this teacher anytime.
           </>
         ) : ""}
         confirmLabel={archiving ? "Removing..." : "Remove"}
         variant="danger"
         onConfirm={handleArchive}
         onClose={() => !archiving && setArchiveTarget(null)}
+      />
+
+      {/* Restore confirm */}
+      <ConfirmModal
+        isOpen={!!restoreTarget}
+        title="Restore Teacher?"
+        message={restoreTarget ? (
+          <>
+            <strong>{restoreTarget.first_name} {restoreTarget.last_name}</strong> will be
+            reactivated and will be able to log in to HearMeRead again.
+          </>
+        ) : ""}
+        confirmLabel={restoring ? "Restoring..." : "Restore"}
+        variant="primary"
+        onConfirm={handleRestore}
+        onClose={() => !restoring && setRestoreTarget(null)}
       />
 
       {/* Logs drawer */}
