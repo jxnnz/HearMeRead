@@ -63,8 +63,6 @@ function AssignTeacherModal({ teacher, onClose, onSaved }) {
   // Remember the last school year the admin used
   const savedSY = localStorage.getItem("admin_last_school_year") || fallbackSY;
 
-  const isAssigned = Boolean(teacher.grade_level || teacher.section);
-
   const [form, setForm] = useState({
     grade_level: teacher.grade_level ?? "",
     section:     teacher.section     ?? "",
@@ -193,10 +191,161 @@ function AssignTeacherModal({ teacher, onClose, onSaved }) {
           }}>Cancel</button>
           <button onClick={handleSave} disabled={saving} style={{
             padding: "9px 18px", borderRadius: 8, border: "none",
-            background: saving ? "#a0b4d6" : (isAssigned ? "#2c3e6b" : "#2c7fc1"),
+            background: saving ? "#a0b4d6" : "#2c7fc1",
             color: "#fff", cursor: saving ? "not-allowed" : "pointer",
             fontSize: 13, fontFamily: "Poppins, sans-serif", fontWeight: 600,
-          }}>{isAssigned ? (saving ? "Updating…" : "Update") : (saving ? "Assigning…" : "Assign")}</button>
+          }}>{saving ? "Assigning…" : "Assign"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Edit Modal
+function EditTeacherModal({ teacher, onClose, onSaved }) {
+  const [form, setForm] = useState({
+    employee_id: teacher.employee_id ?? "",
+    grade_level: teacher.grade_level ?? "",
+    section:     teacher.section     ?? "",
+  });
+  const [saving,  setSaving]  = useState(false);
+  const [error,   setError]   = useState(null);
+
+  async function handleSave() {
+    setSaving(true);
+    setError(null);
+    try {
+      const payload = {
+        grade_level: form.grade_level || null,
+        section:     form.section     || null,
+      };
+      await adminApi.updateTeacher(teacher.id, payload);
+      onSaved();
+    } catch (err) {
+      const detail = err.response?.data?.detail;
+      setError(
+        Array.isArray(detail) ? detail.map(d => d.msg).join("; ")
+        : typeof detail === "string" ? detail
+        : "Save failed. Please try again."
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const inputStyle = {
+    width: "100%", padding: "9px 12px", border: "1.5px solid #2c3e6b",
+    borderRadius: 8, fontSize: 13, fontFamily: "Poppins, sans-serif",
+    outline: "none", boxSizing: "border-box",
+    background: "transparent", color: "#1a2340",
+  };
+  const labelStyle = {
+    fontSize: 11, fontWeight: 600, color: "#4a5568",
+    textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 5, display: "block",
+  };
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, background: "rgba(0,0,0,.45)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      zIndex: 1000, padding: 16,
+    }}>
+      <div style={{
+        background: "#fff", borderRadius: 16, width: "100%", maxWidth: 420,
+        boxShadow: "0 8px 32px rgba(0,0,0,.18)", padding: "28px 28px 24px",
+        fontFamily: "Poppins, sans-serif",
+      }}>
+        {/* Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#1a2340" }}>
+              Edit Teacher Info
+            </h2>
+            <p style={{ margin: "2px 0 0", fontSize: 12, color: "#8a94b2" }}>
+              {teacher.first_name} {teacher.last_name}
+            </p>
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
+            <X size={18} color="#8a94b2" />
+          </button>
+        </div>
+
+        {/* Employee ID — read-only for admin */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={labelStyle}>Employee ID</label>
+          <input
+            style={{ ...inputStyle, background: "#f3f5fa", color: "#6b7280", cursor: "not-allowed" }}
+            value={form.employee_id}
+            readOnly
+          />
+          <span style={{ fontSize: 10, color: "#8a94b2", marginTop: 3, display: "block" }}>
+            Permanent ID — set by the teacher and cannot be changed here.
+          </span>
+        </div>
+
+        {/* Grade Level */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={labelStyle}>Grade Level</label>
+          <select
+            style={{ ...inputStyle, background: "transparent" }}
+            value={form.grade_level}
+            onChange={e => setForm(f => ({ ...f, grade_level: e.target.value }))}
+          >
+            {GRADE_OPTIONS.map(o => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Section */}
+        <div style={{ marginBottom: 20 }}>
+          <label style={labelStyle}>Section</label>
+          <input
+            style={inputStyle}
+            value={form.section}
+            onChange={e => setForm(f => ({ ...f, section: e.target.value }))}
+            placeholder="e.g. Sampaguita"
+            maxLength={100}
+          />
+        </div>
+
+        {/* Error */}
+        {error && (
+          <div style={{
+            background: "#fde8e8", border: "1px solid #f5c6c6", borderRadius: 8,
+            padding: "9px 12px", marginBottom: 14,
+            display: "flex", gap: 8, alignItems: "center",
+          }}>
+            <AlertCircle size={14} color="#c0392b" />
+            <span style={{ fontSize: 12, color: "#c0392b" }}>{error}</span>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+          <button
+            onClick={onClose}
+            style={{
+              padding: "9px 18px", borderRadius: 8,
+              border: "1.5px solid #dde1ee", background: "#fff",
+              cursor: "pointer", fontSize: 13, fontFamily: "Poppins, sans-serif",
+              color: "#4a5568",
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            style={{
+              padding: "9px 18px", borderRadius: 8, border: "none",
+              background: saving ? "#a0b4d6" : "#2c7fc1",
+              color: "#fff", cursor: saving ? "not-allowed" : "pointer",
+              fontSize: 13, fontFamily: "Poppins, sans-serif", fontWeight: 600,
+            }}
+          >
+            {saving ? "Saving…" : "Save"}
+          </button>
         </div>
       </div>
     </div>
@@ -674,26 +823,21 @@ export default function AdminTeachersPage() {
                       </td>
                       <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>
                         <div style={{ display: "flex", gap: 6 }}>
-                          <button
-                            onClick={() => setAssignTeacher(t)}
-                            title="Assign grade & section"
-                            style={{
-                              background: "#e8f5e9",
-                              border: "none", borderRadius: 7, padding: "5px 8px", cursor: "pointer",
-                              display: "flex", alignItems: "center", gap: 4,
-                              color: "#27ae60",
-                              fontSize: 11, fontFamily: "Poppins, sans-serif", fontWeight: 600,
-                            }}
-                          >
+                          <button onClick={() => setAssignTeacher(t)} title="Assign grade & section" style={{ background: "#e8f5e9", border: "none", borderRadius: 7, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, color: "#27ae60", fontSize: 11, fontFamily: "Poppins, sans-serif" }}>
                             <CalendarDays size={13} /> Assign
                           </button>
                           <button onClick={() => setLogsTeacher(t)} title="View activity logs" style={{ background: "#f0f6ff", border: "none", borderRadius: 7, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, color: "#2c7fc1", fontSize: 11, fontFamily: "Poppins, sans-serif" }}>
                             <Activity size={13} /> Logs
                           </button>
                           {t.is_active && (
-                            <button onClick={() => setArchiveTarget(t)} title="Remove" style={{ background: "#fff3e0", border: "none", borderRadius: 7, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, color: "#e65100", fontSize: 11, fontFamily: "Poppins, sans-serif" }}>
-                              <Archive size={13} /> Remove
-                            </button>
+                            <>
+                              <button onClick={() => setEditTeacher(t)} title="Edit" style={{ background: "#f0f6ff", border: "none", borderRadius: 7, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, color: "#2c7fc1", fontSize: 11, fontFamily: "Poppins, sans-serif" }}>
+                                <Pencil size={13} /> Edit
+                              </button>
+                              <button onClick={() => setArchiveTarget(t)} title="Archive" style={{ background: "#fff3e0", border: "none", borderRadius: 7, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, color: "#e65100", fontSize: 11, fontFamily: "Poppins, sans-serif" }}>
+                                <Archive size={13} /> Archive
+                              </button>
+                            </>
                           )}
                         </div>
                       </td>
@@ -735,18 +879,26 @@ export default function AdminTeachersPage() {
         />
       )}
 
+      {/* Edit modal */}
+      {editTeacher && (
+        <EditTeacherModal
+          teacher={editTeacher}
+          onClose={() => setEditTeacher(null)}
+          onSaved={() => { setEditTeacher(null); load(); }}
+        />
+      )}
 
-      {/* Remove / Archive confirm */}
+      {/* Archive confirm */}
       <ConfirmModal
         isOpen={!!archiveTarget}
-        title="Remove Teacher?"
+        title="Archive Teacher?"
         message={archiveTarget ? (
           <>
             <strong>{archiveTarget.first_name} {archiveTarget.last_name}</strong> will be
             deactivated and will no longer be able to log in. This can be undone by contacting support.
           </>
         ) : ""}
-        confirmLabel={archiving ? "Removing..." : "Remove"}
+        confirmLabel={archiving ? "Archiving..." : "Archive"}
         variant="danger"
         onConfirm={handleArchive}
         onClose={() => !archiving && setArchiveTarget(null)}

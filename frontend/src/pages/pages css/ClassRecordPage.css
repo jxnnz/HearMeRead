@@ -23,12 +23,6 @@
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
-  position: sticky;
-  top: -20px;
-  background: #e8edf7;
-  z-index: 100;
-  margin: -20px -24px 16px -24px;
-  padding: 16px 24px;
 }
 
 .cr-topbar__left {
@@ -253,17 +247,14 @@
   -webkit-overflow-scrolling: touch;
   flex: 1;
   min-height: 0;
-  scrollbar-width: thin;
-  scrollbar-color: #c5cde8 #f4f6fb;
 }
 
 .cr-table-wrapper::-webkit-scrollbar {
-  width: 6px;
   height: 6px;
+  width: 6px;
 }
 .cr-table-wrapper::-webkit-scrollbar-track {
   background: #f4f6fb;
-  border-radius: 10px;
 }
 .cr-table-wrapper::-webkit-scrollbar-thumb {
   background: #c5cde8;
@@ -400,10 +391,6 @@
   color: #276749;
 }
 
-.cr-th--sub {
-  top: 35px !important;
-}
-
 .cr-th--sub.cr-th--group1 {
   background: #f0f5ff;
   color: #3a5fa8;
@@ -448,39 +435,7 @@
 .cr-td--g1 { background-color: rgba(232, 240, 252, 0.35); }
 .cr-td--g2 { background-color: rgba(232, 250, 240, 0.35); }
 
-/* Student name link & clickable cell */
-.cr-clickable-cell {
-  cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
-}
-
-.cr-clickable-cell:hover {
-  background-color: #e8f0fe !important;
-}
-
-.cr-clickable-cell.cr-freeze--lrn:hover {
-  color: #1a73e8;
-  font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.cr-clickable-cell.cr-freeze--name:hover .cr-student-name {
-  text-decoration: underline;
-  opacity: 0.8;
-}
-
-.cr-student-name {
-  font-size: 12.5px;
-  font-weight: 600;
-  font-family: "Poppins", sans-serif;
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 185px;
-}
-
+/* Student name link */
 .cr-student-link {
   background: none;
   border: none;

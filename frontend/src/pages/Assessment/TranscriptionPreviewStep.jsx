@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
-import { ChevronRight, Headphones, Pencil, RotateCcw, Upload } from "lucide-react";
+import { ChevronRight, Volume2, Pencil, RotateCcw, Upload } from "lucide-react";
 import EditTranscriptionModal from "../../modals/EditTranscriptionModal";
-import AudioPlayer from "../../components/AudioPlayer";
-import "../../components/WordHighlightView.css";
 
 function alignWordsLevenshtein(refText, transText) {
   const strip = (w) => w.toLowerCase().replace(/[^a-z0-9]/gi, "");
@@ -109,10 +107,6 @@ export default function TranscriptionPreviewStep({
   const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
-    setEdited(transcript ?? "");
-  }, [transcript]);
-
-  useEffect(() => {
     if (!audioFile) return;
     const url = URL.createObjectURL(audioFile);
     setAudioUrl(url);
@@ -196,16 +190,9 @@ export default function TranscriptionPreviewStep({
 
         {/* Audio player */}
         {audioUrl && (
-          <div className="sarp-part-audio-bar" style={{ margin: "10px 0 16px" }}>
-            <div className="sarp-part-audio-meta">
-              <Headphones size={16} style={{ color: "#2c7fc1" }} />
-              <span className="sarp-part-audio-label">Recorded Audio</span>
-            </div>
-            <AudioPlayer
-              src={audioUrl}
-              id="assessment-preview-audio"
-              initialDuration={recordingTime}
-            />
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", background: "#f4f6fb", padding: "12px", borderRadius: "8px", border: "1px solid #c8d0e4" }}>
+            <Volume2 size={16} style={{ color: "#2c7fc1", flexShrink: 0 }} />
+            <audio controls src={audioUrl} style={{ flex: 1, height: "32px" }} />
           </div>
         )}
 
@@ -236,14 +223,17 @@ export default function TranscriptionPreviewStep({
             <span className="asp-preview-edit-label" style={{ marginBottom: 0 }}>Transcription:</span>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               {referenceText && (
-                <div className="asp-word-highlight__legend" style={{ margin: 0, gap: "14px" }}>
-                  <span className="asp-whl--correct">● Read Correctly</span>
-                  <span className="asp-whl--substitution">● Wrong Word</span>
-                  <span className="asp-whl--insertion">● Added Word</span>
+                <span style={{ display: "flex", gap: "12px", fontSize: "11px", fontWeight: 600, fontFamily: "Poppins, sans-serif", flexWrap: "wrap", justifyContent: "flex-end", alignItems: "center" }}>
+                  <span className="asp-whl-word asp-whl--correct" style={{ fontSize: "11px" }}>● Correct</span>
+                  <span className="asp-whl-word asp-whl--substitution" style={{ fontSize: "11px" }}>● Wrong Word</span>
+                  <span className="asp-whl-word asp-whl--deletion" style={{ fontSize: "11px" }}>
+                    <span style={{ textDecoration: "none", display: "inline-block" }}>●</span> Missing Word
+                  </span>
+                  <span className="asp-whl-word asp-whl--insertion" style={{ fontSize: "11px" }}>● Added Word</span>
                   {showHighlight && (
-                    <span style={{ color: "#2c7fc1", fontWeight: 600 }}>● 1-Min Limit</span>
+                    <span style={{ color: "#2c7fc1", background: "#d6ecfb", padding: "0 3px", borderRadius: "3px", fontSize: "11px" }}>● Last in Limit</span>
                   )}
-                </div>
+                </span>
               )}
               <button className="asp-edit-btn" onClick={() => setShowEditModal(true)} title="Edit transcription">
                 <Pencil size={15} />
@@ -251,41 +241,48 @@ export default function TranscriptionPreviewStep({
             </div>
           </div>
 
-          {displayWords.filter((a) => a.miscue_type !== "deletion").length > 0 ? (
+          {displayWords.length > 0 ? (
             <div className="asp-word-highlight__text" style={{ borderRadius: "10px" }}>
-              {displayWords
-                .filter((a) => a.miscue_type !== "deletion")
-                .map((a, i) => {
-                  const type = a.miscue_type;
-                  const word = type === "insertion"
-                    ? `[${a.transcribed ?? ""}]`
-                    : (a.transcribed ?? "");
+              {displayWords.map((a, i) => {
+                const type = a.miscue_type;
+                const word = type === "insertion"
+                  ? `[${a.transcribed ?? ""}]`
+                  : type === "deletion"
+                  ? (a.reference ?? "")
+                  : (a.transcribed ?? "");
 
-                  let className = `asp-whl-word asp-whl--${type}`;
-                  let style = {};
+                let className = `asp-whl-word asp-whl--${type}`;
+                let style = {};
 
-                  if (a.isCutoff) {
-                    className += " word-chip--cutoff";
-                    style = {
-                      background: "#d6ecfb",
-                      borderRadius: "3px",
-                      padding: "0 3px",
-                      fontWeight: 700,
-                    };
-                  }
+                if (a.isCutoff) {
+                  className += " word-chip--cutoff";
+                  style = {
+                    background: "#d6ecfb",
+                    borderRadius: "3px",
+                    padding: "0 3px",
+                    fontWeight: 700,
+                  };
+                } else if (a.isPastLimit) {
+                  style = {
+                    opacity: 0.5,
+                    color: "#888",
+                  };
+                }
 
-                  const tooltip = type === "substitution"
-                    ? `Wrong word spoken for "${a.reference}"`
-                    : type === "insertion"
-                    ? "Added word"
-                    : "Read correctly";
+                const tooltip = type === "substitution"
+                  ? `Wrong word spoken for "${a.reference}"`
+                  : type === "insertion"
+                  ? "Added word"
+                  : type === "deletion"
+                  ? `Missing word (skipped "${a.reference}")`
+                  : "Read correctly";
 
-                  return (
-                    <span key={i} className={className} style={style} title={tooltip}>
-                      {word}{" "}
-                    </span>
-                  );
-                })}
+                return (
+                  <span key={i} className={className} style={style} title={tooltip}>
+                    {word}{" "}
+                  </span>
+                );
+              })}
             </div>
           ) : (
             <div className="asp-word-highlight__text" style={{ borderRadius: "10px", color: "#b8bdd4", fontStyle: "italic" }}>
@@ -305,14 +302,8 @@ export default function TranscriptionPreviewStep({
 
       <EditTranscriptionModal
         isOpen={showEditModal}
-        title="Edit Transcription"
-        description="Review and correct the transcribed words. When saved, word alignments and miscue counts will be updated."
         transcript={edited}
-        audioUrl={audioUrl}
-        onSave={(text) => {
-          setEdited(text);
-          setShowEditModal(false);
-        }}
+        onSave={(text) => setEdited(text)}
         onClose={() => setShowEditModal(false)}
       />
     </div>

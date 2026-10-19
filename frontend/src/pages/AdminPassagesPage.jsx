@@ -781,61 +781,50 @@ export default function AdminPassagesPage() {
 
             if (loading) {
               return (
-                <div style={{
-                  background: "#fff",
-                  borderRadius: 12,
-                  border: "1px solid #e5e7eb",
-                  boxShadow: "0 2px 12px rgba(44, 62, 107, 0.06)",
-                  display: "flex",
-                  flexDirection: "column",
-                  overflow: "hidden",
-                  maxHeight: isMobile ? "calc(100vh - 280px)" : "calc(100vh - 310px)",
-                }}>
-                  <div style={{ overflowX: "auto", overflowY: "auto", flex: 1 }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: isMobile ? 11 : 13 }}>
-                      <thead style={{ position: "sticky", top: 0, zIndex: 5, background: "#f1f3f8" }}>
-                        <tr style={{ background: "#f1f3f8" }}>
-                          {headers.map((h, i) => (
-                            <th key={i} style={{ width: h.width, padding: isMobile ? "8px 8px" : "12px 14px", fontWeight: 700, color: "#1a2340", textAlign: "left", borderBottom: "2px solid #dde2f0", whiteSpace: "nowrap", background: "#f1f3f8" }}>{h.label}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {[1, 2, 3, 4, 5].map((rowId, idx) => (
-                          <tr key={rowId} style={{ borderBottom: "1px solid #eee", background: "#fff" }}>
-                            <td style={{ padding: isMobile ? "8px 8px" : "12px 14px" }}>
-                              <div className="sk" style={{ height: 14, width: 20, borderRadius: 4 }} />
+                <div style={{ overflowX: "auto", borderRadius: 10, border: "1px solid #e5e7eb" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: isMobile ? 11 : 13 }}>
+                    <thead>
+                      <tr style={{ background: "#f1f3f8" }}>
+                        {headers.map((h, i) => (
+                          <th key={i} style={{ width: h.width, padding: isMobile ? "8px 8px" : "12px 14px", fontWeight: 700, color: "#1a2340", textAlign: "left", borderBottom: "2px solid #dde2f0", whiteSpace: "nowrap" }}>{h.label}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[1, 2, 3, 4, 5].map((rowId, idx) => (
+                        <tr key={rowId} style={{ borderBottom: "1px solid #eee", background: "#fff" }}>
+                          <td style={{ padding: isMobile ? "8px 8px" : "12px 14px" }}>
+                            <div className="sk" style={{ height: 14, width: 20, borderRadius: 4 }} />
+                          </td>
+                          <td style={{ padding: isMobile ? "8px 8px" : "12px 14px" }}>
+                            <div className="sk" style={{ height: 14, width: titleWidths[idx % 5], borderRadius: 4 }} />
+                          </td>
+                          <td style={{ padding: isMobile ? "8px 8px" : "12px 14px" }}>
+                            <div className="sk" style={{ height: 22, width: isMobile ? 50 : 95, borderRadius: 6 }} />
+                          </td>
+                          <td style={{ padding: isMobile ? "8px 8px" : "12px 14px" }}>
+                            <div className="sk" style={{ height: 14, width: 25, borderRadius: 4 }} />
+                          </td>
+                          {!isMobile && (
+                            <td style={{ padding: "12px 14px" }}>
+                              <div className="sk" style={{ height: 14, width: 50, borderRadius: 4 }} />
                             </td>
-                            <td style={{ padding: isMobile ? "8px 8px" : "12px 14px" }}>
-                              <div className="sk" style={{ height: 14, width: titleWidths[idx % 5], borderRadius: 4 }} />
-                            </td>
-                            <td style={{ padding: isMobile ? "8px 8px" : "12px 14px" }}>
-                              <div className="sk" style={{ height: 22, width: isMobile ? 50 : 95, borderRadius: 6 }} />
-                            </td>
-                            <td style={{ padding: isMobile ? "8px 8px" : "12px 14px" }}>
+                          )}
+                          {!isMobile && (
+                            <td style={{ padding: "12px 14px" }}>
                               <div className="sk" style={{ height: 14, width: 25, borderRadius: 4 }} />
                             </td>
-                            {!isMobile && (
-                              <td style={{ padding: "12px 14px" }}>
-                                <div className="sk" style={{ height: 14, width: 50, borderRadius: 4 }} />
-                              </td>
-                            )}
-                            {!isMobile && (
-                              <td style={{ padding: "12px 14px" }}>
-                                <div className="sk" style={{ height: 14, width: 25, borderRadius: 4 }} />
-                              </td>
-                            )}
-                            <td style={{ padding: isMobile ? "8px 6px" : "12px 14px" }}>
-                              <div style={{ display: "flex", gap: isMobile ? 4 : 6 }}>
-                                <div className="sk" style={{ height: isMobile ? 24 : 28, width: isMobile ? 24 : 28, borderRadius: 6 }} />
-                                <div className="sk" style={{ height: isMobile ? 24 : 28, width: isMobile ? 24 : 28, borderRadius: 6 }} />
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                          )}
+                          <td style={{ padding: isMobile ? "8px 6px" : "12px 14px" }}>
+                            <div style={{ display: "flex", gap: isMobile ? 4 : 6 }}>
+                              <div className="sk" style={{ height: isMobile ? 24 : 28, width: isMobile ? 24 : 28, borderRadius: 6 }} />
+                              <div className="sk" style={{ height: isMobile ? 24 : 28, width: isMobile ? 24 : 28, borderRadius: 6 }} />
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               );
             }
@@ -850,25 +839,13 @@ export default function AdminPassagesPage() {
             }
 
             return (
-              <div
-                style={{
-                  background: "#fff",
-                  borderRadius: 12,
-                  border: "1px solid #e5e7eb",
-                  boxShadow: "0 2px 12px rgba(44, 62, 107, 0.06)",
-                  display: "flex",
-                  flexDirection: "column",
-                  overflow: "hidden",
-                  maxHeight: isMobile ? "calc(100vh - 280px)" : "calc(100vh - 310px)",
-                }}
-              >
-                {/* Scrollable table content */}
-                <div className="ap-scrollbar" style={{ overflowX: "auto", overflowY: "auto", flex: 1, minHeight: 0 }}>
+              <>
+                <div style={{ overflowX: "auto", borderRadius: 10, border: "1px solid #e5e7eb" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: isMobile ? 11 : 13 }}>
-                    <thead style={{ position: "sticky", top: 0, zIndex: 5, background: "#f1f3f8" }}>
+                    <thead>
                       <tr style={{ background: "#f1f3f8" }}>
                         {headers.map((h, i) => (
-                          <th key={i} style={{ width: h.width, padding: isMobile ? "8px 8px" : "12px 14px", fontWeight: 700, color: "#1a2340", textAlign: "left", borderBottom: "2px solid #dde2f0", whiteSpace: "nowrap", background: "#f1f3f8" }}>{h.label}</th>
+                          <th key={i} style={{ width: h.width, padding: isMobile ? "8px 8px" : "12px 14px", fontWeight: 700, color: "#1a2340", textAlign: "left", borderBottom: "2px solid #dde2f0", whiteSpace: "nowrap" }}>{h.label}</th>
                         ))}
                       </tr>
                     </thead>
@@ -906,72 +883,14 @@ export default function AdminPassagesPage() {
                     </tbody>
                   </table>
                 </div>
-
-                {/* Frozen Footer */}
-                <div
-                  style={{
-                    flexShrink: 0,
-                    borderTop: "1px solid #e5e7eb",
-                    background: "#fff",
-                    padding: isMobile ? "10px 14px" : "12px 20px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: 12,
-                  }}
-                >
-                  <span style={{ fontSize: 12, color: "#8a94b2", minWidth: 140 }}>
-                    Showing {(page - 1) * PER + 1}–{Math.min(page * PER, filtered.length)} of {filtered.length} passages
-                  </span>
-
-                  {totalPages > 1 && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "0 auto" }}>
-                      <button
-                        onClick={() => setPage((p) => Math.max(1, p - 1))}
-                        disabled={currentPage === 1}
-                        className="ap-back-btn"
-                        style={{
-                          width: 32,
-                          height: 32,
-                          cursor: currentPage === 1 ? "not-allowed" : "pointer",
-                          opacity: currentPage === 1 ? 0.4 : 1,
-                        }}
-                        title="Previous Page"
-                      >
-                        <ChevronLeft size={16} />
-                      </button>
-                      <span
-                        style={{
-                          fontSize: 13,
-                          color: "#1a2340",
-                          fontWeight: 600,
-                          minWidth: 80,
-                          textAlign: "center",
-                          userSelect: "none",
-                        }}
-                      >
-                        Page {currentPage} of {totalPages}
-                      </span>
-                      <button
-                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                        disabled={currentPage === totalPages}
-                        className="ap-back-btn"
-                        style={{
-                          width: 32,
-                          height: 32,
-                          cursor: currentPage === totalPages ? "not-allowed" : "pointer",
-                          opacity: currentPage === totalPages ? 0.4 : 1,
-                        }}
-                        title="Next Page"
-                      >
-                        <ChevronRight size={16} />
-                      </button>
-                    </div>
-                  )}
-
-                  <div style={{ minWidth: 140, display: isMobile ? "none" : "block" }} />
-                </div>
-              </div>
+                {totalPages > 1 && (
+                  <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12, marginTop: 20 }}>
+                    <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="ap-back-btn" style={{ width: 32, height: 32 }}><ChevronLeft size={16} /></button>
+                    <span style={{ fontSize: 13, color: "#555", fontWeight: 600 }}>Page {currentPage} of {totalPages}</span>
+                    <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="ap-back-btn" style={{ width: 32, height: 32 }}><ChevronRight size={16} /></button>
+                  </div>
+                )}
+              </>
             );
           })()}
 

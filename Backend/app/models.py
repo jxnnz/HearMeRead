@@ -1,6 +1,5 @@
 import enum
 import re
-from datetime import datetime, timezone
 
 from sqlalchemy import (
     Column, Integer, String, Float, Text,
@@ -288,12 +287,6 @@ class ReadingResult(Base):
     audio_path       = Column(String(500), nullable=True)
     audio_expires_at = Column(DateTime(timezone=True), nullable=True)
 
-    # Part 1 audio recording
-    part1_audio_path       = Column(String(500), nullable=True)
-    part1_audio_expires_at = Column(DateTime(timezone=True), nullable=True)
-    part1_task2_audio_path       = Column(String(500), nullable=True)
-    part1_task2_audio_expires_at = Column(DateTime(timezone=True), nullable=True)
-
     # Part 1 scoring results
     part1_task1_correct          = Column(Integer,     nullable=True)
     part1_task2_correct          = Column(Integer,     nullable=True)
@@ -311,43 +304,6 @@ class ReadingResult(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
 
     session = relationship("AssessmentSession", back_populates="reading_result")
-
-    @property
-    def has_part1_audio(self) -> bool:
-        if not self.part1_audio_path:
-            return False
-        if self.part1_audio_expires_at:
-            exp = self.part1_audio_expires_at
-            if exp.tzinfo is None:
-                exp = exp.replace(tzinfo=timezone.utc)
-            return exp > datetime.now(timezone.utc)
-        return True
-
-    @property
-    def has_part1_task2_audio(self) -> bool:
-        if not self.part1_task2_audio_path:
-            return False
-        if self.part1_task2_audio_expires_at:
-            exp = self.part1_task2_audio_expires_at
-            if exp.tzinfo is None:
-                exp = exp.replace(tzinfo=timezone.utc)
-            return exp > datetime.now(timezone.utc)
-        return True
-
-    @property
-    def has_part2_audio(self) -> bool:
-        if not self.audio_path:
-            return False
-        if self.audio_expires_at:
-            exp = self.audio_expires_at
-            if exp.tzinfo is None:
-                exp = exp.replace(tzinfo=timezone.utc)
-            return exp > datetime.now(timezone.utc)
-        return True
-
-    @property
-    def has_audio(self) -> bool:
-        return self.has_part2_audio or self.has_part1_audio or self.has_part1_task2_audio
 
 
 class SessionObservation(Base):

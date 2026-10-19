@@ -1,8 +1,7 @@
 import logging
 from pathlib import Path
-from typing import Optional
 
-from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, File, status, Request, Query
+from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, File, status
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -12,7 +11,6 @@ from app.models import Teacher, ReadingResult, Language, Question, UserRole
 from app.services.asr_service import transcribe_audio, SUPPORTED_EXTENSIONS
 from app.services.storage_service import upload_audio, get_presigned_url
 from app.services.session_service import get_session_by_id
-from app.services.audio_storage import AUDIO_RETENTION_DAYS
 from app.dependencies import get_current_teacher
 
 logger = logging.getLogger(__name__)
@@ -33,7 +31,6 @@ async def transcribe_session_audio(
     session_id: int,
     audio: UploadFile = File(..., description="Audio recording of the student reading"),
     prompt: str = Form(None, description="Reference passage text to guide Whisper and reduce hallucinations"),
-    part: Optional[str] = Form(None, description="Assessment part: 'part1' (letters/words) or 'part2' (story reading)"),
     db: AsyncSession = Depends(get_db),
     current_teacher: Teacher = Depends(get_current_teacher),
 ):
@@ -74,7 +71,7 @@ async def transcribe_session_audio(
         r2_key = None
     
     from datetime import datetime, timezone, timedelta
-    expires_at = datetime.now(timezone.utc) + timedelta(days=AUDIO_RETENTION_DAYS)
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
 
     # 5. Determine language code
     lang_code = "fil" if session.language == Language.filipino else "en"
@@ -102,29 +99,14 @@ async def transcribe_session_audio(
         select(ReadingResult).where(ReadingResult.session_id == session_id)
     )
     reading_result = rr_query.scalar_one_or_none()
-    part_str = str(part).lower().strip() if part else ""
-    is_task2 = part_str in ("task2", "g2", "part1_task2", "t2", "1_2")
-    is_part1_task1 = part_str in ("part1", "g1", "task1", "1", "t1") or (not part_str and not is_task2)
-
     if reading_result:
-        if is_task2:
-            reading_result.part1_task2_audio_path = r2_key
-            reading_result.part1_task2_audio_expires_at = expires_at
-        elif is_part1_task1:
-            reading_result.part1_audio_path = r2_key
-            reading_result.part1_audio_expires_at = expires_at
-        else:
-            reading_result.audio_path = r2_key
-            reading_result.audio_expires_at = expires_at
+        reading_result.audio_path = r2_key
+        reading_result.audio_expires_at = expires_at
     else:
         reading_result = ReadingResult(
             session_id=session_id,
-            part1_audio_path=r2_key if is_part1_task1 else None,
-            part1_audio_expires_at=expires_at if is_part1_task1 else None,
-            part1_task2_audio_path=r2_key if is_task2 else None,
-            part1_task2_audio_expires_at=expires_at if is_task2 else None,
-            audio_path=r2_key if (not is_part1_task1 and not is_task2) else None,
-            audio_expires_at=expires_at if (not is_part1_task1 and not is_task2) else None,
+            audio_path=r2_key,
+            audio_expires_at=expires_at,
         )
         db.add(reading_result)
     await db.commit()
@@ -138,50 +120,15 @@ async def transcribe_session_audio(
         "word_count":       len(result["words"]),
         "audio_stored":     True,
         "audio_expires_at": expires_at.isoformat(),
-        "part":             "task2" if is_task2 else ("part1" if is_part1_task1 else "part2"),
     }
 
 
 @router.get("/{session_id}/audio")
 async def get_session_audio(
     session_id: int,
-    request: Request,
-    token: Optional[str] = Query(None),
-    part: Optional[str] = Query(None),
-    task: Optional[int] = Query(None),
     db: AsyncSession = Depends(get_db),
+    current_teacher: Teacher = Depends(get_current_teacher),
 ):
-    # 1. Authenticate either via Authorization header or query param token (for <audio src="...">)
-    auth_token = token
-    if not auth_token:
-        auth_header = request.headers.get("authorization")
-        if auth_header and auth_header.startswith("Bearer "):
-            auth_token = auth_header.split(" ", 1)[1]
-
-    if not auth_token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    from app.core.security import decode_access_token
-    email = decode_access_token(auth_token)
-    if email is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    result = await db.execute(select(Teacher).where(Teacher.email == email))
-    current_teacher = result.scalar_one_or_none()
-    if current_teacher is None or not current_teacher.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-        )
-
     if _is_admin(current_teacher):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -194,57 +141,19 @@ async def get_session_audio(
         select(ReadingResult).where(ReadingResult.session_id == session_id)
     )
     reading_result = rr_query.scalar_one_or_none()
-    if not reading_result:
+    if not reading_result or reading_result.audio_path is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No audio recording found for this session.",
         )
 
-    # Determine which audio path to use based on part and task parameters
-    part_str = str(part).lower().strip() if part is not None else ""
-    is_for_task2 = task == 2 or part_str in ("1_2", "task2", "g2", "part1_task2", "t2", "2l", "2h", "task_2")
-    is_for_task1 = task == 1 or part_str in ("1", "part1", "task1", "g1", "t1")
-
-    if is_for_task2:
-        target_path = reading_result.part1_task2_audio_path or reading_result.part1_audio_path
-        target_expires = reading_result.part1_task2_audio_expires_at or reading_result.part1_audio_expires_at
-    elif is_for_task1:
-        target_path = reading_result.part1_audio_path or reading_result.audio_path
-        target_expires = reading_result.part1_audio_expires_at or reading_result.audio_expires_at
-    else:
-        target_path = reading_result.audio_path or reading_result.part1_audio_path or reading_result.part1_task2_audio_path
-        target_expires = reading_result.audio_expires_at or reading_result.part1_audio_expires_at or reading_result.part1_task2_audio_expires_at
-
-    if not target_path:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No audio recording found for this assessment part.",
-        )
-
-    from datetime import datetime, timezone
-    if target_expires and target_expires <= datetime.now(timezone.utc):
-        raise HTTPException(
-            status_code=status.HTTP_410_GONE,
-            detail="Audio recording has expired (90-day retention period ended)."
-        )
-
-    # 3. Check if local file exists (for local development/testing)
-    audio_file_path = Path(target_path)
-    if audio_file_path.is_file():
-        return FileResponse(
-            str(audio_file_path),
-            media_type="audio/webm",
-            filename=audio_file_path.name,
-        )
-
-    # 4. Stream from Cloudflare R2 via presigned URL
-    presigned_url = get_presigned_url(target_path, expires_in=3600)
-    if not presigned_url:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Audio file could not be accessed.",
-        )
-
+    # 3. Stream the file directly from R2, or return a presigned URL.
+    # Since the frontend might expect an audio stream, we can either return a RedirectResponse to the presigned URL,
+    # or return a JSON with the URL. If the client uses an <audio src="/sessions/X/audio"> tag, 
+    # a RedirectResponse to the R2 URL works perfectly.
+    
+    presigned_url = get_presigned_url(reading_result.audio_path, expires_in=3600)
+    
     from fastapi.responses import RedirectResponse
     return RedirectResponse(url=presigned_url)
 
@@ -317,17 +226,8 @@ async def score_comprehension_answer(
 
     # 5. Check if transcript is empty or matches known silence hallucinations
     HALLUCINATION_BLACKLIST = {
-        # English patterns
         "thank you", "thank you.", "thank you for watching", "thank you for watching.",
-        "please subscribe", "subscribe", "thanks for watching", "thanks for watching.",
-        "goodbye", "bye", "bye bye", "see you", "see you next time",
-        "like and subscribe", "don't forget to subscribe",
-        "thank you for listening", "thank you for listening.",
-        # Filipino patterns
-        "salamat", "salamat po", "maraming salamat",
-        "paalam", "babay",
-        # Generic single-word silence artifacts
-        "you", "the", "a", "i", "um", "uh", "hmm", "ah",
+        "please subscribe", "subscribe",
     }
     cleaned_transcript = transcript.lower().strip(".,?! ")
     if not cleaned_transcript or cleaned_transcript in HALLUCINATION_BLACKLIST:

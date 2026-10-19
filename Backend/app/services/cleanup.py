@@ -7,51 +7,26 @@ from sqlalchemy import select
 from app.db import AsyncSessionLocal
 from app.models import ReadingResult, AssessmentSession
 from app.services.audio_storage import delete_audio
-from app.services.storage_service import delete_file
 
 logger = logging.getLogger(__name__)
 
 
 async def delete_expired_audio() -> None:
     async with AsyncSessionLocal() as db:
-        now = datetime.now(tz=timezone.utc)
         result = await db.execute(
             select(ReadingResult).where(
-                (
-                    (ReadingResult.audio_path.is_not(None)) &
-                    (ReadingResult.audio_expires_at <= now)
-                ) |
-                (
-                    (ReadingResult.part1_audio_path.is_not(None)) &
-                    (ReadingResult.part1_audio_expires_at <= now)
-                )
+                ReadingResult.audio_path.is_not(None),
+                ReadingResult.audio_expires_at <= datetime.now(tz=timezone.utc),
             )
         )
         rows = result.scalars().all()
         for row in rows:
-            if row.audio_path and row.audio_expires_at and row.audio_expires_at <= now:
-                try:
-                    await delete_file(row.audio_path)
-                except Exception as e:
-                    logger.warning(f"Failed to delete R2 audio file {row.audio_path}: {e}")
-                try:
-                    delete_audio(row.audio_path)
-                except Exception:
-                    pass
-                row.audio_path = None
-                row.audio_expires_at = None
-
-            if row.part1_audio_path and row.part1_audio_expires_at and row.part1_audio_expires_at <= now:
-                try:
-                    await delete_file(row.part1_audio_path)
-                except Exception as e:
-                    logger.warning(f"Failed to delete R2 audio file {row.part1_audio_path}: {e}")
-                try:
-                    delete_audio(row.part1_audio_path)
-                except Exception:
-                    pass
-                row.part1_audio_path = None
-                row.part1_audio_expires_at = None
+            try:
+                delete_audio(row.audio_path)
+            except Exception as e:
+                logger.warning(f"Failed to delete audio file {row.audio_path}: {e}")
+            row.audio_path = None
+            row.audio_expires_at = None
         await db.commit()
         logger.info(f"Cleaned up {len(rows)} expired audio file(s).")
 

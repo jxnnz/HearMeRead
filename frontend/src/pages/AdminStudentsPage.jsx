@@ -468,9 +468,9 @@ function ClassRecordView({ card, onBack }) {
   }
 
   return (
-    <div className="cr-page" style={{ flex: 1, minHeight: 0, height: "100%", gap: 12, overflow: "hidden" }}>
+    <div className="cr-page">
       {/* Top bar — mirrors teacher side */}
-      <div className="cr-topbar" style={{ position: "static", margin: "0 0 12px 0", padding: 0, background: "transparent", flexShrink: 0 }}>
+      <div className="cr-topbar">
         <div className="cr-topbar__left">
           <button className="cr-back-btn" onClick={onBack} aria-label="Back">
             <ChevronLeft size={18} />
@@ -532,9 +532,9 @@ function ClassRecordView({ card, onBack }) {
 
       {/* Class record card */}
       {!loading && (
-        <div className="cr-card" style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div className="cr-card">
           {/* Info bar */}
-          <div className="cr-info-bar" style={{ flexShrink: 0 }}>
+          <div className="cr-info-bar">
             <div className="cr-info-bar__items">
               <div className="cr-info-item">
                 <span className="cr-info-label">Assessment Period</span>
@@ -560,7 +560,7 @@ function ClassRecordView({ card, onBack }) {
           </div>
 
           {/* Assessment table */}
-          <div className="cr-table-wrapper" style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+          <div className="cr-table-wrapper">
             <table className="cr-table">
               <thead>
                 <tr>
@@ -742,20 +742,8 @@ export default function AdminStudentsPage() {
 
   return (
     <Layout>
-      <div
-        style={{
-          fontFamily: "Poppins, sans-serif",
-          width: "100%",
-          display: selected ? "flex" : "block",
-          flexDirection: "column",
-          height: selected ? (isMobile ? "auto" : "calc(100vh - 40px)") : "auto",
-          minHeight: 0,
-          overflow: selected ? "hidden" : "visible",
-        }}
-      >
-        <div style={{ flexShrink: 0 }}>
-          <TopBar title="Students" />
-        </div>
+      <div style={{ fontFamily: "Poppins, sans-serif", width: "100%" }}>
+        <TopBar title="Students" />
 
         {selected ? (
           <ClassRecordView card={selected} onBack={() => setSelected(null)} />
@@ -907,8 +895,8 @@ export default function AdminStudentsPage() {
                               </div>
                             </button>
 
-                            {/* Reassign button — only on current school year when no teacher is assigned */}
-                            {isActiveAdvisory && (!card.has_active_teacher || card.teacher_name === "No Adviser Assigned") && (
+                            {/* Reassign button — only for past/inactive advisory years */}
+                            {!isActiveAdvisory && (
                               <button
                                 onClick={() => setReassignCard(card)}
                                 style={{

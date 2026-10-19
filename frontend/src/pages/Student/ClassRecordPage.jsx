@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Download, Pencil, UserX } from "lucide-react";
 import jsPDF from "jspdf";
@@ -7,6 +7,7 @@ import ExcelJS from "exceljs";
 
 import Layout from "../../components/Layout";
 import EditStudentModal from "../../modals/EditStudentModal";
+import StudentInfoModal from "../../modals/StudentInfoModal";
 import ConfirmModal from "../../modals/ConfirmModal";
 import { authApi, studentsApi, sessionsApi } from "../../services/api";
 import useToast from "../../hooks/Usetoast";
@@ -53,53 +54,11 @@ function storyLabel(t) {
   return m ? `Story ${m[1]}` : t;
 }
 
-function computeActivePeriod(allSess, totalStudentsCount, activeLang) {
-  if (!totalStudentsCount || totalStudentsCount <= 0) return "beginning";
-
-  const hasLangSessions = allSess.some((s) => s.language === activeLang);
-  const langFilter = hasLangSessions ? activeLang : null;
-
-  const countStudentsWithPeriod = (p) => {
-    const ids = new Set();
-    for (const s of allSess) {
-      if (s.period === p && (!langFilter || s.language === langFilter)) {
-        ids.add(s.student_id);
-      }
-    }
-    return ids.size;
-  };
-
-  // 1. If beginning is still not done (some or all students have no assessment for beginning), stay on beginning
-  const begCount = countStudentsWithPeriod("beginning");
-  if (begCount < totalStudentsCount) {
-    return "beginning";
-  }
-
-  // 2. If beginning is done but middle is not completed for all students, stay on middle
-  const midCount = countStudentsWithPeriod("middle");
-  if (midCount < totalStudentsCount) {
-    return "middle";
-  }
-
-  // 3. If beginning and middle are both completed for all students, advance to end
-  return "end";
-}
-
 export default function ClassRecordPage() {
   const { toasts, removeToast, showSaveSuccess, showError, addToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-
-  const stateGrade   = location.state?.grade || "";
-  const stateSection = location.state?.section || "";
-  const stateYear    = location.state?.year || "";
-  const statePeriod  = location.state?.period || "";
-
-  const [grade, setGrade]     = useState(stateGrade);
-  const [section, setSection] = useState(stateSection);
-  const [year, setYear]       = useState(stateYear);
-  const [period, setPeriod]   = useState(statePeriod || "beginning");
-  const userChangedPeriodRef  = useRef(Boolean(statePeriod));
+  const { grade = "", section = "", year = "", period = "beginning" } = location.state ?? {};
 
   const [language, setLanguage] = useState("filipino");
   const [teacher, setTeacher]   = useState(null);
@@ -112,47 +71,23 @@ export default function ClassRecordPage() {
   const [pageSize, setPageSize]     = useState(30);
   const [totalStudents, setTotal]   = useState(0);
 
-  const [editStudent, setEditStudent]             = useState(null);
+  const [selectedSessionId, setSelectedSessionId] = useState(null);
+  const [selectedStudentId, setSelectedStudentId] = useState(null);
+
+  const [editStudent, setEditStudent]       = useState(null);
   const [editStudentSaving, setEditStudentSaving] = useState(false);
   const [editStudentError, setEditStudentError]   = useState(null);
-  const [deleteStudent, setDeleteStudent]         = useState(null); // student object pending hard delete
-  const [deletingStudent, setDeletingStudent]     = useState(false);
+  const [deleteStudent, setDeleteStudent]   = useState(null); // student object pending hard delete
+  const [deletingStudent, setDeletingStudent] = useState(false);
   const [deleteStudentError, setDeleteStudentError] = useState(null);
   const [exportingExcel, setExportingExcel]         = useState(false);
-
-  // Auto-detect current school year and class if navigated directly without state
-  useEffect(() => {
-    let cancelled = false;
-    async function initClassInfo() {
-      try {
-        let activeYear = year;
-        if (!activeYear) {
-          const sy = await studentsApi.getCurrentSchoolYear();
-          activeYear = sy?.school_year || "";
-          if (!cancelled && activeYear) setYear(activeYear);
-        }
-        if (!grade && activeYear) {
-          const classData = await studentsApi.listClasses(activeYear);
-          const list = classData.classes || [];
-          if (list.length > 0 && !cancelled) {
-            setGrade(list[0].grade_level || "");
-            setSection(list[0].section === "No Section" ? "" : (list[0].section || ""));
-          }
-        }
-      } catch (_) {}
-    }
-    if (!year || !grade) {
-      initClassInfo();
-    }
-    return () => { cancelled = true; };
-  }, [year, grade]);
 
   async function reload() {
     setLoading(true);
     setError(null);
     try {
       const stuParams  = { page, page_size: pageSize, ...(grade ? { grade_level: grade } : {}), ...(section ? { section } : {}), ...(year ? { school_year: year } : {}) };
-      const sessParams = { school_year: year, is_completed: true, page_size: 1000, ...(grade ? { grade_level: grade } : {}), ...(section ? { section } : {}) };
+      const sessParams = { school_year: year, period, is_completed: true, page_size: 1000, ...(grade ? { grade_level: grade } : {}), ...(section ? { section } : {}) };
       const [me, stuData, sessData] = await Promise.all([
         authApi.me(),
         studentsApi.list(stuParams),
@@ -161,15 +96,7 @@ export default function ClassRecordPage() {
       setTeacher(me);
       setTotal(stuData.total || 0);
       setStudents(stuData.students || []);
-
-      const allSess = sessData.sessions || [];
-      // If user hasn't explicitly picked a period, keep default on the period that is still not done
-      if (!userChangedPeriodRef.current) {
-        const studentTotal = stuData.total || (stuData.students ? stuData.students.length : 0);
-        setPeriod(computeActivePeriod(allSess, studentTotal, language));
-      }
-
-      setSessions(allSess);
+      setSessions(sessData.sessions || []);
     } catch (e) {
       const detail = e.response?.data?.detail;
       setError(
@@ -189,7 +116,7 @@ export default function ClassRecordPage() {
       setError(null);
       try {
         const stuParams  = { page, page_size: pageSize, ...(grade ? { grade_level: grade } : {}), ...(section ? { section } : {}), ...(year ? { school_year: year } : {}) };
-        const sessParams = { school_year: year, is_completed: true, page_size: 1000, ...(grade ? { grade_level: grade } : {}), ...(section ? { section } : {}) };
+        const sessParams = { school_year: year, period, is_completed: true, page_size: 1000, ...(grade ? { grade_level: grade } : {}), ...(section ? { section } : {}) };
         const [me, stuData, sessData] = await Promise.all([
           authApi.me(),
           studentsApi.list(stuParams),
@@ -199,15 +126,7 @@ export default function ClassRecordPage() {
         setTeacher(me);
         setTotal(stuData.total || 0);
         setStudents(stuData.students || []);
-
-        const allSess = sessData.sessions || [];
-        // If user hasn't explicitly picked a period, keep default on the period that is still not done
-        if (!userChangedPeriodRef.current) {
-          const studentTotal = stuData.total || (stuData.students ? stuData.students.length : 0);
-          setPeriod(computeActivePeriod(allSess, studentTotal, language));
-        }
-
-        setSessions(allSess);
+        setSessions(sessData.sessions || []);
       } catch (e) {
         if (!cancelled) {
           const detail = e.response?.data?.detail;
@@ -223,7 +142,7 @@ export default function ClassRecordPage() {
     }
     load();
     return () => { cancelled = true; };
-  }, [grade, section, year, page, pageSize]);
+  }, [grade, section, year, period, page, pageSize]);
 
   async function handleSaveStudent(updatedFields) {
     if (!editStudent) return;
@@ -272,7 +191,7 @@ export default function ClassRecordPage() {
 
   const sessionByStudent = {};
   for (const sess of sessions) {
-    if (sess.period === period && sess.language === language) {
+    if (sess.language === language) {
       if (!sessionByStudent[sess.student_id]) {
         sessionByStudent[sess.student_id] = sess;
       }
@@ -295,7 +214,7 @@ export default function ClassRecordPage() {
       const sess       = sessionByStudent[s.id];
       const rr         = sess?.reading_result;
       const obs        = sess?.observation;
-      const profile    = sess ? (rr?.reading_profile ?? null) : null;
+      const profile    = rr?.reading_profile ?? s.reading_profile;
       const totalWords = rr?.total_words   ?? null;
       const miscues    = rr?.miscue_count  ?? null;
       const wordsRead  = totalWords !== null && miscues !== null ? totalWords - miscues : null;
@@ -540,32 +459,22 @@ export default function ClassRecordPage() {
         {/* Top bar */}
         <div className="cr-topbar">
           <div className="cr-topbar__left">
+            <button
+              className="cr-back-btn"
+              onClick={() => navigate("/students")}
+              aria-label="Back to Student Record"
+            >
+              <ChevronLeft size={18} />
+            </button>
             <div>
               <h1 className="cr-title">
                 {formatGrade(grade)}{section ? ` — ${section}` : ""}
               </h1>
-              <p className="cr-subtitle">{year || "Current Year"} &nbsp;·&nbsp; {periodLabel} Assessment</p>
+              <p className="cr-subtitle">{year} &nbsp;·&nbsp; {periodLabel}</p>
             </div>
           </div>
 
           <div className="cr-topbar__right">
-            <label className="cr-lang-label" htmlFor="cr-period">Period:</label>
-            <select
-              id="cr-period"
-              className="cr-lang-select"
-              value={period}
-              onChange={(e) => {
-                userChangedPeriodRef.current = true;
-                setPeriod(e.target.value);
-              }}
-            >
-              <option value="beginning">Beginning</option>
-              <option value="middle">Middle</option>
-              <option value="end">End</option>
-            </select>
-
-            <div className="cr-topbar__divider" />
-
             <label className="cr-lang-label" htmlFor="cr-language">Language:</label>
             <select
               id="cr-language"
@@ -689,8 +598,8 @@ export default function ClassRecordPage() {
                       const sess    = sessionByStudent[s.id];
                       const rr      = sess?.reading_result;
                       const obs     = sess?.observation;
-                      const profile = sess ? (rr?.reading_profile ?? null) : null;
-                      const nameColor = profile ? (PROFILE_COLORS[profile] ?? "#1a2340") : "#1a2340";
+                      const profile = rr?.reading_profile ?? s.reading_profile;
+                      const nameColor = PROFILE_COLORS[profile] ?? "#1a2340";
 
                       const totalWords = rr?.total_words ?? null;
                       const miscues    = rr?.miscue_count ?? null;
@@ -705,36 +614,22 @@ export default function ClassRecordPage() {
                       const task2LScore = route.includes("2l") ? d(rr?.part1_task2_correct) : "—";
                       const task2HScore = route.includes("2h") ? d(rr?.part1_task2_correct) : "—";
 
-                      const handleRowStudentClick = () => {
-                        navigate(`/students/${s.id}/record/${sess ? sess.id : 0}`, {
-                          state: {
-                            from: "/students",
-                            classState: { grade, section, year, period },
-                          },
-                        });
-                      };
-
                       return (
                         <tr key={s.id}>
                           <td className="cr-td cr-td--center cr-freeze--num">{idx + 1}</td>
-                          <td
-                            className="cr-td cr-freeze--lrn cr-clickable-cell"
-                            onClick={handleRowStudentClick}
-                            title="Click to view student assessment record"
-                          >
-                            {s.lrn ?? "—"}
-                          </td>
-                          <td
-                            className="cr-td cr-freeze--name cr-clickable-cell"
-                            onClick={handleRowStudentClick}
-                            title="Click to view student assessment record"
-                          >
-                            <span
-                              className="cr-student-name"
+                          <td className="cr-td cr-freeze--lrn">{s.lrn ?? "—"}</td>
+                          <td className="cr-td cr-freeze--name">
+                            <button
+                              className="cr-student-link"
                               style={{ color: nameColor }}
+                              title={`${s.last_name}, ${s.first_name}${s.middle_name ? `, ${s.middle_name}` : ""}`}
+                              onClick={() => {
+                                setSelectedStudentId(s.id);
+                                setSelectedSessionId(sess ? sess.id : null);
+                              }}
                             >
                               {s.last_name}, {s.first_name}{s.middle_name ? `, ${s.middle_name.charAt(0).toUpperCase()}.` : ""}
-                            </span>
+                            </button>
                           </td>
                           <td className="cr-td cr-td--cap">{s.sex ?? "—"}</td>
                           <td className="cr-td">{sess ? formatDate(sess.created_at) : "—"}</td>
@@ -832,6 +727,16 @@ export default function ClassRecordPage() {
         )}
 
       </div>
+
+      {/* Session Detail Modal */}
+      <StudentInfoModal
+        sessionId={selectedSessionId}
+        studentId={selectedStudentId}
+        onClose={() => {
+          setSelectedSessionId(null);
+          setSelectedStudentId(null);
+        }}
+      />
 
       {/* Edit Student Modal */}
       <EditStudentModal

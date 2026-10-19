@@ -553,21 +553,6 @@ export const sessionsApi = {
     const res = await api.post(`/sessions/${sessionId}/observe`, data);
     return res.data;
   },
-
-  recalculate: async (sessionId, data) => {
-    const res = await api.patch(`/sessions/${sessionId}/recalculate`, data);
-    return res.data;
-  },
-
-  getAudioUrl: (sessionId, part = 2) => {
-    const base = api.defaults.baseURL || "";
-    const token = localStorage.getItem("token");
-    const query = new URLSearchParams();
-    if (token) query.set("token", token);
-    if (part) query.set("part", String(part));
-    const qs = query.toString();
-    return `${base}/sessions/${sessionId}/audio${qs ? `?${qs}` : ""}`;
-  },
 };
 
 // Dashboard

@@ -118,7 +118,7 @@ export default function AssessmentPage() {
   const [step, setStep] = useState(STEPS.INFO);
   const [form, setForm] = useState(initForm());
 
-  const { toasts, removeToast, showSaveSuccess, showError, addToast } = useToast();
+  const { toasts, removeToast, showSaveSuccess } = useToast();
 
   // Student & passage loading
   const [availableGrades,      setAvailableGrades]      = useState([]);
@@ -230,16 +230,20 @@ export default function AssessmentPage() {
     return () => clearInterval(id);
   }, [isRecording, isPaused]);
 
-  // A2 grade-level time limit trigger: show notification toast without stopping recording
+  //  A2 grade-level time limit trigger
   useEffect(() => {
     if (step !== STEPS.A2 || !isRecording || isPaused || timeLimitReached) return;
     const gradeNum = getGradeNum(form.grade_level);
     const limit    = GRADE_TIME_LIMITS[gradeNum] ?? 120;
     if (recordingTime >= limit) {
       setTimeLimitReached(true);
-      addToast(`Time limit reached (${limit / 60}m). Recording continues.`, "warning");
+      if (mediaRecorderRef.current?.state === "recording") {
+        mediaRecorderRef.current.pause();
+      }
+      setIsPaused(true);
+      setShowTimeLimitModal(true);
     }
-  }, [recordingTime, step, isRecording, isPaused, timeLimitReached, form.grade_level, addToast]);
+  }, [recordingTime, step, isRecording, isPaused, timeLimitReached, form.grade_level]);
 
   // Teacher profile — used to pre-fill grade/section
   const [teacherProfile, setTeacherProfile] = useState(null);
@@ -627,7 +631,6 @@ export default function AssessmentPage() {
 
     const fd = new FormData();
     fd.append("audio", audioToUpload);
-    fd.append("part", forTask === "a2" ? "part2" : forTask === "g2" ? "task2" : "part1");
 
     // Pass the reference passage as a Whisper prompt to reduce hallucinations.
     // g2Passage is already set by handleProceedToG2 before this is called for "g2".
@@ -659,22 +662,17 @@ export default function AssessmentPage() {
       }
       return result;
     } catch (e) {
-      let errDetail = e.response?.data?.detail || e.message || "Transcription failed.";
-      if (!navigator.onLine || e.code === "ERR_NETWORK" || e.message?.includes("Network Error")) {
-        errDetail = "Network connection interrupted while uploading audio. Please check your internet connection and try again.";
-      } else if (e.code === "ECONNABORTED" || e.message?.includes("timeout")) {
-        errDetail = "Audio processing timed out due to slow connection. Your recording is safe, please retry processing.";
-      }
+      const errDetail = e.response?.data?.detail || e.message || "Transcription failed.";
       setTranscribeError(errDetail);
       if (forTask === "a2") {
         setIsA2TranscribingBg(false);
         setA2TranscribeDone(false);
       }
-      // For Assessment 2, if an error happens while waiting, remain on A2_LOADING so a retry button can be used directly
-      if (forTask === "g1") setStep(STEPS.A1_G1_LOADING);
-      else if (forTask === "g2") setStep(STEPS.A1_G2_LOADING);
+      // Return to the appropriate reading step on error
+      if (forTask === "g1") setStep(STEPS.A1_G1);
+      else if (forTask === "g2") setStep(STEPS.A1_G2);
       else if (forTask === "a2" && currentStepRef.current === STEPS.A2_LOADING) {
-        setStep(STEPS.A2_LOADING);
+        setStep(STEPS.A2_PREVIEW);
       }
       throw e;
     } finally {
@@ -771,10 +769,7 @@ export default function AssessmentPage() {
       'audio/mp4',
     ];
     const supportedType = preferredTypes.find(t => MediaRecorder.isTypeSupported(t)) || '';
-    // Set explicit bitrate for consistent quality and smaller file sizes
-    const recorderOptions = supportedType
-      ? { mimeType: supportedType, audioBitsPerSecond: 64000 }
-      : { audioBitsPerSecond: 64000 };
+    const recorderOptions = supportedType ? { mimeType: supportedType } : {};
     const recorder = new MediaRecorder(stream, recorderOptions);
     mediaRecorderRef.current = recorder;
 
@@ -797,7 +792,7 @@ export default function AssessmentPage() {
       streamRef.current = null;
     };
 
-    recorder.start(500); // 500ms timeslice — more frequent data events reduce loss on crash
+    recorder.start(1000); // 1s timeslice to prevent memory issues on low-RAM devices
     setIsRecording(true);
     setIsPaused(false);
     setTimeLimitReached(false);
@@ -1376,45 +1371,13 @@ export default function AssessmentPage() {
 
   if (isLoadingStep) {
     const msg = isScoring ? "Proceeding…" : "Processing audio…";
-    const currentTask =
-      step === STEPS.A1_G1_LOADING ? "g1" :
-      step === STEPS.A1_G2_LOADING ? "g2" : "a2";
-
     return (
       <Layout>
         <LoadingScreen message={msg} />
         {(transcribeError || scoreError) && (
-          <div style={{ textAlign: "center", marginTop: "16px", padding: "0 20px" }}>
-            <p className="asp-error" style={{ marginBottom: "12px", fontWeight: 600 }}>
-              ⚠ {transcribeError || scoreError}
-            </p>
-            {transcribeError && audioFileRef.current && (
-              <div style={{ display: "flex", justifyContent: "center", gap: "10px" }}>
-                <button
-                  className="asp-continue-btn"
-                  style={{ width: "auto", padding: "10px 24px" }}
-                  onClick={() => {
-                    setTranscribeError(null);
-                    fireTranscription(audioFileRef.current, currentTask);
-                  }}
-                >
-                   Retry Processing
-                </button>
-                <button
-                  className="asp-retake-btn"
-                  style={{ padding: "10px 20px" }}
-                  onClick={() => {
-                    setTranscribeError(null);
-                    if (step === STEPS.A1_G1_LOADING) setStep(STEPS.A1_G1);
-                    else if (step === STEPS.A1_G2_LOADING) setStep(STEPS.A1_G2);
-                    else setStep(STEPS.A2);
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
-          </div>
+          <p className="asp-error" style={{ textAlign: "center" }}>
+            ⚠ {transcribeError || scoreError}
+          </p>
         )}
       </Layout>
     );
@@ -1423,7 +1386,6 @@ export default function AssessmentPage() {
   if (isLiveReadingStep) {
     return (
       <Layout>
-        <Toast toasts={toasts} onRemove={removeToast} />
         {studentStrip}
         {fileInput}
         {countdown > 0 && (

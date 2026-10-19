@@ -543,29 +543,11 @@
   background: #aab4cc;
 }
 
-/* Themed Scrollbar (content preview areas and table) */
-.ap-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: #c5cde8 #f4f6fb;
-}
-.ap-scrollbar::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-.ap-scrollbar::-webkit-scrollbar-track {
-  background: #f4f6fb;
-  border-radius: 10px;
-}
-.ap-scrollbar::-webkit-scrollbar-thumb {
-  background: #c5cde8;
-  border-radius: 10px;
-}
-.ap-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #8fa3d4;
-}
-.ap-scrollbar::-webkit-scrollbar-corner {
-  background: #f4f6fb;
-}
+/* Themed Scrollbar (content preview areas) */
+.ap-scrollbar::-webkit-scrollbar { width: 6px; }
+.ap-scrollbar::-webkit-scrollbar-track { background: #eef1fc; border-radius: 6px; }
+.ap-scrollbar::-webkit-scrollbar-thumb { background: #2c3e6b; border-radius: 6px; }
+.ap-scrollbar::-webkit-scrollbar-thumb:hover { background: #1a2340; }
 
 .ap-textarea::-webkit-scrollbar { width: 6px; }
 .ap-textarea::-webkit-scrollbar-track { background: #eef1fc; border-radius: 6px; }
