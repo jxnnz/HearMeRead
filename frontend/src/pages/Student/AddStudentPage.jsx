@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { ChevronLeft, FileUp, Download } from "lucide-react";
 
 import Layout                              from "../../components/Layout";
@@ -16,6 +16,7 @@ const EMPTY_FORM = {
   sex:         "female",
   first_name:  "",
   last_name:   "",
+  middle_name: "",
   grade_level: "",
   section:     "",
   school_year: "",
@@ -23,7 +24,12 @@ const EMPTY_FORM = {
 
 export default function AddStudentPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toasts, removeToast, showSaveSuccess } = useToast();
+
+  const stateGrade   = location.state?.grade || "";
+  const stateSection = location.state?.section || "";
+  const stateYear    = location.state?.year || "";
 
   const [form, setForm]     = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
@@ -50,15 +56,15 @@ export default function AddStudentPage() {
       .then(([user, yearData]) => {
         setForm((prev) => ({
           ...prev,
-          grade_level: user.grade_level || prev.grade_level,
-          section:     user.section     || prev.section,
-          school_year: yearData.school_year || prev.school_year,
+          grade_level: stateGrade || user.grade_level || prev.grade_level,
+          section:     stateSection !== "" ? stateSection : (user.section || prev.section),
+          school_year: stateYear || yearData.school_year || prev.school_year,
         }));
       })
       .catch((err) => {
         console.error("Failed to load details for autofill", err);
       });
-  }, []);
+  }, [stateGrade, stateSection, stateYear]);
 
   function validate() {
     if (!form.first_name.trim()) { setError("First name is required.");  return false; }
@@ -75,6 +81,7 @@ export default function AddStudentPage() {
       await studentsApi.create({
         first_name:  form.first_name.trim(),
         last_name:   form.last_name.trim(),
+        middle_name: form.middle_name?.trim() || null,
         grade_level: form.grade_level,
         section:     form.section.trim() || null,
         sex:         form.sex || null,
@@ -108,7 +115,7 @@ export default function AddStudentPage() {
         <div className="as-topbar">
           <button
             className="as-back-btn"
-            onClick={() => navigate("/students")}
+            onClick={() => navigate("/students", { state: location.state })}
             aria-label="Go back"
           >
             <ChevronLeft size={18} />
@@ -148,7 +155,7 @@ export default function AddStudentPage() {
         <div className="as-footer">
           <button
             className="as-btn as-btn--cancel"
-            onClick={() => navigate("/students")}
+            onClick={() => navigate("/students", { state: location.state })}
             disabled={saving}
           >
             Cancel
@@ -168,7 +175,7 @@ export default function AddStudentPage() {
       <BulkUploadStudentsModal
         isOpen={showBulk}
         onClose={() => setShowBulk(false)}
-        onSuccess={() => navigate("/students")}
+        onSuccess={() => navigate("/students", { state: location.state })}
       />
       <Toast toasts={toasts} onRemove={removeToast} />
     </Layout>

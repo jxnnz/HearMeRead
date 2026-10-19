@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Download, Pencil, UserX } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Pencil, UserX, Plus, ChevronDown, UserPlus, Upload, FileUp, Users } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import ExcelJS from "exceljs";
@@ -8,6 +8,8 @@ import ExcelJS from "exceljs";
 import Layout from "../../components/Layout";
 import EditStudentModal from "../../modals/EditStudentModal";
 import ConfirmModal from "../../modals/ConfirmModal";
+import ImportRecordsModal from "../../modals/ImportRecordsModal";
+import BulkUploadStudentsModal from "../../modals/BulkUploadStudentsModal";
 import { authApi, studentsApi, sessionsApi } from "../../services/api";
 import useToast from "../../hooks/Usetoast";
 import Toast from "../../modals/Toast";
@@ -119,6 +121,32 @@ export default function ClassRecordPage() {
   const [deletingStudent, setDeletingStudent]     = useState(false);
   const [deleteStudentError, setDeleteStudentError] = useState(null);
   const [exportingExcel, setExportingExcel]         = useState(false);
+  const [showAddMenu, setShowAddMenu]               = useState(false);
+  const [showImport, setShowImport]                 = useState(false);
+  const [showBulkUpload, setShowBulkUpload]         = useState(false);
+  const addMenuRef                                  = useRef(null);
+
+  // Close Add Student dropdown when clicking outside or pressing Escape
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (addMenuRef.current && !addMenuRef.current.contains(e.target)) {
+        setShowAddMenu(false);
+      }
+    }
+    function handleKeyDown(e) {
+      if (e.key === "Escape") {
+        setShowAddMenu(false);
+      }
+    }
+    if (showAddMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleKeyDown);
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+        document.removeEventListener("keydown", handleKeyDown);
+      };
+    }
+  }, [showAddMenu]);
 
   // Auto-detect current school year and class if navigated directly without state
   useEffect(() => {
@@ -637,6 +665,87 @@ export default function ClassRecordPage() {
                   <span className="cr-info-value cr-info-value--cap">{language}</span>
                 </div>
               </div>
+
+              {/* Far right: Add Student actions */}
+              <div className="cr-info-bar__actions" ref={addMenuRef}>
+                <div className="cr-add-menu-container">
+                  <button
+                    type="button"
+                    className="cr-add-student-btn"
+                    onClick={() => setShowAddMenu((prev) => !prev)}
+                    aria-haspopup="true"
+                    aria-expanded={showAddMenu}
+                    title="Add student or student records"
+                  >
+                    <Plus size={15} />
+                    <span>Add Student</span>
+                    <ChevronDown
+                      size={14}
+                      className={`cr-add-student-btn__arrow${showAddMenu ? " cr-add-student-btn__arrow--open" : ""}`}
+                    />
+                  </button>
+
+                  {showAddMenu && (
+                    <div className="cr-add-dropdown" role="menu">
+                      <button
+                        type="button"
+                        className="cr-add-dropdown__item"
+                        role="menuitem"
+                        onClick={() => {
+                          setShowAddMenu(false);
+                          navigate("/students/add", {
+                            state: { grade, section, year, period, from: "/students" },
+                          });
+                        }}
+                      >
+                        <div className="cr-add-dropdown__icon-box cr-add-dropdown__icon-box--blue">
+                          <UserPlus size={16} />
+                        </div>
+                        <div className="cr-add-dropdown__text">
+                          <span className="cr-add-dropdown__title">Add Student Info</span>
+                          <span className="cr-add-dropdown__desc">Enter student details manually</span>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="cr-add-dropdown__item"
+                        role="menuitem"
+                        onClick={() => {
+                          setShowAddMenu(false);
+                          setShowImport(true);
+                        }}
+                      >
+                        <div className="cr-add-dropdown__icon-box cr-add-dropdown__icon-box--green">
+                          <Upload size={16} />
+                        </div>
+                        <div className="cr-add-dropdown__text">
+                          <span className="cr-add-dropdown__title">Add Student Record</span>
+                          <span className="cr-add-dropdown__desc">Import CRLA Excel records</span>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="cr-add-dropdown__item"
+                        role="menuitem"
+                        onClick={() => {
+                          setShowAddMenu(false);
+                          setShowBulkUpload(true);
+                        }}
+                      >
+                        <div className="cr-add-dropdown__icon-box cr-add-dropdown__icon-box--purple">
+                          <FileUp size={16} />
+                        </div>
+                        <div className="cr-add-dropdown__text">
+                          <span className="cr-add-dropdown__title">Upload Student List</span>
+                          <span className="cr-add-dropdown__desc">Bulk import from XLSX</span>
+                        </div>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
 
@@ -682,7 +791,30 @@ export default function ClassRecordPage() {
                 <tbody>
                   {students.length === 0 ? (
                     <tr>
-                      <td colSpan={23} className="cr-empty-row">No students in this class.</td>
+                      <td colSpan={23} className="cr-empty-row">
+                        <div className="cr-empty-content">
+                          <Users size={36} strokeWidth={1.3} style={{ color: "#8a94b2", marginBottom: 8 }} />
+                          <p style={{ margin: "0 0 14px", fontWeight: 500, color: "#100c08", fontSize: "13.5px" }}>
+                            No students in this class yet.
+                          </p>
+                          <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
+                            <button
+                              type="button"
+                              className="cr-empty-btn cr-empty-btn--primary"
+                              onClick={() => navigate("/students/add", { state: { grade, section, year, period, from: "/students" } })}
+                            >
+                              <Plus size={14} /> Add Student Info
+                            </button>
+                            <button
+                              type="button"
+                              className="cr-empty-btn cr-empty-btn--secondary"
+                              onClick={() => setShowImport(true)}
+                            >
+                              <Upload size={14} /> Add Student Record
+                            </button>
+                          </div>
+                        </div>
+                      </td>
                     </tr>
                   ) : (
                     students.map((s, idx) => {
@@ -862,6 +994,26 @@ export default function ClassRecordPage() {
         }
         confirmLabel={deletingStudent ? "Deleting…" : "Delete Student"}
         cancelLabel="Cancel"
+      />
+
+      {/* CRLA Excel Records Import Modal */}
+      <ImportRecordsModal
+        isOpen={showImport}
+        onClose={() => setShowImport(false)}
+        onSuccess={() => {
+          reload();
+          addToast("Assessment records imported successfully.");
+        }}
+      />
+
+      {/* Bulk Upload Students Modal */}
+      <BulkUploadStudentsModal
+        isOpen={showBulkUpload}
+        onClose={() => setShowBulkUpload(false)}
+        onSuccess={() => {
+          reload();
+          addToast("Student list uploaded successfully.");
+        }}
       />
 
       <Toast toasts={toasts} onRemove={removeToast} />

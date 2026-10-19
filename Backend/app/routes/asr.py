@@ -66,9 +66,16 @@ async def transcribe_session_audio(
             detail="Uploaded audio file is empty.",
         )
 
-    # 4. Persist audio to R2
+    # 4. Determine part tag and persist audio to R2
+    part_str = str(part).lower().strip() if part else ""
+    is_task2 = part_str in ("task2", "g2", "part1_task2", "t2", "1_2")
+    is_part1_task1 = part_str in ("part1", "g1", "task1", "1", "t1") or (not part_str and not is_task2)
+    part_prefix = "task2" if is_task2 else ("task1" if is_part1_task1 else "part2")
+    base_name = audio.filename or f"recording{ext}"
+    filename_to_store = f"{part_prefix}_{base_name}" if not base_name.startswith(f"{part_prefix}_") else base_name
+
     try:
-        r2_key = await upload_audio(audio_bytes, audio.filename or "audio.webm", str(session_id))
+        r2_key = await upload_audio(audio_bytes, filename_to_store, str(session_id))
     except Exception as e:
         logger.error(f"Failed to upload audio to R2 for session {session_id}: {e}")
         r2_key = None
@@ -206,8 +213,8 @@ async def get_session_audio(
     is_for_task1 = task == 1 or part_str in ("1", "part1", "task1", "g1", "t1")
 
     if is_for_task2:
-        target_path = reading_result.part1_task2_audio_path or reading_result.part1_audio_path
-        target_expires = reading_result.part1_task2_audio_expires_at or reading_result.part1_audio_expires_at
+        target_path = reading_result.part1_task2_audio_path or reading_result.part1_audio_path or reading_result.audio_path
+        target_expires = reading_result.part1_task2_audio_expires_at or reading_result.part1_audio_expires_at or reading_result.audio_expires_at
     elif is_for_task1:
         target_path = reading_result.part1_audio_path or reading_result.audio_path
         target_expires = reading_result.part1_audio_expires_at or reading_result.audio_expires_at
@@ -231,9 +238,10 @@ async def get_session_audio(
     # 3. Check if local file exists (for local development/testing)
     audio_file_path = Path(target_path)
     if audio_file_path.is_file():
+        from app.services.audio_storage import get_audio_media_type
         return FileResponse(
             str(audio_file_path),
-            media_type="audio/webm",
+            media_type=get_audio_media_type(str(audio_file_path)),
             filename=audio_file_path.name,
         )
 

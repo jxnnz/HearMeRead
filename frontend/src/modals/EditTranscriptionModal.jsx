@@ -9,6 +9,7 @@ export default function EditTranscriptionModal({
   description = "Review and correct the transcribed words. When saved, fluency metrics and alignments will be recalculated automatically.",
   transcript,
   audioUrl,
+  initialDuration,
   saving = false,
   onSave,
   onClose,
@@ -50,7 +51,7 @@ export default function EditTranscriptionModal({
               <Headphones size={15} style={{ color: "#2c3e6b" }} />
               <span>Audio Recording Preview</span>
             </div>
-            <AudioPlayer src={audioUrl} id="modal-audio-player" />
+            <AudioPlayer src={audioUrl} id="modal-audio-player" initialDuration={initialDuration} />
           </div>
         )}
         <textarea

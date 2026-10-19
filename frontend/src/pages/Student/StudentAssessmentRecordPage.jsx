@@ -733,6 +733,7 @@ export default function StudentAssessmentRecordPage() {
                       <AudioPlayer
                         src={sessionsApi.getAudioUrl(session.id, 2)}
                         id="part2-audio-player"
+                        initialDuration={rr?.reading_time_seconds}
                       />
                     </div>
                   )}
@@ -863,6 +864,7 @@ export default function StudentAssessmentRecordPage() {
                 : sessionsApi.getAudioUrl(session.id, 2)
               : null
           }
+          initialDuration={editModal.type === "part2" ? rr?.reading_time_seconds : null}
           saving={recalculating}
           onSave={handleSaveRecalculation}
           onClose={() => setEditModal((prev) => ({ ...prev, isOpen: false }))}

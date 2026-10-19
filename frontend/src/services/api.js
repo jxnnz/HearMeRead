@@ -1,6 +1,10 @@
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000" || "https://hearmeread-production.up.railway.app";
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.PROD
+    ? "https://hearmeread-production.up.railway.app"
+    : "http://localhost:8000");
 
 // Axios instance
 const api = axios.create({

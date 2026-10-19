@@ -22,8 +22,8 @@ export default function AudioPlayer({ src, className = "", id, initialDuration }
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(() => {
-    return initialDuration && isFinite(initialDuration) && initialDuration > 0
-      ? initialDuration
+    return initialDuration && isFinite(initialDuration) && Number(initialDuration) > 0
+      ? Number(initialDuration)
       : 0;
   });
   const [volume, setVolume] = useState(1);
@@ -47,8 +47,8 @@ export default function AudioPlayer({ src, className = "", id, initialDuration }
   useEffect(() => {
     setIsPlaying(false);
     setCurrentTime(0);
-    if (initialDuration && isFinite(initialDuration) && initialDuration > 0) {
-      setDuration(initialDuration);
+    if (initialDuration && isFinite(initialDuration) && Number(initialDuration) > 0) {
+      setDuration(Number(initialDuration));
     } else {
       setDuration(0);
     }
@@ -65,6 +65,15 @@ export default function AudioPlayer({ src, className = "", id, initialDuration }
       audio.pause();
       setIsPlaying(false);
     } else {
+      // If audio has ended or position is invalid / beyond duration, restart from 0
+      if (
+        audio.ended ||
+        !isFinite(audio.currentTime) ||
+        (duration > 0 && audio.currentTime >= duration)
+      ) {
+        audio.currentTime = 0;
+        setCurrentTime(0);
+      }
       window.dispatchEvent(
         new CustomEvent("pause-all-audio", { detail: { keepId: id } })
       );
@@ -75,6 +84,7 @@ export default function AudioPlayer({ src, className = "", id, initialDuration }
         })
         .catch((err) => {
           console.error("Audio playback error:", err);
+          setIsPlaying(false);
         });
     }
   };
@@ -82,9 +92,11 @@ export default function AudioPlayer({ src, className = "", id, initialDuration }
   const handleTimeUpdate = () => {
     if (audioRef.current) {
       const cur = audioRef.current.currentTime;
-      setCurrentTime(cur);
-      if (isFinite(cur) && cur > duration) {
-        setDuration(cur);
+      if (isFinite(cur)) {
+        setCurrentTime(cur);
+        if (cur > duration) {
+          setDuration(cur);
+        }
       }
     }
   };
@@ -94,17 +106,8 @@ export default function AudioPlayer({ src, className = "", id, initialDuration }
     const d = audioRef.current.duration;
     if (d && isFinite(d) && !isNaN(d) && d > 0) {
       setDuration(d);
-    } else if (d === Infinity || !isFinite(d)) {
-      // Chrome WebM fix: seek to end to trigger duration calculation
-      const audio = audioRef.current;
-      audio.currentTime = 1e101;
-      audio.ontimeupdate = function () {
-        this.ontimeupdate = null;
-        audio.currentTime = 0;
-        if (audio.duration && isFinite(audio.duration) && audio.duration > 0) {
-          setDuration(audio.duration);
-        }
-      };
+    } else if (initialDuration && isFinite(initialDuration) && Number(initialDuration) > 0) {
+      setDuration(Number(initialDuration));
     }
   };
 
@@ -119,12 +122,18 @@ export default function AudioPlayer({ src, className = "", id, initialDuration }
 
   const handleEnded = () => {
     setIsPlaying(false);
+    if (audioRef.current) {
+      if ((!duration || !isFinite(duration) || duration <= 0) && isFinite(audioRef.current.currentTime) && audioRef.current.currentTime > 0) {
+        setDuration(audioRef.current.currentTime);
+      }
+      audioRef.current.currentTime = 0;
+    }
     setCurrentTime(0);
   };
 
   const handleSeek = (e) => {
     const newTime = Number(e.target.value);
-    if (audioRef.current) {
+    if (audioRef.current && isFinite(newTime)) {
       audioRef.current.currentTime = newTime;
       setCurrentTime(newTime);
     }
@@ -149,7 +158,7 @@ export default function AudioPlayer({ src, className = "", id, initialDuration }
   const maxDuration =
     duration && isFinite(duration) && duration > 0
       ? duration
-      : Math.max(100, currentTime);
+      : (currentTime > 0 ? currentTime : 100);
 
   return (
     <div className={`hmr-audio-player ${className}`}>
@@ -161,6 +170,10 @@ export default function AudioPlayer({ src, className = "", id, initialDuration }
         onLoadedMetadata={handleLoadedMetadata}
         onDurationChange={handleDurationChange}
         onEnded={handleEnded}
+        onError={() => {
+          console.error("Audio error on element:", audioRef.current?.error);
+          setIsPlaying(false);
+        }}
         onPause={() => setIsPlaying(false)}
         onPlay={() => setIsPlaying(true)}
       />
@@ -193,7 +206,7 @@ export default function AudioPlayer({ src, className = "", id, initialDuration }
       <span className="hmr-audio-time">
         {duration && isFinite(duration) && duration > 0
           ? formatTime(duration)
-          : formatTime(currentTime)}
+          : (currentTime > 0 ? formatTime(currentTime) : "0:00")}
       </span>
 
       <div className="hmr-audio-vol-wrap">
