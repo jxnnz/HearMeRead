@@ -12,12 +12,14 @@ from app.models import (
     AssessmentSession,
     GradeLevel,
     Language,
+    Passage,
     ReadingResult,
     Sex,
     SessionObservation,
     Student,
     StudentEnrollment,
     Teacher,
+    School,
     UserRole,
 )
 from app.schema import (
@@ -178,7 +180,9 @@ async def export_crla(
     target_teacher_id = current_teacher.id
     if teacher_id is not None and (current_teacher.role == UserRole.admin or str(current_teacher.role).upper() in ("ADMIN", "USERROLE.ADMIN")):
         t_res = await db.execute(
-            select(Teacher).where(
+            select(Teacher)
+            .options(selectinload(Teacher.school))
+            .where(
                 Teacher.id == teacher_id,
                 Teacher.school_id == current_teacher.school_id,
             )
@@ -187,6 +191,16 @@ async def export_crla(
         if found_t:
             target_teacher = found_t
             target_teacher_id = found_t.id
+    else:
+        # Ensure target_teacher has school loaded
+        t_res = await db.execute(
+            select(Teacher)
+            .options(selectinload(Teacher.school))
+            .where(Teacher.id == target_teacher_id)
+        )
+        loaded_t = t_res.scalar_one_or_none()
+        if loaded_t:
+            target_teacher = loaded_t
 
     # Period label for filename
     period_label_map = {"beginning": "BoSY", "middle": "MoSY", "end": "EoSY"}
@@ -248,7 +262,7 @@ async def export_crla(
             .options(
                 selectinload(AssessmentSession.reading_result),
                 selectinload(AssessmentSession.observation),
-                selectinload(AssessmentSession.passage)
+                selectinload(AssessmentSession.passage).selectinload(Passage.questions),
             )
             .where(
                 AssessmentSession.student_id.in_(student_ids),
@@ -368,8 +382,19 @@ async def export_crla(
     except Exception:
         pass
 
+    school_name = ""
+    school_id_val = ""
+    if target_teacher.school:
+        school_name = target_teacher.school.name or ""
+        school_id_val = target_teacher.school.deped_school_id or target_teacher.school.school_code or ""
+
     # Helper: write metadata header to a scoresheet
     def write_sheet_metadata(ws, language_label):
+        ws.cell(row=3, column=3).value = period_label
+        if school_id_val:
+            ws.cell(row=4, column=3).value = school_id_val
+        if school_name:
+            ws.cell(row=5, column=3).value = school_name
         ws.cell(row=6, column=3).value = teacher_name
         ws.cell(row=7, column=3).value = f"Grade {grade_num}"
         ws.cell(row=8, column=3).value = section
@@ -381,6 +406,18 @@ async def export_crla(
     write_sheet_metadata(ws_fil, "Tagalog")
     if ws_eng:
         write_sheet_metadata(ws_eng, "English")
+
+    # Explicitly write metadata into Class Record as well
+    ws_cr_init = wb["Class Record"]
+    ws_cr_init.cell(row=5, column=5).value = f"GRADE {grade_num} {period_label.upper()} Reading Assessment CLASS RECORD"
+    if school_name:
+        ws_cr_init.cell(row=5, column=3).value = school_name
+    ws_cr_init.cell(row=6, column=3).value = teacher_name
+    ws_cr_init.cell(row=7, column=3).value = f"Grade {grade_num}"
+
+    # Explicitly update Class Summary title as well
+    ws_cs_init = wb["Class Summary"]
+    ws_cs_init.cell(row=2, column=1).value = f"GRADE {grade_num} {period_label.upper()} Assessment CLASS SUMMARY"
 
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
     from openpyxl.drawing.image import Image as OpenpyxlImage
@@ -438,33 +475,61 @@ async def export_crla(
         safe_unmerge(ws_cr, "Q6:Q8")
 
         eng_fill = PatternFill(start_color="E2EFDA", end_color="E2EFDA", fill_type="solid")
+        remarks_fill = PatternFill(start_color="D9D9D9", end_color="D9D9D9", fill_type="solid")
         header_font_10 = Font(name="Arial", size=10, bold=True, color="000000")
         header_font_9 = Font(name="Arial", size=9, bold=True, color="000000")
         header_font_8 = Font(name="Arial", size=8, bold=True, color="000000")
         center_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
 
-        ws_cr.cell(row=5, column=5).value = "GRADE 3 Reading Assessment CLASS RECORD"
+        header_border_standard = Border(
+            left=Side(style="thin", color="000000"),
+            right=Side(style="thin", color="000000"),
+            top=Side(style="thin", color="000000"),
+            bottom=Side(style="thin", color="000000"),
+        )
+        remarks_header_border = Border(
+            left=Side(style="thin", color="000000"),
+            right=Side(style="medium", color="000000"),
+            top=Side(style="thin", color="000000"),
+            bottom=Side(style="thin", color="000000"),
+        )
 
-        # Row 6
+        ws_cr.cell(row=5, column=5).value = f"GRADE 3 {period_label.upper()} Reading Assessment CLASS RECORD"
+        ws_cr.cell(row=5, column=5).font = Font(name="Arial", size=14, bold=True, color="000000")
+        ws_cr.cell(row=5, column=5).alignment = center_align
+        title_fill = copy.copy(ws_cr.cell(row=5, column=5).fill)
+        for c in range(5, 24):
+            cell = ws_cr.cell(row=5, column=c)
+            cell.fill = title_fill
+            cell.border = Border(
+                left=Side(style="thin" if c == 5 else None, color="000000"),
+                right=Side(style="medium" if c == 23 else None, color="000000"),
+                top=Side(style="medium", color="000000"),
+                bottom=Side(style="thin", color="000000"),
+            )
+
+        # Row 6: ENGLISH (cols 17-22) and Remarks (col 23)
         for c in range(17, 23):
             cell = ws_cr.cell(row=6, column=c)
             cell.fill = eng_fill
-            cell.border = thin_border
+            cell.border = header_border_standard
         ws_cr.cell(row=6, column=17).value = "ENGLISH"
         ws_cr.cell(row=6, column=17).font = header_font_10
         ws_cr.cell(row=6, column=17).alignment = center_align
 
-        ws_cr.cell(row=6, column=23).value = "Remarks"
-        ws_cr.cell(row=6, column=23).font = header_font_10
-        ws_cr.cell(row=6, column=23).alignment = center_align
         for r in range(6, 9):
-            ws_cr.cell(row=r, column=23).border = thin_border
+            rem_cell = ws_cr.cell(row=r, column=23)
+            rem_cell.fill = remarks_fill
+            rem_cell.border = remarks_header_border
+        ws_cr.cell(row=6, column=23).value = "Remarks"
+        ws_cr.cell(row=6, column=23).font = header_font_9
+        ws_cr.cell(row=6, column=23).alignment = center_align
 
-        # Row 7
+        # Row 7: Assessment Part 1 (17-18), Assessment Part 2 (19-21), Reading Profile (22)
         for c in range(17, 23):
             cell = ws_cr.cell(row=7, column=c)
             cell.fill = eng_fill
-            cell.border = thin_border
+            cell.border = header_border_standard
         ws_cr.cell(row=7, column=17).value = "Assessment Part 1"
         ws_cr.cell(row=7, column=17).font = header_font_9
         ws_cr.cell(row=7, column=17).alignment = center_align
@@ -477,11 +542,11 @@ async def export_crla(
         ws_cr.cell(row=7, column=22).font = header_font_9
         ws_cr.cell(row=7, column=22).alignment = center_align
 
-        # Row 8
+        # Row 8: Sub-headers
         headers_r8 = {
             17: ("Assessment Part 1 Reading Level", header_font_9),
-            18: ("% of Total Score", header_font_9),
-            19: ("Reading Fluency", header_font_9),
+            18: ("% of Total Score", header_font_8),
+            19: ("Reading Fluency", header_font_8),
             20: ("Reading Comprehension", header_font_8),
             21: ("Average Word Per Minute", header_font_8),
             22: (None, header_font_9),
@@ -489,7 +554,7 @@ async def export_crla(
         for c, (h_text, h_font) in headers_r8.items():
             cell = ws_cr.cell(row=8, column=c)
             cell.fill = eng_fill
-            cell.border = thin_border
+            cell.border = header_border_standard
             if h_text:
                 cell.value = h_text
                 cell.font = h_font
@@ -502,12 +567,20 @@ async def export_crla(
         safe_merge(ws_cr, "S7:U7")
         safe_merge(ws_cr, "V7:V8")
 
-        # Widths
+        # Row heights
+        ws_cr.row_dimensions[5].height = 17.4
+        ws_cr.row_dimensions[6].height = 18.0
+        ws_cr.row_dimensions[7].height = 18.0
+        ws_cr.row_dimensions[8].height = 34.2
+
+        # Column widths matching template proportions
         widths = {
-            "Q": 19.0, "R": 10.0, "S": 10.0, "T": 14.0, "U": 10.0, "V": 26.0, "W": 40.0
+            "Q": 19.0, "R": 9.2, "S": 8.7, "T": 14.5, "U": 8.5, "V": 25.7, "W": 40.3
         }
         for col_l, w in widths.items():
             ws_cr.column_dimensions[col_l].width = w
+
+        ws_cr.auto_filter.ref = "A8:W8"
 
     # Helper: calculate session summary metrics for scoresheet and class record
     def get_session_metrics(sess):
@@ -558,7 +631,9 @@ async def export_crla(
                 fluency = (rr.total_words - rr.miscue_count) / rr.total_words
             if obs and obs.comprehension_correct is not None:
                 total_q = 6
-                if sess.passage and hasattr(sess.passage, "questions") and sess.passage.questions:
+                if obs.comprehension_total and obs.comprehension_total > 0:
+                    total_q = obs.comprehension_total
+                elif sess.passage and hasattr(sess.passage, "questions") and sess.passage.questions:
                     total_q = len(sess.passage.questions)
                 comp = min(1.0, obs.comprehension_correct / float(total_q))
             if rr.cwpm is not None:
@@ -692,83 +767,7 @@ async def export_crla(
         ws_cr.cell(row=cr_row, column=4).value = s.sex.value.capitalize() if s.sex else None
         ws_cr.cell(row=cr_row, column=4).alignment = align_center
 
-        # Mother Tongue (Cols 5-10: E..J)
-        if mt_metrics:
-            ws_cr.cell(row=cr_row, column=5).value = mt_metrics["classification"]
-            ws_cr.cell(row=cr_row, column=6).value = mt_metrics["pct_score"]
-            ws_cr.cell(row=cr_row, column=6).number_format = "0%"
-            ws_cr.cell(row=cr_row, column=7).value = mt_metrics["fluency"]
-            if mt_metrics["fluency"] is not None:
-                ws_cr.cell(row=cr_row, column=7).number_format = "0%"
-            ws_cr.cell(row=cr_row, column=8).value = mt_metrics["comp"]
-            if mt_metrics["comp"] is not None:
-                ws_cr.cell(row=cr_row, column=8).number_format = "0%"
-            ws_cr.cell(row=cr_row, column=9).value = mt_metrics["cwpm"]
-            if mt_metrics["cwpm"] is not None:
-                ws_cr.cell(row=cr_row, column=9).number_format = "0"
-            ws_cr.cell(row=cr_row, column=10).value = mt_metrics["profile"]
-        else:
-            for c in range(5, 11):
-                ws_cr.cell(row=cr_row, column=c).value = None
-
-        # Filipino (Cols 11-16: K..P)
-        if fil_metrics:
-            ws_cr.cell(row=cr_row, column=11).value = fil_metrics["classification"]
-            ws_cr.cell(row=cr_row, column=12).value = fil_metrics["pct_score"]
-            ws_cr.cell(row=cr_row, column=12).number_format = "0%"
-            ws_cr.cell(row=cr_row, column=13).value = fil_metrics["fluency"]
-            if fil_metrics["fluency"] is not None:
-                ws_cr.cell(row=cr_row, column=13).number_format = "0%"
-            ws_cr.cell(row=cr_row, column=14).value = fil_metrics["comp"]
-            if fil_metrics["comp"] is not None:
-                ws_cr.cell(row=cr_row, column=14).number_format = "0%"
-            ws_cr.cell(row=cr_row, column=15).value = fil_metrics["cwpm"]
-            if fil_metrics["cwpm"] is not None:
-                ws_cr.cell(row=cr_row, column=15).number_format = "0"
-            ws_cr.cell(row=cr_row, column=16).value = fil_metrics["profile"]
-        else:
-            for c in range(11, 17):
-                ws_cr.cell(row=cr_row, column=c).value = None
-
-        if grade_num == 3:
-            # English (Cols 17-22: Q..V)
-            if eng_metrics:
-                ws_cr.cell(row=cr_row, column=17).value = eng_metrics["classification"]
-                ws_cr.cell(row=cr_row, column=18).value = eng_metrics["pct_score"]
-                ws_cr.cell(row=cr_row, column=18).number_format = "0%"
-                ws_cr.cell(row=cr_row, column=19).value = eng_metrics["fluency"]
-                if eng_metrics["fluency"] is not None:
-                    ws_cr.cell(row=cr_row, column=19).number_format = "0%"
-                ws_cr.cell(row=cr_row, column=20).value = eng_metrics["comp"]
-                if eng_metrics["comp"] is not None:
-                    ws_cr.cell(row=cr_row, column=20).number_format = "0%"
-                ws_cr.cell(row=cr_row, column=21).value = eng_metrics["cwpm"]
-                if eng_metrics["cwpm"] is not None:
-                    ws_cr.cell(row=cr_row, column=21).number_format = "0"
-                ws_cr.cell(row=cr_row, column=22).value = eng_metrics["profile"]
-            else:
-                for c in range(17, 23):
-                    ws_cr.cell(row=cr_row, column=c).value = None
-
-            # Remarks (Col 23: W)
-            remarks_parts = []
-            if mt_metrics and mt_metrics.get("remarks"):
-                remarks_parts.append(f"MT: {mt_metrics['remarks']}")
-            if fil_metrics and fil_metrics.get("remarks"):
-                remarks_parts.append(f"FIL: {fil_metrics['remarks']}")
-            if eng_metrics and eng_metrics.get("remarks"):
-                remarks_parts.append(f"ENG: {eng_metrics['remarks']}")
-            ws_cr.cell(row=cr_row, column=23).value = " ".join(remarks_parts) if remarks_parts else None
-            ws_cr.cell(row=cr_row, column=23).alignment = align_left_wrap
-        else:
-            # Remarks (Col 17: Q)
-            remarks_parts = []
-            if mt_metrics and mt_metrics.get("remarks"):
-                remarks_parts.append(f"MT: {mt_metrics['remarks']}")
-            if fil_metrics and fil_metrics.get("remarks"):
-                remarks_parts.append(f"FIL: {fil_metrics['remarks']}")
-            ws_cr.cell(row=cr_row, column=17).value = " ".join(remarks_parts) if remarks_parts else None
-            ws_cr.cell(row=cr_row, column=17).alignment = align_left_wrap
+        # Only write identity columns (1-4) on Class Record; data columns auto-calculate via formulas referencing scoresheets
 
     # Clear remaining rows (11 + N to 110) on scoresheets - ONLY clear raw data columns to preserve formulas!
     raw_cols_to_clear = [1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 14, 15, 18, 19, 20, 22]
@@ -779,11 +778,71 @@ async def export_crla(
             if ws_eng:
                 ws_eng.cell(row=r, column=c).value = None
 
-    # Clear remaining rows on Class Record (9 + N to 110)
-    max_cr_col = 23 if grade_num == 3 else 17
-    for r in range(9 + N, 111):
-        for c in range(1, max_cr_col + 1):
-            ws_cr.cell(row=r, column=c).value = None
+    # For Grade 3, populate and format English (cols 17-22) and Remarks (col 23) for all data rows 9 to 108
+    if grade_num == 3:
+        eng_fill = PatternFill(start_color="E2EFDA", end_color="E2EFDA", fill_type="solid")
+        zebra_even_fill = PatternFill(start_color="F2F2F2", end_color="F2F2F2", fill_type="solid")
+        no_fill = PatternFill(fill_type=None)
+        data_font_11 = Font(name="Calibri", size=11, bold=False, color="000000")
+
+        for r in range(9, 109):
+            sc_r = r + 2
+            is_even = (r % 2 == 0)
+            is_last = (r == 108)
+            b_bottom = Side(style="medium" if is_last else "thin", color="000000")
+            eng_border = Border(
+                left=Side(style="thin", color="000000"),
+                right=Side(style="thin", color="000000"),
+                top=Side(style="thin", color="000000"),
+                bottom=b_bottom,
+            )
+            rem_border = Border(
+                left=Side(style="thin", color="000000"),
+                right=Side(style="medium", color="000000"),
+                top=Side(style="thin", color="000000"),
+                bottom=b_bottom,
+            )
+
+            # English Formulas (Cols 17-22: Q..V)
+            ws_cr.cell(row=r, column=17).value = f"='{new_eng_name}'!$J{sc_r}"
+            ws_cr.cell(row=r, column=18).value = f"=IF($C{r}<>\"\",'{new_eng_name}'!$I{sc_r}/30,\"\")"
+            ws_cr.cell(row=r, column=19).value = f"=IF(AND($C{r}<>\"\",$Q{r}<>\"Full Refresher\"),'{new_eng_name}'!$Q{sc_r},\"\")"
+            ws_cr.cell(row=r, column=20).value = f"=IF(AND($C{r}<>\"\",$Q{r}<>\"Full Refresher\"),'{new_eng_name}'!$R{sc_r}/6,\"\")"
+            ws_cr.cell(row=r, column=21).value = f"=IF(AND($C{r}<>\"\",$Q{r}<>\"Full Refresher\"),'{new_eng_name}'!$P{sc_r},\"\")"
+            ws_cr.cell(row=r, column=22).value = f"='{new_eng_name}'!$U{sc_r}"
+
+            # Remarks Formula (Col 23: W)
+            ws_cr.cell(row=r, column=23).value = (
+                f'=CONCATENATE('
+                f'IF(ISBLANK(\'{new_mt_name}\'!V{sc_r}),"",CONCATENATE("MT:",TRIM(\'{new_mt_name}\'!V{sc_r})))," ",'
+                f'IF(ISBLANK(\'{new_fil_name}\'!V{sc_r}),"",CONCATENATE("FIL:",TRIM(\'{new_fil_name}\'!V{sc_r})))," ",'
+                f'IF(ISBLANK(\'{new_eng_name}\'!V{sc_r}),"",CONCATENATE("ENG:",TRIM(\'{new_eng_name}\'!V{sc_r})))'
+                f')'
+            )
+
+            # Number Formats
+            ws_cr.cell(row=r, column=17).number_format = "0"
+            ws_cr.cell(row=r, column=18).number_format = "0%"
+            ws_cr.cell(row=r, column=19).number_format = "0%"
+            ws_cr.cell(row=r, column=20).number_format = "0%"
+            ws_cr.cell(row=r, column=21).number_format = "0"
+            ws_cr.cell(row=r, column=22).number_format = "0"
+            ws_cr.cell(row=r, column=23).number_format = "General"
+
+            # Style English Data Cells (Cols 17-22)
+            for c in range(17, 23):
+                cell = ws_cr.cell(row=r, column=c)
+                cell.fill = eng_fill
+                cell.border = eng_border
+                cell.font = data_font_11
+                cell.alignment = align_center
+
+            # Style Remarks Data Cell (Col 23)
+            rem_cell = ws_cr.cell(row=r, column=23)
+            rem_cell.fill = zebra_even_fill if is_even else no_fill
+            rem_cell.border = rem_border
+            rem_cell.font = data_font_11
+            rem_cell.alignment = align_left_wrap
 
     attribution_font = Font(name="Calibri", size=9, bold=False, color="000000")
     left_align_wrap = Alignment(horizontal="left", vertical="top", wrap_text=True)
