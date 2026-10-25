@@ -9,6 +9,7 @@ export default function EditTranscriptionModal({
   description = "Review and correct the transcribed words. When saved, fluency metrics and alignments will be recalculated automatically.",
   transcript,
   audioUrl,
+  cacheKey = null,
   initialDuration,
   saving = false,
   onSave,

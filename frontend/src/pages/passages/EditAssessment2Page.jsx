@@ -4,6 +4,7 @@ import { ChevronLeft, Plus, X } from "lucide-react";
 
 import Layout from "../../components/Layout";
 import { passagesApi, questionsApi } from "../../services/api";
+import { parseApiError } from "../../utils/apiError";
 import "../pages css/AddPassagePage.css";
 
 function parseStoryTitle(t) {
@@ -133,11 +134,6 @@ export default function EditAssessment2Page() {
         } else {
           await questionsApi.create(Number(id), payload);
         }
-      }
-
-      // Upload new original file to R2 if selected
-      if (selectedFile) {
-        await passagesApi.uploadFile(Number(id), selectedFile).catch(() => {});
       }
 
       navigate("/passages");
