@@ -19,6 +19,7 @@ from app.schemas.session_schemas import (
     CompleteSessionIn, CompleteSessionOut,
     Task1ScoreIn, Task1ScoreOut,
     Part1ScoreIn, ObservationIn,
+    RecalculateSessionIn,
 )
 from app.schemas.session_schemas import Part1ResultOut, WordAlignmentOut
 from app.services import session_service
@@ -186,6 +187,31 @@ async def complete_session(
         raise HTTPException(status_code=404, detail=str(e))
     except RuntimeError as e:
         raise HTTPException(status_code=409, detail=str(e))
+
+
+@router.patch(
+    "/{session_id}/recalculate",
+    response_model=SessionResponse,
+    status_code=200,
+    summary="Recalculate scoring metrics for an assessment session",
+)
+async def recalculate_session(
+    session_id:      int,
+    payload:         RecalculateSessionIn,
+    db:              AsyncSession = Depends(get_db),
+    current_teacher: Teacher      = Depends(get_current_teacher),
+):
+    if _is_admin(current_teacher):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only teachers can edit student assessment records."
+        )
+    return await session_service.recalculate_session(
+        db=db,
+        session_id=session_id,
+        teacher_id=current_teacher.id,
+        payload=payload,
+    )
 
 
 # Intermediate scoring (no session state change)

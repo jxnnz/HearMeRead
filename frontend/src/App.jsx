@@ -23,6 +23,7 @@ const AddStudentPage = React.lazy(() => import("./pages/Student/AddStudentPage")
 const AssessmentPage = React.lazy(() => import("./pages/Assessment/AssessmentPage"));
 const StudentInfoPage = React.lazy(() => import("./pages/Student/StudentInfoPage"));
 const ClassRecordPage = React.lazy(() => import("./pages/Student/ClassRecordPage"));
+const StudentAssessmentRecordPage = React.lazy(() => import("./pages/Student/StudentAssessmentRecordPage"));
 const ProfilePage = React.lazy(() => import("./pages/ProfilePage"));
 const UserManualPage = React.lazy(() => import("./pages/UserManualPage"));
 
@@ -201,10 +202,12 @@ export default function App() {
           <Route path="/passages/add-assessment-2" element={<RequireTeacher><AddAssessment2Page /></RequireTeacher>} />
           <Route path="/passages/edit-assessment-1/:id" element={<RequireTeacher><EditAssessment1Page /></RequireTeacher>} />
           <Route path="/passages/edit-assessment-2/:id" element={<RequireTeacher><EditAssessment2Page /></RequireTeacher>} />
-          <Route path="/students" element={<RequireTeacher><StudentRecordPage /></RequireTeacher>} />
+          <Route path="/students" element={<RequireTeacher><ClassRecordPage /></RequireTeacher>} />
           <Route path="/students/add" element={<RequireTeacher><AddStudentPage /></RequireTeacher>} />
           <Route path="/students/class" element={<RequireTeacher><ClassRecordPage /></RequireTeacher>} />
           <Route path="/students/:id" element={<RequireTeacher><StudentInfoPage /></RequireTeacher>} />
+          <Route path="/students/:studentId/record/:sessionId" element={<RequireTeacher><StudentAssessmentRecordPage /></RequireTeacher>} />
+          <Route path="/students/:studentId/record" element={<RequireTeacher><StudentAssessmentRecordPage /></RequireTeacher>} />
 
           {/* Admin-only */}
           <Route path="/admin/dashboard" element={<RequireAdmin><AdminDashboardPage /></RequireAdmin>} />

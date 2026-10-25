@@ -1,5 +1,6 @@
 import enum
 import re
+from datetime import datetime, timezone
 
 from sqlalchemy import (
     Column, Integer, String, Float, Text,
@@ -196,6 +197,7 @@ class Passage(Base):
     task2_words     = Column(Text, nullable=True)      # Assessment 1: comma-separated word list
     task2_sentences = Column(Text, nullable=True)      # Assessment 1: period-separated sentences
     file_path           = Column(String(500), nullable=True)   # R2 key for the original uploaded file
+    content_hash        = Column(String(64), nullable=True, index=True)   # SHA-256 hash of normalized content
     original_passage_id = Column(Integer, ForeignKey("passages.id", ondelete="SET NULL"), nullable=True)
     story_number    = Column(Integer, nullable=True)
     created_at      = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -287,6 +289,12 @@ class ReadingResult(Base):
     audio_path       = Column(String(500), nullable=True)
     audio_expires_at = Column(DateTime(timezone=True), nullable=True)
 
+    # Part 1 audio recording
+    part1_audio_path       = Column(String(500), nullable=True)
+    part1_audio_expires_at = Column(DateTime(timezone=True), nullable=True)
+    part1_task2_audio_path       = Column(String(500), nullable=True)
+    part1_task2_audio_expires_at = Column(DateTime(timezone=True), nullable=True)
+
     # Part 1 scoring results
     part1_task1_correct          = Column(Integer,     nullable=True)
     part1_task2_correct          = Column(Integer,     nullable=True)
@@ -304,6 +312,43 @@ class ReadingResult(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
 
     session = relationship("AssessmentSession", back_populates="reading_result")
+
+    @property
+    def has_part1_audio(self) -> bool:
+        if not self.part1_audio_path:
+            return False
+        if self.part1_audio_expires_at:
+            exp = self.part1_audio_expires_at
+            if exp.tzinfo is None:
+                exp = exp.replace(tzinfo=timezone.utc)
+            return exp > datetime.now(timezone.utc)
+        return True
+
+    @property
+    def has_part1_task2_audio(self) -> bool:
+        if not self.part1_task2_audio_path:
+            return False
+        if self.part1_task2_audio_expires_at:
+            exp = self.part1_task2_audio_expires_at
+            if exp.tzinfo is None:
+                exp = exp.replace(tzinfo=timezone.utc)
+            return exp > datetime.now(timezone.utc)
+        return True
+
+    @property
+    def has_part2_audio(self) -> bool:
+        if not self.audio_path:
+            return False
+        if self.audio_expires_at:
+            exp = self.audio_expires_at
+            if exp.tzinfo is None:
+                exp = exp.replace(tzinfo=timezone.utc)
+            return exp > datetime.now(timezone.utc)
+        return True
+
+    @property
+    def has_audio(self) -> bool:
+        return self.has_part2_audio or self.has_part1_audio or self.has_part1_task2_audio
 
 
 class SessionObservation(Base):

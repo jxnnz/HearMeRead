@@ -16,6 +16,7 @@ from app.schema import SessionCreate, SessionComplete, SessionUpdate
 from app.schemas.session_schemas import (
     CompleteSessionIn, CompleteSessionOut,
     Part1ResultOut, Part2ResultOut, WordAlignmentOut,
+    RecalculateSessionIn,
 )
 from app.services.levenshtein_service import score_part1, score_part2
 from app.services.log_service import log_activity
@@ -549,3 +550,156 @@ async def save_observation(
     await db.commit()
     await db.refresh(obs)
     return obs
+
+
+async def recalculate_session(
+    db: AsyncSession,
+    session_id: int,
+    teacher_id: int,
+    payload: RecalculateSessionIn,
+) -> AssessmentSession:
+    """
+    Recalculate scoring metrics for an already-completed assessment session
+    after a teacher modifies the transcribed text or remarks.
+    """
+    result = await db.execute(
+        select(AssessmentSession)
+        .options(
+            selectinload(AssessmentSession.reading_result),
+            selectinload(AssessmentSession.observation),
+            selectinload(AssessmentSession.passage),
+            selectinload(AssessmentSession.student),
+        )
+        .where(
+            AssessmentSession.id == session_id,
+            AssessmentSession.teacher_id == teacher_id,
+            AssessmentSession.is_archived == False,
+        )
+    )
+    session = result.scalar_one_or_none()
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Session {session_id} not found or access denied."
+        )
+
+    reading_result = session.reading_result
+    if not reading_result:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot recalculate: no reading result found for this session."
+        )
+
+    # 1. Recalculate Part 1 if either task transcript was changed
+    p1_changed = (
+        payload.part1_task1_transcript is not None or
+        payload.part1_task2_transcript is not None
+    )
+    if p1_changed:
+        t1_ref = ""
+        t2_ref = ""
+        current_t1_trans = ""
+        current_t2_trans = ""
+
+        if reading_result.part1_task1_alignments_json:
+            try:
+                t1_list = json.loads(reading_result.part1_task1_alignments_json)
+                t1_ref = " ".join([a["reference"] for a in t1_list if a.get("reference")])
+                current_t1_trans = " ".join([a["transcribed"] for a in t1_list if a.get("transcribed")])
+            except Exception:
+                pass
+
+        if reading_result.part1_task2_alignments_json:
+            try:
+                t2_list = json.loads(reading_result.part1_task2_alignments_json)
+                t2_ref = " ".join([a["reference"] for a in t2_list if a.get("reference")])
+                current_t2_trans = " ".join([a["transcribed"] for a in t2_list if a.get("transcribed")])
+            except Exception:
+                pass
+
+        new_t1_trans = payload.part1_task1_transcript if payload.part1_task1_transcript is not None else current_t1_trans
+        new_t2_trans = payload.part1_task2_transcript if payload.part1_task2_transcript is not None else current_t2_trans
+
+        if t1_ref or t2_ref:
+            lang_val = session.language.value if hasattr(session.language, "value") else str(session.language or "filipino")
+            p1 = score_part1(
+                task1_reference_text=t1_ref,
+                task1_transcribed_text=new_t1_trans,
+                task2_reference_text=t2_ref,
+                task2_transcribed_text=new_t2_trans,
+                language=lang_val,
+            )
+            reading_result.part1_task1_correct = p1.task1_correct
+            reading_result.part1_task2_correct = p1.task2_correct
+            reading_result.part1_total_score = p1.total_score
+            reading_result.part1_classification = p1.classification.value if p1.classification else None
+            reading_result.part1_route = p1.route.value if p1.route else None
+            reading_result.part1_task1_alignments_json = _alignments_to_json(p1.task1_alignments)
+            reading_result.part1_task2_alignments_json = _alignments_to_json(p1.task2_alignments)
+
+            if p1.classification and p1.classification.value == "Full Refresher" and not session.passage_id:
+                reading_result.reading_profile = "Low Emerging Reader"
+
+    # 2. Recalculate Part 2 if story transcript changed
+    if payload.part2_transcript is not None:
+        ref_text = ""
+        if session.passage and getattr(session.passage, "content", None):
+            ref_text = session.passage.content
+        elif session.passage and getattr(session.passage, "text", None):
+            ref_text = session.passage.text
+        elif reading_result.part2_alignments_json:
+            try:
+                p2_list = json.loads(reading_result.part2_alignments_json)
+                ref_text = " ".join([a["reference"] for a in p2_list if a.get("reference")])
+            except Exception:
+                pass
+
+        if ref_text:
+            grade_num = 1
+            if session.student and session.student.grade_level:
+                gl_str = str(session.student.grade_level.value if hasattr(session.student.grade_level, "value") else session.student.grade_level).lower()
+                if "2" in gl_str:
+                    grade_num = 2
+                elif "3" in gl_str:
+                    grade_num = 3
+
+            obs = session.observation
+            comp_correct = obs.comprehension_correct if obs and obs.comprehension_correct is not None else 0
+            obs_level = obs.fluency_level if obs else None
+            learn_exp = obs.learner_experience if obs else None
+            read_time = reading_result.reading_time_seconds or 60.0
+
+            p2 = score_part2(
+                reference_text=ref_text,
+                transcribed_text=payload.part2_transcript,
+                reading_time_sec=read_time,
+                grade_level=grade_num,
+                comprehension_correct=comp_correct,
+                part1_total_score=reading_result.part1_total_score,
+                observation_level=obs_level,
+                learner_experience=learn_exp,
+            )
+
+            reading_result.total_words = p2.total_words_in_passage
+            reading_result.miscue_count = p2.total_miscues
+            reading_result.cwpm = p2.cwpm
+            if p2.reading_profile:
+                reading_result.reading_profile = p2.reading_profile.value
+            reading_result.part2_alignments_json = _alignments_to_json(p2.alignments)
+
+    # 3. Update teacher remarks if provided
+    if payload.teacher_remarks is not None:
+        if session.observation:
+            session.observation.teacher_remarks = payload.teacher_remarks
+        else:
+            session.observation = SessionObservation(
+                session_id=session_id,
+                teacher_remarks=payload.teacher_remarks,
+            )
+
+    reading_result.updated_at = _now()
+    session.updated_at = _now()
+    await db.commit()
+
+    # Re-fetch refreshed session with all relationships
+    return await get_session_by_id(db, session_id, teacher_id)

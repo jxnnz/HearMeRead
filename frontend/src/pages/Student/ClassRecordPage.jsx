@@ -1,14 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Download, Pencil, UserX } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Pencil, UserX, Plus, ChevronDown, UserPlus, Upload, FileUp, Users } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import ExcelJS from "exceljs";
 
 import Layout from "../../components/Layout";
 import EditStudentModal from "../../modals/EditStudentModal";
-import StudentInfoModal from "../../modals/StudentInfoModal";
 import ConfirmModal from "../../modals/ConfirmModal";
+import ImportRecordsModal from "../../modals/ImportRecordsModal";
+import BulkUploadStudentsModal from "../../modals/BulkUploadStudentsModal";
 import { authApi, studentsApi, sessionsApi } from "../../services/api";
 import useToast from "../../hooks/Usetoast";
 import Toast from "../../modals/Toast";
@@ -26,7 +27,7 @@ const PROFILE_COLORS = {
 const PERIOD_LABELS = { beginning: "Beginning", middle: "Middle", end: "End" };
 
 function formatGrade(gl) {
-  if (!gl) return "Unknown";
+  if (!gl) return "";
   if (gl === "kindergarten") return "Kindergarten";
   return `Grade ${gl.replace("grade_", "")}`;
 }
@@ -54,11 +55,53 @@ function storyLabel(t) {
   return m ? `Story ${m[1]}` : t;
 }
 
+function computeActivePeriod(allSess, totalStudentsCount, activeLang) {
+  if (!totalStudentsCount || totalStudentsCount <= 0) return "beginning";
+
+  const hasLangSessions = allSess.some((s) => s.language === activeLang);
+  const langFilter = hasLangSessions ? activeLang : null;
+
+  const countStudentsWithPeriod = (p) => {
+    const ids = new Set();
+    for (const s of allSess) {
+      if (s.period === p && (!langFilter || s.language === langFilter)) {
+        ids.add(s.student_id);
+      }
+    }
+    return ids.size;
+  };
+
+  // 1. If beginning is still not done (some or all students have no assessment for beginning), stay on beginning
+  const begCount = countStudentsWithPeriod("beginning");
+  if (begCount < totalStudentsCount) {
+    return "beginning";
+  }
+
+  // 2. If beginning is done but middle is not completed for all students, stay on middle
+  const midCount = countStudentsWithPeriod("middle");
+  if (midCount < totalStudentsCount) {
+    return "middle";
+  }
+
+  // 3. If beginning and middle are both completed for all students, advance to end
+  return "end";
+}
+
 export default function ClassRecordPage() {
   const { toasts, removeToast, showSaveSuccess, showError, addToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  const { grade = "", section = "", year = "", period = "beginning" } = location.state ?? {};
+
+  const stateGrade   = location.state?.grade || "";
+  const stateSection = location.state?.section || "";
+  const stateYear    = location.state?.year || "";
+  const statePeriod  = location.state?.period || "";
+
+  const [grade, setGrade]     = useState(() => stateGrade || sessionStorage.getItem("hmr_class_grade") || "");
+  const [section, setSection] = useState(() => stateSection || sessionStorage.getItem("hmr_class_section") || "");
+  const [year, setYear]       = useState(() => stateYear || sessionStorage.getItem("hmr_class_year") || "");
+  const [period, setPeriod]   = useState(statePeriod || "beginning");
+  const userChangedPeriodRef  = useRef(Boolean(statePeriod));
 
   const [language, setLanguage] = useState("filipino");
   const [teacher, setTeacher]   = useState(null);
@@ -71,32 +114,62 @@ export default function ClassRecordPage() {
   const [pageSize, setPageSize]     = useState(30);
   const [totalStudents, setTotal]   = useState(0);
 
-  const [selectedSessionId, setSelectedSessionId] = useState(null);
-  const [selectedStudentId, setSelectedStudentId] = useState(null);
-
-  const [editStudent, setEditStudent]       = useState(null);
+  const [editStudent, setEditStudent]             = useState(null);
   const [editStudentSaving, setEditStudentSaving] = useState(false);
   const [editStudentError, setEditStudentError]   = useState(null);
-  const [deleteStudent, setDeleteStudent]   = useState(null); // student object pending hard delete
-  const [deletingStudent, setDeletingStudent] = useState(false);
+  const [deleteStudent, setDeleteStudent]         = useState(null); // student object pending hard delete
+  const [deletingStudent, setDeletingStudent]     = useState(false);
   const [deleteStudentError, setDeleteStudentError] = useState(null);
   const [exportingExcel, setExportingExcel]         = useState(false);
+  const [showAddMenu, setShowAddMenu]               = useState(false);
+  const [showImport, setShowImport]                 = useState(false);
+  const [showBulkUpload, setShowBulkUpload]         = useState(false);
+  const addMenuRef                                  = useRef(null);
+
+  // Close Add Student dropdown when clicking outside or pressing Escape
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (addMenuRef.current && !addMenuRef.current.contains(e.target)) {
+        setShowAddMenu(false);
+      }
+    }
+    function handleKeyDown(e) {
+      if (e.key === "Escape") {
+        setShowAddMenu(false);
+      }
+    }
+    if (showAddMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleKeyDown);
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+        document.removeEventListener("keydown", handleKeyDown);
+      };
+    }
+  }, [showAddMenu]);
 
   async function reload() {
     setLoading(true);
     setError(null);
     try {
       const stuParams  = { page, page_size: pageSize, ...(grade ? { grade_level: grade } : {}), ...(section ? { section } : {}), ...(year ? { school_year: year } : {}) };
-      const sessParams = { school_year: year, period, is_completed: true, page_size: 1000, ...(grade ? { grade_level: grade } : {}), ...(section ? { section } : {}) };
+      const sessParams = { school_year: year || undefined, is_completed: true, page_size: 1000, ...(grade ? { grade_level: grade } : {}), ...(section ? { section } : {}) };
       const [me, stuData, sessData] = await Promise.all([
-        authApi.me(),
+        authApi.me().catch(() => null),
         studentsApi.list(stuParams),
         sessionsApi.list(sessParams),
       ]);
-      setTeacher(me);
+      if (me) setTeacher(me);
       setTotal(stuData.total || 0);
       setStudents(stuData.students || []);
-      setSessions(sessData.sessions || []);
+
+      const allSess = sessData.sessions || [];
+      if (!userChangedPeriodRef.current) {
+        const studentTotal = stuData.total || (stuData.students ? stuData.students.length : 0);
+        setPeriod(computeActivePeriod(allSess, studentTotal, language));
+      }
+
+      setSessions(allSess);
     } catch (e) {
       const detail = e.response?.data?.detail;
       setError(
@@ -109,24 +182,89 @@ export default function ClassRecordPage() {
     }
   }
 
+  // Streamlined, single-pass unified loader (eliminates multi-step reloads and "Unknown" class flash)
   useEffect(() => {
     let cancelled = false;
-    async function load() {
+
+    async function loadData() {
       setLoading(true);
       setError(null);
       try {
-        const stuParams  = { page, page_size: pageSize, ...(grade ? { grade_level: grade } : {}), ...(section ? { section } : {}), ...(year ? { school_year: year } : {}) };
-        const sessParams = { school_year: year, period, is_completed: true, page_size: 1000, ...(grade ? { grade_level: grade } : {}), ...(section ? { section } : {}) };
+        let activeYear = year;
+        let activeGrade = grade;
+        let activeSection = section;
+
+        // If year or grade are not set yet, resolve them in parallel in a single cycle
+        if (!activeYear || !activeGrade) {
+          const [syRes, meRes, classRes] = await Promise.all([
+            !activeYear ? studentsApi.getCurrentSchoolYear().catch(() => null) : null,
+            authApi.me().catch(() => null),
+            studentsApi.listClasses(activeYear || undefined).catch(() => ({ classes: [] })),
+          ]);
+          if (cancelled) return;
+
+          if (meRes) setTeacher(meRes);
+
+          if (!activeYear && syRes?.school_year) {
+            activeYear = syRes.school_year;
+            setYear(activeYear);
+            sessionStorage.setItem("hmr_class_year", activeYear);
+          }
+
+          if (!activeGrade) {
+            const list = classRes?.classes || [];
+            if (list.length > 0) {
+              activeGrade = list[0].grade_level || "";
+              activeSection = list[0].section === "No Section" ? "" : (list[0].section || "");
+            } else if (meRes?.grade_level) {
+              activeGrade = meRes.grade_level;
+              activeSection = meRes.section || "";
+            }
+            if (activeGrade) {
+              setGrade(activeGrade);
+              sessionStorage.setItem("hmr_class_grade", activeGrade);
+            }
+            if (activeSection !== undefined) {
+              setSection(activeSection);
+              sessionStorage.setItem("hmr_class_section", activeSection);
+            }
+          }
+        }
+
+        // Fetch student records and completed sessions for the resolved class simultaneously
+        const stuParams = {
+          page,
+          page_size: pageSize,
+          ...(activeGrade ? { grade_level: activeGrade } : {}),
+          ...(activeSection ? { section: activeSection } : {}),
+          ...(activeYear ? { school_year: activeYear } : {}),
+        };
+        const sessParams = {
+          school_year: activeYear || undefined,
+          is_completed: true,
+          page_size: 1000,
+          ...(activeGrade ? { grade_level: activeGrade } : {}),
+          ...(activeSection ? { section: activeSection } : {}),
+        };
+
         const [me, stuData, sessData] = await Promise.all([
-          authApi.me(),
+          teacher ? null : authApi.me().catch(() => null),
           studentsApi.list(stuParams),
           sessionsApi.list(sessParams),
         ]);
         if (cancelled) return;
-        setTeacher(me);
+
+        if (me) setTeacher(me);
         setTotal(stuData.total || 0);
         setStudents(stuData.students || []);
-        setSessions(sessData.sessions || []);
+
+        const allSess = sessData.sessions || [];
+        if (!userChangedPeriodRef.current) {
+          const studentTotal = stuData.total || (stuData.students ? stuData.students.length : 0);
+          setPeriod(computeActivePeriod(allSess, studentTotal, language));
+        }
+
+        setSessions(allSess);
       } catch (e) {
         if (!cancelled) {
           const detail = e.response?.data?.detail;
@@ -140,9 +278,10 @@ export default function ClassRecordPage() {
         if (!cancelled) setLoading(false);
       }
     }
-    load();
+
+    loadData();
     return () => { cancelled = true; };
-  }, [grade, section, year, period, page, pageSize]);
+  }, [grade, section, year, page, pageSize]);
 
   async function handleSaveStudent(updatedFields) {
     if (!editStudent) return;
@@ -191,7 +330,7 @@ export default function ClassRecordPage() {
 
   const sessionByStudent = {};
   for (const sess of sessions) {
-    if (sess.language === language) {
+    if (sess.period === period && sess.language === language) {
       if (!sessionByStudent[sess.student_id]) {
         sessionByStudent[sess.student_id] = sess;
       }
@@ -214,7 +353,7 @@ export default function ClassRecordPage() {
       const sess       = sessionByStudent[s.id];
       const rr         = sess?.reading_result;
       const obs        = sess?.observation;
-      const profile    = rr?.reading_profile ?? s.reading_profile;
+      const profile    = sess ? (rr?.reading_profile ?? null) : null;
       const totalWords = rr?.total_words   ?? null;
       const miscues    = rr?.miscue_count  ?? null;
       const wordsRead  = totalWords !== null && miscues !== null ? totalWords - miscues : null;
@@ -459,22 +598,32 @@ export default function ClassRecordPage() {
         {/* Top bar */}
         <div className="cr-topbar">
           <div className="cr-topbar__left">
-            <button
-              className="cr-back-btn"
-              onClick={() => navigate("/students")}
-              aria-label="Back to Student Record"
-            >
-              <ChevronLeft size={18} />
-            </button>
             <div>
               <h1 className="cr-title">
-                {formatGrade(grade)}{section ? ` — ${section}` : ""}
+                {grade ? `${formatGrade(grade)}${section ? ` — ${section}` : ""}` : (loading ? "Loading Class..." : "Class Record")}
               </h1>
-              <p className="cr-subtitle">{year} &nbsp;·&nbsp; {periodLabel}</p>
+              <p className="cr-subtitle">{year || "Current Year"} &nbsp;·&nbsp; {periodLabel} Assessment</p>
             </div>
           </div>
 
           <div className="cr-topbar__right">
+            <label className="cr-lang-label" htmlFor="cr-period">Period:</label>
+            <select
+              id="cr-period"
+              className="cr-lang-select"
+              value={period}
+              onChange={(e) => {
+                userChangedPeriodRef.current = true;
+                setPeriod(e.target.value);
+              }}
+            >
+              <option value="beginning">Beginning</option>
+              <option value="middle">Middle</option>
+              <option value="end">End</option>
+            </select>
+
+            <div className="cr-topbar__divider" />
+
             <label className="cr-lang-label" htmlFor="cr-language">Language:</label>
             <select
               id="cr-language"
@@ -546,6 +695,87 @@ export default function ClassRecordPage() {
                   <span className="cr-info-value cr-info-value--cap">{language}</span>
                 </div>
               </div>
+
+              {/* Far right: Add Student actions */}
+              <div className="cr-info-bar__actions" ref={addMenuRef}>
+                <div className="cr-add-menu-container">
+                  <button
+                    type="button"
+                    className="cr-add-student-btn"
+                    onClick={() => setShowAddMenu((prev) => !prev)}
+                    aria-haspopup="true"
+                    aria-expanded={showAddMenu}
+                    title="Add student or student records"
+                  >
+                    <Plus size={15} />
+                    <span>Add Student</span>
+                    <ChevronDown
+                      size={14}
+                      className={`cr-add-student-btn__arrow${showAddMenu ? " cr-add-student-btn__arrow--open" : ""}`}
+                    />
+                  </button>
+
+                  {showAddMenu && (
+                    <div className="cr-add-dropdown" role="menu">
+                      <button
+                        type="button"
+                        className="cr-add-dropdown__item"
+                        role="menuitem"
+                        onClick={() => {
+                          setShowAddMenu(false);
+                          navigate("/students/add", {
+                            state: { grade, section, year, period, from: "/students" },
+                          });
+                        }}
+                      >
+                        <div className="cr-add-dropdown__icon-box cr-add-dropdown__icon-box--blue">
+                          <UserPlus size={16} />
+                        </div>
+                        <div className="cr-add-dropdown__text">
+                          <span className="cr-add-dropdown__title">Add Student Info</span>
+                          <span className="cr-add-dropdown__desc">Enter student details manually</span>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="cr-add-dropdown__item"
+                        role="menuitem"
+                        onClick={() => {
+                          setShowAddMenu(false);
+                          setShowImport(true);
+                        }}
+                      >
+                        <div className="cr-add-dropdown__icon-box cr-add-dropdown__icon-box--green">
+                          <Upload size={16} />
+                        </div>
+                        <div className="cr-add-dropdown__text">
+                          <span className="cr-add-dropdown__title">Add Student Record</span>
+                          <span className="cr-add-dropdown__desc">Import CRLA Excel records</span>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="cr-add-dropdown__item"
+                        role="menuitem"
+                        onClick={() => {
+                          setShowAddMenu(false);
+                          setShowBulkUpload(true);
+                        }}
+                      >
+                        <div className="cr-add-dropdown__icon-box cr-add-dropdown__icon-box--purple">
+                          <FileUp size={16} />
+                        </div>
+                        <div className="cr-add-dropdown__text">
+                          <span className="cr-add-dropdown__title">Upload Student List</span>
+                          <span className="cr-add-dropdown__desc">Bulk import from XLSX</span>
+                        </div>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
 
@@ -591,15 +821,38 @@ export default function ClassRecordPage() {
                 <tbody>
                   {students.length === 0 ? (
                     <tr>
-                      <td colSpan={23} className="cr-empty-row">No students in this class.</td>
+                      <td colSpan={23} className="cr-empty-row">
+                        <div className="cr-empty-content">
+                          <Users size={36} strokeWidth={1.3} style={{ color: "#8a94b2", marginBottom: 8 }} />
+                          <p style={{ margin: "0 0 14px", fontWeight: 500, color: "#100c08", fontSize: "13.5px" }}>
+                            No students in this class yet.
+                          </p>
+                          <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
+                            <button
+                              type="button"
+                              className="cr-empty-btn cr-empty-btn--primary"
+                              onClick={() => navigate("/students/add", { state: { grade, section, year, period, from: "/students" } })}
+                            >
+                              <Plus size={14} /> Add Student Info
+                            </button>
+                            <button
+                              type="button"
+                              className="cr-empty-btn cr-empty-btn--secondary"
+                              onClick={() => setShowImport(true)}
+                            >
+                              <Upload size={14} /> Add Student Record
+                            </button>
+                          </div>
+                        </div>
+                      </td>
                     </tr>
                   ) : (
                     students.map((s, idx) => {
                       const sess    = sessionByStudent[s.id];
                       const rr      = sess?.reading_result;
                       const obs     = sess?.observation;
-                      const profile = rr?.reading_profile ?? s.reading_profile;
-                      const nameColor = PROFILE_COLORS[profile] ?? "#1a2340";
+                      const profile = sess ? (rr?.reading_profile ?? null) : null;
+                      const nameColor = profile ? (PROFILE_COLORS[profile] ?? "#1a2340") : "#1a2340";
 
                       const totalWords = rr?.total_words ?? null;
                       const miscues    = rr?.miscue_count ?? null;
@@ -611,25 +864,39 @@ export default function ClassRecordPage() {
                         : null;
 
                       const route       = (rr?.part1_route ?? "").toLowerCase();
-                      const task2LScore = route.includes("2l") ? d(rr?.part1_task2_correct) : "—";
-                      const task2HScore = route.includes("2h") ? d(rr?.part1_task2_correct) : "—";
+                      const task2LScore = route.includes("2l") ? d(rr?.part1_task2_correct != null ? Math.min(rr.part1_task2_correct, 10) : null) : "—";
+                      const task2HScore = route.includes("2h") ? d(rr?.part1_task2_correct != null ? Math.min(rr.part1_task2_correct, 10) : null) : "—";
+
+                      const handleRowStudentClick = () => {
+                        navigate(`/students/${s.id}/record/${sess ? sess.id : 0}`, {
+                          state: {
+                            from: "/students",
+                            classState: { grade, section, year, period },
+                          },
+                        });
+                      };
 
                       return (
                         <tr key={s.id}>
                           <td className="cr-td cr-td--center cr-freeze--num">{idx + 1}</td>
-                          <td className="cr-td cr-freeze--lrn">{s.lrn ?? "—"}</td>
-                          <td className="cr-td cr-freeze--name">
-                            <button
-                              className="cr-student-link"
+                          <td
+                            className="cr-td cr-freeze--lrn cr-clickable-cell"
+                            onClick={handleRowStudentClick}
+                            title="Click to view student assessment record"
+                          >
+                            {s.lrn ?? "—"}
+                          </td>
+                          <td
+                            className="cr-td cr-freeze--name cr-clickable-cell"
+                            onClick={handleRowStudentClick}
+                            title="Click to view student assessment record"
+                          >
+                            <span
+                              className="cr-student-name"
                               style={{ color: nameColor }}
-                              title={`${s.last_name}, ${s.first_name}${s.middle_name ? `, ${s.middle_name}` : ""}`}
-                              onClick={() => {
-                                setSelectedStudentId(s.id);
-                                setSelectedSessionId(sess ? sess.id : null);
-                              }}
                             >
                               {s.last_name}, {s.first_name}{s.middle_name ? `, ${s.middle_name.charAt(0).toUpperCase()}.` : ""}
-                            </button>
+                            </span>
                           </td>
                           <td className="cr-td cr-td--cap">{s.sex ?? "—"}</td>
                           <td className="cr-td">{sess ? formatDate(sess.created_at) : "—"}</td>
@@ -728,16 +995,6 @@ export default function ClassRecordPage() {
 
       </div>
 
-      {/* Session Detail Modal */}
-      <StudentInfoModal
-        sessionId={selectedSessionId}
-        studentId={selectedStudentId}
-        onClose={() => {
-          setSelectedSessionId(null);
-          setSelectedStudentId(null);
-        }}
-      />
-
       {/* Edit Student Modal */}
       <EditStudentModal
         isOpen={editStudent !== null}
@@ -767,6 +1024,26 @@ export default function ClassRecordPage() {
         }
         confirmLabel={deletingStudent ? "Deleting…" : "Delete Student"}
         cancelLabel="Cancel"
+      />
+
+      {/* CRLA Excel Records Import Modal */}
+      <ImportRecordsModal
+        isOpen={showImport}
+        onClose={() => setShowImport(false)}
+        onSuccess={() => {
+          reload();
+          addToast("Assessment records imported successfully.");
+        }}
+      />
+
+      {/* Bulk Upload Students Modal */}
+      <BulkUploadStudentsModal
+        isOpen={showBulkUpload}
+        onClose={() => setShowBulkUpload(false)}
+        onSuccess={() => {
+          reload();
+          addToast("Student list uploaded successfully.");
+        }}
       />
 
       <Toast toasts={toasts} onRemove={removeToast} />

@@ -207,6 +207,7 @@ class PassageCreate(BaseModel):
     assessment_type: Optional[int]        = Field(None, ge=1, le=2)
     story_number:    Optional[int]        = None
     file_path:       Optional[str]        = None
+    content_hash:    Optional[str]        = None
 
 
 class PassageUpdate(BaseModel):
@@ -363,6 +364,14 @@ class ReadingResultResponse(BaseModel):
     part1_task1_alignments_json:  Optional[str] = None
     part1_task2_alignments_json:  Optional[str] = None
     part2_alignments_json:         Optional[str] = None
+
+    has_audio:            bool = False
+    has_part1_audio:      bool = False
+    has_part1_task2_audio: bool = False
+    has_part2_audio:      bool = False
+    audio_expires_at:     Optional[datetime] = None
+    part1_audio_expires_at: Optional[datetime] = None
+    part1_task2_audio_expires_at: Optional[datetime] = None
 
     created_at:           datetime
     updated_at:           Optional[datetime] = None

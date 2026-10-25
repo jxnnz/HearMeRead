@@ -1,6 +1,10 @@
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000" || "https://hearmeread-production.up.railway.app";
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.PROD
+    ? "https://hearmeread-production.up.railway.app"
+    : "http://localhost:8000");
 
 // Axios instance
 const api = axios.create({
@@ -552,6 +556,21 @@ export const sessionsApi = {
   saveObservation: async (sessionId, data) => {
     const res = await api.post(`/sessions/${sessionId}/observe`, data);
     return res.data;
+  },
+
+  recalculate: async (sessionId, data) => {
+    const res = await api.patch(`/sessions/${sessionId}/recalculate`, data);
+    return res.data;
+  },
+
+  getAudioUrl: (sessionId, part = 2) => {
+    const base = api.defaults.baseURL || "";
+    const token = localStorage.getItem("token");
+    const query = new URLSearchParams();
+    if (token) query.set("token", token);
+    if (part) query.set("part", String(part));
+    const qs = query.toString();
+    return `${base}/sessions/${sessionId}/audio${qs ? `?${qs}` : ""}`;
   },
 };
 

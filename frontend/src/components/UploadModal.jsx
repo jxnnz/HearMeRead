@@ -132,6 +132,8 @@ export default function UploadModal({
     setLoading(true);
     try {
       const allExtractedItems = [];
+      const seenSignatures = new Set();
+      let intraBatchDuplicates = 0;
 
       for (const file of stagedFiles) {
         const rawText = await parseFile(file);
@@ -146,6 +148,12 @@ export default function UploadModal({
             if (!t1 && !t2w && !t2s && rhymes.length === 0) {
               continue;
             }
+            const sig = `a1:${t1.toLowerCase().replace(/\s+/g, ' ')}|${t2w.toLowerCase().replace(/\s+/g, ' ')}|${t2s.toLowerCase().replace(/\s+/g, ' ')}`;
+            if (seenSignatures.has(sig)) {
+              intraBatchDuplicates++;
+              continue;
+            }
+            seenSignatures.add(sig);
           }
           // Extra guard: never include an A2 that has zero content, title, and questions
           if (pData.assessment_type === 2) {
@@ -155,6 +163,12 @@ export default function UploadModal({
             if (!content && !title && questions.length === 0) {
               continue;
             }
+            const sig = `a2:${content.toLowerCase().replace(/\s+/g, ' ')}`;
+            if (seenSignatures.has(sig)) {
+              intraBatchDuplicates++;
+              continue;
+            }
+            seenSignatures.add(sig);
           }
 
           allExtractedItems.push({
@@ -167,13 +181,19 @@ export default function UploadModal({
       }
 
       if (allExtractedItems.length === 0) {
-        alert("No valid passage content was found in the uploaded file(s). Please check the template format.");
+        if (intraBatchDuplicates > 0) {
+          alert("All uploaded files contained identical duplicate content.");
+        } else {
+          alert("No valid passage content was found in the uploaded file(s). Please check the template format.");
+        }
         return;
       }
 
       onClose();
 
-      if (allExtractedItems.length === 1 && onUpload) {
+      if (stagedFiles.length > 1 && onBulkUpload) {
+        onBulkUpload(allExtractedItems);
+      } else if (allExtractedItems.length === 1 && onUpload) {
         const item = allExtractedItems[0];
         onUpload(item.assessment_type, item.parsedData, item.fileName, item.file);
       } else if (onBulkUpload) {

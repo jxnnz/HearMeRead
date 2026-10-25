@@ -3,7 +3,7 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 AUDIO_DIR = Path("storage/audio")
-AUDIO_RETENTION_DAYS = 7
+AUDIO_RETENTION_DAYS = 90
 
 _MEDIA_TYPES: dict[str, str] = {
     ".webm": "audio/webm",

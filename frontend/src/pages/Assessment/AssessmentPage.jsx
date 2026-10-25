@@ -36,6 +36,7 @@ import ObservationStep          from "./ObservationStep";
 import LearnerExperienceStep    from "./LearnerExperienceStep";
 
 import "../pages css/AssessmentPage.css";
+import { saveAudioToCache } from "../../utils/audioCache";
 
 // Step machine
 const STEPS = {
@@ -625,8 +626,22 @@ export default function AssessmentPage() {
       return null;
     }
 
+    // Cache recorded audio locally in IndexedDB for instant playback
+    if (session?.id && audioToUpload) {
+      const partKey = forTask === "a2" ? "2" : forTask === "g2" ? "task2" : "1";
+      saveAudioToCache(`session_${session.id}_${partKey}`, audioToUpload);
+      if (forTask === "a2") {
+        saveAudioToCache(`session_${session.id}_part2`, audioToUpload);
+      } else if (forTask === "g1") {
+        saveAudioToCache(`session_${session.id}_part1`, audioToUpload);
+      } else if (forTask === "g2") {
+        saveAudioToCache(`session_${session.id}_part1_task2`, audioToUpload);
+      }
+    }
+
     const fd = new FormData();
     fd.append("audio", audioToUpload);
+    fd.append("part", forTask === "a2" ? "part2" : forTask === "g2" ? "task2" : "part1");
 
     // Pass the reference passage as a Whisper prompt to reduce hallucinations.
     // g2Passage is already set by handleProceedToG2 before this is called for "g2".

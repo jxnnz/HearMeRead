@@ -156,6 +156,146 @@
   color: #000000;
 }
 
+.cr-info-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.cr-add-menu-container {
+  position: relative;
+}
+
+.cr-add-student-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: "Poppins", sans-serif;
+  background: #2c3e6b;
+  color: #ffffff;
+  border: 1.5px solid #2c3e6b;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s, box-shadow 0.15s;
+  box-shadow: 0 1px 3px rgba(44, 62, 107, 0.15);
+  white-space: nowrap;
+}
+
+.cr-add-student-btn:hover {
+  background: #1e2d52;
+  border-color: #1e2d52;
+  box-shadow: 0 3px 8px rgba(44, 62, 107, 0.25);
+}
+
+.cr-add-student-btn__arrow {
+  transition: transform 0.2s ease;
+  opacity: 0.85;
+}
+
+.cr-add-student-btn__arrow--open {
+  transform: rotate(180deg);
+}
+
+/* Dropdown Menu */
+.cr-add-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 280px;
+  background: #ffffff;
+  border: 1.5px solid #dde2f0;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(26, 35, 64, 0.15), 0 8px 10px -6px rgba(26, 35, 64, 0.1);
+  padding: 6px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  animation: crMenuFadeIn 0.15s ease-out;
+}
+
+@keyframes crMenuFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cr-add-dropdown__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: "Poppins", sans-serif;
+  transition: background 0.15s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cr-add-dropdown__item:hover {
+  background: #f4f6fb;
+}
+
+.cr-add-dropdown__icon-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.cr-add-dropdown__icon-box--blue {
+  background: #e8f0fe;
+  color: #1a73e8;
+}
+
+.cr-add-dropdown__icon-box--green {
+  background: #e6f4ea;
+  color: #137333;
+}
+
+.cr-add-dropdown__icon-box--purple {
+  background: #f3e8fd;
+  color: #8430ce;
+}
+
+.cr-add-dropdown__text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow: hidden;
+}
+
+.cr-add-dropdown__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a2340;
+}
+
+.cr-add-dropdown__desc {
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.3;
+}
+
 .cr-info-item {
   display: flex;
   flex-direction: column;
@@ -448,7 +588,39 @@
 .cr-td--g1 { background-color: rgba(232, 240, 252, 0.35); }
 .cr-td--g2 { background-color: rgba(232, 250, 240, 0.35); }
 
-/* Student name link */
+/* Student name link & clickable cell */
+.cr-clickable-cell {
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.cr-clickable-cell:hover {
+  background-color: #e8f0fe !important;
+}
+
+.cr-clickable-cell.cr-freeze--lrn:hover {
+  color: #1a73e8;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.cr-clickable-cell.cr-freeze--name:hover .cr-student-name {
+  text-decoration: underline;
+  opacity: 0.8;
+}
+
+.cr-student-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: "Poppins", sans-serif;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 185px;
+}
+
 .cr-student-link {
   background: none;
   border: none;
@@ -477,6 +649,48 @@
   text-align: center;
   color: #100c08;
   font-size: 13px;
+}
+
+.cr-empty-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 18px 0;
+}
+
+.cr-empty-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: "Poppins", sans-serif;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.cr-empty-btn--primary {
+  background: #2c3e6b;
+  color: #ffffff;
+  border: 1.5px solid #2c3e6b;
+}
+.cr-empty-btn--primary:hover {
+  background: #1e2d52;
+  border-color: #1e2d52;
+}
+
+.cr-empty-btn--secondary {
+  background: #ffffff;
+  color: #1a2340;
+  border: 1.5px solid #dde2f0;
+}
+.cr-empty-btn--secondary:hover {
+  background: #f4f6fb;
+  border-color: #2c3e6b;
 }
 
 /* Action column */

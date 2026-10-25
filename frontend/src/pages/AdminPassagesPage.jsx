@@ -386,8 +386,9 @@ export default function AdminPassagesPage() {
       // Upload files to R2 in parallel for passages that were created
       const fileUploads = validParsedItems
         .map((item, i) => {
-          const passageId = result.results?.[i]?.passage_id;
-          if (item.file && passageId && !result.results[i]?.error) {
+          const resItem = (result.results || []).find((r) => r.index === i);
+          const passageId = resItem?.passage_id;
+          if (item.file && passageId && !resItem?.error) {
             return adminApi.uploadPassageFile(passageId, item.file).catch(() => {});
           }
           return null;
@@ -399,7 +400,19 @@ export default function AdminPassagesPage() {
       if (failed === 0) {
         addToast("Passages saved successfully", "success");
       } else {
-        setBulkResult({ saved, failed, total });
+        const errorList = (result.results || [])
+          .filter((r) => r.error)
+          .map((r) => r.error);
+        const dupCount = errorList.filter((e) => e.toLowerCase().includes("duplicate") || e.toLowerCase().includes("already exists")).length;
+        let msg = `${saved} of ${total} passages saved successfully. ${failed} failed to save.`;
+        if (dupCount > 0) {
+          if (saved > 0) {
+            msg = `${saved} of ${total} passages saved successfully. ${dupCount} passage${dupCount > 1 ? "s were" : " was"} skipped because identical content already exists.`;
+          } else {
+            msg = `All ${total} passage${total > 1 ? "s were" : " was"} blocked because identical content already exists.`;
+          }
+        }
+        setBulkResult({ saved, failed, total, message: msg });
       }
     } catch {
       setBulkSaving(false);
@@ -698,7 +711,7 @@ export default function AdminPassagesPage() {
             bulkResult?.saved === 0
               ? "Upload Failed"
               : bulkResult?.failed > 0
-              ? "Upload Completed with Errors"
+              ? "Upload Summary"
               : "Passages Saved!"
           }
           message={
@@ -707,7 +720,7 @@ export default function AdminPassagesPage() {
               ? `${bulkResult.saved} of ${bulkResult.total} passages saved successfully. ${bulkResult.failed} failed to save.`
               : `${bulkResult?.saved || 0} passage${(bulkResult?.saved || 0) !== 1 ? "s" : ""} saved successfully.`)
           }
-          variant={bulkResult?.saved === 0 || bulkResult?.failed > 0 ? "danger" : "default"}
+          variant={bulkResult?.saved === 0 ? "danger" : "default"}
           confirmLabel="OK"
           cancelLabel={null}
           onConfirm={() => setBulkResult(null)}
