@@ -19,6 +19,7 @@ from app.schema import (
 )
 from app.services import passage_service, question_service, storage_service
 from app.utils.docx_parser import validate_upload, parse_passage_only
+from app.utils.passage_hash import compute_passage_hash
 
 
 router = APIRouter(prefix="/passages", tags=["Passages"])
@@ -77,6 +78,34 @@ R:
 
 W:
 R:
+
+W:
+R:
+
+W:
+R:
+
+W:
+R:
+
+W:
+R:
+
+W:
+R:
+
+W:
+R:
+
+W:
+R:
+
+W:
+R:
+
+
+Task 2 Sentences:
+
 
 
 --- FILLABLE ASSESSMENT 2 (STORY & QUESTIONS) ---
@@ -678,6 +707,7 @@ async def bulk_create_passages(
                 resolved_titles[idx] = passage_service._a1_base_title(lang_str, grade_str)
 
     # Build passage objects
+    seen_hashes = {}  # content_hash -> first_idx
     for idx, item in enumerate(items):
         try:
             # Skip empty A1 items
@@ -702,6 +732,32 @@ async def bulk_create_passages(
                     failed += 1
                     continue
 
+            # Compute content hash
+            c_hash = compute_passage_hash(
+                assessment_type=item.assessment_type,
+                content=item.content,
+                task1_content=item.task1_content,
+                task2_words=item.task2_words,
+                task2_sentences=item.task2_sentences,
+            )
+
+            # Check intra-batch duplicate
+            if c_hash and c_hash in seen_hashes:
+                first_pos = seen_hashes[c_hash] + 1
+                results.append(BulkCreateResult(index=idx, error=f"Duplicate content within this upload batch (matches passage #{first_pos})."))
+                failed += 1
+                continue
+
+            # Check database duplicate
+            if c_hash:
+                dup = await passage_service.find_duplicate_passage(db, teacher_id=current_teacher.id, content_hash=c_hash)
+                if dup:
+                    dup_title = dup.title or ("Assessment 1" if dup.assessment_type == 1 else "Untitled Passage")
+                    results.append(BulkCreateResult(index=idx, error=f"A passage with the same content already exists: '{dup_title}'."))
+                    failed += 1
+                    continue
+                seen_hashes[c_hash] = idx
+
             title = item.title or resolved_titles.get(idx)
             content = item.content or ""
             passage = PassageModel(
@@ -717,6 +773,7 @@ async def bulk_create_passages(
                 task2_words=item.task2_words,
                 task2_sentences=item.task2_sentences,
                 story_number=item.story_number,
+                content_hash=c_hash,
             )
             db.add(passage)
             passages_to_add.append(passage)
@@ -726,6 +783,7 @@ async def bulk_create_passages(
             failed += 1
 
     if not passages_to_add:
+        results.sort(key=lambda r: r.index)
         return BulkCreateResponse(created=0, failed=failed, results=results)
 
     try:
@@ -779,6 +837,7 @@ async def bulk_create_passages(
             detail=f"Database transaction error during bulk create: {str(exc)}",
         )
 
+    results.sort(key=lambda r: r.index)
     return BulkCreateResponse(created=created, failed=failed, results=results)
 
 

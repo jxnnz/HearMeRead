@@ -197,6 +197,7 @@ class Passage(Base):
     task2_words     = Column(Text, nullable=True)      # Assessment 1: comma-separated word list
     task2_sentences = Column(Text, nullable=True)      # Assessment 1: period-separated sentences
     file_path           = Column(String(500), nullable=True)   # R2 key for the original uploaded file
+    content_hash        = Column(String(64), nullable=True, index=True)   # SHA-256 hash of normalized content
     original_passage_id = Column(Integer, ForeignKey("passages.id", ondelete="SET NULL"), nullable=True)
     story_number    = Column(Integer, nullable=True)
     created_at      = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

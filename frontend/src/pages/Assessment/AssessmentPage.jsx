@@ -36,6 +36,7 @@ import ObservationStep          from "./ObservationStep";
 import LearnerExperienceStep    from "./LearnerExperienceStep";
 
 import "../pages css/AssessmentPage.css";
+import { saveAudioToCache } from "../../utils/audioCache";
 
 // Step machine
 const STEPS = {
@@ -623,6 +624,19 @@ export default function AssessmentPage() {
       }
       setIsTranscribing(false);
       return null;
+    }
+
+    // Cache recorded audio locally in IndexedDB for instant playback
+    if (session?.id && audioToUpload) {
+      const partKey = forTask === "a2" ? "2" : forTask === "g2" ? "task2" : "1";
+      saveAudioToCache(`session_${session.id}_${partKey}`, audioToUpload);
+      if (forTask === "a2") {
+        saveAudioToCache(`session_${session.id}_part2`, audioToUpload);
+      } else if (forTask === "g1") {
+        saveAudioToCache(`session_${session.id}_part1`, audioToUpload);
+      } else if (forTask === "g2") {
+        saveAudioToCache(`session_${session.id}_part1_task2`, audioToUpload);
+      }
     }
 
     const fd = new FormData();

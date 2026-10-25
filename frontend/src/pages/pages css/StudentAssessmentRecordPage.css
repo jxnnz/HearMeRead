@@ -318,6 +318,25 @@
   letter-spacing: 0.04em;
 }
 
+/* Part 1 Task Blocks */
+.sarp-task-block {
+  display: flex;
+  flex-direction: column;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1.5px solid #edf1f8;
+}
+
+.sarp-task-block:first-of-type {
+  margin-top: 0;
+  padding-top: 18px;
+}
+
+.sarp-task-block .sarp-part-audio-bar {
+  margin-top: 0;
+  margin-bottom: 14px;
+}
+
 /* Transcriptions container */
 .sarp-transcriptions {
   display: flex;

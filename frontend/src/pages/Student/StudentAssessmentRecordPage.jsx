@@ -398,9 +398,20 @@ export default function StudentAssessmentRecordPage() {
     ? rr.total_words - rr.miscue_count
     : null;
 
-  const task1Alignments = rr?.part1_task1_alignments_json ? JSON.parse(rr.part1_task1_alignments_json) : [];
-  const task2Alignments = rr?.part1_task2_alignments_json ? JSON.parse(rr.part1_task2_alignments_json) : [];
-  const part2Alignments = rr?.part2_alignments_json ? JSON.parse(rr.part2_alignments_json) : [];
+  const parseAlignments = (raw) => {
+    if (!raw) return [];
+    if (Array.isArray(raw)) return raw;
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const task1Alignments = parseAlignments(rr?.part1_task1_alignments_json);
+  const task2Alignments = parseAlignments(rr?.part1_task2_alignments_json);
+  const part2Alignments = parseAlignments(rr?.part2_alignments_json);
 
   // Expiration calculation for 90-day retention
   const audioExpiresAt = rr?.audio_expires_at ? new Date(rr.audio_expires_at) : null;
@@ -564,48 +575,18 @@ export default function StudentAssessmentRecordPage() {
                 </div>
               </div>
 
-              {/* Part 1 Task 1 Audio Preview */}
-              {(rr?.has_part1_audio || (rr?.has_audio && !rr?.has_part2_audio && !rr?.has_part1_task2_audio)) && !isPart1AudioExpired && (
-                <div className="sarp-part-audio-bar">
-                  <div className="sarp-part-audio-meta">
-                    <Headphones size={16} style={{ color: "#2c7fc1" }} />
-                    <span className="sarp-part-audio-label">Task 1 Audio</span>
-                  </div>
-                  <AudioPlayer
-                    src={sessionsApi.getAudioUrl(session.id, 1)}
-                    id="part1-task1-audio-player"
-                  />
-                </div>
-              )}
-
-              {/* Part 1 Task 2 Audio Preview */}
-              {rr?.has_part1_task2_audio && !isPart1Task2AudioExpired && (
-                <div className="sarp-part-audio-bar" style={{ marginTop: "10px" }}>
-                  <div className="sarp-part-audio-meta">
-                    <Headphones size={16} style={{ color: "#9b59b6" }} />
-                    <span className="sarp-part-audio-label">
-                      Task 2 Audio ({route.includes("2l") ? (student?.grade_level === "grade_1" ? "Rhymes" : "Words") : "Sentences"})
-                    </span>
-                  </div>
-                  <AudioPlayer
-                    src={sessionsApi.getAudioUrl(session.id, "task2")}
-                    id="part1-task2-audio-player"
-                  />
-                </div>
-              )}
-
-              {/* Part 1 Stat Grid */}
+              {/* 1. Score for Assessment Part 1 */}
               <div className="sarp-stat-grid">
                 <div className="sarp-stat">
                   <span className="sarp-stat__val" style={{ color: "#2c7fc1" }}>
-                    {d(rr?.part1_task1_correct)} / 10
+                    {d(rr?.part1_task1_correct != null ? Math.min(rr.part1_task1_correct, 10) : null)} / 10
                   </span>
                   <span className="sarp-stat__lbl">Task 1 Correct</span>
                 </div>
                 {task2LScore !== null && (
                   <div className="sarp-stat">
                     <span className="sarp-stat__val" style={{ color: "#9b59b6" }}>
-                      {d(task2LScore)} / 10
+                      {d(Math.min(task2LScore, 10))} / 10
                     </span>
                     <span className="sarp-stat__lbl">Task 2L (Rhymes)</span>
                   </div>
@@ -613,14 +594,14 @@ export default function StudentAssessmentRecordPage() {
                 {task2HScore !== null && (
                   <div className="sarp-stat">
                     <span className="sarp-stat__val" style={{ color: "#9b59b6" }}>
-                      {d(task2HScore)} / 10
+                      {d(Math.min(task2HScore, 10))} / 10
                     </span>
                     <span className="sarp-stat__lbl">Task 2H (Sentences)</span>
                   </div>
                 )}
                 <div className="sarp-stat">
                   <span className="sarp-stat__val" style={{ color: "#27ae60" }}>
-                    {d(rr?.part1_total_score)} / 20
+                    {d(rr?.part1_total_score != null ? Math.min(rr.part1_total_score, 20) : null)} / 20
                   </span>
                   <span className="sarp-stat__lbl">Total Score</span>
                 </div>
@@ -634,9 +615,25 @@ export default function StudentAssessmentRecordPage() {
                 )}
               </div>
 
-              {/* Part 1 Alignments Preview */}
-              {(task1Alignments.length > 0 || task2Alignments.length > 0) && (
-                <div className="sarp-transcriptions">
+              {/* Task 1: Audio Player + Transcription Result */}
+              {(((rr?.has_part1_audio || (rr?.has_audio && !rr?.has_part2_audio && !rr?.has_part1_task2_audio)) && !isPart1AudioExpired) || task1Alignments.length > 0) && (
+                <div className="sarp-task-block">
+                  {/* 2. Audio Player for Task 1 */}
+                  {(rr?.has_part1_audio || (rr?.has_audio && !rr?.has_part2_audio && !rr?.has_part1_task2_audio)) && !isPart1AudioExpired && (
+                    <div className="sarp-part-audio-bar">
+                      <div className="sarp-part-audio-meta">
+                        <Headphones size={16} style={{ color: "#2c7fc1" }} />
+                        <span className="sarp-part-audio-label">Task 1 Audio</span>
+                      </div>
+                      <AudioPlayer
+                        src={sessionsApi.getAudioUrl(session.id, 1)}
+                        cacheKey={`session_${session.id}_1`}
+                        id="part1-task1-audio-player"
+                      />
+                    </div>
+                  )}
+
+                  {/* 3. Transcription Result for Task 1 */}
                   {task1Alignments.length > 0 && (
                     <div>
                       <h3 className="sarp-transcription-section-title">
@@ -648,6 +645,30 @@ export default function StudentAssessmentRecordPage() {
                       />
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Task 2: Audio Player + Transcription Result */}
+              {((rr?.has_part1_task2_audio && !isPart1Task2AudioExpired) || task2Alignments.length > 0) && (
+                <div className="sarp-task-block">
+                  {/* 4. Audio Player for Task 2 */}
+                  {rr?.has_part1_task2_audio && !isPart1Task2AudioExpired && (
+                    <div className="sarp-part-audio-bar">
+                      <div className="sarp-part-audio-meta">
+                        <Headphones size={16} style={{ color: "#9b59b6" }} />
+                        <span className="sarp-part-audio-label">
+                          Task 2 Audio ({route.includes("2l") ? (student?.grade_level === "grade_1" ? "Rhymes" : "Words") : "Sentences"})
+                        </span>
+                      </div>
+                      <AudioPlayer
+                        src={sessionsApi.getAudioUrl(session.id, "task2")}
+                        cacheKey={`session_${session.id}_task2`}
+                        id="part1-task2-audio-player"
+                      />
+                    </div>
+                  )}
+
+                  {/* 5. Transcription Result for Task 2 */}
                   {task2Alignments.length > 0 && (
                     <div>
                       <h3 className="sarp-transcription-section-title">
@@ -732,6 +753,7 @@ export default function StudentAssessmentRecordPage() {
                       </div>
                       <AudioPlayer
                         src={sessionsApi.getAudioUrl(session.id, 2)}
+                        cacheKey={`session_${session.id}_2`}
                         id="part2-audio-player"
                         initialDuration={rr?.reading_time_seconds}
                       />
@@ -850,25 +872,38 @@ export default function StudentAssessmentRecordPage() {
         )}
 
         {/* Edit Modal */}
-        <EditTranscriptionModal
-          isOpen={editModal.isOpen}
-          title={editModal.title}
-          description={editModal.description}
-          transcript={editModal.transcript}
-          audioUrl={
-            editModal.type !== "remarks" && rr?.has_audio && !isAudioExpired
-              ? editModal.type === "part1_task1"
-                ? sessionsApi.getAudioUrl(session.id, 1)
-                : editModal.type === "part1_task2"
-                ? sessionsApi.getAudioUrl(session.id, "task2")
-                : sessionsApi.getAudioUrl(session.id, 2)
-              : null
-          }
-          initialDuration={editModal.type === "part2" ? rr?.reading_time_seconds : null}
-          saving={recalculating}
-          onSave={handleSaveRecalculation}
-          onClose={() => setEditModal((prev) => ({ ...prev, isOpen: false }))}
-        />
+        {session && (
+          <EditTranscriptionModal
+            isOpen={editModal.isOpen}
+            title={editModal.title}
+            description={editModal.description}
+            transcript={editModal.transcript}
+            audioUrl={
+              editModal.type !== "remarks" && rr?.has_audio && !isAudioExpired
+                ? editModal.type === "part1_task1"
+                  ? sessionsApi.getAudioUrl(session.id, 1)
+                  : editModal.type === "part1_task2"
+                  ? sessionsApi.getAudioUrl(session.id, "task2")
+                  : sessionsApi.getAudioUrl(session.id, 2)
+                : null
+            }
+            cacheKey={
+              session?.id
+                ? editModal.type === "part1_task1"
+                  ? `session_${session.id}_1`
+                  : editModal.type === "part1_task2"
+                  ? `session_${session.id}_task2`
+                  : editModal.type === "part2"
+                  ? `session_${session.id}_2`
+                  : null
+                : null
+            }
+            initialDuration={editModal.type === "part2" ? rr?.reading_time_seconds : null}
+            saving={recalculating}
+            onSave={handleSaveRecalculation}
+            onClose={() => setEditModal((prev) => ({ ...prev, isOpen: false }))}
+          />
+        )}
 
         <Toast toasts={toasts} onRemove={removeToast} />
       </div>

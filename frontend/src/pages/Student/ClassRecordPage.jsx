@@ -27,7 +27,7 @@ const PROFILE_COLORS = {
 const PERIOD_LABELS = { beginning: "Beginning", middle: "Middle", end: "End" };
 
 function formatGrade(gl) {
-  if (!gl) return "Unknown";
+  if (!gl) return "";
   if (gl === "kindergarten") return "Kindergarten";
   return `Grade ${gl.replace("grade_", "")}`;
 }
@@ -97,9 +97,9 @@ export default function ClassRecordPage() {
   const stateYear    = location.state?.year || "";
   const statePeriod  = location.state?.period || "";
 
-  const [grade, setGrade]     = useState(stateGrade);
-  const [section, setSection] = useState(stateSection);
-  const [year, setYear]       = useState(stateYear);
+  const [grade, setGrade]     = useState(() => stateGrade || sessionStorage.getItem("hmr_class_grade") || "");
+  const [section, setSection] = useState(() => stateSection || sessionStorage.getItem("hmr_class_section") || "");
+  const [year, setYear]       = useState(() => stateYear || sessionStorage.getItem("hmr_class_year") || "");
   const [period, setPeriod]   = useState(statePeriod || "beginning");
   const userChangedPeriodRef  = useRef(Boolean(statePeriod));
 
@@ -148,50 +148,22 @@ export default function ClassRecordPage() {
     }
   }, [showAddMenu]);
 
-  // Auto-detect current school year and class if navigated directly without state
-  useEffect(() => {
-    let cancelled = false;
-    async function initClassInfo() {
-      try {
-        let activeYear = year;
-        if (!activeYear) {
-          const sy = await studentsApi.getCurrentSchoolYear();
-          activeYear = sy?.school_year || "";
-          if (!cancelled && activeYear) setYear(activeYear);
-        }
-        if (!grade && activeYear) {
-          const classData = await studentsApi.listClasses(activeYear);
-          const list = classData.classes || [];
-          if (list.length > 0 && !cancelled) {
-            setGrade(list[0].grade_level || "");
-            setSection(list[0].section === "No Section" ? "" : (list[0].section || ""));
-          }
-        }
-      } catch (_) {}
-    }
-    if (!year || !grade) {
-      initClassInfo();
-    }
-    return () => { cancelled = true; };
-  }, [year, grade]);
-
   async function reload() {
     setLoading(true);
     setError(null);
     try {
       const stuParams  = { page, page_size: pageSize, ...(grade ? { grade_level: grade } : {}), ...(section ? { section } : {}), ...(year ? { school_year: year } : {}) };
-      const sessParams = { school_year: year, is_completed: true, page_size: 1000, ...(grade ? { grade_level: grade } : {}), ...(section ? { section } : {}) };
+      const sessParams = { school_year: year || undefined, is_completed: true, page_size: 1000, ...(grade ? { grade_level: grade } : {}), ...(section ? { section } : {}) };
       const [me, stuData, sessData] = await Promise.all([
-        authApi.me(),
+        authApi.me().catch(() => null),
         studentsApi.list(stuParams),
         sessionsApi.list(sessParams),
       ]);
-      setTeacher(me);
+      if (me) setTeacher(me);
       setTotal(stuData.total || 0);
       setStudents(stuData.students || []);
 
       const allSess = sessData.sessions || [];
-      // If user hasn't explicitly picked a period, keep default on the period that is still not done
       if (!userChangedPeriodRef.current) {
         const studentTotal = stuData.total || (stuData.students ? stuData.students.length : 0);
         setPeriod(computeActivePeriod(allSess, studentTotal, language));
@@ -210,26 +182,83 @@ export default function ClassRecordPage() {
     }
   }
 
+  // Streamlined, single-pass unified loader (eliminates multi-step reloads and "Unknown" class flash)
   useEffect(() => {
     let cancelled = false;
-    async function load() {
+
+    async function loadData() {
       setLoading(true);
       setError(null);
       try {
-        const stuParams  = { page, page_size: pageSize, ...(grade ? { grade_level: grade } : {}), ...(section ? { section } : {}), ...(year ? { school_year: year } : {}) };
-        const sessParams = { school_year: year, is_completed: true, page_size: 1000, ...(grade ? { grade_level: grade } : {}), ...(section ? { section } : {}) };
+        let activeYear = year;
+        let activeGrade = grade;
+        let activeSection = section;
+
+        // If year or grade are not set yet, resolve them in parallel in a single cycle
+        if (!activeYear || !activeGrade) {
+          const [syRes, meRes, classRes] = await Promise.all([
+            !activeYear ? studentsApi.getCurrentSchoolYear().catch(() => null) : null,
+            authApi.me().catch(() => null),
+            studentsApi.listClasses(activeYear || undefined).catch(() => ({ classes: [] })),
+          ]);
+          if (cancelled) return;
+
+          if (meRes) setTeacher(meRes);
+
+          if (!activeYear && syRes?.school_year) {
+            activeYear = syRes.school_year;
+            setYear(activeYear);
+            sessionStorage.setItem("hmr_class_year", activeYear);
+          }
+
+          if (!activeGrade) {
+            const list = classRes?.classes || [];
+            if (list.length > 0) {
+              activeGrade = list[0].grade_level || "";
+              activeSection = list[0].section === "No Section" ? "" : (list[0].section || "");
+            } else if (meRes?.grade_level) {
+              activeGrade = meRes.grade_level;
+              activeSection = meRes.section || "";
+            }
+            if (activeGrade) {
+              setGrade(activeGrade);
+              sessionStorage.setItem("hmr_class_grade", activeGrade);
+            }
+            if (activeSection !== undefined) {
+              setSection(activeSection);
+              sessionStorage.setItem("hmr_class_section", activeSection);
+            }
+          }
+        }
+
+        // Fetch student records and completed sessions for the resolved class simultaneously
+        const stuParams = {
+          page,
+          page_size: pageSize,
+          ...(activeGrade ? { grade_level: activeGrade } : {}),
+          ...(activeSection ? { section: activeSection } : {}),
+          ...(activeYear ? { school_year: activeYear } : {}),
+        };
+        const sessParams = {
+          school_year: activeYear || undefined,
+          is_completed: true,
+          page_size: 1000,
+          ...(activeGrade ? { grade_level: activeGrade } : {}),
+          ...(activeSection ? { section: activeSection } : {}),
+        };
+
         const [me, stuData, sessData] = await Promise.all([
-          authApi.me(),
+          teacher ? null : authApi.me().catch(() => null),
           studentsApi.list(stuParams),
           sessionsApi.list(sessParams),
         ]);
         if (cancelled) return;
-        setTeacher(me);
+
+        if (me) setTeacher(me);
         setTotal(stuData.total || 0);
         setStudents(stuData.students || []);
 
         const allSess = sessData.sessions || [];
-        // If user hasn't explicitly picked a period, keep default on the period that is still not done
         if (!userChangedPeriodRef.current) {
           const studentTotal = stuData.total || (stuData.students ? stuData.students.length : 0);
           setPeriod(computeActivePeriod(allSess, studentTotal, language));
@@ -249,7 +278,8 @@ export default function ClassRecordPage() {
         if (!cancelled) setLoading(false);
       }
     }
-    load();
+
+    loadData();
     return () => { cancelled = true; };
   }, [grade, section, year, page, pageSize]);
 
@@ -570,7 +600,7 @@ export default function ClassRecordPage() {
           <div className="cr-topbar__left">
             <div>
               <h1 className="cr-title">
-                {formatGrade(grade)}{section ? ` — ${section}` : ""}
+                {grade ? `${formatGrade(grade)}${section ? ` — ${section}` : ""}` : (loading ? "Loading Class..." : "Class Record")}
               </h1>
               <p className="cr-subtitle">{year || "Current Year"} &nbsp;·&nbsp; {periodLabel} Assessment</p>
             </div>
@@ -834,8 +864,8 @@ export default function ClassRecordPage() {
                         : null;
 
                       const route       = (rr?.part1_route ?? "").toLowerCase();
-                      const task2LScore = route.includes("2l") ? d(rr?.part1_task2_correct) : "—";
-                      const task2HScore = route.includes("2h") ? d(rr?.part1_task2_correct) : "—";
+                      const task2LScore = route.includes("2l") ? d(rr?.part1_task2_correct != null ? Math.min(rr.part1_task2_correct, 10) : null) : "—";
+                      const task2HScore = route.includes("2h") ? d(rr?.part1_task2_correct != null ? Math.min(rr.part1_task2_correct, 10) : null) : "—";
 
                       const handleRowStudentClick = () => {
                         navigate(`/students/${s.id}/record/${sess ? sess.id : 0}`, {

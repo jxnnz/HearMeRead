@@ -1,5 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { Play, Pause, Volume2, VolumeX } from "lucide-react";
+import {
+  getAudioFromCache,
+  cacheAudioFromUrl,
+  extractSessionAudioKey,
+} from "../utils/audioCache";
 import "./AudioPlayer.css";
 
 function formatTime(seconds) {
@@ -17,8 +22,16 @@ function formatTime(seconds) {
   return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
 }
 
-export default function AudioPlayer({ src, className = "", id, initialDuration }) {
+export default function AudioPlayer({
+  src,
+  className = "",
+  id,
+  initialDuration,
+  cacheKey: explicitCacheKey,
+}) {
   const audioRef = useRef(null);
+  const blobUrlRef = useRef(null);
+  const [effectiveSrc, setEffectiveSrc] = useState(src);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(() => {
@@ -29,6 +42,7 @@ export default function AudioPlayer({ src, className = "", id, initialDuration }
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
 
+  // Pause other players on this page when one starts
   useEffect(() => {
     const handlePauseAll = (e) => {
       if (e.detail?.keepId && e.detail.keepId === id) return;
@@ -44,6 +58,66 @@ export default function AudioPlayer({ src, className = "", id, initialDuration }
     };
   }, [id]);
 
+  // Check local cache (IndexedDB) first before fetching from R2
+  useEffect(() => {
+    let isMounted = true;
+    const resolvedKey = explicitCacheKey || extractSessionAudioKey(src);
+
+    async function resolveSource() {
+      // If already a local blob URL, use directly
+      if (src && src.startsWith("blob:")) {
+        if (blobUrlRef.current && blobUrlRef.current !== src) {
+          URL.revokeObjectURL(blobUrlRef.current);
+          blobUrlRef.current = null;
+        }
+        setEffectiveSrc(src);
+        return;
+      }
+
+      // Check if local cache has this audio
+      if (resolvedKey) {
+        try {
+          const cachedBlob = await getAudioFromCache(resolvedKey);
+          if (cachedBlob && isMounted) {
+            if (blobUrlRef.current) {
+              URL.revokeObjectURL(blobUrlRef.current);
+            }
+            const localBlobUrl = URL.createObjectURL(cachedBlob);
+            blobUrlRef.current = localBlobUrl;
+            setEffectiveSrc(localBlobUrl);
+            return;
+          }
+        } catch (err) {
+          console.warn("Audio cache read error:", err);
+        }
+      }
+
+      // Not cached locally yet; fallback to remote source
+      if (isMounted) {
+        if (blobUrlRef.current) {
+          URL.revokeObjectURL(blobUrlRef.current);
+          blobUrlRef.current = null;
+        }
+        setEffectiveSrc(src);
+      }
+
+      // Pre-cache remote audio in background for instant playback on revisit
+      if (resolvedKey && src && src.startsWith("http")) {
+        cacheAudioFromUrl(src, resolvedKey).catch(() => {});
+      }
+    }
+
+    resolveSource();
+
+    return () => {
+      isMounted = false;
+      if (blobUrlRef.current) {
+        URL.revokeObjectURL(blobUrlRef.current);
+        blobUrlRef.current = null;
+      }
+    };
+  }, [src, explicitCacheKey]);
+
   useEffect(() => {
     setIsPlaying(false);
     setCurrentTime(0);
@@ -54,8 +128,11 @@ export default function AudioPlayer({ src, className = "", id, initialDuration }
     }
     if (audioRef.current) {
       audioRef.current.currentTime = 0;
+      if (effectiveSrc) {
+        audioRef.current.load();
+      }
     }
-  }, [src, initialDuration]);
+  }, [effectiveSrc, initialDuration]);
 
   const togglePlay = () => {
     const audio = audioRef.current;
@@ -164,13 +241,33 @@ export default function AudioPlayer({ src, className = "", id, initialDuration }
     <div className={`hmr-audio-player ${className}`}>
       <audio
         ref={audioRef}
-        src={src}
-        preload="metadata"
+        src={effectiveSrc}
+        preload="auto"
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onDurationChange={handleDurationChange}
         onEnded={handleEnded}
-        onError={() => {
+        onError={async () => {
+          const resolvedKey = explicitCacheKey || extractSessionAudioKey(src);
+          // If remote R2 audio failed or is not ready, attempt fallback to local cache
+          if (effectiveSrc && !effectiveSrc.startsWith("blob:") && resolvedKey) {
+            try {
+              const cachedBlob = await getAudioFromCache(resolvedKey);
+              if (cachedBlob) {
+                if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current);
+                const localBlobUrl = URL.createObjectURL(cachedBlob);
+                blobUrlRef.current = localBlobUrl;
+                setEffectiveSrc(localBlobUrl);
+                return;
+              }
+            } catch (err) {
+              console.warn("Local audio fallback failed:", err);
+            }
+          } else if (effectiveSrc && effectiveSrc.startsWith("blob:") && src && effectiveSrc !== src) {
+            // If local blob URL failed, attempt fallback to remote R2
+            setEffectiveSrc(src);
+            return;
+          }
           console.error("Audio error on element:", audioRef.current?.error);
           setIsPlaying(false);
         }}

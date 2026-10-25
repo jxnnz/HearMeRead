@@ -207,6 +207,7 @@ class PassageCreate(BaseModel):
     assessment_type: Optional[int]        = Field(None, ge=1, le=2)
     story_number:    Optional[int]        = None
     file_path:       Optional[str]        = None
+    content_hash:    Optional[str]        = None
 
 
 class PassageUpdate(BaseModel):

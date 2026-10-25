@@ -10,6 +10,7 @@ from app.models import (
 )
 from app.schema import PassageCreate, PassageUpdate
 from app.services.log_service import log_activity
+from app.utils.passage_hash import compute_passage_hash
 
 
 def _compute_word_count(text: str) -> int:
@@ -287,7 +288,104 @@ async def get_passage_by_id(
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Passage not found")
 
 
+async def find_duplicate_passage(
+    db: AsyncSession,
+    teacher_id: int,
+    content_hash: str,
+    exclude_passage_id: Optional[int] = None,
+) -> Optional[Passage]:
+    """
+    Checks if an active (non-archived) passage with the same content_hash
+    already exists within the teacher's visible scope:
+    - Teacher's own active passages
+    - Public passages in the teacher's school (global or local overrides)
+    """
+    if not content_hash:
+        return None
+
+    school_id = await _get_teacher_school_id(db, teacher_id)
+    own_filter = Passage.teacher_id == teacher_id
+
+    teacher_res = await db.execute(select(Teacher).where(Teacher.id == teacher_id))
+    caller_teacher = teacher_res.scalar_one_or_none()
+    is_admin = caller_teacher and caller_teacher.role == UserRole.admin
+    assigned_grade = await _get_teacher_assigned_grade(db, teacher_id)
+
+    if school_id:
+        override_subquery = (
+            select(Passage.original_passage_id)
+            .join(Teacher, Teacher.id == Passage.teacher_id)
+            .where(
+                Passage.visibility == PassageVisibility.public,
+                Passage.original_passage_id.is_not(None),
+                Teacher.school_id == school_id,
+            )
+        )
+        public_base = and_(
+            Passage.visibility == PassageVisibility.public,
+            or_(
+                and_(
+                    Passage.original_passage_id.is_(None),
+                    Passage.id.not_in(override_subquery),
+                ),
+                and_(
+                    Passage.original_passage_id.is_not(None),
+                    Passage.teacher_id.in_(
+                        select(Teacher.id).where(Teacher.school_id == school_id)
+                    ),
+                ),
+            ),
+        )
+        if is_admin:
+            public_filter = public_base
+        elif assigned_grade:
+            public_filter = and_(
+                public_base,
+                or_(
+                    Passage.grade_level == assigned_grade,
+                    Passage.grade_level.is_(None),
+                ),
+            )
+        else:
+            public_filter = None
+
+        if public_filter is not None:
+            visibility_filter = or_(own_filter, public_filter)
+        else:
+            visibility_filter = own_filter
+    else:
+        visibility_filter = own_filter
+
+    query = select(Passage).where(
+        Passage.content_hash == content_hash,
+        Passage.is_archived == False,
+        visibility_filter,
+    )
+    if exclude_passage_id is not None:
+        query = query.where(Passage.id != exclude_passage_id)
+
+    query = query.limit(1)
+    result = await db.execute(query)
+    return result.scalar_one_or_none()
+
+
 async def create_passage(db: AsyncSession, data: PassageCreate, teacher_id: int) -> Passage:
+    content_hash = compute_passage_hash(
+        assessment_type=data.assessment_type,
+        content=data.content,
+        task1_content=data.task1_content,
+        task2_words=data.task2_words,
+        task2_sentences=data.task2_sentences,
+    )
+    if content_hash:
+        dup = await find_duplicate_passage(db, teacher_id=teacher_id, content_hash=content_hash)
+        if dup:
+            dup_title = dup.title or ("Assessment 1" if dup.assessment_type == 1 else "Untitled Passage")
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"A passage with the same content already exists: '{dup_title}'.",
+            )
+
     # ── A1 auto-title ───────────────────────────────────────────────────────
     # Assessment 1 passages are never given a title by the teacher (the
     # AddAssessment1Page form has no title field). Auto-generate a meaningful
@@ -316,6 +414,7 @@ async def create_passage(db: AsyncSession, data: PassageCreate, teacher_id: int)
         task2_sentences = data.task2_sentences,
         story_number    = data.story_number,
         file_path       = data.file_path,
+        content_hash    = content_hash,
     )
     db.add(passage)
     await db.commit()
@@ -342,14 +441,28 @@ async def create_passage_from_docx(
     content: str,
     teacher_id: int,
 ) -> Passage:
+    content_hash = compute_passage_hash(
+        assessment_type=2,
+        content=content,
+    )
+    if content_hash:
+        dup = await find_duplicate_passage(db, teacher_id=teacher_id, content_hash=content_hash)
+        if dup:
+            dup_title = dup.title or "Untitled Passage"
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"A passage with the same content already exists: '{dup_title}'.",
+            )
+
     passage = Passage(
-        teacher_id  = teacher_id,
-        title       = title,
-        content     = content,
-        language    = language,
-        grade_level = grade_level,
-        word_count  = _compute_word_count(content),
-        visibility  = PassageVisibility.private,
+        teacher_id   = teacher_id,
+        title        = title,
+        content      = content,
+        language     = language,
+        grade_level  = grade_level,
+        word_count   = _compute_word_count(content),
+        visibility   = PassageVisibility.private,
+        content_hash = content_hash,
     )
     db.add(passage)
     await db.commit()
@@ -382,6 +495,31 @@ async def update_passage(
 ) -> Passage:
     passage = await get_passage_by_id(db, passage_id, teacher_id)
     _ensure_private(passage)
+
+    new_assessment_type = data.assessment_type if data.assessment_type is not None else passage.assessment_type
+    new_content = data.content if data.content is not None else passage.content
+    new_t1 = data.task1_content if data.task1_content is not None else passage.task1_content
+    new_t2w = data.task2_words if data.task2_words is not None else passage.task2_words
+    new_t2s = data.task2_sentences if data.task2_sentences is not None else passage.task2_sentences
+
+    new_hash = compute_passage_hash(
+        assessment_type=new_assessment_type,
+        content=new_content,
+        task1_content=new_t1,
+        task2_words=new_t2w,
+        task2_sentences=new_t2s,
+    )
+    if new_hash and new_hash != passage.content_hash:
+        dup = await find_duplicate_passage(
+            db, teacher_id=teacher_id, content_hash=new_hash, exclude_passage_id=passage.id
+        )
+        if dup:
+            dup_title = dup.title or ("Assessment 1" if dup.assessment_type == 1 else "Untitled Passage")
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"A passage with the same content already exists: '{dup_title}'.",
+            )
+        passage.content_hash = new_hash
 
     if data.title is not None:
         passage.title = data.title

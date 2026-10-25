@@ -643,7 +643,9 @@ async def recalculate_session(
     # 2. Recalculate Part 2 if story transcript changed
     if payload.part2_transcript is not None:
         ref_text = ""
-        if session.passage and session.passage.text:
+        if session.passage and getattr(session.passage, "content", None):
+            ref_text = session.passage.content
+        elif session.passage and getattr(session.passage, "text", None):
             ref_text = session.passage.text
         elif reading_result.part2_alignments_json:
             try:

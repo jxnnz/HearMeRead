@@ -9,6 +9,7 @@ from sqlalchemy.orm import selectinload
 
 from app.db import get_db
 from app.dependencies import require_admin
+from app.utils.passage_hash import compute_passage_hash
 from app.core.encryption import decrypt
 from app.models import (
     Teacher, School, Student, AssessmentSession,
@@ -961,6 +962,29 @@ async def create_public_passage(
     content = payload.get("content", "") or ""
     word_count = len(content.split()) if content.strip() else 0
 
+    c_hash = compute_passage_hash(
+        assessment_type=payload.get("assessment_type", 2),
+        content=content,
+        task1_content=payload.get("task1_content"),
+        task2_words=payload.get("task2_words"),
+        task2_sentences=payload.get("task2_sentences"),
+    )
+    if c_hash:
+        dup_res = await db.execute(
+            select(Passage).where(
+                Passage.content_hash == c_hash,
+                Passage.visibility == PassageVisibility.public,
+                Passage.is_archived == False,
+            ).limit(1)
+        )
+        dup = dup_res.scalar_one_or_none()
+        if dup:
+            dup_title = dup.title or ("Assessment 1" if dup.assessment_type == 1 else "Untitled Passage")
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"A public passage with the same content already exists: '{dup_title}'.",
+            )
+
     passage = Passage(
         teacher_id=current_admin.id,
         title=payload.get("title"),
@@ -973,6 +997,7 @@ async def create_public_passage(
         task1_content=payload.get("task1_content"),
         task2_words=payload.get("task2_words"),
         task2_sentences=payload.get("task2_sentences"),
+        content_hash=c_hash,
     )
     db.add(passage)
     await db.commit()
@@ -1044,6 +1069,13 @@ async def update_public_passage(
             task2_sentences=payload.get("task2_sentences", passage.task2_sentences),
             file_path=passage.file_path,
             original_passage_id=passage.id,
+            content_hash=compute_passage_hash(
+                assessment_type=payload.get("assessment_type", passage.assessment_type),
+                content=content,
+                task1_content=payload.get("task1_content", passage.task1_content),
+                task2_words=payload.get("task2_words", passage.task2_words),
+                task2_sentences=payload.get("task2_sentences", passage.task2_sentences),
+            ),
         )
         db.add(cloned_passage)
         await db.commit()
@@ -1089,6 +1121,37 @@ async def update_public_passage(
 
     else:
         # Update directly (same school)
+        new_assessment_type = payload.get("assessment_type", passage.assessment_type)
+        new_content = payload.get("content", passage.content)
+        new_t1 = payload.get("task1_content", passage.task1_content)
+        new_t2w = payload.get("task2_words", passage.task2_words)
+        new_t2s = payload.get("task2_sentences", passage.task2_sentences)
+
+        new_hash = compute_passage_hash(
+            assessment_type=new_assessment_type,
+            content=new_content,
+            task1_content=new_t1,
+            task2_words=new_t2w,
+            task2_sentences=new_t2s,
+        )
+        if new_hash and new_hash != passage.content_hash:
+            dup_res = await db.execute(
+                select(Passage).where(
+                    Passage.content_hash == new_hash,
+                    Passage.visibility == PassageVisibility.public,
+                    Passage.is_archived == False,
+                    Passage.id != passage.id,
+                ).limit(1)
+            )
+            dup = dup_res.scalar_one_or_none()
+            if dup:
+                dup_title = dup.title or ("Assessment 1" if dup.assessment_type == 1 else "Untitled Passage")
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"A public passage with the same content already exists: '{dup_title}'.",
+                )
+            passage.content_hash = new_hash
+
         for field in ["title", "content", "language", "grade_level",
                        "assessment_type", "task1_content", "task2_words", "task2_sentences"]:
             if field in payload:
@@ -1155,9 +1218,42 @@ async def admin_bulk_create_passages(
     passages_to_flush = []
     items_with_passages = []  # (index, item, passage_obj)
 
+    seen_hashes = {}
     for idx, item in enumerate(items):
         try:
             content = item.content or ""
+            c_hash = compute_passage_hash(
+                assessment_type=item.assessment_type,
+                content=content,
+                task1_content=item.task1_content,
+                task2_words=item.task2_words,
+                task2_sentences=item.task2_sentences,
+            )
+
+            # Check intra-batch duplicate
+            if c_hash and c_hash in seen_hashes:
+                first_pos = seen_hashes[c_hash] + 1
+                results.append({"index": idx, "error": f"Duplicate content within this upload batch (matches passage #{first_pos})."})
+                failed += 1
+                continue
+
+            # Check DB duplicate
+            if c_hash:
+                dup_res = await db.execute(
+                    select(Passage).where(
+                        Passage.content_hash == c_hash,
+                        Passage.visibility == PassageVisibility.public,
+                        Passage.is_archived == False,
+                    ).limit(1)
+                )
+                dup = dup_res.scalar_one_or_none()
+                if dup:
+                    dup_title = dup.title or ("Assessment 1" if dup.assessment_type == 1 else "Untitled Passage")
+                    results.append({"index": idx, "error": f"A public passage with the same content already exists: '{dup_title}'."})
+                    failed += 1
+                    continue
+                seen_hashes[c_hash] = idx
+
             passage = Passage(
                 teacher_id=current_admin.id,
                 title=item.title,
@@ -1171,6 +1267,7 @@ async def admin_bulk_create_passages(
                 task2_words=item.task2_words,
                 task2_sentences=item.task2_sentences,
                 story_number=item.story_number,
+                content_hash=c_hash,
             )
             db.add(passage)
             passages_to_flush.append(passage)
@@ -1180,6 +1277,7 @@ async def admin_bulk_create_passages(
             failed += 1
 
     if not passages_to_flush:
+        results.sort(key=lambda r: r.get("index", 0))
         return {"created": 0, "failed": failed, "results": results}
 
     try:
@@ -1215,6 +1313,7 @@ async def admin_bulk_create_passages(
             detail=f"Database transaction error during bulk create: {str(exc)}",
         )
 
+    results.sort(key=lambda r: r.get("index", 0))
     return {"created": created, "failed": failed, "results": results}
 
 

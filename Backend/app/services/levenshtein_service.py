@@ -354,7 +354,7 @@ def score_part1(
     result.task1_reference_words   = ref1
     result.task1_transcribed_words = hyp1
     result.task1_alignments        = lev1.alignments
-    result.task1_correct           = lev1.correct_words
+    result.task1_correct           = min(lev1.correct_words, 10)
     result.task1_miscues           = lev1.total_miscues
 
     # --- Routing ---
@@ -389,11 +389,11 @@ def score_part1(
     result.task2_reference_words   = ref2
     result.task2_transcribed_words = hyp2
     result.task2_alignments        = lev2.alignments
-    result.task2_correct           = lev2.correct_words
+    result.task2_correct           = min(lev2.correct_words, 10)
     result.task2_miscues           = lev2.total_miscues
 
     # --- Totals ---
-    result.total_score    = result.task1_correct + result.task2_correct
+    result.total_score    = min(result.task1_correct + result.task2_correct, 20)
     result.classification = _classify_part1(result.total_score, result.route, language)
 
     return result
@@ -449,7 +449,7 @@ def _classify_reading_profile(
         return ReadingProfile.HIGH_EMERGING
     elif 25.0 <= accuracy_pct <= 50.0 and 1 <= comprehension_correct <= 2:
         return ReadingProfile.DEVELOPING
-    elif 51.0 <= accuracy_pct <= 75.0 and 3 <= comprehension_correct <= 4:
+    elif 50.0 < accuracy_pct <= 75.0 and 3 <= comprehension_correct <= 4:
         return ReadingProfile.TRANSITIONING
     elif accuracy_pct > 75.0 and 5 <= comprehension_correct <= 6:
         return ReadingProfile.GRADE_LEVEL
@@ -532,12 +532,17 @@ def score_part2(
     )
 
     # --- CWPM ---
-    # Use correct_words directly — it is the count of passage words that were
-    # read correctly, unaffected by insertions.
-    # Time is capped at the grade limit to avoid inflating CWPM.
-    effective_time_sec = min(reading_time_sec, result.grade_time_limit_sec)
-    if effective_time_sec > 0:
-        result.cwpm = round(result.correct_words / (effective_time_sec / 60), 2)
+    # Use correct words read within the time limit if timestamps are present and time exceeded limit;
+    # otherwise use correct_words and actual reading time.
+    if whisper_word_timestamps and reading_time_sec > result.grade_time_limit_sec:
+        cwpm_words = result.words_read_within_time
+        cwpm_time_sec = result.grade_time_limit_sec
+    else:
+        cwpm_words = result.correct_words
+        cwpm_time_sec = reading_time_sec
+
+    if cwpm_time_sec > 0:
+        result.cwpm = round(cwpm_words / (cwpm_time_sec / 60), 2)
     else:
         result.cwpm = 0.0
 
