@@ -6,6 +6,8 @@ import {
   Headphones,
   Pencil,
   AlertCircle,
+  Sparkles,
+  Play,
 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -424,11 +426,36 @@ export default function StudentAssessmentRecordPage() {
   const isAudioExpired = isPart2AudioExpired && isPart1AudioExpired && isPart1Task2AudioExpired;
 
   const hasPart2 = Boolean(
-    session?.passage?.title ||
+    (session?.passage?.assessment_type === 2 && session?.passage?.title) ||
     (rr?.total_words != null && rr?.total_words > 0) ||
     part2Alignments.length > 0 ||
     rr?.cwpm != null
   );
+
+  const [advancing, setAdvancing] = useState(false);
+  const lang = (session?.language || "filipino").toLowerCase();
+  const isEnglish = lang === "english";
+  const t1Score = rr?.part1_task1_correct ?? 0;
+  const canContinueHigherRoute =
+    !hasPart2 &&
+    (isEnglish ? (rr?.part1_total_score >= 11 || t1Score >= 1) : t1Score >= 7);
+
+  const handleContinueAssessment = async () => {
+    if (!session?.id || advancing) return;
+    setAdvancing(true);
+    try {
+      const res = await sessionsApi.reopen(session.id);
+      navigate("/assessment", {
+        state: {
+          resumeSessionId: session.id,
+          resumeState: res?.resume_state || "task2",
+        },
+      });
+    } catch (err) {
+      showError(parseApiError(err, "Failed to resume assessment. Please try again."));
+      setAdvancing(false);
+    }
+  };
 
   return (
     <Layout>
@@ -548,6 +575,32 @@ export default function StudentAssessmentRecordPage() {
         {/* Main Content */}
         {!loading && !error && session && student && (
           <>
+            {/* Eligible for Higher Route & Assessment 2 Banner */}
+            {canContinueHigherRoute && (
+              <div className="sarp-advance-banner">
+                <div className="sarp-advance-content">
+                  <div className="sarp-advance-header">
+                    <Sparkles size={18} className="sarp-advance-icon" />
+                    <h3 className="sarp-advance-title">
+                      Eligible for Task 2 (Sentences) &amp; Assessment 2
+                    </h3>
+                  </div>
+                  <p className="sarp-advance-desc">
+                    Task 1 score is passing (<strong>{t1Score} / 10</strong>). This learner qualifies to take <strong>Task 2 (Sentences)</strong> and proceed to <strong>Assessment 2 (Passage Reading &amp; Comprehension)</strong>.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="sarp-advance-btn"
+                  onClick={handleContinueAssessment}
+                  disabled={advancing}
+                >
+                  <Play size={14} fill="currentColor" />
+                  {advancing ? "Preparing Assessment…" : "Administer Sentences & Part 2"}
+                </button>
+              </div>
+            )}
+
             {/* Assessment Part 1 Card */}
             <div className="sarp-card">
               <div className="sarp-card-header">

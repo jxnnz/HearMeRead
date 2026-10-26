@@ -18,7 +18,7 @@ from app.schemas.session_schemas import (
     Part1ResultOut, Part2ResultOut, WordAlignmentOut,
     RecalculateSessionIn,
 )
-from app.services.levenshtein_service import score_part1, score_part2
+from app.services.levenshtein_service import score_part1, score_part2, Part1Route
 from app.services.log_service import log_activity
 
 
@@ -142,6 +142,7 @@ async def get_sessions(
             selectinload(AssessmentSession.reading_result),
             selectinload(AssessmentSession.observation),
             selectinload(AssessmentSession.passage),
+        selectinload(AssessmentSession.student),
         )
         .order_by(AssessmentSession.created_at.desc())
         .offset((page - 1) * page_size)
@@ -161,6 +162,7 @@ async def get_session_by_id(
         selectinload(AssessmentSession.reading_result),
         selectinload(AssessmentSession.observation),
         selectinload(AssessmentSession.passage),
+        selectinload(AssessmentSession.student),
     ).where(
         AssessmentSession.id == session_id,
         AssessmentSession.is_archived == False,
@@ -222,6 +224,7 @@ async def create_session(
             selectinload(AssessmentSession.reading_result),
             selectinload(AssessmentSession.observation),
             selectinload(AssessmentSession.passage),
+        selectinload(AssessmentSession.student),
         )
         .where(AssessmentSession.id == session.id)
     )
@@ -568,6 +571,7 @@ async def recalculate_session(
             selectinload(AssessmentSession.reading_result),
             selectinload(AssessmentSession.observation),
             selectinload(AssessmentSession.passage),
+        selectinload(AssessmentSession.student),
             selectinload(AssessmentSession.student),
         )
         .where(
@@ -703,3 +707,53 @@ async def recalculate_session(
 
     # Re-fetch refreshed session with all relationships
     return await get_session_by_id(db, session_id, teacher_id)
+
+
+
+async def reopen_session(
+    db: AsyncSession,
+    session_id: int,
+    teacher_id: Optional[int] = None,
+) -> dict:
+    """
+    Reopen a session that was previously finalized at Part 1 so that
+    the student can continue with Task 2 (Sentences) and Assessment 2.
+    """
+    session = await get_session_by_id(db, session_id, teacher_id)
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Session {session_id} not found",
+        )
+
+    rr = session.reading_result
+    if not rr:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No reading result found for this session.",
+        )
+
+    # Reopen session
+    session.is_completed = False
+    session.updated_at = _now()
+
+    # Route to task_2H (Sentences) if passing Task 1
+    if rr.part1_task1_correct is not None and rr.part1_task1_correct >= 7:
+        rr.part1_route = Part1Route.TASK_2H.value
+    elif rr.part1_route is None:
+        rr.part1_route = Part1Route.TASK_2H.value
+
+    # Reset Task 2 intermediate score so student records Task 2H sentences fresh
+    rr.part1_task2_correct = None
+    rr.part1_task2_alignments_json = None
+    rr.part1_total_score = None
+    rr.part1_classification = None
+
+    await db.commit()
+
+    return {
+        "session_id": session.id,
+        "resume_state": "task2",
+        "route": rr.part1_route,
+        "message": "Session reopened to administer Task 2 Sentences and Assessment 2.",
+    }

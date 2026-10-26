@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 
 import Layout               from "../../components/Layout";
 import assessmentRead1      from "../../assets/Assessment-Read-1.png";
@@ -116,6 +117,7 @@ function initForm() {
 
 // Component
 export default function AssessmentPage() {
+  const location = useLocation();
   const [step, setStep] = useState(STEPS.INFO);
   const [form, setForm] = useState(initForm());
 
@@ -496,12 +498,23 @@ export default function AssessmentPage() {
           : (sess.passage.word_count ?? 0);
       }
 
+      const resolvedGrade = sess.student?.grade_level || sess.passage?.grade_level || "";
+      const resolvedSection = sess.student?.section || "";
+      const resolvedFirst = sess.student?.first_name || "";
+      const resolvedLast = sess.student?.last_name || "";
+      const resolvedMiddle = sess.student?.middle_name || "";
+
       // 3. Set form fields, preserving student name
       setForm((prev) => ({
         ...prev,
         school_year:      sess.school_year,
         assessment_type:  sess.period === "beginning" ? "BoSY" : sess.period === "middle" ? "MoSY" : "EoSY",
         student_id:       sess.student_id,
+        first_name:       resolvedFirst || prev.first_name,
+        last_name:        resolvedLast || prev.last_name,
+        middle_name:      resolvedMiddle || prev.middle_name,
+        grade_level:      resolvedGrade || prev.grade_level,
+        section:          resolvedSection || prev.section,
         language:         sess.language,
         passage_id:       sess.passage_id,
         passage_title:    sess.passage?.title ?? prev.passage_title,
@@ -509,6 +522,19 @@ export default function AssessmentPage() {
         word_count:       wc || prev.word_count,
         selected_passage: sess.passage || prev.selected_passage,
       }));
+
+      // Pre-fetch Assessment 2 passages for this grade and language
+      if (resolvedGrade && sess.language) {
+        passagesApi
+          .list({
+            language: sess.language,
+            grade_level: resolvedGrade,
+            assessment_type: 2,
+            page_size: 50,
+          })
+          .then((data) => setA2Passages(data.passages ?? []))
+          .catch(() => {});
+      }
 
       // 4. Reconstruct transcripts and intermediate states
       const rr = sess.reading_result;
@@ -561,7 +587,7 @@ export default function AssessmentPage() {
         const isRhymeRoute =
           route === "task_2L" &&
           sess.language === "filipino" &&
-          getGradeNum(form.grade_level) === 1 &&
+          getGradeNum(resolvedGrade || form.grade_level) === 1 &&
           (p?.task2_words ?? "").includes("|");
 
         if (isRhymeRoute) {

@@ -504,6 +504,12 @@ export const sessionsApi = {
     return res.data;
   },
 
+  /** Reopen a completed session to continue with higher route tasks. */
+  reopen: async (id) => {
+    const res = await api.post(`/sessions/${id}/reopen`);
+    return res.data;
+  },
+
   /** Soft-delete (archive) a session. */
   archive: async (id) => {
     const res = await api.delete(`/sessions/${id}`);

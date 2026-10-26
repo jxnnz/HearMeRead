@@ -446,3 +446,88 @@
     grid-column: span 2;
   }
 }
+
+
+/* Advance / Continue Higher Route Banner */
+.sarp-advance-banner {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+  border: 1.5px solid #86efac;
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.08);
+  margin-top: 4px;
+}
+
+.sarp-advance-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sarp-advance-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sarp-advance-icon {
+  color: #059669;
+}
+
+.sarp-advance-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #065f46;
+}
+
+.sarp-advance-desc {
+  margin: 0;
+  font-size: 13px;
+  color: #047857;
+  line-height: 1.5;
+}
+
+.sarp-advance-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #059669;
+  border: 1.5px solid #047857;
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+  padding: 10px 20px;
+  border-radius: 9px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.25);
+  flex-shrink: 0;
+}
+
+.sarp-advance-btn:hover:not(:disabled) {
+  background: #047857;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(5, 150, 105, 0.35);
+}
+
+.sarp-advance-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .sarp-advance-banner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .sarp-advance-btn {
+    justify-content: center;
+  }
+}

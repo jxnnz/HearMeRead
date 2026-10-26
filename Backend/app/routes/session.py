@@ -214,6 +214,28 @@ async def recalculate_session(
     )
 
 
+@router.post(
+    "/{session_id}/reopen",
+    summary="Reopen an assessment session to administer higher route tasks",
+    status_code=status.HTTP_200_OK,
+)
+async def reopen_session(
+    session_id:      int,
+    db:              AsyncSession = Depends(get_db),
+    current_teacher: Teacher      = Depends(get_current_teacher),
+):
+    if _is_admin(current_teacher):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only teachers can reopen student assessment records."
+        )
+    return await session_service.reopen_session(
+        db=db,
+        session_id=session_id,
+        teacher_id=current_teacher.id,
+    )
+
+
 # Intermediate scoring (no session state change)
 @router.post(
     "/{session_id}/score-task1",
