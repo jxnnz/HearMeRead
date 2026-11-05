@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Testing artifacts
+test-results/
+playwright-report/
+
 # Environment variables — NEVER commit this
 .env
 .env*

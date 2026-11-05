@@ -1,56 +1,37 @@
-# Backend development shortcuts
+# Backend development and testing shortcuts
 # Usage: make <target>
 # Requires: bash, python in venv, psycopg2-binary installed
 
-# Run the app locally (no Docker)
+# Run the app locally with development environment
 dev:
-	ENV_FILE=.env.dev uvicorn app.main:app --reload --port 8000
+	ENV_FILE=.env uvicorn app.main:app --reload --port 8000
 
+# Run testing mode server explicitly loading development .env
 test-server:
-	ENV_FILE=.env.test uvicorn app.main:app --reload --port 8001
+	ENV_FILE=.env uvicorn app.main:app --reload --port 8000
 
-# Alembic migrations
+# Alembic migrations (dev schema)
 migrate-dev:
-	ENV_FILE=.env.dev alembic upgrade head
+	ENV_FILE=.env alembic upgrade head
 
-migrate-test:
-	ENV_FILE=.env.test alembic upgrade head
-
-migrate-prod:
-	ENV_FILE=.env.prod alembic upgrade head
-
-# Create a new migration (targets dev schema; same migration file is applied to all envs)
+# Create a new migration (targets dev schema)
 migration:
-	ENV_FILE=.env.dev alembic revision --autogenerate -m "$(msg)"
-# Usage: make migration msg="add_word_count_to_passages"
+	ENV_FILE=.env alembic revision --autogenerate -m "$(msg)"
 
-# Show current migration state per environment
+# Show current migration state
 status-dev:
-	ENV_FILE=.env.dev alembic current
+	ENV_FILE=.env alembic current
 
-status-test:
-	ENV_FILE=.env.test alembic current
-
-status-prod:
-	ENV_FILE=.env.prod alembic current
-
-# Tests
+# Run backend automated pytest suite (explicitly using .env)
 test:
-	ENV_FILE=.env.test python -m pytest -v --tb=short
+	ENV_FILE=.env python -m pytest tests -v --tb=short
 
-# Reset test schema (DANGEROUS — wipes all test data)
-reset-test:
-	@echo "WARNING: This will drop and recreate the 'test' schema. All test data will be lost."
-	@read -p "Type 'yes' to confirm: " confirm && [ "$$confirm" = "yes" ]
-	ENV_FILE=.env.test python -c "\
-	import asyncio, asyncpg, os; \
-	from dotenv import load_dotenv; \
-	load_dotenv('.env.test'); \
-	url = os.environ['DATABASE_URL'].replace('postgresql+asyncpg://', ''); \
-	print('Dropping test schema...')"
-	ENV_FILE=.env.test alembic downgrade base
-	ENV_FILE=.env.test alembic upgrade head
-	@echo "Test schema reset complete."
+# Seed fictional test data (students, passages, assessments) into dev DB with [TEST] prefix
+seed-test-data:
+	ENV_FILE=.env python -m app.scripts.seed_test_data
 
-.PHONY: dev test-server migrate-dev migrate-test migrate-prod migration \
-        status-dev status-test status-prod test reset-test
+# Safely reset ONLY records tagged as test data ([TEST] prefix or @hearmeread.test)
+reset-test-data:
+	ENV_FILE=.env python -m app.scripts.reset_test_data
+
+.PHONY: dev test-server migrate-dev migration status-dev test seed-test-data reset-test-data

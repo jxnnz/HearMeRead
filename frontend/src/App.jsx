@@ -31,6 +31,8 @@ const AdminDashboardPage = React.lazy(() => import("./pages/AdminDashboardPage")
 const AdminTeachersPage = React.lazy(() => import("./pages/AdminTeachersPage"));
 const AdminStudentsPage = React.lazy(() => import("./pages/AdminStudentsPage"));
 const AdminPassagesPage = React.lazy(() => import("./pages/AdminPassagesPage"));
+const DevTestingDashboard = React.lazy(() => import("./pages/DevTestingDashboard"));
+import DevTestingPill from "./components/DevTestingPill";
 
 function getRole() {
   return localStorage.getItem("role") || "TEACHER";
@@ -85,6 +87,12 @@ export default function App() {
 
   // Sync loading sequence with backend health check and optional auth details fetch
   useEffect(() => {
+    if (window.location.pathname.startsWith('/testing-dashboard') || sessionStorage.getItem('hmr_test_mode') === 'true' || import.meta.env.MODE === 'test') {
+      setFirstCheckDone(true);
+      setSecondCheckDone(true);
+      setAppReady(true);
+      return;
+    }
     const rootUrl = api.defaults.baseURL.replace('/routes', '');
     
     // Check 1: Ping root endpoint of backend
@@ -218,10 +226,12 @@ export default function App() {
           {/* Shared */}
           <Route path="/profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
           <Route path="/manual" element={<RequireAuth><UserManualPage /></RequireAuth>} />
+          <Route path="/testing-dashboard" element={<DevTestingDashboard />} />
 
           <Route path="*" element={<CatchAll />} />
         </Routes>
       </Suspense>
+      <DevTestingPill />
     </BrowserRouter>
   );
 }

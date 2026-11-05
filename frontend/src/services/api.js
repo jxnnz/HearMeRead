@@ -14,18 +14,76 @@ const api = axios.create({
   },
 });
 
-// Attach token to every request automatically
-api.interceptors.request.use((config) => {
+// Developer Simulation Helpers (Session-isolated, never active in production)
+export const devSimulation = {
+  getError: () => {
+    try {
+      return JSON.parse(sessionStorage.getItem("hmr_sim_error") || "null");
+    } catch {
+      return null;
+    }
+  },
+  setError: (val) => {
+    if (!val) sessionStorage.removeItem("hmr_sim_error");
+    else sessionStorage.setItem("hmr_sim_error", JSON.stringify(val));
+  },
+  getLatency: () => Number(sessionStorage.getItem("hmr_sim_latency") || 0),
+  setLatency: (ms) => {
+    if (!ms || ms <= 0) sessionStorage.removeItem("hmr_sim_latency");
+    else sessionStorage.setItem("hmr_sim_latency", String(ms));
+  },
+  getEmptyState: () => sessionStorage.getItem("hmr_sim_empty") === "true",
+  setEmptyState: (val) => {
+    if (!val) sessionStorage.removeItem("hmr_sim_empty");
+    else sessionStorage.setItem("hmr_sim_empty", "true");
+  },
+};
+
+// Attach token to every request automatically + support developer simulation
+api.interceptors.request.use(async (config) => {
   const token = localStorage.getItem("token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  // Developer simulation hooks
+  if (!import.meta.env.PROD) {
+    const latency = devSimulation.getLatency();
+    if (latency > 0) {
+      await new Promise((resolve) => setTimeout(resolve, latency));
+    }
+
+    const simError = devSimulation.getError();
+    if (simError && simError.enabled && !config.url?.includes("/testing/")) {
+      const err = new Error(simError.message || "Simulated API Error");
+      err.response = {
+        status: simError.status || 500,
+        data: { detail: simError.message || "Simulated Error by Developer Dashboard" },
+      };
+      return Promise.reject(err);
+    }
+  }
+
   return config;
 });
 
 // Auto-logout on 401 (expired / invalid token)
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (!import.meta.env.PROD && devSimulation.getEmptyState() && response.config?.method?.toLowerCase() === "get") {
+      if (!response.config?.url?.includes("/testing/")) {
+        if (Array.isArray(response.data)) {
+          return { ...response, data: [] };
+        }
+        if (response.data && typeof response.data === "object") {
+          if ("items" in response.data) return { ...response, data: { ...response.data, items: [], total: 0 } };
+          if ("passages" in response.data) return { ...response, data: { ...response.data, passages: [], total: 0 } };
+          if ("students" in response.data) return { ...response, data: { ...response.data, students: [], total: 0 } };
+        }
+      }
+    }
+    return response;
+  },
   (error) => {
     const url = error.config?.url ?? "";
     const isUnauthRoute =
@@ -591,6 +649,35 @@ export const dashboardApi = {
   getSummary: async (schoolYear) => {
     const params = schoolYear ? { school_year: schoolYear } : {};
     const res = await api.get("/dashboard/summary", { params });
+    return res.data;
+  },
+};
+
+
+// Developer Testing API
+export const testingApi = {
+  getStatus: async () => {
+    const res = await api.get("/testing/status");
+    return res.data;
+  },
+  seedAccounts: async () => {
+    const res = await api.post("/testing/seed-accounts");
+    return res.data;
+  },
+  generateStudents: async (data = { count: 5, grade_level: "grade_2" }) => {
+    const res = await api.post("/testing/generate-students", data);
+    return res.data;
+  },
+  generatePassages: async (data = { include_assessment_1: true, include_assessment_2: true }) => {
+    const res = await api.post("/testing/generate-passages", data);
+    return res.data;
+  },
+  generateAssessments: async (data = { count: 3 }) => {
+    const res = await api.post("/testing/generate-assessments", data);
+    return res.data;
+  },
+  resetTestData: async (data = { confirm: true, preserve_test_accounts: true }) => {
+    const res = await api.post("/testing/reset-test-data", data);
     return res.data;
   },
 };

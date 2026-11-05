@@ -1,0 +1,17 @@
+{
+  "name": "hearmeread-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "description": "HearMeRead Monorepo - Testing Environment",
+  "scripts": {
+    "test": "npm run test:all",
+    "test:frontend": "npm --prefix frontend test",
+    "test:backend": "cd Backend && venv\\Scripts\\python -m pytest tests",
+    "test:e2e": "npm --prefix frontend run test:e2e",
+    "test:seed": "cd Backend && venv\\Scripts\\python -m app.scripts.seed_test_data",
+    "test:reset": "cd Backend && venv\\Scripts\\python -m app.scripts.reset_test_data",
+    "test:all": "npm run test:frontend && npm run test:backend && npm run test:e2e",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:backend": "cd Backend && venv\\Scripts\\uvicorn app.main:app --reload --port 8000"
+  }
+}

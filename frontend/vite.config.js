@@ -21,4 +21,10 @@ export default defineConfig(({ mode }) => ({
     // folder structure and source code via browser DevTools
     sourcemap: mode !== 'production' ? true : false,
   },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.js',
+    include: ['src/**/*.{test,spec}.{js,jsx}'],
+  },
 }))
